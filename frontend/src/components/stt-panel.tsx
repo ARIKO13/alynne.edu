@@ -18,6 +18,11 @@ import { structureContent, generatePdf } from '@/lib/pdf-generator';
 function ModeSelector({ disabled }: { disabled: boolean }) {
   const { sttAudioMode, setSttAudioMode } = useAppStore();
 
+  // Check if getDisplayMedia is available (desktop only — mobile browsers don't support it)
+  const isScreenSupported = typeof navigator !== 'undefined' &&
+    navigator.mediaDevices &&
+    typeof navigator.mediaDevices.getDisplayMedia === 'function';
+
   const modes = [
     {
       id: 'mic' as const,
@@ -25,12 +30,12 @@ function ModeSelector({ disabled }: { disabled: boolean }) {
       desc: 'Langsung dari mic',
       icon: Mic,
     },
-    {
+    ...(isScreenSupported ? [{
       id: 'screen' as const,
       label: 'Entire Screen',
       desc: 'Zoom + Mic (hybrid)',
       icon: MonitorUp,
-    },
+    }] : []),
   ];
 
   return (

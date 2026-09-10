@@ -515,14 +515,21 @@ export function useSpeechRecognition() {
   // Strategy: Every 30s, stop recorder → get FULL valid webm blob → send to whisper-backend → start new recorder.
   // This produces valid webm files (not fragments) that whisper/ffmpeg can process.
   const startSystemAudioRollingRecorder = useCallback((stream: MediaStream) => {
-    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+    // Cross-browser mimeType detection
+    const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus', 'audio/ogg'];
+    let mimeType = '';
+    for (const t of types) {
+      if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(t)) { mimeType = t; break; }
+    }
     systemAudioSegmentNumRef.current = 0;
     systemAudioChunksRef.current = [];
 
     const startNewSegment = () => {
       if (!isRecordingRef.current || manualStopRef.current) return;
       try {
-        const recorder = new MediaRecorder(stream, { mimeType });
+        const recorder = mimeType
+          ? new MediaRecorder(stream, { mimeType })
+          : new MediaRecorder(stream);
         systemAudioRecorderRef.current = recorder;
         systemAudioChunksRef.current = [];
 
@@ -597,7 +604,7 @@ export function useSpeechRecognition() {
     }, 30000);
   }, [addLog, appendTranscript]);
 
-  // ── Record from a MediaStream via Groq (shared by mic-fallback & screen-capture) ──
+  // ── Record from a MediaStream via Groq/Whisper (shared by mic-fallback & screen-capture) ──
   const startRecordingFromStream = useCallback((
     stream: MediaStream,
     source: 'groq' | 'screen-capture',
@@ -605,8 +612,15 @@ export function useSpeechRecognition() {
   ) => {
     mediaStreamRef.current = stream;
     const targetStream = recordStream || stream;
-    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
-    const mediaRecorder = new MediaRecorder(targetStream, { mimeType });
+    // Cross-browser mimeType detection
+    const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus', 'audio/ogg'];
+    let mimeType = '';
+    for (const t of types) {
+      if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(t)) { mimeType = t; break; }
+    }
+    const mediaRecorder = mimeType
+      ? new MediaRecorder(targetStream, { mimeType })
+      : new MediaRecorder(targetStream);
     mediaRecorderRef.current = mediaRecorder;
     audioChunksRef.current = [];
     chunkCountRef.current = 0;
@@ -1109,14 +1123,36 @@ export function useSpeechRecognition() {
     chunkCountRef.current = 0;
 
     // === UNIFIED FLOW for both mic & screen modes ===
-    // Web Speech API is PRIMARY for live transcription (free, unlimited scale)
-    // Background recording is for whisper final precision pass (server-side)
+    // Cross-device: Chrome, Safari, Firefox, Edge, mobile
+    // 3-tier fallback: Web Speech API → Groq → Whisper lokal
 
     let micStream: MediaStream | null = null;
     let displayStream: MediaStream | null = null;
 
+    // Helper: detect supported MediaRecorder mimeType
+    const getSupportedMimeType = (): string => {
+        const types = [
+          'audio/webm;codecs=opus',
+          'audio/webm',
+          'audio/mp4',           // Safari iOS
+          'audio/ogg;codecs=opus', // Firefox
+          'audio/ogg',
+        ];
+        for (const t of types) {
+          if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(t)) return t;
+        }
+        return ''; // let browser choose default
+    };
+
+    // Helper: safe AudioContext (Safari uses webkitAudioContext)
+    const createAudioContext = (): AudioContext => {
+        const AC = (window as any).AudioContext || (window as any).webkitAudioContext;
+        return new AC();
+    };
+
     // Step 1: If screen mode, get display media (system audio)
-    if (sttAudioMode === 'screen') {
+    // Note: getDisplayMedia NOT available on mobile browsers — only desktop
+    if (sttAudioMode === 'screen' && typeof navigator.mediaDevices.getDisplayMedia === 'function') {
       addLog('info', 'Mode: Entire Screen (System Audio + Mic hybrid)');
       addLog('info', 'Pilih "Entire Screen" + centang "Share system audio" di picker.');
       try {
@@ -1152,15 +1188,16 @@ export function useSpeechRecognition() {
     }
 
     // Step 2: Get microphone (always required for Web Speech API + recording)
+    // Simplified constraints for cross-browser compatibility (Safari iOS is picky)
     try {
       micStream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, sampleRate: 44100 }
+        audio: true // simplified — let browser handle defaults (Safari iOS compatible)
       });
       mediaStreamRef.current = micStream;
       startVisualizer(micStream);
       addLog('success', 'Microphone aktif.');
     } catch (e) {
-      addLog('error', 'Gagal akses mikrofon.');
+      addLog('error', 'Gagal akses mikrofon: ' + (e instanceof Error ? e.message : 'unknown'));
       setSttError('Gagal mengakses mikrofon. Izinkan akses mic di browser.');
       setSttStatus('error');
       isRecordingRef.current = false;
@@ -1193,8 +1230,9 @@ export function useSpeechRecognition() {
 
     // Step 4: Background recording for whisper final precision pass
     // Record BOTH mic + system audio (if available) by mixing via Web Audio API
+    // Cross-browser: Safari iOS uses audio/mp4, Chrome uses audio/webm
     try {
-      const audioContext = new AudioContext();
+      const audioContext = createAudioContext();
       const destination = audioContext.createMediaStreamDestination();
 
       // Always connect mic
@@ -1216,15 +1254,17 @@ export function useSpeechRecognition() {
       }
 
       const mixedStream = new MediaStream(destination.stream.getAudioTracks());
-      const wMime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
-      const wRecorder = new MediaRecorder(mixedStream, { mimeType: wMime });
+      const wMime = getSupportedMimeType();
+      const wRecorder = wMime
+        ? new MediaRecorder(mixedStream, { mimeType: wMime })
+        : new MediaRecorder(mixedStream);
       whisperRecorderRef.current = wRecorder;
       whisperChunksRef.current = [];
       wRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) whisperChunksRef.current.push(e.data);
       };
       wRecorder.start(5000); // collect chunks every 5s
-      addLog('info', 'Background recording aktif untuk whisper final precision pass.');
+      addLog('info', `Background recording aktif (${wMime || 'default format'}).`);
 
       // Store cleanup refs
       (mediaStreamRef.current as any).__hybridCleanup = {
@@ -1235,10 +1275,12 @@ export function useSpeechRecognition() {
       };
     } catch (e) {
       console.warn('[STT] Background recording failed:', e);
-      // Fallback: record mic only
+      // Fallback: record mic only (no mixing)
       try {
-        const wMime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
-        const wRecorder = new MediaRecorder(micStream, { mimeType: wMime });
+        const wMime = getSupportedMimeType();
+        const wRecorder = wMime
+          ? new MediaRecorder(micStream, { mimeType: wMime })
+          : new MediaRecorder(micStream);
         whisperRecorderRef.current = wRecorder;
         whisperChunksRef.current = [];
         wRecorder.ondataavailable = (e) => {
