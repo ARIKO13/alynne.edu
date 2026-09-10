@@ -1213,6 +1213,19 @@ export function useSpeechRecognition() {
         addLog('success', 'Web Speech API aktif! Bicara sekarang.');
         startNoResultTimer();
         webspeechStarted = true;
+
+        // Mobile safety: set 5s timeout — if Web Speech doesn't produce results, auto-fallback to Groq
+        // This catches: Safari iOS (Web Speech "starts" but onresult never fires)
+        setTimeout(() => {
+          if (isRecordingRef.current && !manualStopRef.current && !hasReceivedResultRef.current && !skipWebspeechReconnectRef.current) {
+            addLog('info', 'Web Speech API tidak merespons dalam 5 detik. Beralih ke Groq/Whisper...');
+            // Stop Web Speech
+            if (recognitionRef.current) { try { recognitionRef.current.abort(); } catch {} recognitionRef.current = null; }
+            skipWebspeechReconnectRef.current = true;
+            // Start Groq/Whisper fallback
+            startRecordingFromStream(micStream!, 'groq');
+          }
+        }, 5000);
       } else {
         addLog('info', 'Web Speech API gagal start, fallback ke Groq API...');
       }
@@ -1223,7 +1236,6 @@ export function useSpeechRecognition() {
     // Step 3b: FALLBACK — if Web Speech API not available, use Groq/whisper live transcription
     if (!webspeechStarted) {
       addLog('info', 'Memulai live transcription via Groq API...');
-      // Use Groq API for live transcription (chunks every GROQ_CHUNK_INTERVAL)
       skipWebspeechReconnectRef.current = true;
       startRecordingFromStream(micStream, 'groq');
     }
