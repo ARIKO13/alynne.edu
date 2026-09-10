@@ -1,0 +1,31 @@
+alynne.my.id {
+    @static path /_astro/*
+    header @static Cache-Control "public, max-age=31536000, immutable"
+
+    @nocache {
+        path /*
+        not path /_astro/*
+    }
+    header @nocache Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate"
+    header @nocache Pragma "no-cache"
+
+    # Whisper API — long timeout for large uploads (up to 1 hour)
+    @whisper path /api/whisper/*
+    handle @whisper {
+        reverse_proxy localhost:3000 {
+            # Critical: these timeouts allow large file uploads
+            transport http {
+                dial_timeout 60s
+                response_header_timeout 0
+                read_timeout 3600s
+                write_timeout 3600s
+            }
+            flush_interval -1
+        }
+    }
+
+    # Default — all other routes
+    handle {
+        reverse_proxy localhost:3000
+    }
+}
