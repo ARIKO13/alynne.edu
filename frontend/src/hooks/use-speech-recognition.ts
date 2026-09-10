@@ -662,7 +662,8 @@ export function useSpeechRecognition() {
     addLog('info', 'VAD aktif: hanya mengirim audio saat ada suara (hemat quota).');
     addLog('success', 'Audio aktif! Teks akan muncul otomatis saat ada suara terdeteksi.');
 
-    // Send each chunk to Groq as soon as it arrives
+    // Send each chunk — 3-tier fallback: Groq → Whisper local
+    let groqRateLimited = false; // once Groq hits rate limit, switch to whisper permanently
     groqTimerRef.current = setInterval(async () => {
       if (audioChunksRef.current.length === 0) return;
       chunkCountRef.current++;
@@ -670,11 +671,23 @@ export function useSpeechRecognition() {
       audioChunksRef.current = [];
       hasSpeechRef.value = false;
       silentCount = 0;
-      // Use whisper-local for screen-capture (more robust for hybrid audio)
-      // Use Groq for mic mode (lighter, faster for short chunks)
-      const text = source === 'screen-capture'
-        ? await sendAudioToWhisperLocal(blob, chunkCountRef.current)
-        : await sendAudioToGroq(blob, chunkCountRef.current);
+
+      let text: string | null = null;
+
+      if (source === 'screen-capture' || groqRateLimited) {
+        // Screen mode OR Groq was rate-limited → use whisper-local directly
+        text = await sendAudioToWhisperLocal(blob, chunkCountRef.current);
+      } else {
+        // Try Groq first
+        text = await sendAudioToGroq(blob, chunkCountRef.current);
+        // If Groq returned null (error/rate-limit), fallback to whisper-local
+        if (text === null) {
+          addLog('info', 'Groq rate-limited/error, beralih ke Whisper lokal...');
+          groqRateLimited = true; // switch permanently to avoid repeated failures
+          text = await sendAudioToWhisperLocal(blob, chunkCountRef.current);
+        }
+      }
+
       if (text && text.trim()) {
         appendTranscript(text.trim());
       }
