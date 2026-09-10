@@ -18,8 +18,13 @@ import { structureContent, generatePdf } from '@/lib/pdf-generator';
 function ModeSelector({ disabled }: { disabled: boolean }) {
   const { sttAudioMode, setSttAudioMode } = useAppStore();
 
-  // Check if getDisplayMedia is available (desktop only — mobile browsers don't support it)
-  const isScreenSupported = typeof navigator !== 'undefined' &&
+  // Mobile detection: no screen share + limited Web Speech API
+  // On mobile, we hide mic/screen modes entirely — only upload + YouTube shown
+  const isMobile = typeof navigator !== 'undefined' &&
+    (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+     (navigator.maxTouchPoints > 1 && window.innerWidth < 1024));
+
+  const isScreenSupported = !isMobile && typeof navigator !== 'undefined' &&
     navigator.mediaDevices &&
     typeof navigator.mediaDevices.getDisplayMedia === 'function';
 
@@ -37,6 +42,21 @@ function ModeSelector({ disabled }: { disabled: boolean }) {
       icon: MonitorUp,
     }] : []),
   ];
+
+  // Mobile: hide mode selector entirely
+  if (isMobile) {
+    return (
+      <div className="rounded-lg border border-amber-500/15 bg-amber-500/[0.03] p-3">
+        <div className="flex items-start gap-2">
+          <AlertCircle className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
+          <div className="text-xs text-amber-300/80 leading-relaxed">
+            <p className="font-medium text-amber-300 mb-0.5">Mode Mobile</p>
+            <p>Untuk transkripsi di HP/tablet, gunakan <strong>Upload File</strong> atau <strong>YouTube Transkrip</strong> di bawah.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex gap-2">
