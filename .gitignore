@@ -7,16 +7,12 @@ dist/
 .astro/
 .next/
 
-# Environment
-
 # Model files (too large for git)
 *.gguf
 *.bin
 *.pt
 *.onnx
 models/
-
-# SSH keys
 
 # OS files
 .DS_Store
