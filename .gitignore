@@ -8,10 +8,6 @@ dist/
 .next/
 
 # Environment
-.env
-.env.local
-.env.production
-.env.*.local
 
 # Model files (too large for git)
 *.gguf
@@ -21,10 +17,6 @@ dist/
 models/
 
 # SSH keys
-*.pem
-id_rsa*
-id_ed25519*
-.ssh/
 
 # OS files
 .DS_Store
