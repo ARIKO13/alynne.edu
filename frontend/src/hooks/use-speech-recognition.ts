@@ -545,22 +545,24 @@ export function useSpeechRecognition() {
             systemAudioSegmentNumRef.current += 1;
             const segNum = systemAudioSegmentNumRef.current;
             const sizeKB = (blob.size / 1024).toFixed(1);
-            addLog('info', `System audio segment #${segNum} (${sizeKB}KB) → whisper...`);
+            addLog('info', `System audio #${segNum} (${sizeKB}KB) → whisper...`);
 
-            // Send to whisper-backend
+            // Send to whisper-backend SYNC endpoint (blocks until done, returns text directly)
             try {
               const formData = new FormData();
               formData.append('file', blob, `system-audio-${segNum}.webm`);
               formData.append('language', 'id');
               formData.append('chunk_mode', 'off');
+              formData.append('timeout', '120');
 
-              const res = await fetch('/api/whisper/transcribe', {
+              const res = await fetch('/api/whisper/transcribe/sync', {
                 method: 'POST',
                 body: formData,
               });
               if (res.ok) {
                 const data = await res.json();
-                const text = (data.text || '').trim();
+                // Sync endpoint returns: {status: "completed", result: {text: "..."}}
+                const text = (data.result?.text || data.text || '').trim();
                 if (text) {
                   addLog('success', `System #${segNum}: "${text.slice(0, 80)}${text.length > 80 ? '...' : ''}"`);
                   appendTranscript(text);
@@ -569,9 +571,11 @@ export function useSpeechRecognition() {
                 }
               } else {
                 console.error('[SystemAudio] transcribe error:', res.status);
+                addLog('info', `System #${segNum}: transcribe failed (${res.status})`);
               }
             } catch (e) {
               console.error('[SystemAudio] send error:', e);
+              addLog('info', `System #${segNum}: send error`);
             }
           }
 
