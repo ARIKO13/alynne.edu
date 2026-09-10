@@ -324,6 +324,7 @@ export function useSpeechRecognition() {
       if (hybrid?.audioContext) { try { hybrid.audioContext.close(); } catch {} }
       if (hybrid?.displayStream) { hybrid.displayStream.getTracks().forEach((t: MediaStreamTrack) => { try { t.stop(); } catch {} }); }
       if (hybrid?.micStream) { hybrid.micStream.getTracks().forEach((t: MediaStreamTrack) => { try { t.stop(); } catch {} }); }
+      if (hybrid?.destination) { try { hybrid.destination.disconnect(); } catch {} }
       mediaStreamRef.current.getTracks().forEach((t) => t.stop());
       mediaStreamRef.current = null;
     }
@@ -1154,26 +1155,56 @@ export function useSpeechRecognition() {
     }
 
     // Step 3: Start Web Speech API as PRIMARY live transcription
-    // Note: Web Speech API uses default mic — but on most browsers it can still pick up
-    // system audio if "Share system audio" is enabled (because it goes to default output)
+    let webspeechStarted = false;
     if (webspeechSupported) {
       addLog('info', 'Memulai Web Speech API (live transcription)...');
       const success = await tryStartWebSpeech();
       if (success) {
         addLog('success', 'Web Speech API aktif! Bicara sekarang.');
         startNoResultTimer();
+        webspeechStarted = true;
       } else {
-        addLog('info', 'Web Speech API gagal start, akan pakai whisper final saja.');
+        addLog('info', 'Web Speech API gagal start, fallback ke Groq API...');
       }
     } else {
-      addLog('info', 'Browser tidak support Web Speech API. Hanya whisper final yang akan dipakai.');
+      addLog('info', 'Browser tidak support Web Speech API. Menggunakan Groq API untuk live transcription.');
     }
 
-    // Step 4: Background recording for whisper final precision pass (mic only)
-    // Web Speech API handles real-time mic transcription, this is for final precision
+    // Step 3b: FALLBACK — if Web Speech API not available, use Groq/whisper live transcription
+    if (!webspeechStarted) {
+      addLog('info', 'Memulai live transcription via Groq API...');
+      // Use Groq API for live transcription (chunks every GROQ_CHUNK_INTERVAL)
+      skipWebspeechReconnectRef.current = true;
+      startRecordingFromStream(micStream, 'groq');
+    }
+
+    // Step 4: Background recording for whisper final precision pass
+    // Record BOTH mic + system audio (if available) by mixing via Web Audio API
     try {
+      const audioContext = new AudioContext();
+      const destination = audioContext.createMediaStreamDestination();
+
+      // Always connect mic
+      const micSource = audioContext.createMediaStreamSource(micStream);
+      const micGain = audioContext.createGain();
+      micGain.gain.value = 1.0;
+      micSource.connect(micGain).connect(destination);
+
+      // Connect system audio if available (screen mode)
+      if (displayStream) {
+        const sysTracks = displayStream.getAudioTracks();
+        if (sysTracks.length > 0) {
+          const sysSource = audioContext.createMediaStreamSource(new MediaStream(sysTracks));
+          const sysGain = audioContext.createGain();
+          sysGain.gain.value = 1.0;
+          sysSource.connect(sysGain).connect(destination);
+          addLog('info', 'Hybrid recording: mic + system audio di-mix untuk whisper final.');
+        }
+      }
+
+      const mixedStream = new MediaStream(destination.stream.getAudioTracks());
       const wMime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
-      const wRecorder = new MediaRecorder(micStream, { mimeType: wMime });
+      const wRecorder = new MediaRecorder(mixedStream, { mimeType: wMime });
       whisperRecorderRef.current = wRecorder;
       whisperChunksRef.current = [];
       wRecorder.ondataavailable = (e) => {
@@ -1186,10 +1217,26 @@ export function useSpeechRecognition() {
       (mediaStreamRef.current as any).__hybridCleanup = {
         micStream,
         displayStream,
+        audioContext,
+        destination,
       };
     } catch (e) {
       console.warn('[STT] Background recording failed:', e);
-      addLog('info', 'Background recording gagal, hanya Web Speech yang aktif.');
+      // Fallback: record mic only
+      try {
+        const wMime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+        const wRecorder = new MediaRecorder(micStream, { mimeType: wMime });
+        whisperRecorderRef.current = wRecorder;
+        whisperChunksRef.current = [];
+        wRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) whisperChunksRef.current.push(e.data);
+        };
+        wRecorder.start(5000);
+        addLog('info', 'Background recording aktif (mic only).');
+        (mediaStreamRef.current as any).__hybridCleanup = { micStream, displayStream };
+      } catch (e2) {
+        addLog('info', 'Background recording gagal, hanya live transcription yang aktif.');
+      }
     }
 
     // Step 5: For screen mode, ALSO start system audio rolling recorder
@@ -1203,7 +1250,7 @@ export function useSpeechRecognition() {
         addLog('success', 'Sistem audio (Zoom/Meet/Discord) akan ditranskrip tiap 30 detik.');
       }
     }
-  }, [sttAudioMode, webspeechSupported, tryStartWebSpeech, startNoResultTimer, startVisualizer, setSttError, setSttStatus, addLog, startSystemAudioRollingRecorder]);
+  }, [sttAudioMode, webspeechSupported, tryStartWebSpeech, startNoResultTimer, startVisualizer, setSttError, setSttStatus, addLog, startSystemAudioRollingRecorder, startRecordingFromStream]);
 
   // ── Stop recording (public) ──
   const stopRecordingFn = useCallback(async () => {
