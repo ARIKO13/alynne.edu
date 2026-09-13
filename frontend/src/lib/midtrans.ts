@@ -19,6 +19,13 @@ export interface CreateTransactionParams {
   customerName: string;
   customerEmail: string;
   userId: string;
+  /** Optional: filter which payment methods Midtrans Snap will show.
+   *  When omitted, the default enabled_payments list is used. */
+  enabledPayments?: string[];
+  /** Optional: name shown in the Snap item_details (defaults to legacy name) */
+  itemName?: string;
+  /** Optional: id shown in the Snap item_details */
+  itemId?: string;
 }
 
 export interface MidtransSnapResponse {
@@ -39,10 +46,10 @@ export async function createSnapTransaction(params: CreateTransactionParams): Pr
     },
     item_details: [
       {
-        id: 'SUB-1M',
+        id: params.itemId || 'SUB-1M',
         price: params.amount,
         quantity: 1,
-        name: 'ALYNNE.EDU - Berlangganan 30 Hari',
+        name: params.itemName || 'ALYNNE.EDU - Berlangganan 30 Hari',
         category: 'Digital Service',
         merchant_name: 'ALYNNE.EDU',
       },
@@ -58,12 +65,14 @@ export async function createSnapTransaction(params: CreateTransactionParams): Pr
       error: 'https://alynne.my.id/?payment=error',
       pending: 'https://alynne.my.id/?payment=pending',
     },
-    enabled_payments: [
-    'gopay', 'qris', 'shopeepay',
-    'bca_va', 'bni_va', 'bri_va', 'permata_va',
-    'bank_transfer',
-    'indomaret', 'alfamart',
-  ],
+    enabled_payments: params.enabledPayments && params.enabledPayments.length > 0
+      ? params.enabledPayments
+      : [
+        'gopay', 'qris', 'shopeepay',
+        'bca_va', 'bni_va', 'bri_va', 'permata_va',
+        'bank_transfer',
+        'indomaret', 'alfamart',
+      ],
   expiry: {
       unit: 'hours',
       duration: 24,
