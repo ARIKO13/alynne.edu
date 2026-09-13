@@ -46,7 +46,7 @@ export function LoginScreen() {
         {/* Logo & Branding */}
         <div className="text-center space-y-4">
           <div className="flex justify-center">
-            <img src="/logo.png" alt="ALYNNE" className="h-16 w-16 rounded-2xl ring-2 ring-white/10" />
+            <img src="/alynne-ai-logo.png" alt="ALYNNE" className="h-16 w-16 rounded-2xl ring-2 ring-white/10" />
           </div>
           <div className="space-y-1.5">
             <h1 className="text-2xl font-bold tracking-tight text-white">

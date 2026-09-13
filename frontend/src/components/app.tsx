@@ -132,7 +132,7 @@ export default function App({ onBackToLanding }: AppProps) {
         )}
       >
         <div className="flex items-center gap-3 px-5 h-14 border-b border-white/[0.06]">
-          <img src="/logo.png" alt="LINA" className="h-7 w-7 rounded-lg" />
+          <img src="/alynne-ai-logo.png" alt="ALYNNE" className="h-7 w-7 rounded-lg" />
           <span className="text-sm font-semibold tracking-tight text-white">ALYNNE AI</span>
           <button
             onClick={() => setSidebarOpen(false)}
