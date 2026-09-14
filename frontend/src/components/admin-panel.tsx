@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
   Users, Trophy, Flame, Award, Search, RefreshCw, Shield,
-  Loader2, TrendingUp, Activity,
+  Loader2, TrendingUp, Activity, AlertTriangle,
 } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
 import { TIERS } from '@/lib/tiers';
@@ -82,7 +82,10 @@ export function AdminPanel() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState<'overview' | 'users'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'users' | 'stt-failures'>('overview');
+  const [failures, setFailures] = useState<any[]>([]);
+  const [failuresTotal, setFailuresTotal] = useState(0);
+  const [failuresPage, setFailuresPage] = useState(1);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -106,6 +109,19 @@ export function AdminPanel() {
       setTotalUsers(data.total);
     } catch (err) {
       console.error('Users fetch error:', err);
+    }
+  }, []);
+
+  const fetchFailures = useCallback(async (p: number = 1) => {
+    try {
+      const res = await fetch(`/api/admin/stt-failures?page=${p}&limit=20`);
+      if (res.status === 403) return;
+      const data = await res.json();
+      setFailures(data.failures || []);
+      setFailuresTotal(data.total || 0);
+      setFailuresPage(p);
+    } catch (err) {
+      console.error('STT failures fetch error:', err);
     }
   }, []);
 
@@ -193,6 +209,18 @@ export function AdminPanel() {
         >
           <Users className="h-3.5 w-3.5" />
           Users
+        </button>
+        <button
+          onClick={() => { setActiveView('stt-failures'); fetchFailures(1); }}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all',
+            activeView === 'stt-failures'
+              ? 'bg-[#8B5CF6]/15 text-[#8B5CF6]'
+              : 'text-zinc-500 hover:text-zinc-300'
+          )}
+        >
+          <AlertTriangle className="h-3.5 w-3.5" />
+          STT Failures
         </button>
       </div>
 
@@ -416,6 +444,119 @@ export function AdminPanel() {
                 Next
               </Button>
             </div>
+          )}
+        </div>
+      )}
+
+      {activeView === 'stt-failures' && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-zinc-200">STT Recognition Failures</h3>
+              <p className="text-[11px] text-zinc-500 mt-0.5">
+                {failuresTotal > 0 ? `${failuresTotal} total failures logged` : 'No failures logged yet'}
+              </p>
+            </div>
+            <Button
+              onClick={() => fetchFailures(failuresPage)}
+              variant="outline"
+              size="sm"
+              className="border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] h-8 text-xs"
+            >
+              <RefreshCw className="h-3 w-3 mr-1" />
+              Refresh
+            </Button>
+          </div>
+
+          {failures.length === 0 ? (
+            <div className="text-center py-12 rounded-xl border border-white/[0.06] bg-white/[0.02]">
+              <AlertTriangle className="h-8 w-8 text-zinc-700 mx-auto mb-2" />
+              <p className="text-sm text-zinc-500">No STT failures logged</p>
+              <p className="text-[10px] text-zinc-600 mt-1">
+                Failures appear here when the fuzzy-correct endpoint encounters unknown words
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                {failures.map((f: any) => (
+                  <div key={f.id} className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            'text-[9px] px-1.5 py-0',
+                            f.source === 'webspeech' ? 'border-green-500/30 text-green-400 bg-green-500/10'
+                              : f.source === 'ocr' ? 'border-violet-500/30 text-violet-400 bg-violet-500/10'
+                              : 'border-zinc-500/30 text-zinc-400 bg-zinc-500/10'
+                          )}
+                        >
+                          {f.source || 'unknown'}
+                        </Badge>
+                        <span className="text-[10px] text-zinc-600">
+                          {new Date(f.createdAt).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}
+                        </span>
+                        {f.unknownCount > 0 && (
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-amber-500/30 text-amber-400 bg-amber-500/10">
+                            {f.unknownCount} unknown
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <div>
+                        <p className="text-[10px] text-zinc-600 mb-0.5">Raw text (from Web Speech/OCR):</p>
+                        <p className="text-xs text-rose-300 font-mono bg-rose-500/5 rounded px-2 py-1">{f.rawText}</p>
+                      </div>
+                      {f.correctedText && f.correctedText !== f.rawText && (
+                        <div>
+                          <p className="text-[10px] text-zinc-600 mb-0.5">Corrected (after fuzzy):</p>
+                          <p className="text-xs text-emerald-300 font-mono bg-emerald-500/5 rounded px-2 py-1">{f.correctedText}</p>
+                        </div>
+                      )}
+                      {f.unknownWords && f.unknownWords.length > 0 && (
+                        <div>
+                          <p className="text-[10px] text-zinc-600 mb-0.5">Unknown words (need dictionary entries):</p>
+                          <div className="flex flex-wrap gap-1">
+                            {f.unknownWords.map((w: string, i: number) => (
+                              <span key={i} className="text-[10px] text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded px-1.5 py-0.5 font-mono">
+                                {w}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {failuresTotal > 20 && (
+                <div className="flex items-center justify-center gap-2">
+                  <Button
+                    onClick={() => fetchFailures(failuresPage - 1)}
+                    disabled={failuresPage <= 1}
+                    size="sm"
+                    variant="outline"
+                    className="border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] h-8 text-xs"
+                  >
+                    Prev
+                  </Button>
+                  <span className="text-xs text-zinc-500">
+                    {failuresPage} / {Math.ceil(failuresTotal / 20)}
+                  </span>
+                  <Button
+                    onClick={() => fetchFailures(failuresPage + 1)}
+                    disabled={failuresPage >= Math.ceil(failuresTotal / 20)}
+                    size="sm"
+                    variant="outline"
+                    className="border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] h-8 text-xs"
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

@@ -1,30 +1,19 @@
 import type { APIRoute } from 'astro';
 import { localCorrect } from '@/lib/stt-dictionary';
+import { d1 } from '@/lib/d1-client';
+import { getSession } from '@/lib/auth';
 
 /**
  * POST /api/stt/fuzzy-correct
  * Body: { text: string, source?: 'webspeech' | 'ocr' | 'cv' | 'audio' }
  *
- * Applies the full localCorrect pipeline (slang → direct fixes → homophones
- * → multi-word phrases → fuzzy Levenshtein for typos) to text from ANY of
- * the combined STT methods:
+ * Applies the full localCorrect pipeline + fuzzy matching + phonetic map
+ * to text from ANY of the combined STT methods.
  *
- *   - Web Speech API output (live mic transcription)
- *   - OCR output (tesseract.js text from screen frames)
- *   - CV tags (no correction needed — deterministic)
- *   - Web Audio API (no text output — produces audio levels only)
- *
- * Returns:
- *   {
- *     corrected: string,           — final corrected text
- *     corrections: [{from, to, method}],  — list of changes (optional)
- *     stats: { fuzzyFixed, slangFixed, ... },
- *     needsLLM: boolean,           — true if too many unknown words remain
- *   }
- *
- * This endpoint is called from:
- *   - use-screen-cv.ts OCR onOcrText callback (every 5s during screen capture)
- *   - use-speech-recognition.ts Web Speech onresult (every interim text)
+ * AUTO-LOGGING: When unknownWords > 0 (the system couldn't recognize some
+ * words), the raw text is logged to the `STTFailure` D1 table for later
+ * analysis. The user can view these failures in the admin panel and later
+ * connect a spreadsheet sync.
  */
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -45,13 +34,61 @@ export const POST: APIRoute = async ({ request }) => {
 
     const result = localCorrect(rawText);
 
+    // ── Auto-log failures ──
+    // When there are unknown words, log the raw text to D1 for later analysis.
+    // This helps the user build a dataset of what the STT system can't recognize,
+    // so they can add corrections to the dictionary.
+    if (result.stats.unknownWords > 0 || result.needsLLM) {
+      try {
+        // Extract the actual unknown words from the text
+        const words = rawText.toLowerCase()
+          .replace(/[^\w\s]/g, ' ')
+          .split(/\s+/)
+          .filter(w => w.length > 2);
+        // Filter to only unknown words (skip numbers + very short)
+        const unknownWords = words.filter(w => !/^\d+$/.test(w) && w.length > 2);
+
+        let userId: string | null = null;
+        const session = await getSession(request);
+        if (session?.user?.id) userId = session.user.id;
+
+        const id = crypto.randomUUID();
+        const now = new Date().toISOString();
+        const unknownStr = unknownWords.slice(0, 20).join(','); // cap at 20 words
+        const unknownCount = unknownWords.length;
+
+        // Create table if not exists
+        await d1.execute(`
+          CREATE TABLE IF NOT EXISTS STTFailure (
+            id TEXT PRIMARY KEY,
+            rawText TEXT NOT NULL,
+            correctedText TEXT,
+            source TEXT,
+            unknownWords TEXT,
+            unknownCount INTEGER DEFAULT 0,
+            userId TEXT,
+            createdAt TEXT NOT NULL
+          )
+        `).catch(() => {});
+
+        await d1.execute(
+          `INSERT INTO STTFailure (id, rawText, correctedText, source, unknownWords, unknownCount, userId, createdAt)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [id, rawText, result.text, body.source || 'unknown',
+           unknownStr, unknownCount, userId, now]
+        );
+      } catch (logErr) {
+        // Don't fail the request if logging fails
+        console.warn('[fuzzy-correct] Failed to log failure:', logErr);
+      }
+    }
+
     return Response.json({
       corrected: result.text,
       needsLLM: result.needsLLM,
       llmReason: result.llmReason,
       stats: result.stats,
       source: body.source || 'unknown',
-      // Length of original vs corrected (for UI debug)
       originalLength: rawText.length,
       correctedLength: result.text.length,
     });
@@ -66,3 +103,4 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 };
+

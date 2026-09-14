@@ -79,6 +79,33 @@ function loadDict() {
   } catch (err) {
     console.error('[STT-Dict] Load failed:', err);
   }
+
+  // Load phonetic-map.json (comprehensive stock ticker + company name + action phrase maps)
+  try {
+    const phoneticCandidates = [
+      join(process.cwd(), 'backend', 'data', 'phonetic-map.json'),
+      '/root/lina-learning/backend/data/phonetic-map.json',
+      join(process.cwd(), 'phonetic-map.json'),
+    ];
+    let phoneticPath = '';
+    for (const p of phoneticCandidates) {
+      if (existsSync(p)) { phoneticPath = p; break; }
+    }
+    if (phoneticPath) {
+      const raw2 = readFileSync(phoneticPath, 'utf-8');
+      const ph = JSON.parse(raw2);
+      _phoneticTickers = ph.phonetic_tickers || {};
+      _companyNames = ph.company_names || {};
+      _actionPhrases = ph.action_phrases || {};
+      // Invalidate cached _phraseMap so getPhraseMap() rebuilds with merged data
+      _phraseMap = null;
+      console.log(`[STT-Dict] Phonetic map loaded: tickers=${Object.keys(_phoneticTickers).length}, companies=${Object.keys(_companyNames).length}, actions=${Object.keys(_actionPhrases).length}`);
+    } else {
+      console.warn('[STT-Dict] phonetic-map.json not found — using hardcoded fallback only');
+    }
+  } catch (err) {
+    console.error('[STT-Dict] Phonetic map load failed:', err);
+  }
 }
 
 // ── Fallback hardcoded (when dict file missing) ──
@@ -150,16 +177,14 @@ const stockTickers = new Set([
 
 // ── NEW: Multi-word phrase map (for stock ticker spoken forms) ──
 // Loaded from JSON `phrase_map` field, with hardcoded fallback.
-// Keys are lowercased multi-word phrases; values are correct forms.
+// Also loads `phonetic-map.json` for comprehensive phonetic + company name + action phrase maps.
 let _phraseMap: Record<string, string> | null = null;
+let _phoneticTickers: Record<string, string> | null = null;
+let _companyNames: Record<string, string> | null = null;
+let _actionPhrases: Record<string, string> | null = null;
 
 function getPhraseMap(): Record<string, string> {
   if (_phraseMap) return _phraseMap;
-  // If JSON file has phrase_map field, use it; otherwise use hardcoded fallback
-  if (_loaded && _fixes !== null) {
-    // The data file might have phrase_map field — try to load it
-    // (handled in loadDict via separate variable below)
-  }
   _phraseMap = {
     'go to': 'GOTO', 'go 2': 'GOTO', 'goto': 'GOTO',
     'be ca a': 'BBCA', 'be be ca a': 'BBCA', 'be be ri': 'BBRI',
@@ -174,7 +199,21 @@ function getPhraseMap(): Record<string, string> {
     'excl': 'EXCL', 'isat': 'ISAT', 'mncn': 'MNCN', 'lion': 'LION',
     'bnga': 'BNGA', 'bbtn': 'BBTN',
   };
+  // Merge phonetic_tickers from phonetic-map.json (if loaded)
+  if (_phoneticTickers) {
+    _phraseMap = { ..._phraseMap, ..._phoneticTickers };
+  }
+  // Merge company_names (full company name → ticker)
+  if (_companyNames) {
+    _phraseMap = { ..._phraseMap, ..._companyNames };
+  }
   return _phraseMap;
+}
+
+function getActionPhrases(): Record<string, string> {
+  if (_actionPhrases) return _actionPhrases;
+  _actionPhrases = {};
+  return _actionPhrases;
 }
 
 // ── Context-dependent homophones ──
