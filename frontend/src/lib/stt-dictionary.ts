@@ -84,18 +84,25 @@ function loadDict() {
     }
     _enSlang = dict.sen || {};
     _fixes = dict.fix || {};
-    // Filter out corrupt _fixes entries (e.g., "trs" → "menggantikan kata: terus")
-    // These are bad data from the VPS dictionary file that we need to skip.
+    // Filter out corrupt _fixes entries AND entries that duplicate fbSlang
+    // (e.g., "bgt" → "banget" in _fixes prevents slang 2-pass "bgt" → "banget" → "sangat")
     if (_fixes) {
       let removedCount = 0;
       for (const key of Object.keys(_fixes)) {
         const val = _fixes[key];
+        // Remove corrupt entries
         if (typeof val === 'string' && (val.includes('menggantikan kata:') || val.includes('ganti kata:') || val.length > 50)) {
+          delete _fixes[key];
+          removedCount++;
+          continue;
+        }
+        // Remove entries that duplicate fbSlang (let slang step handle them with 2-pass)
+        if (fbSlang[key] !== undefined) {
           delete _fixes[key];
           removedCount++;
         }
       }
-      if (removedCount > 0) console.log(`[STT-Dict] Filtered ${removedCount} corrupt _fixes entries`);
+      if (removedCount > 0) console.log(`[STT-Dict] Filtered ${removedCount} _fixes entries (corrupt + slang duplicates)`);
     }
     _remove = new Set(dict.rem || []);
     // Load phrase_map from JSON if present (overrides hardcoded fallback)
@@ -714,13 +721,19 @@ export function localCorrect(rawText: string): CorrectionResult {
       continue;
     }
 
-    // 3. Slang to formal
-    const slangTarget = _indoSlang?.[lower]?.f || fbSlang[lower];
+    // 3. Slang to formal (with 2-pass for chained slang: bgt → banget → sangat)
+    let slangTarget = _indoSlang?.[lower]?.f || fbSlang[lower];
     if (slangTarget !== undefined) {
       if (slangTarget === '') {
         stats.removedParticles++;
         wordIdx++;
         continue;
+      }
+      // 2nd pass: if the corrected word is ALSO slang, apply again
+      // e.g., bgt → banget (VPS slang) → sangat (fbSlang)
+      const secondPass = _indoSlang?.[slangTarget.toLowerCase()]?.f || fbSlang[slangTarget.toLowerCase()];
+      if (secondPass !== undefined && secondPass !== '' && secondPass !== slangTarget) {
+        slangTarget = secondPass;
       }
       out.push(slangTarget + punct);
       stats.slangFixed++;
