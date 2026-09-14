@@ -234,9 +234,30 @@ export function useSpeechRecognition() {
     ocrChunkCount: screenCvOcrChunkCount,
     error: screenCvError,
   } = useScreenCv({
-    onOcrText: (text, confidence) => {
-      addLog('success', `OCR: "${text.slice(0, 80)}${text.length > 80 ? '...' : ''}" (${confidence.toFixed(0)}%)`);
-      appendTranscript(`[🖼️ OCR] ${text}`);
+    onOcrText: async (text, confidence) => {
+      // Fuzzy-correct OCR text before appending to transcript.
+      // OCR (tesseract.js) is less accurate than whisper for Indonesian, so
+      // we apply the same dictionary + Levenshtein corrections as Web Speech.
+      let corrected = text;
+      try {
+        const res = await fetch('/api/stt/fuzzy-correct', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, source: 'ocr' }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.corrected && data.corrected !== text) {
+            corrected = data.corrected;
+            addLog('info', `OCR fuzzy-corrected: ${data.stats?.fuzzyFixed || 0} typos, ${data.stats?.slangFixed || 0} slang`);
+          }
+        }
+      } catch (e) {
+        // Silent fail — fall back to original text
+        console.warn('[OCR] fuzzy-correct failed:', e);
+      }
+      addLog('success', `OCR: "${corrected.slice(0, 80)}${corrected.length > 80 ? '...' : ''}" (${confidence.toFixed(0)}%)`);
+      appendTranscript(`[🖼️ OCR] ${corrected}`);
     },
     onSlideChange: (diffPct) => {
       addLog('info', `🖼️ Slide berubah (${(diffPct * 100).toFixed(0)}% pixel changed)`);
