@@ -109,6 +109,7 @@ export function STTPanel() {
     isReconnecting, webspeechSupported,
     toggleRecording, clearTranscript, audioLevels,
     sttWarning, isGroqProcessing, isEnhancing, isWhisperProcessing,
+    screenCv,
   } = useSpeechRecognition();
   const { transcriptEntries, sttAudioMode } = useAppStore();
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -116,6 +117,8 @@ export function STTPanel() {
   const isRecording = sttStatus === 'recording';
   const isProcessing = sttStatus === 'processing';
   const transcriptScrollRef = useRef<HTMLDivElement>(null);
+  const isScreenMode = sttAudioMode === 'screen';
+  const isCombinedActive = isScreenMode && isRecording;
 
   // Generate learning module PDF (LLM-structured, falls back to local)
   const generatePDFCombined = async () => {
@@ -136,8 +139,6 @@ export function STTPanel() {
       setPdfLoading(false);
     }
   };
-
-  const isScreenMode = sttAudioMode === 'screen';
 
   return (
     <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] overflow-hidden">
@@ -219,6 +220,56 @@ export function STTPanel() {
 
         {/* Audio Visualizer */}
         {isRecording && <AudioVisualizer audioLevels={audioLevels} isListening={sttSource === 'webspeech'} />}
+
+        {/* Combined Methods Indicator — shown when Entire Screen capture is active */}
+        {isCombinedActive && (
+          <div className="rounded-lg border border-sky-500/20 bg-sky-500/[0.04] p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <MonitorUp className="h-3.5 w-3.5 text-sky-400" />
+              <p className="text-xs font-medium text-sky-300">Combined Methods aktif</p>
+              <span className="text-[10px] text-zinc-600 ml-auto">Entire Screen mode</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              <MethodBadge
+                label="Web Speech API"
+                active={webspeechSupported}
+                loading={false}
+                color="green"
+                detail={webspeechSupported ? 'mic live' : 'unsupported'}
+              />
+              <MethodBadge
+                label="Web Audio API"
+                active={isRecording}
+                loading={false}
+                color="green"
+                detail="mix + visualize"
+              />
+              <MethodBadge
+                label="OCR (tesseract.js)"
+                active={!screenCv.isModelLoading && isRecording}
+                loading={screenCv.isModelLoading}
+                color="violet"
+                detail={
+                  screenCv.isModelLoading
+                    ? `loading ${Math.round(screenCv.modelProgress * 100)}%`
+                    : screenCv.isOcrProcessing
+                    ? 'recognizing…'
+                    : `${screenCv.ocrChunkCount} chunks`
+                }
+              />
+              <MethodBadge
+                label="CV Frame Diff"
+                active={isRecording}
+                loading={false}
+                color="amber"
+                detail={`${screenCv.slideChangeCount} slide changes`}
+              />
+            </div>
+            {screenCv.error && (
+              <p className="mt-2 text-[10px] text-rose-400">⚠ {screenCv.error}</p>
+            )}
+          </div>
+        )}
 
         {/* Transcript Area — Timestamped */}
         <div className="relative rounded-lg border border-white/[0.06] bg-[#0c0c0e] overflow-hidden">
@@ -387,5 +438,48 @@ export function STTPanel() {
         </div>
       </div>
     </div>
+  );
+}
+
+function MethodBadge({
+  label,
+  active,
+  loading,
+  color,
+  detail,
+}: {
+  label: string;
+  active: boolean;
+  loading: boolean;
+  color: 'green' | 'violet' | 'amber';
+  detail?: string;
+}) {
+  const colorClasses = {
+    green: active
+      ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
+      : 'border-white/[0.06] text-zinc-600 bg-white/[0.02]',
+    violet: active
+      ? 'border-[#8B5CF6]/30 text-[#8B5CF6] bg-[#8B5CF6]/10'
+      : loading
+      ? 'border-amber-500/30 text-amber-400 bg-amber-500/10'
+      : 'border-white/[0.06] text-zinc-600 bg-white/[0.02]',
+    amber: active
+      ? 'border-amber-500/30 text-amber-400 bg-amber-500/10'
+      : 'border-white/[0.06] text-zinc-600 bg-white/[0.02]',
+  }[color];
+
+  return (
+    <span className={cn(
+      'inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium transition-colors',
+      colorClasses
+    )}>
+      <span className={cn(
+        'h-1.5 w-1.5 rounded-full',
+        active ? (color === 'green' ? 'bg-emerald-400' : color === 'violet' ? 'bg-[#8B5CF6]' : 'bg-amber-400') : 'bg-zinc-700',
+        (active || loading) && 'animate-pulse'
+      )} />
+      <span>{label}</span>
+      {detail && <span className="text-zinc-600">· {detail}</span>}
+    </span>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppStore } from '@/lib/store';
+import { useScreenCv } from '@/hooks/use-screen-cv';
 
 const GROQ_CHUNK_INTERVAL = 10000; // 10s chunks (was 4s) - bigger chunks have valid webm headers
 const NO_RESULT_TIMEOUT = 10000;
@@ -216,6 +217,32 @@ export function useSpeechRecognition() {
     setAudioLevels(new Array(32).fill(0));
   }, []);
 
+  // ── Combined CV pipeline: OCR (tesseract.js) + frame diff (slide change) ──
+  // Only active during screen-capture mode. OCR samples every 5s, frame diff
+  // every 1s. Results are appended to the transcript inline (with visual tags)
+  // so the user sees the COMBINED output: speech + screen text + slide events.
+  const {
+    start: startScreenCv,
+    stop: stopScreenCv,
+    isOcrProcessing: screenCvIsOcrProcessing,
+    isModelLoading: screenCvIsModelLoading,
+    modelProgress: screenCvModelProgress,
+    lastOcrAt: screenCvLastOcrAt,
+    lastSlideChangeAt: screenCvLastSlideChangeAt,
+    slideChangeCount: screenCvSlideChangeCount,
+    ocrChunkCount: screenCvOcrChunkCount,
+    error: screenCvError,
+  } = useScreenCv({
+    onOcrText: (text, confidence) => {
+      addLog('success', `OCR: "${text.slice(0, 80)}${text.length > 80 ? '...' : ''}" (${confidence.toFixed(0)}%)`);
+      appendTranscript(`[🖼️ OCR] ${text}`);
+    },
+    onSlideChange: (diffPct) => {
+      addLog('info', `🖼️ Slide berubah (${(diffPct * 100).toFixed(0)}% pixel changed)`);
+      appendTranscript(`[🔄 Slide berubah — ${(diffPct * 100).toFixed(0)}% pixel berubah]`);
+    },
+  });
+
   // ── Incremental AI correction — only fixes NEW entries since last correction ──
   // This minimizes bias: LLM sees small fresh chunks, not accumulated errors
   const enhanceNewEntries = useCallback(async (): Promise<boolean> => {
@@ -299,6 +326,7 @@ export function useSpeechRecognition() {
   useEffect(() => { return () => { cleanup(); stopVisualizer(); }; }, []);
 
   const cleanup = useCallback(() => {
+    stopScreenCv();
     if (groqTimerRef.current) { clearInterval(groqTimerRef.current); groqTimerRef.current = null; }
     if (noResultTimerRef.current) { clearTimeout(noResultTimerRef.current); noResultTimerRef.current = null; }
     if (webspeechRestartTimerRef.current) { clearTimeout(webspeechRestartTimerRef.current); webspeechRestartTimerRef.current = null; }
@@ -332,12 +360,13 @@ export function useSpeechRecognition() {
     whisperChunksRef.current = [];
     setSttStatus('idle');
     setIsReconnecting(false);
-  }, [stopVisualizer, setSttStatus, setIsReconnecting]);
+  }, [stopVisualizer, setSttStatus, setIsReconnecting, stopScreenCv]);
 
   const stopAll = useCallback(() => {
     isStoppingRef.current = true;
     manualStopRef.current = true;
     isRecordingRef.current = false;
+    stopScreenCv();
     // Cleanup hybrid capture (new ref structure)
     const streamRef = mediaStreamRef.current as any;
     const hybrid = streamRef?.__hybridCleanup;
@@ -907,8 +936,11 @@ export function useSpeechRecognition() {
       const mixedAudioTracks = destination.stream.getAudioTracks();
       const audioOnlyStream = new MediaStream(mixedAudioTracks);
 
-      // Stop video tracks (we don't need them) - but keep audio tracks from displayStream alive
-      displayStream.getVideoTracks().forEach(t => t.stop());
+      // NOTE: Previously, video tracks were stopped here. We now KEEP them alive
+      // for the OCR + frame-diff (CV) pipelines. They are stopped in stopAll()
+      // when recording ends.
+      // Start OCR + frame diff pipelines on the display stream
+      void screenCv.start(displayStream);
 
       // Step 5: Store reference for cleanup
       // IMPORTANT: Store on a separate ref, not mediaStreamRef (which gets overwritten by startRecordingFromStream)
@@ -982,7 +1014,7 @@ export function useSpeechRecognition() {
       setSttStatus('error');
       isRecordingRef.current = false;
     }
-  }, [startRecordingFromStream, addLog, setSttError, setSttStatus, stopAll]);
+  }, [startRecordingFromStream, addLog, setSttError, setSttStatus, stopAll, screenCv]);
 
   // ── Web Speech API (PRIMARY STT) ──
   const tryStartWebSpeech = useCallback(
@@ -1407,5 +1439,16 @@ export function useSpeechRecognition() {
     mediaStreamRef,
     activityLog, isGroqProcessing, isEnhancing, isWhisperProcessing, sttWarning,
     audioLevels,
+    // Combined-method screen CV state
+    screenCv: {
+      isOcrProcessing: screenCv.isOcrProcessing,
+      isModelLoading: screenCv.isModelLoading,
+      modelProgress: screenCv.modelProgress,
+      lastOcrAt: screenCv.lastOcrAt,
+      lastSlideChangeAt: screenCv.lastSlideChangeAt,
+      slideChangeCount: screenCv.slideChangeCount,
+      ocrChunkCount: screenCv.ocrChunkCount,
+      error: screenCv.error,
+    },
   };
 }
