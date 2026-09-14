@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppStore } from '@/lib/store';
 import { useScreenCv } from '@/hooks/use-screen-cv';
+import { setupRecognitionGrammar } from '@/lib/speech-grammar';
 
 const GROQ_CHUNK_INTERVAL = 10000; // 10s chunks (was 4s) - bigger chunks have valid webm headers
 const NO_RESULT_TIMEOUT = 10000;
@@ -804,6 +805,7 @@ export function useSpeechRecognition() {
       recognition.interimResults = true;
       recognition.lang = 'id-ID';
       recognition.maxAlternatives = 5;
+      setupRecognitionGrammar(recognition);
 
       recognition.onresult = (event: SpeechRecognitionEvent) => {
         hasReceivedResultRef.current = true;
@@ -1029,8 +1031,7 @@ export function useSpeechRecognition() {
         recognition.interimResults = true;
         recognition.lang = 'id-ID';
         recognition.maxAlternatives = 5;
-
-        addLog('info', `Web Speech config: continuous=true, lang='id-ID', maxAlternatives=5, interimResults=true`);
+        setupRecognitionGrammar(recognition);
 
         let resolved = false;
 
