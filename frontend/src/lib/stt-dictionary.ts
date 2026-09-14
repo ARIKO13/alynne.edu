@@ -68,8 +68,35 @@ function loadDict() {
     _kbbi = new Set(dict.k.split('|'));
     _enWords = new Set(dict.e.split('|'));
     _indoSlang = dict.sid || {};
+    // Filter corrupt _indoSlang entries (e.g., "trs" → "menggantikan kata: terus")
+    if (_indoSlang) {
+      let removedSlang = 0;
+      for (const key of Object.keys(_indoSlang)) {
+        const entry = _indoSlang[key];
+        if (entry && typeof entry === 'object' && entry.f) {
+          if (entry.f.includes('menggantikan kata:') || entry.f.includes('ganti kata:') || entry.f.length > 50) {
+            delete _indoSlang[key];
+            removedSlang++;
+          }
+        }
+      }
+      if (removedSlang > 0) console.log(`[STT-Dict] Filtered ${removedSlang} corrupt _indoSlang entries`);
+    }
     _enSlang = dict.sen || {};
     _fixes = dict.fix || {};
+    // Filter out corrupt _fixes entries (e.g., "trs" → "menggantikan kata: terus")
+    // These are bad data from the VPS dictionary file that we need to skip.
+    if (_fixes) {
+      let removedCount = 0;
+      for (const key of Object.keys(_fixes)) {
+        const val = _fixes[key];
+        if (typeof val === 'string' && (val.includes('menggantikan kata:') || val.includes('ganti kata:') || val.length > 50)) {
+          delete _fixes[key];
+          removedCount++;
+        }
+      }
+      if (removedCount > 0) console.log(`[STT-Dict] Filtered ${removedCount} corrupt _fixes entries`);
+    }
     _remove = new Set(dict.rem || []);
     // Load phrase_map from JSON if present (overrides hardcoded fallback)
     if (dict.phrase_map && typeof dict.phrase_map === 'object') {
@@ -118,7 +145,6 @@ const fbSlang: Record<string, string> = {
   'gimana': 'bagaimana', 'gmn': 'bagaimana',
   'bener': 'benar', 'bgt': 'sangat', 'bget': 'sangat', 'banget': 'sangat', 'bngt': 'sangat',
   'ngomong': 'berbicara', 'bikin': 'membuat',
-  'ngerti': 'mengerti', 'mulu': 'terus', 'doang': 'saja',
   'bilang': 'mengatakan', 'tau': 'tahu',
   'pengen': 'ingin', 'mo': 'mau', 'bakal': 'akan',
   'gemana': 'bagaimana', 'nggmana': 'bagaimana',
@@ -195,6 +221,19 @@ const fbSlang: Record<string, string> = {
   'rebahan': 'berbaring', 'rbhn': 'berbaring',
   'halu': 'berhalusinasi',
   'salfok': 'salah fokus', 'mager': 'malas gerak',
+  // Casual conversation slang
+  'lg': 'lagi', 'td': 'tadi', 'tdk': 'tidak',
+  'dtg': 'datang', 'trs': 'terus', 'trus': 'terus',
+  'knl': 'kenal', 'blm': 'belum', 'sdh': 'sudah', 'udh': 'sudah',
+  'bsk': 'besok', 'km': 'kamu', 'kmn': 'ke mana',
+  'dgn': 'dengan', 'sapa': 'siapa', 'spa': 'siapa', 'spp': 'siapa',
+  'bsk': 'besok', 'bsok': 'besok',
+  'orgnya': 'orangnya', 'org': 'orang',
+  'bsa': 'bisa', 'bs': 'bisa',
+  'skrg': 'sekarang', 'skrng': 'sekarang',
+  'aj': 'aja', 'ajj': 'aja', 'ja': 'aja',
+  'skrg': 'sekarang',
+  'trs': 'terus',
   'cuan': 'keuntungan', 'rugi': 'kerugian',
   'long': 'beli', 'short': 'jual',
   'hold': 'tahan', 'trading': 'perdagangan',
@@ -271,7 +310,7 @@ function getPhraseMap(): Record<string, string> {
   if (_phraseMap) return _phraseMap;
   _phraseMap = {
     'go to': 'GOTO', 'go 2': 'GOTO', 'goto': 'GOTO', 'go dua': 'GOTO', 'gotol': 'GOTO', 'go toko': 'GOTO',
-    'be ca a': 'BBCA', 'be be ca a': 'BBCA', 'be be se a': 'BBCA', 'boba': 'BBCA', 'bba': 'BBCA', 'aba': 'BBCA', 'bisa': 'BBCA',
+    'be ca a': 'BBCA', 'be be ca a': 'BBCA', 'be be se a': 'BBCA', 'boba': 'BBCA', 'aba': 'BBCA',
     'be be ri': 'BBRI', 'be ri': 'BBRI', 'beri': 'BBRI',
     'be be ni': 'BBNI', 'be ni': 'BBNI', 'bni': 'BBNI',
     'be em ri': 'BMRI', 'be em er i': 'BMRI', 'bintaro': 'BMRI', 'mandiri': 'BMRI',
@@ -322,9 +361,30 @@ function getPhraseMap(): Record<string, string> {
     'indika energy': 'INDY', 'indika': 'INDY',
     'martina berto': 'MARI',
   };
-  // Merge phonetic_tickers from phonetic-map.json (if loaded)
+  // Common Indonesian words that should NEVER be mapped to stock tickers
+  // (prevents false-positives like "bisa" → "BBCA")
+  const COMMON_WORDS_BLACKLIST = new Set([
+    'bisa', 'dengan', 'untuk', 'yang', 'dan', 'atau', 'karena', 'kalau',
+    'juga', 'akan', 'sudah', 'belum', 'tidak', 'bukan', 'dari', 'ke',
+    'di', 'ke', 'ini', 'itu', 'ada', 'lagi', 'saya', 'kamu', 'dia',
+    'kita', 'kami', 'mereka', 'apa', 'siapa', 'mana', 'kapan', 'bagaimana',
+    'tolong', 'bantu', 'mau', 'pergi', 'datang', 'lihat', 'dengar',
+    'makan', 'minum', 'tidur', 'bangun', 'kerja', 'main', 'baca',
+    'tulis', 'beli', 'jual', 'bawa', 'ambil', 'beri', 'kirim',
+  ]);
   if (_phoneticTickers) {
-    _phraseMap = { ..._phraseMap, ..._phoneticTickers };
+    // Filter out common Indonesian words from phonetic_tickers
+    const filtered: Record<string, string> = {};
+    let removed = 0;
+    for (const [key, val] of Object.entries(_phoneticTickers)) {
+      if (COMMON_WORDS_BLACKLIST.has(key.toLowerCase())) {
+        removed++;
+        continue;
+      }
+      filtered[key] = val;
+    }
+    if (removed > 0) console.log(`[STT-Dict] Filtered ${removed} common words from phonetic_tickers`);
+    _phraseMap = { ..._phraseMap, ...filtered };
   }
   // Merge company_names (full company name → ticker)
   if (_companyNames) {
