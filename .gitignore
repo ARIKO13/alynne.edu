@@ -40,3 +40,4 @@ tmp/
 *.tmp
 *.bak
 .deploy/
+.datasets/

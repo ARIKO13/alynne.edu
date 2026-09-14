@@ -70,8 +70,12 @@ function loadDict() {
     _enSlang = dict.sen || {};
     _fixes = dict.fix || {};
     _remove = new Set(dict.rem || []);
+    // Load phrase_map from JSON if present (overrides hardcoded fallback)
+    if (dict.phrase_map && typeof dict.phrase_map === 'object') {
+      _phraseMap = dict.phrase_map;
+    }
 
-    console.log(`[STT-Dict] Loaded: KBBI=${_kbbi.size}, EN=${_enWords.size}, slang_id=${Object.keys(_indoSlang).length}, slang_en=${Object.keys(_enSlang).length}, fixes=${Object.keys(_fixes).length}`);
+    console.log(`[STT-Dict] Loaded: KBBI=${_kbbi.size}, EN=${_enWords.size}, slang_id=${Object.keys(_indoSlang).length}, slang_en=${Object.keys(_enSlang).length}, fixes=${Object.keys(_fixes).length}, phrase_map=${_phraseMap ? Object.keys(_phraseMap).length : 0}`);
   } catch (err) {
     console.error('[STT-Dict] Load failed:', err);
   }
@@ -145,53 +149,33 @@ const stockTickers = new Set([
 ]);
 
 // ── NEW: Multi-word phrase map (for stock ticker spoken forms) ──
+// Loaded from JSON `phrase_map` field, with hardcoded fallback.
 // Keys are lowercased multi-word phrases; values are correct forms.
-const phraseMap: Record<string, string> = {
-  'go to': 'GOTO',
-  'go 2': 'GOTO',
-  'goto': 'GOTO',
-  'be ca a': 'BBCA',
-  'be be ca a': 'BBCA',
-  'be be ri': 'BBRI',
-  'be be ni': 'BBNI',
-  'be em ri': 'BMRI',
-  'be em ar i': 'BMRI',
-  't l k m': 'TLKM',
-  'a s i i': 'ASII',
-  'unvr': 'UNVR',
-  'indy': 'INDY',
-  'mar i': 'MARI',
-  'antm': 'ANTM',
-  'inco': 'INCO',
-  'kras': 'KRAS',
-  'myoh': 'MYOH',
-  'klbf': 'KLBF',
-  'ggrm': 'GGRM',
-  'icbp': 'ICBP',
-  'indf': 'INDF',
-  'cpin': 'CPIN',
-  'jpfa': 'JPFA',
-  'tpia': 'TPIA',
-  'adro': 'ADRO',
-  'pgas': 'PGAS',
-  'medc': 'MEDC',
-  'main': 'MAIN',
-  'smra': 'SMRA',
-  'bsde': 'BSDE',
-  'ctra': 'CTRA',
-  'lpkr': 'LPKR',
-  'asri': 'ASRI',
-  'ammn': 'AMMN',
-  'mppa': 'MPPA',
-  'bfin': 'BFIN',
-  'tbig': 'TBIG',
-  'excl': 'EXCL',
-  'isat': 'ISAT',
-  'mncn': 'MNCN',
-  'lion': 'LION',
-  'bnga': 'BNGA',
-  'bbtn': 'BBTN',
-};
+let _phraseMap: Record<string, string> | null = null;
+
+function getPhraseMap(): Record<string, string> {
+  if (_phraseMap) return _phraseMap;
+  // If JSON file has phrase_map field, use it; otherwise use hardcoded fallback
+  if (_loaded && _fixes !== null) {
+    // The data file might have phrase_map field — try to load it
+    // (handled in loadDict via separate variable below)
+  }
+  _phraseMap = {
+    'go to': 'GOTO', 'go 2': 'GOTO', 'goto': 'GOTO',
+    'be ca a': 'BBCA', 'be be ca a': 'BBCA', 'be be ri': 'BBRI',
+    'be be ni': 'BBNI', 'be em ri': 'BMRI', 'be em ar i': 'BMRI',
+    't l k m': 'TLKM', 'a s i i': 'ASII', 'mar i': 'MARI',
+    'antm': 'ANTM', 'inco': 'INCO', 'kras': 'KRAS', 'myoh': 'MYOH',
+    'klbf': 'KLBF', 'ggrm': 'GGRM', 'icbp': 'ICBP', 'indf': 'INDF',
+    'cpin': 'CPIN', 'jpfa': 'JPFA', 'tpia': 'TPIA', 'adro': 'ADRO',
+    'pgas': 'PGAS', 'medc': 'MEDC', 'smra': 'SMRA',
+    'bsde': 'BSDE', 'ctra': 'CTRA', 'lpkr': 'LPKR', 'asri': 'ASRI',
+    'ammn': 'AMMN', 'mppa': 'MPPA', 'bfin': 'BFIN', 'tbig': 'TBIG',
+    'excl': 'EXCL', 'isat': 'ISAT', 'mncn': 'MNCN', 'lion': 'LION',
+    'bnga': 'BNGA', 'bbtn': 'BBTN',
+  };
+  return _phraseMap;
+}
 
 // ── Context-dependent homophones ──
 const ctxHomophones = [
@@ -368,6 +352,7 @@ function fuzzyCorrectWord(word: string): { corrected: string; distance: number }
 function applyPhraseMap(text: string): { text: string; fixed: number } {
   let result = text;
   let fixed = 0;
+  const phraseMap = getPhraseMap();
   // Sort by phrase length DESC so longer phrases match first
   const phrases = Object.keys(phraseMap).sort((a, b) => b.length - a.length);
   for (const phrase of phrases) {
