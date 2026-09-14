@@ -3,6 +3,7 @@ import { STTPanel } from '@/components/stt-panel';
 import { AIAssistant } from '@/components/ai-assistant';
 import { ModulPanel } from '@/components/modul-panel';
 import { MindMapPanel } from '@/components/mindmap-panel';
+import { ImageSharpener } from '@/components/image-sharpener';
 import { SettingsDialog } from '@/components/settings-dialog';
 import { LoginScreen } from '@/components/login-screen';
 import { CertificateView } from '@/components/certificate-view';
@@ -10,7 +11,7 @@ import { AdminPanel } from '@/components/admin-panel';
 import { Badge } from '@/components/ui/badge';
 import {
   Mic, Bot, Settings, Wifi, Radio, LogOut,
-  Menu, X, Shield, FileText, Monitor, ArrowLeft, Network,
+  Menu, X, Shield, FileText, Monitor, ArrowLeft, Network, Wand2,
 } from 'lucide-react';
 import { isAdmin } from '@/lib/admin';
 import { cn } from '@/lib/utils';
@@ -23,13 +24,14 @@ function isAlynneDomain(): boolean {
   return ALYNNE_DOMAINS.includes(window.location.hostname);
 }
 
-type TabId = 'stt' | 'mindmap' | 'assistant' | 'modul' | 'admin';
+type TabId = 'stt' | 'mindmap' | 'assistant' | 'modul' | 'sharpen' | 'admin';
 
 const TABS: { id: TabId; label: string; icon: typeof Mic; adminOnly?: boolean }[] = [
   { id: 'stt', label: 'Speech to Text', icon: Mic },
   { id: 'mindmap', label: 'Mind Map', icon: Network },
   { id: 'modul', label: 'Modul PDF', icon: FileText },
   { id: 'assistant', label: 'AI Assistant', icon: Bot },
+  { id: 'sharpen', label: 'Penajam Gambar', icon: Wand2 },
   { id: 'admin', label: 'Admin Panel', icon: Shield, adminOnly: true },
 ];
 
@@ -38,6 +40,7 @@ const TAB_TITLES: Record<TabId, string> = {
   mindmap: 'Mind Map Generator',
   modul: 'Modul PDF',
   assistant: 'AI Assistant',
+  sharpen: 'Penajam Gambar (CV)',
   admin: 'Admin Panel',
 };
 
@@ -249,6 +252,7 @@ export default function App({ onBackToLanding }: AppProps) {
             {activeTab === 'stt' && <STTPanel />}
             {activeTab === 'mindmap' && <MindMapPanel />}
             {activeTab === 'modul' && <ModulPanel />}
+            {activeTab === 'sharpen' && <ImageSharpener />}
 
             {activeTab === 'assistant' && (
               <div className="h-[calc(100vh-8rem)]"><AIAssistant /></div>

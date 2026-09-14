@@ -110,7 +110,7 @@ interface AppState {
   // UI
   settingsOpen: boolean;
   setSettingsOpen: (v: boolean) => void;
-  activeTab: 'stt' | 'modul' | 'mindmap' | 'admin';
+  activeTab: 'stt' | 'modul' | 'mindmap' | 'sharpen' | 'admin';
   setActiveTab: (tab: AppState['activeTab']) => void;
   studyModeEnabled: boolean;
   setStudyModeEnabled: (v: boolean) => void;
