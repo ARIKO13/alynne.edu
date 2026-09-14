@@ -23,6 +23,7 @@
 
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { phoneticMatch, getPhoneticLookupSize } from '@/lib/phonetic-engine';
 
 // ── Dictionary Data (lazy-loaded once) ──
 let _kbbi: Set<string> | null = null;
@@ -242,6 +243,7 @@ export interface CorrectionResult {
     sttFixed: number;
     homophonesFixed: number;
     fuzzyFixed: number;
+    phoneticFixed?: number;
     phraseFixed: number;
     unknownWords: number;
     removedParticles: number;
@@ -499,11 +501,26 @@ export function localCorrect(rawText: string): CorrectionResult {
       continue;
     }
 
-    // 5. NEW: Fuzzy matching via Levenshtein (typo correction)
+    // 5. NEW: Phonetic matching (Indonesian Double Metaphone) — Layer 2
+    // Run BEFORE fuzzy Levenshtein — phonetic catches sound-alike stock terms
+    // that Levenshtein would miss (or worse, false-positive match to wrong word).
+    //   "bulis" → BULLISH (code 'BULIS' matches)
+    //   "beris" → BEARISH (code 'BERIS' matches after EA→E)
+    //   "kandelistik" → CANDLESTICK (after C→K + dedup + EA→E)
     if (!isKnown(raw)) {
+      const phonetic = phoneticMatch(raw);
+      if (phonetic) {
+        out.push(phonetic + punct);
+        stats.phoneticFixed = (stats.phoneticFixed || 0) + 1;
+        wordIdx++;
+        continue;
+      }
+
+      // 5b. Fuzzy matching via Levenshtein (typo correction) — Layer 3
+      // Only run if phonetic didn't match (Levenshtein is for genuine typos
+      // like "kloropls" → "kloroplas", not sound-alikes).
       const fuzzy = fuzzyCorrectWord(raw);
       if (fuzzy) {
-        // Preserve original case style: if input was capitalized, capitalize output
         let corrected = fuzzy.corrected;
         if (raw[0] === raw[0].toUpperCase() && raw[0] !== raw[0].toLowerCase()) {
           corrected = corrected[0].toUpperCase() + corrected.slice(1);
@@ -513,6 +530,7 @@ export function localCorrect(rawText: string): CorrectionResult {
         wordIdx++;
         continue;
       }
+
       stats.unknownWords++;
     }
 
