@@ -940,7 +940,7 @@ export function useSpeechRecognition() {
       // for the OCR + frame-diff (CV) pipelines. They are stopped in stopAll()
       // when recording ends.
       // Start OCR + frame diff pipelines on the display stream
-      void screenCv.start(displayStream);
+      void startScreenCv(displayStream);
 
       // Step 5: Store reference for cleanup
       // IMPORTANT: Store on a separate ref, not mediaStreamRef (which gets overwritten by startRecordingFromStream)
@@ -1014,7 +1014,7 @@ export function useSpeechRecognition() {
       setSttStatus('error');
       isRecordingRef.current = false;
     }
-  }, [startRecordingFromStream, addLog, setSttError, setSttStatus, stopAll, screenCv]);
+  }, [startRecordingFromStream, addLog, setSttError, setSttStatus, stopAll, startScreenCv]);
 
   // ── Web Speech API (PRIMARY STT) ──
   const tryStartWebSpeech = useCallback(
@@ -1441,14 +1441,14 @@ export function useSpeechRecognition() {
     audioLevels,
     // Combined-method screen CV state
     screenCv: {
-      isOcrProcessing: screenCv.isOcrProcessing,
-      isModelLoading: screenCv.isModelLoading,
-      modelProgress: screenCv.modelProgress,
-      lastOcrAt: screenCv.lastOcrAt,
-      lastSlideChangeAt: screenCv.lastSlideChangeAt,
-      slideChangeCount: screenCv.slideChangeCount,
-      ocrChunkCount: screenCv.ocrChunkCount,
-      error: screenCv.error,
+      isOcrProcessing: screenCvIsOcrProcessing,
+      isModelLoading: screenCvIsModelLoading,
+      modelProgress: screenCvModelProgress,
+      lastOcrAt: screenCvLastOcrAt,
+      lastSlideChangeAt: screenCvLastSlideChangeAt,
+      slideChangeCount: screenCvSlideChangeCount,
+      ocrChunkCount: screenCvOcrChunkCount,
+      error: screenCvError,
     },
   };
 }
