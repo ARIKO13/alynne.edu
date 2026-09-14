@@ -86,6 +86,9 @@ export function AdminPanel() {
   const [failures, setFailures] = useState<any[]>([]);
   const [failuresTotal, setFailuresTotal] = useState(0);
   const [failuresPage, setFailuresPage] = useState(1);
+  const [fixInputs, setFixInputs] = useState<Record<string, string>>({});
+  const [fixingId, setFixingId] = useState<string | null>(null);
+  const [fixedIds, setFixedIds] = useState<Set<string>>(new Set());
 
   const fetchStats = useCallback(async () => {
     try {
@@ -124,6 +127,33 @@ export function AdminPanel() {
       console.error('STT failures fetch error:', err);
     }
   }, []);
+
+  const handleFixMapping = async (failureId: string, unknownWord: string) => {
+    const correctWord = fixInputs[`${failureId}-${unknownWord}`];
+    if (!correctWord?.trim()) return;
+    setFixingId(`${failureId}-${unknownWord}`);
+    try {
+      const res = await fetch('/api/admin/stt-fix', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          wrongWord: unknownWord,
+          correctWord: correctWord.trim(),
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        console.log('Mapping added:', data);
+        setFixedIds(prev => new Set([...prev, `${failureId}-${unknownWord}`]));
+      } else {
+        console.error('Fix failed:', res.status);
+      }
+    } catch (err) {
+      console.error('Fix error:', err);
+    } finally {
+      setFixingId(null);
+    }
+  };
 
   useEffect(() => {
     if (!isAdmin(user?.email)) return;
@@ -517,13 +547,46 @@ export function AdminPanel() {
                       )}
                       {f.unknownWords && f.unknownWords.length > 0 && (
                         <div>
-                          <p className="text-[10px] text-zinc-600 mb-0.5">Unknown words (need dictionary entries):</p>
-                          <div className="flex flex-wrap gap-1">
-                            {f.unknownWords.map((w: string, i: number) => (
-                              <span key={i} className="text-[10px] text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded px-1.5 py-0.5 font-mono">
-                                {w}
-                              </span>
-                            ))}
+                          <p className="text-[10px] text-zinc-600 mb-0.5">Unknown words — type correction + click Fix:</p>
+                          <div className="space-y-1.5">
+                            {f.unknownWords.map((w: string, i: number) => {
+                              const fixKey = `${f.id}-${w}`;
+                              const isFixed = fixedIds.has(fixKey);
+                              const isFixing = fixingId === fixKey;
+                              return (
+                                <div key={i} className="flex items-center gap-2">
+                                  <span className="text-[10px] text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded px-1.5 py-0.5 font-mono shrink-0">
+                                    {w}
+                                  </span>
+                                  <span className="text-zinc-600 text-[10px] shrink-0">→</span>
+                                  {isFixed ? (
+                                    <span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded px-1.5 py-0.5 font-mono">
+                                      {fixInputs[fixKey] || '✓'} ✓ Fixed (live)
+                                    </span>
+                                  ) : (
+                                    <>
+                                      <input
+                                        type="text"
+                                        placeholder="e.g. GOTO, BBCA, sistem..."
+                                        value={fixInputs[fixKey] || ''}
+                                        onChange={(e) => setFixInputs(prev => ({ ...prev, [fixKey]: e.target.value }))}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') handleFixMapping(f.id, w);
+                                        }}
+                                        className="flex-1 h-6 text-[11px] bg-[#0c0c0e] border border-white/[0.08] rounded px-2 text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:border-[#8B5CF6]/40"
+                                      />
+                                      <button
+                                        onClick={() => handleFixMapping(f.id, w)}
+                                        disabled={isFixing || !fixInputs[fixKey]?.trim()}
+                                        className="text-[10px] px-2 py-0.5 rounded bg-[#8B5CF6] hover:bg-[#7c3aed] text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
+                                      >
+                                        {isFixing ? '...' : 'Fix'}
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}

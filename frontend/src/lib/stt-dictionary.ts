@@ -405,6 +405,29 @@ function applyPhraseMap(text: string): { text: string; fixed: number } {
   return { text: result, fixed };
 }
 
+/**
+ * Reset all in-memory caches so the next localCorrect() call reloads
+ * everything from the JSON files. Called by /api/admin/stt-fix after
+ * adding a new mapping to phonetic-map.json — enables hot-reload
+ * without PM2 restart.
+ */
+export function resetDictionaryCache() {
+  _loaded = false;
+  _kbbi = null;
+  _enWords = null;
+  _indoSlang = null;
+  _enSlang = null;
+  _fixes = null;
+  _remove = null;
+  _phraseMap = null;
+  _phoneticTickers = null;
+  _companyNames = null;
+  _actionPhrases = null;
+  _lengthIndex = null;
+  _fuzzyCache.clear();
+  console.log('[STT-Dict] Cache reset — will reload on next request');
+}
+
 export function localCorrect(rawText: string): CorrectionResult {
   loadDict();
   const stats = {
