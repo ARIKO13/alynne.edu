@@ -1,0 +1,61 @@
+{
+  "_version": "1.0",
+  "_description": "Dataset of known error patterns + fixes. Each entry has: pattern, file_glob, fix, lesson. Used by pre-deploy-check.py to catch recurring errors before deploy.",
+  "errors": [
+    {
+      "id": "ERR-001",
+      "pattern": "missing_import_lucide_icon",
+      "description": "Component uses a lucide-react icon (as <Icon /> or icon={Icon}) but the icon is not imported from 'lucide-react'",
+      "detection": "grep for icon names in JSX (PascalCase identifiers used as JSX elements or as icon={...} props) that are not in the import list",
+      "file_glob": "frontend/src/components/*.tsx",
+      "fix": "Add the missing icon name to the import statement from 'lucide-react'",
+      "lesson": "Always verify ALL icons used in a component are imported. Run pre-deploy-check.py before deploying.",
+      "first_seen": "2026-09-14",
+      "example": "admin-panel.tsx used FileText icon but didn't import it — crashed when admin panel rendered",
+      "last_occurrence_commit": "0970eef"
+    },
+    {
+      "id": "ERR-002",
+      "pattern": "api_interface_field_mismatch",
+      "description": "Frontend interface expects field X but API endpoint returns field Y (different name)",
+      "detection": "Compare interface declarations in .tsx with Response.json() calls in .ts API routes",
+      "file_glob": "frontend/src/components/*.tsx + frontend/src/pages/api/**/*.ts",
+      "fix": "Align the interface field name with the API response field name (or vice versa)",
+      "lesson": "When adding new API endpoints or changing response shapes, update the frontend interface to match.",
+      "first_seen": "2026-09-14",
+      "example": "AdminStats interface had totalModules but /api/admin/stats returned totalGames — showed undefined in UI",
+      "last_occurrence_commit": "c91fa16"
+    },
+    {
+      "id": "ERR-003",
+      "pattern": "stale_multiedit_reference",
+      "description": "MultiEdit partially applied — variable was renamed via destructuring but old references remain",
+      "detection": "grep for old variable name after MultiEdit — should be 0 matches if fully applied",
+      "file_glob": "frontend/src/**/*.tsx + .ts",
+      "fix": "Replace remaining old references with new destructured name",
+      "lesson": "After MultiEdit, always grep for the old name to verify 0 matches.",
+      "first_seen": "2026-09-14",
+      "example": "screenCv destructured to startScreenCv/stopScreenCv but 3 references to screenCv.start/stop remained — runtime ReferenceError",
+      "last_occurrence_commit": "de45c83"
+    },
+    {
+      "id": "ERR-004",
+      "pattern": "duplicate_variable_declaration",
+      "description": "Same variable declared twice in the same scope (e.g., const isScreenMode twice)",
+      "detection": "grep for 'const VARNAME' in same file — should be 1 match per scope",
+      "file_glob": "frontend/src/**/*.tsx",
+      "fix": "Remove the duplicate declaration (keep the one in the right scope)",
+      "lesson": "When adding new code, check if the variable already exists before declaring it.",
+      "first_seen": "2026-09-14",
+      "example": "Added const isScreenMode at top of STTPanel but it was already declared later — esbuild error",
+      "last_occurrence_commit": "18a4071"
+    }
+  ],
+  "checklist_before_deploy": [
+    "Run: python3 backend/scripts/pre-deploy-check.py",
+    "Verify: npm run build succeeds without warnings",
+    "Verify: agent-browser opens /edu without runtime errors",
+    "Verify: all API endpoints respond (smoke test via curl)",
+    "Verify: PM2 log shows no new error lines after restart"
+  ]
+}
