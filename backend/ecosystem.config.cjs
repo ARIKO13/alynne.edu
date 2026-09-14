@@ -5,8 +5,10 @@ module.exports = {
     args: "-m uvicorn main:app --host 0.0.0.0 --port 8000",
     cwd: "/root/whisper-backend",
     env: {
-      // Whisper (8-bit int8)
-      WHISPER_MODEL: "large-v3-turbo",
+      // Whisper — tiny model (75MB) for voice command only.
+      // Main STT now uses Groq Whisper API (cloud) — see frontend
+      // use-speech-recognition.ts for the Groq fallback path.
+      WHISPER_MODEL: "tiny",
       WHISPER_DEVICE: "cpu",
       WHISPER_COMPUTE: "int8",
       CHUNK_MINUTES: "1",

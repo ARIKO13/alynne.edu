@@ -8,7 +8,6 @@ import {
   FileText, Loader2, Rocket, Sparkles, Upload, Monitor, MonitorUp,
 } from 'lucide-react';
 import { MaterialUpload } from '@/components/material-upload';
-import { MediaUpload } from '@/components/media-upload';
 import { YouTubeTranscript } from '@/components/youtube-transcript';
 import { cn } from '@/lib/utils';
 import { useState, useRef } from 'react';
@@ -178,16 +177,6 @@ export function STTPanel() {
       <div className="p-5 space-y-4">
         {/* Mode Selector */}
         <ModeSelector disabled={isRecording || isProcessing} />
-        <MediaUpload
-          disabled={isRecording || isProcessing}
-          onTranscript={(text, meta) => {
-            console.log('[MediaUpload] transcript:', text.length, 'chars', meta);
-            // Split text into sentences and BATCH append (atomic, no race condition)
-            const sentences = text.split(/(?<=[.!?])\s+/).filter(s => s.trim());
-            useAppStore.getState().appendTranscriptBatch(sentences);
-            toast.success(`Transkripsi media: ${text.length} karakter (${meta.chunks} chunk, ${meta.processingTime}s)`);
-          }}
-        />
         <YouTubeTranscript
           disabled={isRecording || isProcessing}
           onTranscript={(text, meta) => {
