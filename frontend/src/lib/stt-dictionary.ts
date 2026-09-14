@@ -116,7 +116,7 @@ const fbSlang: Record<string, string> = {
   'dah': 'sudah', 'udah': 'sudah', 'gitu': 'begitu',
   'kalo': 'kalau', 'klo': 'kalau',
   'gimana': 'bagaimana', 'gmn': 'bagaimana',
-  'bener': 'benar', 'bgt': 'sangat',
+  'bener': 'benar', 'bgt': 'sangat', 'bget': 'sangat', 'banget': 'sangat', 'bngt': 'sangat',
   'ngomong': 'berbicara', 'bikin': 'membuat',
   'ngerti': 'mengerti', 'mulu': 'terus', 'doang': 'saja',
   'bilang': 'mengatakan', 'tau': 'tahu',
@@ -128,6 +128,89 @@ const fbSlang: Record<string, string> = {
   'dateng': 'datang', 'napa': 'kenapa', 'yah': 'ya',
   'udh': 'sudah', 'nih': 'ini', 'tuh': 'itu',
   'gini': 'begini', 'emang': 'memang',
+  // Common abbreviations (IndoCollex equivalent)
+  'tdk': 'tidak', 'td': 'tidak', 'gk': 'tidak',
+  'bkn': 'bukan', 'blm': 'belum', 'blum': 'belum',
+  'sdh': 'sudah', 'udh': 'sudah',
+  'bbrp': 'beberapa', 'brp': 'berapa', 'brapa': 'berapa',
+  'yg': 'yang', 'dgn': 'dengan', 'dng': 'dengan',
+  'utk': 'untuk', 'krn': 'karena', 'krna': 'karena',
+  'sprt': 'seperti', 'spt': 'seperti', 'sprti': 'seperti',
+  'sdgkan': 'sedangkan', 'sdg': 'sedang',
+  'tlg': 'tolong', 'tlng': 'tolong',
+  'trs': 'terus', 'teros': 'terus', 'trus': 'terus',
+  'dlm': 'dalam', 'ats': 'atas', 'bwh': 'bawah',
+  'dtg': 'datang', 'dtng': 'datang',
+  'brg': 'barang', 'brng': 'barang',
+  'org': 'orang', 'skrg': 'sekarang', 'skrang': 'sekarang',
+  'nnti': 'nanti', 'nti': 'nanti', 'ntar': 'nanti',
+  'bsk': 'besok', 'bsok': 'besok',
+  'kmrn': 'kemarin', 'kmaren': 'kemarin',
+  'hr': 'hari', 'hrini': 'hari ini',
+  'bln': 'bulan', 'thn': 'tahun', 'th': 'tahun',
+  'mng': 'minggu', 'mgg': 'minggu',
+  'sy': 'saya', 'aq': 'aku', 'ak': 'aku', 'q': 'aku', 'gue': 'aku', 'gw': 'aku',
+  'km': 'kamu', 'kmu': 'kamu', 'lu': 'kamu', 'lo': 'kamu', 'elu': 'kamu',
+  'dy': 'dia', 'dya': 'dia',
+  'kmi': 'kami', 'mrk': 'mereka',
+  'klian': 'kalian', 'kliann': 'kalian',
+  'ap': 'apa', 'gmn': 'bagaimana', 'gimana': 'bagaimana', 'gemana': 'bagaimana',
+  'kmn': 'ke mana', 'kmana': 'ke mana',
+  'kn': 'kenapa', 'knp': 'kenapa',
+  'bru': 'baru', 'br': 'baru',
+  'jgn': 'jangan', 'bnr': 'benar', 'bner': 'benar', 'bnar': 'benar',
+  'bner2': 'benar-benar', 'bnr2': 'benar-benar',
+  'skli': 'sekali', 'skl': 'sekali', 'skali': 'sekali',
+  'blg': 'bilang', 'bkin': 'bikin', 'bwt': 'buat',
+  'ngrt': 'mengerti', 'ngmong': 'berbicara',
+  'lyat': 'lihat', 'dgr': 'dengar', 'dyg': 'dengar',
+  'pgn': 'ingin', 'pngn': 'ingin',
+  'mao': 'mau', 'mo': 'mau', 'mw': 'mau',
+  'ajk': 'ajak', 'tgu': 'tunggu', 'tgg': 'tunggu',
+  'cri': 'mencari', 'jwb': 'jawab', 'jwab': 'jawab',
+  'tny': 'bertanya', 'tnya': 'bertanya',
+  'bgs': 'bagus', 'bgu': 'bagus',
+  'jelex': 'jelek', 'jlek': 'jelek',
+  'cntk': 'cantik', 'gntg': 'ganteng',
+  'bsar': 'besar', 'bsr': 'besar',
+  'kcil': 'kecil', 'kcl': 'kecil',
+  'pnjg': 'panjang', 'pjg': 'panjang',
+  'pndk': 'pendek', 'pdk': 'pendek',
+  'tp': 'tapi', 'tpi': 'tapi',
+  'kl': 'kalau', 'klo': 'kalau',
+  'jka': 'jika', 'jik': 'jika',
+  'shg': 'sehingga', 'shingga': 'sehingga',
+  'spy': 'supaya', 'sblm': 'sebelum', 'sblum': 'sebelum',
+  'ssudah': 'sesudah', 'ssdh': 'sesudah', 'stlh': 'setelah',
+  'pg': 'pagi', 'pgi': 'pagi', 'sre': 'sore',
+  'mlm': 'malam', 'malem': 'malam',
+  'mna': 'mana',
+  'gpp': 'tidak apa-apa', 'gapapa': 'tidak apa-apa',
+  'btw': 'ngomong-ngomong',
+  'ane': 'saya', 'agan': 'saudara', 'bro': 'saudara', 'sis': 'saudari',
+  'kepo': 'ingin tahu', 'kp': 'ingin tahu',
+  'galau': 'sedih', 'gl': 'sedih',
+  'gabut': 'bosan', 'gbt': 'bosan',
+  'bucin': 'budak cinta', 'jomblo': 'lajang',
+  'rebahan': 'berbaring', 'rbhn': 'berbaring',
+  'halu': 'berhalusinasi',
+  'salfok': 'salah fokus', 'mager': 'malas gerak',
+  'cuan': 'keuntungan', 'rugi': 'kerugian',
+  'long': 'beli', 'short': 'jual',
+  'hold': 'tahan', 'trading': 'perdagangan',
+  'trader': 'pedagang', 'investor': 'penanam modal',
+  'bullish': 'naik', 'bearish': 'turun',
+  'pump': 'naik', 'dump': 'turun',
+  'moon': 'naik tinggi',
+  'diamond': 'tahan kuat', 'paper': 'jual cepat',
+  'fomo': 'takut ketinggalan',
+  'dyor': 'lakukan riset sendiri',
+  'katlos': 'cut loss', 'tekprofit': 'take profit',
+  'tp': 'take profit',
+  'bug': 'kesalahan', 'debug': 'perbaiki kesalahan',
+  'deploy': 'terapkan', 'coding': 'menulis kode',
+  'compile': 'kompilasi', 'runtime': 'waktu eksekusi',
+  'frontend': 'antarmuka', 'backend': 'server',
 };
 
 const fbFixes: Record<string, string> = {
@@ -187,9 +270,11 @@ let _actionPhrases: Record<string, string> | null = null;
 function getPhraseMap(): Record<string, string> {
   if (_phraseMap) return _phraseMap;
   _phraseMap = {
-    'go to': 'GOTO', 'go 2': 'GOTO', 'goto': 'GOTO',
-    'be ca a': 'BBCA', 'be be ca a': 'BBCA', 'be be ri': 'BBRI',
-    'be be ni': 'BBNI', 'be em ri': 'BMRI', 'be em ar i': 'BMRI',
+    'go to': 'GOTO', 'go 2': 'GOTO', 'goto': 'GOTO', 'go dua': 'GOTO', 'gotol': 'GOTO', 'go toko': 'GOTO',
+    'be ca a': 'BBCA', 'be be ca a': 'BBCA', 'be be se a': 'BBCA', 'boba': 'BBCA', 'bba': 'BBCA', 'aba': 'BBCA', 'bisa': 'BBCA',
+    'be be ri': 'BBRI', 'be ri': 'BBRI', 'beri': 'BBRI',
+    'be be ni': 'BBNI', 'be ni': 'BBNI', 'bni': 'BBNI',
+    'be em ri': 'BMRI', 'be em er i': 'BMRI', 'bintaro': 'BMRI', 'mandiri': 'BMRI',
     't l k m': 'TLKM', 'a s i i': 'ASII', 'mar i': 'MARI',
     'antm': 'ANTM', 'inco': 'INCO', 'kras': 'KRAS', 'myoh': 'MYOH',
     'klbf': 'KLBF', 'ggrm': 'GGRM', 'icbp': 'ICBP', 'indf': 'INDF',
@@ -199,6 +284,43 @@ function getPhraseMap(): Record<string, string> {
     'ammn': 'AMMN', 'mppa': 'MPPA', 'bfin': 'BFIN', 'tbig': 'TBIG',
     'excl': 'EXCL', 'isat': 'ISAT', 'mncn': 'MNCN', 'lion': 'LION',
     'bnga': 'BNGA', 'bbtn': 'BBTN',
+    // Company names
+    'bank central asia': 'BBCA', 'bank bca': 'BBCA', 'bca': 'BBCA',
+    'bank rakyat indonesia': 'BBRI', 'bank bri': 'BBRI', 'bri': 'BBRI',
+    'bank negara indonesia': 'BBNI', 'bank bni': 'BBNI', 'bni': 'BBNI',
+    'bank mandiri': 'BMRI',
+    'telkom indonesia': 'TLKM', 'telekomunikasi indonesia': 'TLKM', 'telkomsel': 'TLKM', 'telkom': 'TLKM',
+    'gojek tokopedia': 'GOTO', 'gojek': 'GOTO', 'tokopedia': 'GOTO',
+    'aneka tambang': 'ANTM', 'antam': 'ANTM',
+    'krakatau steel': 'KRAS', 'krakatau': 'KRAS',
+    'kalbe farma': 'KLBF', 'kalbe': 'KLBF',
+    'gudang garam': 'GGRM',
+    'indofood cbp': 'ICBP', 'indomie': 'ICBP',
+    'indofood': 'INDF',
+    'charoen pokphand': 'CPIN',
+    'japfa': 'JPFA',
+    'chandra asri': 'TPIA',
+    'adaro energy': 'ADRO', 'adaro': 'ADRO',
+    'perusahaan gas negara': 'PGAS', 'pertamina gas': 'PGAS',
+    'medco energy': 'MEDC', 'medco': 'MEDC',
+    'summarecon': 'SMRA', 'summarecon arma': 'SMRA',
+    'bumi serpong damai': 'BSDE',
+    'ciputra': 'CTRA', 'ciputra development': 'CTRA',
+    'lippo': 'LPKR', 'lippo karawaci': 'LPKR',
+    'agung podomoro': 'ASRI',
+    'amman mineral': 'AMMN', 'amman': 'AMMN',
+    'matahari': 'MPPA', 'matahari department': 'MPPA',
+    'tower bersama': 'TBIG',
+    'excelcomindo': 'EXCL', 'xl axiata': 'EXCL',
+    'indosat': 'ISAT', 'indosat ooredoo': 'ISAT',
+    'media nusantara': 'MNCN',
+    'lion parcel': 'LION',
+    'cimb niaga': 'BNGA',
+    'bank tabungan negara': 'BBTN', 'btn': 'BBTN',
+    'unilever': 'UNVR',
+    'astra international': 'ASII', 'astra': 'ASII',
+    'indika energy': 'INDY', 'indika': 'INDY',
+    'martina berto': 'MARI',
   };
   // Merge phonetic_tickers from phonetic-map.json (if loaded)
   if (_phoneticTickers) {
@@ -248,6 +370,60 @@ export interface CorrectionResult {
     unknownWords: number;
     removedParticles: number;
   };
+}
+
+// ── NEW: Common words that should NOT be fuzzy-matched ──
+// These are words that exist in Indonesian but might not be in KBBI Set
+// (because of suffixes like -nya, -lah, -kah, -pun, -an, -i, -kan, -i)
+// Fuzzy matching them often produces false-positives (grafiknya → grafika)
+const COMMON_SUFFIXES = ['nya', 'lah', 'kah', 'pun', 'an', 'kan', 'i', 'ku', 'mu'];
+const COMMON_BASE_WORDS = new Set([
+  'grafik', 'data', 'info', 'system', 'sistem', 'server', 'client',
+  'user', 'users', 'group', 'file', 'files', 'page', 'pages',
+  'image', 'video', 'audio', 'code', 'test', 'list', 'item',
+  'name', 'email', 'phone', 'address', 'date', 'time', 'year',
+  'month', 'day', 'hour', 'minute', 'second',
+  // Stock-related
+  'saham', 'harga', 'beli', 'jual', 'cuan', 'rugi', 'untung',
+  'naik', 'turun', 'grafik', 'chart', 'data', 'trade', 'trader',
+]);
+
+// ── Context-aware correction ──
+// Use surrounding words to disambiguate phonetic matches.
+// Example: "bulis" after "saham" → BULLISH (stock context)
+//          "bulis" after "buah" → leave alone (different context)
+const STOCK_CONTEXT_WORDS = new Set([
+  'saham', 'sahamku', 'broker', 'trade', 'trading', 'trader', 'investor',
+  'beli', 'jual', 'cuan', 'rugi', 'untung', 'profit', 'loss',
+  'grafik', 'chart', 'analisa', 'analisis', 'prediksi', 'prospek',
+  'dividen', 'ipo', 'emiten', 'ihsg', 'bei', 'idx',
+  'bank', 'rakyat', 'central', 'asia', 'mandiri', 'negara',
+  'goto', 'tokopedia', 'gojek', 'telkom', 'unilever', 'astra',
+]);
+
+function isInStockContext(allWords: string[], currentIdx: number): boolean {
+  // Check 5 words before and after
+  const start = Math.max(0, currentIdx - 5);
+  const end = Math.min(allWords.length, currentIdx + 6);
+  for (let i = start; i < end; i++) {
+    if (i === currentIdx) continue;
+    if (STOCK_CONTEXT_WORDS.has(allWords[i].toLowerCase())) return true;
+  }
+  return false;
+}
+
+function shouldSkipFuzzy(word: string): boolean {
+  const w = word.toLowerCase();
+  // Skip if word ends with common suffix and base is in COMMON_BASE_WORDS
+  for (const suffix of COMMON_SUFFIXES) {
+    if (w.endsWith(suffix) && w.length > suffix.length + 2) {
+      const base = w.slice(0, -suffix.length);
+      if (COMMON_BASE_WORDS.has(base)) return true;
+    }
+  }
+  // Skip words longer than 10 chars (Levenshtein too slow + error-prone)
+  if (w.length > 10) return true;
+  return false;
 }
 
 function isKnown(word: string): boolean {
@@ -504,31 +680,37 @@ export function localCorrect(rawText: string): CorrectionResult {
     // 5. NEW: Phonetic matching (Indonesian Double Metaphone) — Layer 2
     // Run BEFORE fuzzy Levenshtein — phonetic catches sound-alike stock terms
     // that Levenshtein would miss (or worse, false-positive match to wrong word).
-    //   "bulis" → BULLISH (code 'BULIS' matches)
-    //   "beris" → BEARISH (code 'BERIS' matches after EA→E)
-    //   "kandelistik" → CANDLESTICK (after C→K + dedup + EA→E)
+    // Context-aware: only match if surrounding words suggest stock/finance context.
     if (!isKnown(raw)) {
       const phonetic = phoneticMatch(raw);
       if (phonetic) {
-        out.push(phonetic + punct);
-        stats.phoneticFixed = (stats.phoneticFixed || 0) + 1;
-        wordIdx++;
-        continue;
+        // Context check: if the matched term is a stock term, verify we're in stock context
+        const isStockTerm = ['BULLISH', 'BEARISH', 'BREAKOUT', 'CANDLESTICK', 'SUPPORT', 'RESISTANCE',
+                             'SCALPING', 'LONG', 'SHORT', 'BUY', 'SELL', 'MARGIN', 'LEVERAGE',
+                             'BULL', 'BEAR', 'PUMP', 'DUMP'].includes(phonetic);
+        if (!isStockTerm || isInStockContext(allLower, wordIdx)) {
+          out.push(phonetic + punct);
+          stats.phoneticFixed = (stats.phoneticFixed || 0) + 1;
+          wordIdx++;
+          continue;
+        }
       }
 
       // 5b. Fuzzy matching via Levenshtein (typo correction) — Layer 3
-      // Only run if phonetic didn't match (Levenshtein is for genuine typos
-      // like "kloropls" → "kloroplas", not sound-alikes).
-      const fuzzy = fuzzyCorrectWord(raw);
-      if (fuzzy) {
-        let corrected = fuzzy.corrected;
-        if (raw[0] === raw[0].toUpperCase() && raw[0] !== raw[0].toLowerCase()) {
-          corrected = corrected[0].toUpperCase() + corrected.slice(1);
+      // Only run if phonetic didn't match AND word is not in skip list.
+      // Skip list prevents false-positives like "grafiknya" → "grafika".
+      if (!shouldSkipFuzzy(raw)) {
+        const fuzzy = fuzzyCorrectWord(raw);
+        if (fuzzy) {
+          let corrected = fuzzy.corrected;
+          if (raw[0] === raw[0].toUpperCase() && raw[0] !== raw[0].toLowerCase()) {
+            corrected = corrected[0].toUpperCase() + corrected.slice(1);
+          }
+          out.push(corrected + punct);
+          stats.fuzzyFixed++;
+          wordIdx++;
+          continue;
         }
-        out.push(corrected + punct);
-        stats.fuzzyFixed++;
-        wordIdx++;
-        continue;
       }
 
       stats.unknownWords++;
