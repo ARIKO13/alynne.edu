@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
   Users, Trophy, Flame, Award, Search, RefreshCw, Shield,
-  Loader2, TrendingUp, Activity, AlertTriangle,
+  Loader2, TrendingUp, Activity, AlertTriangle, FileText,
 } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
 import { TIERS } from '@/lib/tiers';
