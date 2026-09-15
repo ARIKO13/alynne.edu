@@ -267,7 +267,7 @@ const fbFixes: Record<string, string> = {
   'algoritm': 'algoritma', 'ngapain': 'mengapa',
 };
 
-const fbRemove = new Set(['dong', 'sih', 'deh', 'loh', 'toh']);
+const fbRemove = new Set<string>();  // DISABLED — particles like "dong", "sih", "deh" are natural Indonesian conversation, removing them truncates output
 
 const techTerms = new Set([
   'ai', 'api', 'app', 'software', 'hardware', 'database', 'server',
@@ -705,12 +705,12 @@ export function localCorrect(rawText: string): CorrectionResult {
     const lower = raw.toLowerCase();
     stats.totalWords++;
 
-    // 1. Remove filler particles
-    if (fbRemove.has(lower) || _remove?.has(lower)) {
-      stats.removedParticles++;
-      wordIdx++;
-      continue;
-    }
+    // 1. Remove filler particles — DISABLED (was truncating valid conversation particles like "dong", "sih")
+    // if (fbRemove.has(lower) || _remove?.has(lower)) {
+    //   stats.removedParticles++;
+    //   wordIdx++;
+    //   continue;
+    // }
 
     // 2. Direct STT fixes
     const fixTarget = _fixes?.[lower] || fbFixes[lower];
