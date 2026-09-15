@@ -84,14 +84,21 @@ function loadDict() {
     }
     _enSlang = dict.sen || {};
     _fixes = dict.fix || {};
-    // Filter out corrupt _fixes entries AND entries that duplicate fbSlang
-    // (e.g., "bgt" → "banget" in _fixes prevents slang 2-pass "bgt" → "banget" → "sangat")
+    // Filter out corrupt _fixes entries, slang duplicates, AND particle words
+    // Particles (dong, sih, deh, loh, etc.) should NOT be "fixed" — they're valid conversation words
     if (_fixes) {
       let removedCount = 0;
+      const PARTICLE_KEYS = new Set(['dong', 'sih', 'deh', 'loh', 'toh', 'kok', 'lah', 'kah', 'pun', 'ya', 'nah', 'eh', 'mah', 'ke', 'mah']);
       for (const key of Object.keys(_fixes)) {
         const val = _fixes[key];
         // Remove corrupt entries
         if (typeof val === 'string' && (val.includes('menggantikan kata:') || val.includes('ganti kata:') || val.length > 50)) {
+          delete _fixes[key];
+          removedCount++;
+          continue;
+        }
+        // Remove particle words (dong, sih, deh, loh, toh, kok, lah, kah, dll)
+        if (PARTICLE_KEYS.has(key.toLowerCase())) {
           delete _fixes[key];
           removedCount++;
           continue;
@@ -102,7 +109,7 @@ function loadDict() {
           removedCount++;
         }
       }
-      if (removedCount > 0) console.log(`[STT-Dict] Filtered ${removedCount} _fixes entries (corrupt + slang duplicates)`);
+      if (removedCount > 0) console.log(`[STT-Dict] Filtered ${removedCount} _fixes entries (corrupt + particles + slang duplicates)`);
     }
     _remove = new Set<string>();  // DISABLED — no particle removal, all conversation words retained
     // Load phrase_map from JSON if present (overrides hardcoded fallback)
