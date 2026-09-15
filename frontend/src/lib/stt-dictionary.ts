@@ -104,7 +104,7 @@ function loadDict() {
       }
       if (removedCount > 0) console.log(`[STT-Dict] Filtered ${removedCount} _fixes entries (corrupt + slang duplicates)`);
     }
-    _remove = new Set(dict.rem || []);
+    _remove = new Set<string>();  // DISABLED — no particle removal, all conversation words retained
     // Load phrase_map from JSON if present (overrides hardcoded fallback)
     if (dict.phrase_map && typeof dict.phrase_map === 'object') {
       _phraseMap = dict.phrase_map;
@@ -481,6 +481,9 @@ function isInStockContext(allWords: string[], currentIdx: number): boolean {
 
 function shouldSkipFuzzy(word: string): boolean {
   const w = word.toLowerCase();
+  // Skip conversation particles (dong, sih, deh, loh, toh, kok, lah, kah, pun, ya, nah, eh)
+  const PARTICLES = new Set(['dong', 'sih', 'deh', 'loh', 'toh', 'kok', 'lah', 'kah', 'pun', 'ya', 'nah', 'eh', 'mah', 'ke']);
+  if (PARTICLES.has(w)) return true;
   // Skip if word ends with common suffix and base is in COMMON_BASE_WORDS
   for (const suffix of COMMON_SUFFIXES) {
     if (w.endsWith(suffix) && w.length > suffix.length + 2) {
@@ -724,11 +727,9 @@ export function localCorrect(rawText: string): CorrectionResult {
     // 3. Slang to formal (with 2-pass for chained slang: bgt → banget → sangat)
     let slangTarget = _indoSlang?.[lower]?.f || fbSlang[lower];
     if (slangTarget !== undefined) {
-      if (slangTarget === '') {
-        stats.removedParticles++;
-        wordIdx++;
-        continue;
-      }
+      // NOTE: previously, empty string '' meant "remove this word" — DISABLED.
+      // Particle removal (dong, sih, deh, etc.) is NOT done here anymore.
+      // All conversation particles are retained in output.
       // 2nd pass: if the corrected word is ALSO slang, apply again
       // e.g., bgt → banget (VPS slang) → sangat (fbSlang)
       const secondPass = _indoSlang?.[slangTarget.toLowerCase()]?.f || fbSlang[slangTarget.toLowerCase()];
