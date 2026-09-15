@@ -10,7 +10,7 @@ import {
 import { MaterialUpload } from '@/components/material-upload';
 import { YouTubeTranscript } from '@/components/youtube-transcript';
 import { cn } from '@/lib/utils';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { structureContent, generatePdf } from '@/lib/pdf-generator';
 
@@ -119,6 +119,14 @@ export function STTPanel() {
   const transcriptScrollRef = useRef<HTMLDivElement>(null);
   const isScreenMode = sttAudioMode === 'screen';
   const isCombinedActive = isScreenMode && isRecording;
+
+  // Auto-scroll to bottom when new transcript entries arrive or interim text changes
+  useEffect(() => {
+    const el = transcriptScrollRef.current;
+    if (el) {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    }
+  }, [transcriptEntries, interimTranscript]);
 
   // Generate learning module PDF (LLM-structured, falls back to local)
   const generatePDFCombined = async () => {
