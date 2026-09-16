@@ -154,6 +154,16 @@ export function useSpeechRecognition() {
   const webspeechRestartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastErrorWasNoSpeechRef = useRef(false);
 
+  // Track which result indexes have been finalized & appended to the transcript.
+  // Why: Chrome's Web Speech API sometimes fires onresult with event.resultIndex = 0
+  // even after result[0] has already been finalized and appended. Without this guard,
+  // the same final text gets appended a second time → transcript shows "halo halo"
+  // until the next result arrives and "replaces" the duplicate visually.
+  //
+  // This Set is reset every time a new SpeechRecognition instance is created
+  // (in onstart handler) so that fresh result indexes can be processed normally.
+  const processedFinalIdxRef = useRef<Set<number>>(new Set());
+
 
 
   const addLog = useCallback((type: STTLogEntry['type'], text: string) => {
@@ -879,8 +889,14 @@ export function useSpeechRecognition() {
         let interim = '', finalText = '';
         for (let i = event.resultIndex; i < event.results.length; i++) {
           if (event.results[i].isFinal) {
+            // Skip if this final result index was already appended to the transcript
+            // (Chrome sometimes re-fires onresult with stale resultIndex, causing duplicates)
+            if (processedFinalIdxRef.current.has(i)) continue;
             const best = pickBestAlternative(event.results[i]);
-            if (best) finalText += best;
+            if (best) {
+              finalText += best;
+              processedFinalIdxRef.current.add(i);
+            }
           } else {
             const best = pickBestAlternative(event.results[i]);
             if (best) interim += best;
@@ -919,6 +935,9 @@ export function useSpeechRecognition() {
       };
 
       try {
+        // New recognition instance → fresh result array. Clear the processed-final
+        // tracker so result indexes from this new session can be appended normally.
+        processedFinalIdxRef.current.clear();
         recognition.start();
         recognitionRef.current = recognition;
       } catch (e) {
@@ -1114,6 +1133,9 @@ export function useSpeechRecognition() {
 
         recognition.onstart = () => {
           clearTimeout(timeout);
+          // New recognition instance → fresh result array. Clear the processed-final
+          // tracker so result indexes from this new session can be appended normally.
+          processedFinalIdxRef.current.clear();
           addLog('success', 'Web Speech API ONSTART — engine aktif');
           if (!resolved) {
             resolved = true;
@@ -1134,8 +1156,14 @@ export function useSpeechRecognition() {
           let interim = '', finalText = '';
           for (let i = event.resultIndex; i < event.results.length; i++) {
             if (event.results[i].isFinal) {
+              // Skip if this final result index was already appended to the transcript
+              // (Chrome sometimes re-fires onresult with stale resultIndex, causing duplicates)
+              if (processedFinalIdxRef.current.has(i)) continue;
               const best = pickBestAlternative(event.results[i]);
-              if (best) finalText += best;
+              if (best) {
+                finalText += best;
+                processedFinalIdxRef.current.add(i);
+              }
             } else {
               const best = pickBestAlternative(event.results[i]);
               if (best) interim += best;
@@ -1214,6 +1242,9 @@ export function useSpeechRecognition() {
     lastErrorWasNoSpeechRef.current = false;
     skipWebspeechReconnectRef.current = false;
     webspeechRestartCountRef.current = 0;
+    // Fresh recording session → clear processed-final tracker so result indexes
+    // from any previous recording don't accidentally suppress new appends.
+    processedFinalIdxRef.current.clear();
     setSttError('');
     setSttWarning('');
     setSttStatus('recording');
