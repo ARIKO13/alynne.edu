@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import {
   Users, Trophy, Flame, Award, Search, RefreshCw, Shield,
   Loader2, TrendingUp, Activity, AlertTriangle, FileText,
+  Trash2, ArrowDownUp, ChevronDown, X,
 } from 'lucide-react';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { TIERS } from '@/lib/tiers';
 import { cn } from '@/lib/utils';
 
@@ -86,9 +87,15 @@ export function AdminPanel() {
   const [failures, setFailures] = useState<any[]>([]);
   const [failuresTotal, setFailuresTotal] = useState(0);
   const [failuresPage, setFailuresPage] = useState(1);
+  const [failuresSort, setFailuresSort] = useState<'newest' | 'oldest'>('newest');
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [fixInputs, setFixInputs] = useState<Record<string, string>>({});
   const [fixingId, setFixingId] = useState<string | null>(null);
   const [fixedIds, setFixedIds] = useState<Set<string>>(new Set());
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [clearingAll, setClearingAll] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const sortMenuRef = useRef<HTMLDivElement>(null);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -115,18 +122,85 @@ export function AdminPanel() {
     }
   }, []);
 
-  const fetchFailures = useCallback(async (p: number = 1) => {
+  const fetchFailures = useCallback(async (p: number = 1, sort: 'newest' | 'oldest' = failuresSort) => {
     try {
-      const res = await fetch(`/api/admin/stt-failures?page=${p}&limit=20`);
+      const res = await fetch(`/api/admin/stt-failures?page=${p}&limit=20&sort=${sort}`);
       if (res.status === 403) return;
       const data = await res.json();
       setFailures(data.failures || []);
       setFailuresTotal(data.total || 0);
       setFailuresPage(p);
+      setFailuresSort(sort);
     } catch (err) {
       console.error('STT failures fetch error:', err);
     }
-  }, []);
+  }, [failuresSort]);
+
+  const handleDeleteFailure = async (failureId: string) => {
+    setDeletingId(failureId);
+    try {
+      const res = await fetch(`/api/admin/stt-failures?id=${encodeURIComponent(failureId)}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error('Delete failed:', err);
+        return;
+      }
+      const data = await res.json();
+      if (data.success) {
+        // Optimistically remove from list
+        setFailures(prev => prev.filter(f => f.id !== failureId));
+        setFailuresTotal(prev => Math.max(0, prev - 1));
+        // If we removed the last item on a page > 1, go back one page
+        if (failures.length === 1 && failuresPage > 1) {
+          fetchFailures(failuresPage - 1, failuresSort);
+        } else {
+          // Refetch current page to keep list full
+          fetchFailures(failuresPage, failuresSort);
+        }
+      }
+    } catch (err) {
+      console.error('Delete error:', err);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleClearAllFailures = async () => {
+    setClearingAll(true);
+    try {
+      const res = await fetch(`/api/admin/stt-failures`, { method: 'DELETE' });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error('Clear all failed:', err);
+        return;
+      }
+      const data = await res.json();
+      if (data.success) {
+        setFailures([]);
+        setFailuresTotal(0);
+        setFailuresPage(1);
+        setShowClearConfirm(false);
+      }
+    } catch (err) {
+      console.error('Clear all error:', err);
+    } finally {
+      setClearingAll(false);
+    }
+  };
+
+  // Close sort dropdown on outside click
+  useEffect(() => {
+    if (!sortMenuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (sortMenuRef.current && !sortMenuRef.current.contains(e.target as Node)) {
+        setSortMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [sortMenuOpen]);
 
   const handleFixMapping = async (failureId: string, unknownWord: string) => {
     const correctWord = fixInputs[`${failureId}-${unknownWord}`];
@@ -241,7 +315,7 @@ export function AdminPanel() {
           Users
         </button>
         <button
-          onClick={() => { setActiveView('stt-failures'); fetchFailures(1); }}
+          onClick={() => { setActiveView('stt-failures'); fetchFailures(1, failuresSort); }}
           className={cn(
             'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all',
             activeView === 'stt-failures'
@@ -480,23 +554,127 @@ export function AdminPanel() {
 
       {activeView === 'stt-failures' && (
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
               <h3 className="text-sm font-semibold text-zinc-200">STT Recognition Failures</h3>
               <p className="text-[11px] text-zinc-500 mt-0.5">
                 {failuresTotal > 0 ? `${failuresTotal} total failures logged` : 'No failures logged yet'}
               </p>
             </div>
-            <Button
-              onClick={() => fetchFailures(failuresPage)}
-              variant="outline"
-              size="sm"
-              className="border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] h-8 text-xs"
-            >
-              <RefreshCw className="h-3 w-3 mr-1" />
-              Refresh
-            </Button>
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Sort Dropdown */}
+              <div className="relative" ref={sortMenuRef}>
+                <button
+                  onClick={() => setSortMenuOpen(o => !o)}
+                  className="flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.04] px-2.5 py-1 text-[11px] text-zinc-300 transition-colors"
+                  title="Urutkan"
+                >
+                  <ArrowDownUp className="h-3 w-3" />
+                  {failuresSort === 'newest' ? 'Terbaru' : 'Terlama'}
+                  <ChevronDown className={cn('h-3 w-3 transition-transform', sortMenuOpen && 'rotate-180')} />
+                </button>
+                {sortMenuOpen && (
+                  <div className="absolute right-0 mt-1 z-10 rounded-md border border-white/[0.08] bg-[#0c0c0e] shadow-lg overflow-hidden min-w-[140px]">
+                    <button
+                      onClick={() => { setSortMenuOpen(false); fetchFailures(1, 'newest'); }}
+                      className={cn(
+                        'w-full text-left px-3 py-2 text-[11px] hover:bg-white/[0.06] transition-colors',
+                        failuresSort === 'newest' ? 'text-[#8B5CF6] bg-[#8B5CF6]/5' : 'text-zinc-300'
+                      )}
+                    >
+                      Terbaru (DESC)
+                    </button>
+                    <button
+                      onClick={() => { setSortMenuOpen(false); fetchFailures(1, 'oldest'); }}
+                      className={cn(
+                        'w-full text-left px-3 py-2 text-[11px] hover:bg-white/[0.06] transition-colors',
+                        failuresSort === 'oldest' ? 'text-[#8B5CF6] bg-[#8B5CF6]/5' : 'text-zinc-300'
+                      )}
+                    >
+                      Terlama (ASC)
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <Button
+                onClick={() => fetchFailures(failuresPage, failuresSort)}
+                variant="outline"
+                size="sm"
+                className="border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] h-8 text-xs"
+              >
+                <RefreshCw className="h-3 w-3 mr-1" />
+                Refresh
+              </Button>
+
+              {/* Clear All */}
+              {failuresTotal > 0 && (
+                <Button
+                  onClick={() => setShowClearConfirm(true)}
+                  disabled={clearingAll}
+                  variant="outline"
+                  size="sm"
+                  className="border-red-500/20 text-red-400 hover:text-white hover:bg-red-600/80 h-8 text-xs"
+                >
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  {clearingAll ? 'Menghapus...' : 'Hapus Semua'}
+                </Button>
+              )}
+            </div>
           </div>
+
+          {/* Clear All Confirmation Dialog */}
+          {showClearConfirm && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => !clearingAll && setShowClearConfirm(false)}>
+              <div
+                className="rounded-xl border border-white/[0.08] bg-[#0c0c0e] p-5 max-w-sm w-full shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-500/15">
+                    <AlertTriangle className="h-4 w-4 text-red-400" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-zinc-100">Hapus semua STT failures?</h4>
+                    <p className="text-[11px] text-zinc-400 mt-1 leading-relaxed">
+                      {failuresTotal} record akan dihapus permanen dari database.
+                      Tindakan ini tidak bisa dibatalkan.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => !clearingAll && setShowClearConfirm(false)}
+                    disabled={clearingAll}
+                    className="text-zinc-500 hover:text-zinc-300 transition-colors p-1 -mr-1 -mt-1"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => setShowClearConfirm(false)}
+                    disabled={clearingAll}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 border-white/[0.08] text-zinc-300 hover:bg-white/[0.06] h-8 text-xs"
+                  >
+                    Batal
+                  </Button>
+                  <Button
+                    onClick={handleClearAllFailures}
+                    disabled={clearingAll}
+                    size="sm"
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white h-8 text-xs"
+                  >
+                    {clearingAll ? (
+                      <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Menghapus...</>
+                    ) : (
+                      <><Trash2 className="h-3 w-3 mr-1" /> Ya, Hapus Semua</>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {failures.length === 0 ? (
             <div className="text-center py-12 rounded-xl border border-white/[0.06] bg-white/[0.02]">
@@ -510,9 +688,9 @@ export function AdminPanel() {
             <>
               <div className="space-y-2 max-h-[500px] overflow-y-auto">
                 {failures.map((f: any) => (
-                  <div key={f.id} className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+                  <div key={f.id} className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 group">
                     <div className="flex items-start justify-between gap-3 mb-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Badge
                           variant="outline"
                           className={cn(
@@ -533,6 +711,18 @@ export function AdminPanel() {
                           </Badge>
                         )}
                       </div>
+                      <button
+                        onClick={() => handleDeleteFailure(f.id)}
+                        disabled={deletingId === f.id}
+                        title="Hapus record ini"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-500/15 text-zinc-500 hover:text-red-400 disabled:opacity-50 disabled:cursor-wait shrink-0"
+                      >
+                        {deletingId === f.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-3.5 w-3.5" />
+                        )}
+                      </button>
                     </div>
                     <div className="space-y-1.5">
                       <div>
@@ -597,7 +787,7 @@ export function AdminPanel() {
               {failuresTotal > 20 && (
                 <div className="flex items-center justify-center gap-2">
                   <Button
-                    onClick={() => fetchFailures(failuresPage - 1)}
+                    onClick={() => fetchFailures(failuresPage - 1, failuresSort)}
                     disabled={failuresPage <= 1}
                     size="sm"
                     variant="outline"
@@ -609,7 +799,7 @@ export function AdminPanel() {
                     {failuresPage} / {Math.ceil(failuresTotal / 20)}
                   </span>
                   <Button
-                    onClick={() => fetchFailures(failuresPage + 1)}
+                    onClick={() => fetchFailures(failuresPage + 1, failuresSort)}
                     disabled={failuresPage >= Math.ceil(failuresTotal / 20)}
                     size="sm"
                     variant="outline"
