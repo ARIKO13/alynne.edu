@@ -9,8 +9,9 @@ import { LoginScreen } from '@/components/login-screen';
 import { CertificateView } from '@/components/certificate-view';
 import { AdminPanel } from '@/components/admin-panel';
 import { Badge } from '@/components/ui/badge';
+import { stopSttRecording } from '@/lib/stt-controller';
 import {
-  Mic, Bot, Settings, Wifi, Radio, LogOut,
+  Mic, Bot, Settings, Wifi, Radio, LogOut, MicOff,
   Menu, X, Shield, FileText, Monitor, ArrowLeft, Network, Wand2,
 } from 'lucide-react';
 import { isAdmin } from '@/lib/admin';
@@ -202,15 +203,30 @@ export default function App({ onBackToLanding }: AppProps) {
               <span>Back</span>
             </button>
             <h1 className="text-sm font-medium text-zinc-200">{TAB_TITLES[activeTab]}</h1>
-            {sttStatus === 'recording' && activeTab === 'stt' && (
-              <Badge variant="outline" className={cn('gap-1.5 text-[11px] animate-pulse hidden sm:flex',
-                sttSource === 'webspeech' ? 'border-red-500/30 text-red-400 bg-red-500/10'
-                  : sttSource === 'screen-capture' ? 'border-sky-500/30 text-sky-400 bg-sky-500/10'
-                  : 'border-amber-500/30 text-amber-400 bg-amber-500/10'
-              )}>
+            {sttStatus === 'recording' && (
+              <Badge
+                variant="outline"
+                className={cn('gap-1.5 text-[11px] animate-pulse hidden sm:flex cursor-pointer',
+                  sttSource === 'webspeech' ? 'border-red-500/30 text-red-400 bg-red-500/10'
+                    : sttSource === 'screen-capture' ? 'border-sky-500/30 text-sky-400 bg-sky-500/10'
+                    : 'border-amber-500/30 text-amber-400 bg-amber-500/10'
+                )}
+                onClick={() => { setActiveTab('stt'); setSidebarOpen(false); }}
+                title="Klik untuk kembali ke tab STT"
+              >
                 {sttSource === 'webspeech' ? <Wifi className="h-3 w-3" /> : sttSource === 'screen-capture' ? <Monitor className="h-3 w-3" /> : <Radio className="h-3 w-3" />}
                 {sttSource === 'webspeech' ? 'LIVE' : sttSource === 'screen-capture' ? 'SCREEN' : 'GROQ'}
               </Badge>
+            )}
+            {sttStatus === 'recording' && (
+              <button
+                onClick={() => stopSttRecording()}
+                className="hidden sm:flex items-center gap-1.5 rounded-md bg-red-600 hover:bg-red-700 px-2 py-1 text-[11px] font-medium text-white transition-colors"
+                title="Stop recording dari tab manapun"
+              >
+                <MicOff className="h-3 w-3" />
+                Stop
+              </button>
             )}
           </div>
 
@@ -249,7 +265,20 @@ export default function App({ onBackToLanding }: AppProps) {
 
         <main className="flex-1 p-4 md:p-6">
           <div className="max-w-4xl mx-auto">
-            {activeTab === 'stt' && <STTPanel />}
+            {/*
+              STTPanel stays MOUNTED across all tabs so that recording continues
+              when the user switches to MindMap / Modul / Assistant / etc. The
+              useSpeechRecognition hook's refs (recognition, mediaRecorder, etc.)
+              only live as long as STTPanel is mounted. Hiding via CSS `hidden`
+              keeps the hook alive while visually swapping to other panels.
+
+              The only ways to stop recording:
+                1. Click "Stop Recording" inside STTPanel
+                2. Click the global "Stop" button in the header (any tab)
+            */}
+            <div className={cn(activeTab !== 'stt' && 'hidden')}>
+              <STTPanel />
+            </div>
             {activeTab === 'mindmap' && <MindMapPanel />}
             {activeTab === 'modul' && <ModulPanel />}
             {activeTab === 'sharpen' && <ImageSharpener />}

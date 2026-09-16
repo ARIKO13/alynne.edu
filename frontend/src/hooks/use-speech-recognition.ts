@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppStore } from '@/lib/store';
 import { useScreenCv } from '@/hooks/use-screen-cv';
 import { setupRecognitionGrammar } from '@/lib/speech-grammar';
+import { registerSttStop, unregisterSttStop } from '@/lib/stt-controller';
 
 const GROQ_CHUNK_INTERVAL = 10000; // 10s chunks (was 4s) - bigger chunks have valid webm headers
 const NO_RESULT_TIMEOUT = 10000;
@@ -160,6 +161,42 @@ export function useSpeechRecognition() {
     setActivityLog((prev) => [...prev.slice(-50), entry]);
     console.log(`[STT ${type}] ${text}`);
   }, []);
+
+  // ── Fire-and-forget fuzzy-correct for Web Speech API final text ──
+  // Why: Previously only OCR text was sent to /api/stt/fuzzy-correct, which
+  // means Web Speech API recognition failures (unknown words) were NEVER
+  // logged to the STTFailure D1 table. Admin panel showed "No failures logged"
+  // even after extensive STT use.
+  //
+  // This helper runs after each Web Speech final result to:
+  //   1. Server-side: log raw text + unknown words to STTFailure table
+  //      (auto-logged inside fuzzy-correct.ts when unknownWords > 0)
+  //   2. Client-side: surface a tiny log entry so the user knows it was logged
+  //
+  // Fire-and-forget is intentional — we don't block the onresult callback,
+  // and the actual transcript correction still happens later via enhanceNewEntries.
+  const logWebspeechFailures = useCallback((rawText: string) => {
+    const text = (rawText || '').trim();
+    if (!text) return;
+    fetch('/api/stt/fuzzy-correct', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, source: 'webspeech' }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data) return;
+        const unknown = data.stats?.unknownWords ?? 0;
+        if (unknown > 0) {
+          addLog('info', `Web Speech: ${unknown} kata tidak dikenali → logged ke STT Failures`);
+        } else if (data.stats && (data.stats.fuzzyFixed || data.stats.slangFixed)) {
+          addLog('info', `Web Speech fuzzy-corrected: ${data.stats.fuzzyFixed || 0} typo, ${data.stats.slangFixed || 0} slang`);
+        }
+      })
+      .catch(() => {
+        // Silent fail — don't disrupt recording for logging failures
+      });
+  }, [addLog]);
 
   // ── Audio Visualizer (Web Audio API) — uses an EXISTING stream, never calls getUserMedia ──
   const startVisualizer = useCallback((stream: MediaStream) => {
@@ -851,6 +888,8 @@ export function useSpeechRecognition() {
         }
         if (finalText) {
           appendTranscript(finalText);
+          // Auto-log unknown words to STT Failures table (D1) via fuzzy-correct
+          logWebspeechFailures(finalText);
           addLog('success', `"${finalText.slice(0, 100)}${finalText.length > 100 ? '...' : ''}"`);
         }
         setInterimTranscript(interim);
@@ -887,7 +926,7 @@ export function useSpeechRecognition() {
         switchToGroq();
       }
     }, WEBSPEECH_RESTART_DELAY);
-  }, [addLog, setSttError, setSttStatus, appendTranscript, setInterimTranscript, switchToGroq]);
+  }, [addLog, setSttError, setSttStatus, appendTranscript, setInterimTranscript, switchToGroq, logWebspeechFailures]);
 
 
 
@@ -1104,6 +1143,8 @@ export function useSpeechRecognition() {
           }
           if (finalText) {
             appendTranscript(finalText);
+            // Auto-log unknown words to STT Failures table (D1) via fuzzy-correct
+            logWebspeechFailures(finalText);
             addLog('success', `"${finalText.slice(0, 100)}${finalText.length > 100 ? '...' : ''}"`);
           }
           setInterimTranscript(interim);
@@ -1150,7 +1191,7 @@ export function useSpeechRecognition() {
         }
       });
     },
-    [webspeechSupported, setSttSource, appendTranscript, setInterimTranscript, setSttError, setSttStatus, restartWebSpeech, addLog]
+    [webspeechSupported, setSttSource, appendTranscript, setInterimTranscript, setSttError, setSttStatus, restartWebSpeech, addLog, logWebspeechFailures]
   );
 
   // ── Start no-result timer — auto-switch to Groq if Web Speech produces nothing ──
@@ -1446,6 +1487,15 @@ export function useSpeechRecognition() {
     if (sttStatus === 'recording' || sttStatus === 'processing') stopRecordingFn();
     else startRecording();
   }, [sttStatus, startRecording, stopRecordingFn]);
+
+  // ── Register stop function to global STT controller ──
+  // Allows the app header (or any other component) to stop recording without
+  // being inside <STTPanel/>. Used by the global "Stop" button in the header
+  // so the user can stop recording from any tab — not just the STT tab.
+  useEffect(() => {
+    registerSttStop(stopRecordingFn);
+    return () => unregisterSttStop();
+  }, [stopRecordingFn]);
 
   const clearTranscript = useCallback(() => {
     useAppStore.getState().setTranscript('');
