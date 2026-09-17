@@ -25,6 +25,25 @@ import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { phoneticMatch, getPhoneticLookupSize } from '@/lib/phonetic-engine';
 
+// ── SQLite-backed dataset (v2: SSD is source of truth, RAM is transient cache) ──
+// User request: 'aku mau ketika stt itu nyari dataset kata dan nambah data
+// baru itu di ssd, jdi ram cuma processing aja, bukan menyimpan data.'
+//
+// Architecture change:
+//   v1: KBBI loaded from JSON file → kept in RAM Set permanently (4.66MB)
+//   v2: KBBI lives in SQLite (SSD). RAM cache is built on-demand from SQLite,
+//       can be invalidated/reset without data loss.
+//
+// Strategy:
+//   - First loadDict() call: try to read from SQLite (SELECT word FROM
+//     learned_words WHERE status='confirmed'). Build Set in RAM.
+//   - Fallback: if SQLite fails/unavailable, fall back to JSON file.
+//   - resetDictionaryCache() now clears RAM cache → next call rebuilds from
+//     SQLite (picks up any newly learned words automatically).
+//
+// RAM is now a TRANSIENT CACHE, not the source of truth. SQLite on SSD is
+// the persistent store.
+
 // ── Dictionary Data (lazy-loaded once) ──
 let _kbbi: Set<string> | null = null;
 let _enWords: Set<string> | null = null;
@@ -44,82 +63,149 @@ const FUZZY_CACHE_MAX = 5000; // limit memory
 function loadDict() {
   if (_loaded) return;
   _loaded = true;
+
+  // ── v2: Try SQLite first (SSD is source of truth) ──
+  // KBBI + slang + auto-learned words all live in SQLite learned_words table.
+  // RAM is just a transient cache built on-demand.
+  let sqliteLoaded = false;
   try {
-    const candidates = [
-      join(process.cwd(), 'data', 'stt-dictionary.json'),
-      join(process.cwd(), 'src', 'lib', 'data', 'stt-dictionary.json'),
-      '/root/lina-learning/data/stt-dictionary.json',
-      join(process.cwd(), 'public', 'data', 'stt-dictionary.json'),
-    ];
+    // Dynamic import to avoid circular dependency + skip if better-sqlite3 not installed
+    const sttDbModule = require('@/lib/stt-db') as typeof import('@/lib/stt-db');
+    const sttDb = sttDbModule.sttDb;
+    // Query all confirmed words (KBBI + confirmed auto-learned)
+    const rows = sttDb.getAll<{ word: string; source: string; phonetic_variations: string }>(
+      `SELECT word, source, phonetic_variations FROM learned_words WHERE status = 'confirmed'`
+    );
+    if (rows && rows.length > 0) {
+      _kbbi = new Set<string>();
+      const sqliteSlang: Record<string, { f: string; m: string }> = {};
+      let slangCount = 0;
+      for (const row of rows) {
+        const w = (row.word || '').toLowerCase().trim();
+        if (!w || w.length < 2) continue;
+        _kbbi.add(w);
+        // Slang entries: source='slang' + phonetic_variations contains formal form
+        if (row.source === 'slang' && row.phonetic_variations) {
+          try {
+            const variations = JSON.parse(row.phonetic_variations);
+            if (Array.isArray(variations) && variations.length > 0) {
+              sqliteSlang[w] = { f: variations[0], m: '' };
+              slangCount++;
+            }
+          } catch {}
+        }
+      }
+      // Merge with hardcoded fbSlang (fallback slang yang sudah ada di code)
+      _indoSlang = { ...sqliteSlang };
 
-    let dictPath = '';
-    for (const p of candidates) {
-      if (existsSync(p)) { dictPath = p; break; }
-    }
+      // EN words + fixes + phrase_map: still from JSON file (small, rarely changes)
+      // These are fallback data, not the primary KBBI source anymore
+      const dictPath = [
+        join(process.cwd(), 'data', 'stt-dictionary.json'),
+        '/root/lina-learning/data/stt-dictionary.json',
+        join(process.cwd(), 'src', 'lib', 'data', 'stt-dictionary.json'),
+      ].find(p => existsSync(p));
 
-    if (!dictPath) {
-      console.warn('[STT-Dict] File not found, using fallback only');
-      return;
-    }
-
-    const raw = readFileSync(dictPath, 'utf-8');
-    const dict = JSON.parse(raw);
-
-    _kbbi = new Set(dict.k.split('|'));
-    _enWords = new Set(dict.e.split('|'));
-    _indoSlang = dict.sid || {};
-    // Filter corrupt _indoSlang entries (e.g., "trs" → "menggantikan kata: terus")
-    if (_indoSlang) {
-      let removedSlang = 0;
-      for (const key of Object.keys(_indoSlang)) {
-        const entry = _indoSlang[key];
-        if (entry && typeof entry === 'object' && entry.f) {
-          if (entry.f.includes('menggantikan kata:') || entry.f.includes('ganti kata:') || entry.f.length > 50) {
-            delete _indoSlang[key];
-            removedSlang++;
+      if (dictPath) {
+        const raw = readFileSync(dictPath, 'utf-8');
+        const dict = JSON.parse(raw);
+        _enWords = new Set(dict.e?.split('|') || []);
+        _enSlang = dict.sen || {};
+        _fixes = dict.fix || {};
+        // Filter corrupt _fixes entries + particle words
+        if (_fixes) {
+          const PARTICLE_KEYS = new Set(['dong', 'sih', 'deh', 'loh', 'toh', 'kok', 'lah', 'kah', 'pun', 'ya', 'nah', 'eh', 'mah', 'ke', 'mah']);
+          for (const key of Object.keys(_fixes)) {
+            const val = _fixes[key];
+            if (typeof val === 'string' && (val.includes('menggantikan kata:') || val.includes('ganti kata:') || val.length > 50)) {
+              delete _fixes[key]; continue;
+            }
+            if (PARTICLE_KEYS.has(key.toLowerCase())) { delete _fixes[key]; continue; }
+            if (fbSlang[key] !== undefined) { delete _fixes[key]; continue; }
           }
         }
+        if (dict.phrase_map && typeof dict.phrase_map === 'object') {
+          _phraseMap = dict.phrase_map;
+        }
+      } else {
+        _enWords = new Set<string>();
+        _enSlang = {};
+        _fixes = {};
       }
-      if (removedSlang > 0) console.log(`[STT-Dict] Filtered ${removedSlang} corrupt _indoSlang entries`);
-    }
-    _enSlang = dict.sen || {};
-    _fixes = dict.fix || {};
-    // Filter out corrupt _fixes entries, slang duplicates, AND particle words
-    // Particles (dong, sih, deh, loh, etc.) should NOT be "fixed" — they're valid conversation words
-    if (_fixes) {
-      let removedCount = 0;
-      const PARTICLE_KEYS = new Set(['dong', 'sih', 'deh', 'loh', 'toh', 'kok', 'lah', 'kah', 'pun', 'ya', 'nah', 'eh', 'mah', 'ke', 'mah']);
-      for (const key of Object.keys(_fixes)) {
-        const val = _fixes[key];
-        // Remove corrupt entries
-        if (typeof val === 'string' && (val.includes('menggantikan kata:') || val.includes('ganti kata:') || val.length > 50)) {
-          delete _fixes[key];
-          removedCount++;
-          continue;
-        }
-        // Remove particle words (dong, sih, deh, loh, toh, kok, lah, kah, dll)
-        if (PARTICLE_KEYS.has(key.toLowerCase())) {
-          delete _fixes[key];
-          removedCount++;
-          continue;
-        }
-        // Remove entries that duplicate fbSlang (let slang step handle them with 2-pass)
-        if (fbSlang[key] !== undefined) {
-          delete _fixes[key];
-          removedCount++;
-        }
-      }
-      if (removedCount > 0) console.log(`[STT-Dict] Filtered ${removedCount} _fixes entries (corrupt + particles + slang duplicates)`);
-    }
-    _remove = new Set<string>();  // DISABLED — no particle removal, all conversation words retained
-    // Load phrase_map from JSON if present (overrides hardcoded fallback)
-    if (dict.phrase_map && typeof dict.phrase_map === 'object') {
-      _phraseMap = dict.phrase_map;
-    }
+      _remove = new Set<string>();
 
-    console.log(`[STT-Dict] Loaded: KBBI=${_kbbi.size}, EN=${_enWords.size}, slang_id=${Object.keys(_indoSlang).length}, slang_en=${Object.keys(_enSlang).length}, fixes=${Object.keys(_fixes).length}, phrase_map=${_phraseMap ? Object.keys(_phraseMap).length : 0}`);
+      console.log(`[STT-Dict] ✓ Loaded from SQLite (SSD): KBBI=${_kbbi.size} (incl. ${slangCount} slang), EN=${_enWords.size}, fixes=${Object.keys(_fixes).length}`);
+      sqliteLoaded = true;
+    }
   } catch (err) {
-    console.error('[STT-Dict] Load failed:', err);
+    console.warn('[STT-Dict] SQLite load failed, falling back to JSON file:', err instanceof Error ? err.message : err);
+  }
+
+  // ── Fallback: load from JSON file (v1 behavior) ──
+  if (!sqliteLoaded) {
+    try {
+      const candidates = [
+        join(process.cwd(), 'data', 'stt-dictionary.json'),
+        join(process.cwd(), 'src', 'lib', 'data', 'stt-dictionary.json'),
+        '/root/lina-learning/data/stt-dictionary.json',
+        join(process.cwd(), 'public', 'data', 'stt-dictionary.json'),
+      ];
+
+      let dictPath = '';
+      for (const p of candidates) {
+        if (existsSync(p)) { dictPath = p; break; }
+      }
+
+      if (!dictPath) {
+        console.warn('[STT-Dict] File not found, using fallback only');
+        return;
+      }
+
+      const raw = readFileSync(dictPath, 'utf-8');
+      const dict = JSON.parse(raw);
+
+      _kbbi = new Set(dict.k.split('|'));
+      _enWords = new Set(dict.e.split('|'));
+      _indoSlang = dict.sid || {};
+      // Filter corrupt _indoSlang entries (e.g., "trs" → "menggantikan kata: terus")
+      if (_indoSlang) {
+        let removedSlang = 0;
+        for (const key of Object.keys(_indoSlang)) {
+          const entry = _indoSlang[key];
+          if (entry && typeof entry === 'object' && entry.f) {
+            if (entry.f.includes('menggantikan kata:') || entry.f.includes('ganti kata:') || entry.f.length > 50) {
+              delete _indoSlang[key];
+              removedSlang++;
+            }
+          }
+        }
+        if (removedSlang > 0) console.log(`[STT-Dict] Filtered ${removedSlang} corrupt _indoSlang entries`);
+      }
+      _enSlang = dict.sen || {};
+      _fixes = dict.fix || {};
+      // Filter out corrupt _fixes entries, slang duplicates, AND particle words
+      if (_fixes) {
+        let removedCount = 0;
+        const PARTICLE_KEYS = new Set(['dong', 'sih', 'deh', 'loh', 'toh', 'kok', 'lah', 'kah', 'pun', 'ya', 'nah', 'eh', 'mah', 'ke', 'mah']);
+        for (const key of Object.keys(_fixes)) {
+          const val = _fixes[key];
+          if (typeof val === 'string' && (val.includes('menggantikan kata:') || val.includes('ganti kata:') || val.length > 50)) {
+            delete _fixes[key]; removedCount++; continue;
+          }
+          if (PARTICLE_KEYS.has(key.toLowerCase())) { delete _fixes[key]; removedCount++; continue; }
+          if (fbSlang[key] !== undefined) { delete _fixes[key]; removedCount++; }
+        }
+        if (removedCount > 0) console.log(`[STT-Dict] Filtered ${removedCount} _fixes entries (corrupt + particles + slang duplicates)`);
+      }
+      _remove = new Set<string>();
+      if (dict.phrase_map && typeof dict.phrase_map === 'object') {
+        _phraseMap = dict.phrase_map;
+      }
+
+      console.log(`[STT-Dict] Loaded from JSON fallback: KBBI=${_kbbi.size}, EN=${_enWords.size}, slang_id=${Object.keys(_indoSlang).length}, slang_en=${Object.keys(_enSlang).length}, fixes=${Object.keys(_fixes).length}, phrase_map=${_phraseMap ? Object.keys(_phraseMap).length : 0}`);
+    } catch (err) {
+      console.error('[STT-Dict] Load failed:', err);
+    }
   }
 
   // Load phonetic-map.json (comprehensive stock ticker + company name + action phrase maps)

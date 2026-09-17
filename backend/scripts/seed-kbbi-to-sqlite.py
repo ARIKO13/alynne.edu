@@ -95,6 +95,8 @@ def main():
     skipped = 0
     # Use INSERT OR IGNORE to skip duplicates (idempotent — can re-run)
     # We use 'kbbi' as source so it's distinguishable from auto-learned words
+    # dataset_origin='seeded' marks this as pre-existing dictionary data
+    # (vs 'user-learned' which is auto-learned from STT)
     rows = []
     for w in kbbi_words:
         if len(w) < 2:
@@ -104,6 +106,7 @@ def main():
             w,            # word (lowercase)
             '[]',         # phonetic_variations (KBBI words tidak di-expand)
             'kbbi',       # source
+            'seeded',     # dataset_origin (pre-existing dictionary)
             1.0,          # confidence (KBBI = ground truth)
             0,            # count (belum ada occurrence)
             0,            # vote_count
@@ -114,8 +117,8 @@ def main():
 
     cur.executemany(
         """INSERT OR IGNORE INTO learned_words
-           (word, phonetic_variations, source, confidence, count, vote_count, user_ids, status, context_words)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+           (word, phonetic_variations, source, dataset_origin, confidence, count, vote_count, user_ids, status, context_words)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         rows
     )
     inserted = cur.rowcount if cur.rowcount > 0 else 0
@@ -136,6 +139,7 @@ def main():
                 slang,
                 json.dumps([formal]),  # store formal form as phonetic variation
                 'slang',
+                'seeded',  # dataset_origin: pre-existing slang dictionary
                 1.0,
                 0,
                 0,
@@ -145,8 +149,8 @@ def main():
             ))
         cur.executemany(
             """INSERT OR IGNORE INTO learned_words
-               (word, phonetic_variations, source, confidence, count, vote_count, user_ids, status, context_words)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               (word, phonetic_variations, source, dataset_origin, confidence, count, vote_count, user_ids, status, context_words)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             slang_rows
         )
         slang_inserted = cur.rowcount if cur.rowcount > 0 else 0

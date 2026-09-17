@@ -88,10 +88,11 @@ export const GET: APIRoute = async ({ request, url }) => {
 
       const rows = sttDb.getAll<{
         id: number; word: string; phonetic_variations: string;
-        source: string; confidence: number; count: number; vote_count: number;
+        source: string; dataset_origin: string;
+        confidence: number; count: number; vote_count: number;
         status: string; created_at: string; last_used_at: string;
       }>(
-        `SELECT id, word, phonetic_variations, source, confidence, count, vote_count, status, created_at, last_used_at
+        `SELECT id, word, phonetic_variations, source, dataset_origin, confidence, count, vote_count, status, created_at, last_used_at
          FROM learned_words
          ${where}
          ORDER BY last_used_at DESC

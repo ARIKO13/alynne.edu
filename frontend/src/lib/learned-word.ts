@@ -293,8 +293,8 @@ export async function learnWord(
       newStatus = 'candidate';
 
       sttDb.run(
-        `INSERT INTO learned_words (word, phonetic_variations, source, confidence, count, vote_count, user_ids, status, created_at, last_used_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO learned_words (word, phonetic_variations, source, dataset_origin, confidence, count, vote_count, user_ids, status, created_at, last_used_at)
+         VALUES (?, ?, ?, 'user-learned', ?, ?, ?, ?, ?, ?, ?)`,
         [w, variationsJson, source, confidence, newCount, newVoteCount, JSON.stringify(newUserIds), newStatus, now, now]
       );
     }

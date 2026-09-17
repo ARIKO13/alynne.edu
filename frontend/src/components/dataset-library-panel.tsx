@@ -35,6 +35,7 @@ interface LearnedWord {
   id: number; word: string; phonetic_variations: string[];
   source: string; confidence: number; count: number; vote_count: number;
   status: 'candidate' | 'confirmed' | 'rejected';
+  dataset_origin?: 'seeded' | 'user-learned';
   created_at: string; last_used_at: string;
 }
 
@@ -377,6 +378,21 @@ export function DatasetLibraryPanel() {
                     >
                       {w.source === 'kbbi' ? '📖 KBBI' : w.source === 'slang' ? '💬 Slang' : w.source === 'webspeech' ? '🎙️ Auto' : w.source}
                     </Badge>
+                    {/* Dataset origin badge — Seeded (lama) vs User-learned (baru dari STT) */}
+                    {w.dataset_origin && (
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          'text-[9px] px-1.5 py-0',
+                          w.dataset_origin === 'seeded'
+                            ? 'border-zinc-500/30 text-zinc-400 bg-zinc-500/10'
+                            : 'border-amber-500/30 text-amber-400 bg-amber-500/10'
+                        )}
+                        title={`Origin: ${w.dataset_origin === 'seeded' ? 'Pre-existing dictionary (lama)' : 'Dipalajari dari STT user (baru)'}`}
+                      >
+                        {w.dataset_origin === 'seeded' ? '📦 Seeded' : '✨ Learned'}
+                      </Badge>
+                    )}
                     <div className="flex items-center gap-2 ml-auto">
                       <span className="text-[10px] text-zinc-600" title="Occurrences">×{w.count}</span>
                       {w.vote_count > 0 && (

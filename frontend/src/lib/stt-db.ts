@@ -34,6 +34,8 @@ import { join, dirname } from 'node:path';
 import type { Database as DBType, Statement } from 'better-sqlite3';
 
 // ── Schema (mirrors backend/database/schema-stt.sql; inlined for portability) ──
+// v2: added dataset_origin column to distinguish seeded (KBBI/slang lama)
+//     vs user-learned (baru dari STT user)
 const SCHEMA_SQL = `
 PRAGMA journal_mode = WAL;
 PRAGMA synchronous = NORMAL;
@@ -49,6 +51,8 @@ CREATE TABLE IF NOT EXISTS learned_words (
   phonetic_variations TEXT    NOT NULL DEFAULT '[]',
   phonetic_code       TEXT    NOT NULL DEFAULT '',
   source              TEXT    NOT NULL DEFAULT 'webspeech',
+  dataset_origin      TEXT    NOT NULL DEFAULT 'user-learned'
+                              CHECK (dataset_origin IN ('seeded','user-learned')),
   confidence          REAL    NOT NULL DEFAULT 0.0,
   count               INTEGER NOT NULL DEFAULT 1,
   vote_count          INTEGER NOT NULL DEFAULT 0,
@@ -64,6 +68,7 @@ CREATE INDEX IF NOT EXISTS idx_learned_words_last_used    ON learned_words(last_
 CREATE INDEX IF NOT EXISTS idx_learned_words_count_active ON learned_words(count DESC) WHERE status != 'rejected';
 CREATE INDEX IF NOT EXISTS idx_learned_words_phonetic     ON learned_words(phonetic_code) WHERE phonetic_code != '';
 CREATE INDEX IF NOT EXISTS idx_learned_words_confidence   ON learned_words(confidence DESC) WHERE status = 'candidate';
+CREATE INDEX IF NOT EXISTS idx_learned_words_origin       ON learned_words(dataset_origin);
 
 CREATE TABLE IF NOT EXISTS word_cooccurrence (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -113,6 +118,19 @@ CREATE TABLE IF NOT EXISTS _schema_migrations (
   applied_at  TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 INSERT OR IGNORE INTO _schema_migrations (name) VALUES ('baseline_v1');
+INSERT OR IGNORE INTO _schema_migrations (name) VALUES ('v2_dataset_origin');
+
+-- Migration: add dataset_origin column if missing (existing DBs created before v2)
+-- SQLite doesn't support IF NOT EXISTS for ADD COLUMN, so we use a try/catch approach
+-- via separate exec. Done in constructor after main schema.
+`;
+
+// Migration SQL: add dataset_origin column to existing learned_words table
+// (for DBs created before v2). Idempotent — fails silently if column exists.
+const MIGRATION_V2_SQL = `
+-- SQLite doesn't have IF NOT EXISTS for ADD COLUMN, so we wrap in a
+-- conditional via PRAGMA table_info. Better-sqlite3 will throw if column
+-- exists, which we catch in the constructor.
 `;
 
 // ── DB path resolution (env-aware, works on local + VPS) ──
@@ -167,6 +185,7 @@ export class SttDb {
     this.db.pragma('foreign_keys = ON');
 
     this.initSchema();
+    this.runMigrations();
     this._initialized = true;
     console.log(`[stt-db] ✓ Opened SQLite @ ${dbPath} (WAL mode, ${this.db.pragma('journal_mode', { simple: true })})`);
   }
@@ -176,6 +195,25 @@ export class SttDb {
     if (this._initialized) return;
     // exec() handles multiple statements separated by ;
     this.db.exec(SCHEMA_SQL);
+  }
+
+  /**
+   * Run migrations for existing DBs (idempotent).
+   * - v2_dataset_origin: add `dataset_origin` column if missing
+   */
+  runMigrations(): void {
+    // Check if dataset_origin column exists
+    const cols = this.db.prepare(`PRAGMA table_info(learned_words)`).all() as Array<{ name: string }>;
+    const colNames = new Set(cols.map(c => c.name));
+    if (!colNames.has('dataset_origin')) {
+      try {
+        this.db.exec(`ALTER TABLE learned_words ADD COLUMN dataset_origin TEXT NOT NULL DEFAULT 'user-learned' CHECK (dataset_origin IN ('seeded','user-learned'))`);
+        this.db.exec(`CREATE INDEX IF NOT EXISTS idx_learned_words_origin ON learned_words(dataset_origin)`);
+        console.log('[stt-db] ✓ Migration v2: added dataset_origin column');
+      } catch (e) {
+        console.warn('[stt-db] Migration v2 failed (column may already exist):', e instanceof Error ? e.message : e);
+      }
+    }
   }
 
   /**
