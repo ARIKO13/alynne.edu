@@ -267,11 +267,111 @@ const fbSlang: Record<string, string> = {
 };
 
 const fbFixes: Record<string, string> = {
+  // Existing — spelling normalization
   'sistim': 'sistem', 'metoda': 'metode',
   'strateji': 'strategi', 'difinisi': 'definisi',
   'annalisa': 'analisis', 'analisa': 'analisis',
   'produktifitas': 'produktivitas', 'hipotesa': 'hipotesis',
   'algoritm': 'algoritma', 'ngapain': 'mengapa',
+
+  // ── Common Indonesian STT mishearings (curated) ──
+  // These are NOT slang — they're cases where Web Speech API / Whisper
+  // mishears a similar-sounding word and outputs the wrong one.
+  // Each entry: misheard_word → correct_word
+
+  // ── Vowel swap: "-si" ↔ "-su" and similar ──
+  'imformasi': 'informasi',
+  'efaluasi': 'evaluasi',
+  'evalusi': 'evaluasi',
+  'manejemen': 'manajemen',
+  'manajemenya': 'manajemennya',
+  'strateji': 'strategi',
+  'stratejinya': 'strateginya',
+  'kosep': 'konsep',
+  'konsepp': 'konsep',
+  'pendeketan': 'pendekatan',
+  'pendekatn': 'pendekatan',
+  'ngembangin': 'mengembangkan',
+  'pengembangn': 'pengembangan',
+  'perancangn': 'perancangan',
+  'perancagn': 'perancangan',
+  'pelaksanan': 'pelaksanaan',
+  'pelaksaan': 'pelaksanaan',
+
+  // ── Suffix "-nya" truncated / corrupted ──
+  'kebutuhn': 'kebutuhan',
+  'kebutuhanny': 'kebutuhannya',
+  'kemampuany': 'kemampuannya',
+  'kesempatn': 'kesempatan',
+  'perbedaanya': 'perbedaannya',
+  'persamman': 'persamaan',
+  'persamaanya': 'persamaannya',
+  'karenany': 'karenanya',
+  'penjelasn': 'penjelasan',
+  'penjelasanny': 'penjelasannya',
+  'kesimpuln': 'kesimpulan',
+  'metodeya': 'metodenya',
+  'produksiny': 'produksinya',
+
+  // ── Prefix "meN-" verb mishearings ──
+  'mengproduksi': 'memproduksi',
+  'menproduksi': 'memproduksi',
+  'ngmecahkan': 'memecahkan',
+  'nyelesaikan': 'menyelesaikan',
+  'menyelesaikn': 'menyelesaikan',
+  'nganalisis': 'menganalisis',
+  'menganalisir': 'menganalisis',   // normalize to standard form
+  'ngimplementasi': 'mengimplementasikan',
+
+  // ── Tech / science terms often misheard ──
+  'prakktikum': 'praktikum',
+  'eksprimen': 'eksperimen',
+  'sintesa': 'sintesis',
+  'komperehensif': 'komprehensif',
+  'algoirtma': 'algoritma',
+  'algoritna': 'algoritma',
+  'datasbase': 'database',
+  'framewrk': 'framework',
+  'librry': 'library',
+  'plugn': 'plugin',
+  'physika': 'fisika',
+  'fisca': 'fisika',
+  'kima': 'kimia',
+  'biolog': 'biologi',
+  'matematka': 'matematika',
+  'matematik': 'matematika',
+  'ekonom': 'ekonomi',
+  'sjarah': 'sejarah',
+  'geograf': 'geografi',
+  'sosiolog': 'sosiologi',
+  'narsum': 'narasumber',
+  'narsumb': 'narasumber',
+  'pembicra': 'pembicara',
+  'pemater': 'pemateri',
+  'pesrta': 'peserta',
+  'moderatr': 'moderator',
+  'panita': 'panitia',
+  'karakteristk': 'karakteristik',
+
+  // ── Common short words ──
+  'krna': 'karena',
+  'shingga': 'sehingga',
+  'sehingg': 'sehingga',
+  'sehala': 'segala',
+  'segalany': 'segalanya',
+
+  // ── Numbers ──
+  'pertma': 'pertama',
+  'kedu': 'kedua',
+  'ketig': 'ketiga',
+  'kelim': 'kelima',
+  'keenm': 'keenam',
+  'ketujh': 'ketujuh',
+
+  // ── Common variant spellings → standard ──
+  'optimalisasi': 'optimasi',
+  'organisai': 'organisasi',
+  'hipotesa': 'hipotesis',
 };
 
 const fbRemove = new Set<string>();  // DISABLED — particles like "dong", "sih", "deh" are natural Indonesian conversation, removing them truncates output
@@ -426,6 +526,27 @@ const ctxHomophones = [
     keep: ['kejahatan', 'kriminal', 'pidana', 'hukuman', 'serangan',
            'fisik', 'verbal', 'bullying', 'konflik', 'perang',
            'ancaman', 'korban', 'melukai']
+  },
+  // ── "produksi" → "solusi" when surrounding context suggests problem-solving ──
+  // Web Speech API often mishears "solusi" as "produksi" because both end in
+  // similar vowels. We bias toward "solusi" when the surrounding context
+  // contains problem/question/answer/case-related words.
+  {
+    w: 'produksi', c: 'solusi',
+    ctx: ['masalah', 'problem', 'soal', 'pertanyaan', 'tantangan',
+          'kendala', 'hambatan', 'isu', 'kasus', 'studi', 'mencari',
+          'menemukan', 'menyelesaikan', 'menjawab', 'menangani',
+          'alternatif', 'pilihan', 'cara', 'metode', 'pendekatan',
+          'strategi', 'jawaban', 'penyelesaian', 'akar', 'penyebab',
+          'jalan', 'keluar', 'langkah', 'tindakan', 'solusi',
+          'manajemen', 'perencanaan', 'analisis', 'evaluasi',
+          'pemecahan', 'rumusan', 'konsep', 'desain', 'rancangan',
+          'keputusan', 'rekomendasi', 'saran', 'usul', 'proposal'],
+    // Keep as "produksi" if context clearly indicates manufacturing/production
+    keep: ['pabrik', 'manufaktur', 'barang', 'produk', 'manufacturing',
+           'penghasil', 'pembuat', 'pembuatan', 'manufak', 'massal',
+           'industri', 'pabrikan', 'produksi massal', 'kapasitas',
+           'output', 'throughput', 'fabrikasi', 'assembling', 'perakitan']
   },
 ];
 

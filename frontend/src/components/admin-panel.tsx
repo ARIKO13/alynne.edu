@@ -5,10 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
   Users, Trophy, Flame, Award, Search, RefreshCw, Shield,
-  Loader2, TrendingUp, Activity, AlertTriangle, FileText,
-  Trash2, ArrowDownUp, ChevronDown, X,
+  Loader2, TrendingUp, Activity, FileText,
 } from 'lucide-react';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { TIERS } from '@/lib/tiers';
 import { cn } from '@/lib/utils';
 
@@ -83,19 +82,10 @@ export function AdminPanel() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState<'overview' | 'users' | 'stt-failures'>('overview');
-  const [failures, setFailures] = useState<any[]>([]);
-  const [failuresTotal, setFailuresTotal] = useState(0);
-  const [failuresPage, setFailuresPage] = useState(1);
-  const [failuresSort, setFailuresSort] = useState<'newest' | 'oldest'>('newest');
-  const [sortMenuOpen, setSortMenuOpen] = useState(false);
-  const [fixInputs, setFixInputs] = useState<Record<string, string>>({});
-  const [fixingId, setFixingId] = useState<string | null>(null);
-  const [fixedIds, setFixedIds] = useState<Set<string>>(new Set());
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [clearingAll, setClearingAll] = useState(false);
-  const [showClearConfirm, setShowClearConfirm] = useState(false);
-  const sortMenuRef = useRef<HTMLDivElement>(null);
+  const [activeView, setActiveView] = useState<'overview' | 'users'>('overview');
+  // NOTE: STT Failures UI removed (privacy: storing raw user transcripts is
+  // not appropriate). API endpoints remain at /api/admin/stt-failures for
+  // debugging only.
 
   const fetchStats = useCallback(async () => {
     try {
@@ -121,113 +111,6 @@ export function AdminPanel() {
       console.error('Users fetch error:', err);
     }
   }, []);
-
-  const fetchFailures = useCallback(async (p: number = 1, sort: 'newest' | 'oldest' = failuresSort) => {
-    try {
-      const res = await fetch(`/api/admin/stt-failures?page=${p}&limit=20&sort=${sort}`);
-      if (res.status === 403) return;
-      const data = await res.json();
-      setFailures(data.failures || []);
-      setFailuresTotal(data.total || 0);
-      setFailuresPage(p);
-      setFailuresSort(sort);
-    } catch (err) {
-      console.error('STT failures fetch error:', err);
-    }
-  }, [failuresSort]);
-
-  const handleDeleteFailure = async (failureId: string) => {
-    setDeletingId(failureId);
-    try {
-      const res = await fetch(`/api/admin/stt-failures?id=${encodeURIComponent(failureId)}`, {
-        method: 'DELETE',
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        console.error('Delete failed:', err);
-        return;
-      }
-      const data = await res.json();
-      if (data.success) {
-        // Optimistically remove from list
-        setFailures(prev => prev.filter(f => f.id !== failureId));
-        setFailuresTotal(prev => Math.max(0, prev - 1));
-        // If we removed the last item on a page > 1, go back one page
-        if (failures.length === 1 && failuresPage > 1) {
-          fetchFailures(failuresPage - 1, failuresSort);
-        } else {
-          // Refetch current page to keep list full
-          fetchFailures(failuresPage, failuresSort);
-        }
-      }
-    } catch (err) {
-      console.error('Delete error:', err);
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
-  const handleClearAllFailures = async () => {
-    setClearingAll(true);
-    try {
-      const res = await fetch(`/api/admin/stt-failures`, { method: 'DELETE' });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        console.error('Clear all failed:', err);
-        return;
-      }
-      const data = await res.json();
-      if (data.success) {
-        setFailures([]);
-        setFailuresTotal(0);
-        setFailuresPage(1);
-        setShowClearConfirm(false);
-      }
-    } catch (err) {
-      console.error('Clear all error:', err);
-    } finally {
-      setClearingAll(false);
-    }
-  };
-
-  // Close sort dropdown on outside click
-  useEffect(() => {
-    if (!sortMenuOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (sortMenuRef.current && !sortMenuRef.current.contains(e.target as Node)) {
-        setSortMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [sortMenuOpen]);
-
-  const handleFixMapping = async (failureId: string, unknownWord: string) => {
-    const correctWord = fixInputs[`${failureId}-${unknownWord}`];
-    if (!correctWord?.trim()) return;
-    setFixingId(`${failureId}-${unknownWord}`);
-    try {
-      const res = await fetch('/api/admin/stt-fix', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          wrongWord: unknownWord,
-          correctWord: correctWord.trim(),
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        console.log('Mapping added:', data);
-        setFixedIds(prev => new Set([...prev, `${failureId}-${unknownWord}`]));
-      } else {
-        console.error('Fix failed:', res.status);
-      }
-    } catch (err) {
-      console.error('Fix error:', err);
-    } finally {
-      setFixingId(null);
-    }
-  };
 
   useEffect(() => {
     if (!isAdmin(user?.email)) return;
@@ -314,18 +197,9 @@ export function AdminPanel() {
           <Users className="h-3.5 w-3.5" />
           Users
         </button>
-        <button
-          onClick={() => { setActiveView('stt-failures'); fetchFailures(1, failuresSort); }}
-          className={cn(
-            'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all',
-            activeView === 'stt-failures'
-              ? 'bg-[#8B5CF6]/15 text-[#8B5CF6]'
-              : 'text-zinc-500 hover:text-zinc-300'
-          )}
-        >
-          <AlertTriangle className="h-3.5 w-3.5" />
-          STT Failures
-        </button>
+        {/* STT Failures tab removed — privacy concern: storing raw user speech
+            transcripts in D1 is not appropriate. API endpoints remain for
+            debugging but the admin UI no longer exposes them. */}
       </div>
 
       {activeView === 'overview' && stats && (
@@ -552,267 +426,6 @@ export function AdminPanel() {
         </div>
       )}
 
-      {activeView === 'stt-failures' && (
-        <div className="space-y-3">
-          <div className="flex items-start justify-between gap-3 flex-wrap">
-            <div>
-              <h3 className="text-sm font-semibold text-zinc-200">STT Recognition Failures</h3>
-              <p className="text-[11px] text-zinc-500 mt-0.5">
-                {failuresTotal > 0 ? `${failuresTotal} total failures logged` : 'No failures logged yet'}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Sort Dropdown */}
-              <div className="relative" ref={sortMenuRef}>
-                <button
-                  onClick={() => setSortMenuOpen(o => !o)}
-                  className="flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.04] px-2.5 py-1 text-[11px] text-zinc-300 transition-colors"
-                  title="Urutkan"
-                >
-                  <ArrowDownUp className="h-3 w-3" />
-                  {failuresSort === 'newest' ? 'Terbaru' : 'Terlama'}
-                  <ChevronDown className={cn('h-3 w-3 transition-transform', sortMenuOpen && 'rotate-180')} />
-                </button>
-                {sortMenuOpen && (
-                  <div className="absolute right-0 mt-1 z-10 rounded-md border border-white/[0.08] bg-[#0c0c0e] shadow-lg overflow-hidden min-w-[140px]">
-                    <button
-                      onClick={() => { setSortMenuOpen(false); fetchFailures(1, 'newest'); }}
-                      className={cn(
-                        'w-full text-left px-3 py-2 text-[11px] hover:bg-white/[0.06] transition-colors',
-                        failuresSort === 'newest' ? 'text-[#8B5CF6] bg-[#8B5CF6]/5' : 'text-zinc-300'
-                      )}
-                    >
-                      Terbaru (DESC)
-                    </button>
-                    <button
-                      onClick={() => { setSortMenuOpen(false); fetchFailures(1, 'oldest'); }}
-                      className={cn(
-                        'w-full text-left px-3 py-2 text-[11px] hover:bg-white/[0.06] transition-colors',
-                        failuresSort === 'oldest' ? 'text-[#8B5CF6] bg-[#8B5CF6]/5' : 'text-zinc-300'
-                      )}
-                    >
-                      Terlama (ASC)
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <Button
-                onClick={() => fetchFailures(failuresPage, failuresSort)}
-                variant="outline"
-                size="sm"
-                className="border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] h-8 text-xs"
-              >
-                <RefreshCw className="h-3 w-3 mr-1" />
-                Refresh
-              </Button>
-
-              {/* Clear All */}
-              {failuresTotal > 0 && (
-                <Button
-                  onClick={() => setShowClearConfirm(true)}
-                  disabled={clearingAll}
-                  variant="outline"
-                  size="sm"
-                  className="border-red-500/20 text-red-400 hover:text-white hover:bg-red-600/80 h-8 text-xs"
-                >
-                  <Trash2 className="h-3 w-3 mr-1" />
-                  {clearingAll ? 'Menghapus...' : 'Hapus Semua'}
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* Clear All Confirmation Dialog */}
-          {showClearConfirm && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => !clearingAll && setShowClearConfirm(false)}>
-              <div
-                className="rounded-xl border border-white/[0.08] bg-[#0c0c0e] p-5 max-w-sm w-full shadow-2xl"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-start gap-3 mb-4">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-500/15">
-                    <AlertTriangle className="h-4 w-4 text-red-400" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-zinc-100">Hapus semua STT failures?</h4>
-                    <p className="text-[11px] text-zinc-400 mt-1 leading-relaxed">
-                      {failuresTotal} record akan dihapus permanen dari database.
-                      Tindakan ini tidak bisa dibatalkan.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => !clearingAll && setShowClearConfirm(false)}
-                    disabled={clearingAll}
-                    className="text-zinc-500 hover:text-zinc-300 transition-colors p-1 -mr-1 -mt-1"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => setShowClearConfirm(false)}
-                    disabled={clearingAll}
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 border-white/[0.08] text-zinc-300 hover:bg-white/[0.06] h-8 text-xs"
-                  >
-                    Batal
-                  </Button>
-                  <Button
-                    onClick={handleClearAllFailures}
-                    disabled={clearingAll}
-                    size="sm"
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white h-8 text-xs"
-                  >
-                    {clearingAll ? (
-                      <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Menghapus...</>
-                    ) : (
-                      <><Trash2 className="h-3 w-3 mr-1" /> Ya, Hapus Semua</>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {failures.length === 0 ? (
-            <div className="text-center py-12 rounded-xl border border-white/[0.06] bg-white/[0.02]">
-              <AlertTriangle className="h-8 w-8 text-zinc-700 mx-auto mb-2" />
-              <p className="text-sm text-zinc-500">No STT failures logged</p>
-              <p className="text-[10px] text-zinc-600 mt-1">
-                Failures appear here when the fuzzy-correct endpoint encounters unknown words
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className="space-y-2 max-h-[500px] overflow-y-auto">
-                {failures.map((f: any) => (
-                  <div key={f.id} className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 group">
-                    <div className="flex items-start justify-between gap-3 mb-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            'text-[9px] px-1.5 py-0',
-                            f.source === 'webspeech' ? 'border-green-500/30 text-green-400 bg-green-500/10'
-                              : f.source === 'ocr' ? 'border-violet-500/30 text-violet-400 bg-violet-500/10'
-                              : 'border-zinc-500/30 text-zinc-400 bg-zinc-500/10'
-                          )}
-                        >
-                          {f.source || 'unknown'}
-                        </Badge>
-                        <span className="text-[10px] text-zinc-600">
-                          {new Date(f.createdAt).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}
-                        </span>
-                        {f.unknownCount > 0 && (
-                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-amber-500/30 text-amber-400 bg-amber-500/10">
-                            {f.unknownCount} unknown
-                          </Badge>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => handleDeleteFailure(f.id)}
-                        disabled={deletingId === f.id}
-                        title="Hapus record ini"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-500/15 text-zinc-500 hover:text-red-400 disabled:opacity-50 disabled:cursor-wait shrink-0"
-                      >
-                        {deletingId === f.id ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-3.5 w-3.5" />
-                        )}
-                      </button>
-                    </div>
-                    <div className="space-y-1.5">
-                      <div>
-                        <p className="text-[10px] text-zinc-600 mb-0.5">Raw text (from Web Speech/OCR):</p>
-                        <p className="text-xs text-rose-300 font-mono bg-rose-500/5 rounded px-2 py-1">{f.rawText}</p>
-                      </div>
-                      {f.correctedText && f.correctedText !== f.rawText && (
-                        <div>
-                          <p className="text-[10px] text-zinc-600 mb-0.5">Corrected (after fuzzy):</p>
-                          <p className="text-xs text-emerald-300 font-mono bg-emerald-500/5 rounded px-2 py-1">{f.correctedText}</p>
-                        </div>
-                      )}
-                      {f.unknownWords && f.unknownWords.length > 0 && (
-                        <div>
-                          <p className="text-[10px] text-zinc-600 mb-0.5">Unknown words — type correction + click Fix:</p>
-                          <div className="space-y-1.5">
-                            {f.unknownWords.map((w: string, i: number) => {
-                              const fixKey = `${f.id}-${w}`;
-                              const isFixed = fixedIds.has(fixKey);
-                              const isFixing = fixingId === fixKey;
-                              return (
-                                <div key={i} className="flex items-center gap-2">
-                                  <span className="text-[10px] text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded px-1.5 py-0.5 font-mono shrink-0">
-                                    {w}
-                                  </span>
-                                  <span className="text-zinc-600 text-[10px] shrink-0">→</span>
-                                  {isFixed ? (
-                                    <span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded px-1.5 py-0.5 font-mono">
-                                      {fixInputs[fixKey] || '✓'} ✓ Fixed (live)
-                                    </span>
-                                  ) : (
-                                    <>
-                                      <input
-                                        type="text"
-                                        placeholder="e.g. GOTO, BBCA, sistem..."
-                                        value={fixInputs[fixKey] || ''}
-                                        onChange={(e) => setFixInputs(prev => ({ ...prev, [fixKey]: e.target.value }))}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') handleFixMapping(f.id, w);
-                                        }}
-                                        className="flex-1 h-6 text-[11px] bg-[#0c0c0e] border border-white/[0.08] rounded px-2 text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:border-[#8B5CF6]/40"
-                                      />
-                                      <button
-                                        onClick={() => handleFixMapping(f.id, w)}
-                                        disabled={isFixing || !fixInputs[fixKey]?.trim()}
-                                        className="text-[10px] px-2 py-0.5 rounded bg-[#8B5CF6] hover:bg-[#7c3aed] text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
-                                      >
-                                        {isFixing ? '...' : 'Fix'}
-                                      </button>
-                                    </>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {failuresTotal > 20 && (
-                <div className="flex items-center justify-center gap-2">
-                  <Button
-                    onClick={() => fetchFailures(failuresPage - 1, failuresSort)}
-                    disabled={failuresPage <= 1}
-                    size="sm"
-                    variant="outline"
-                    className="border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] h-8 text-xs"
-                  >
-                    Prev
-                  </Button>
-                  <span className="text-xs text-zinc-500">
-                    {failuresPage} / {Math.ceil(failuresTotal / 20)}
-                  </span>
-                  <Button
-                    onClick={() => fetchFailures(failuresPage + 1, failuresSort)}
-                    disabled={failuresPage >= Math.ceil(failuresTotal / 20)}
-                    size="sm"
-                    variant="outline"
-                    className="border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] h-8 text-xs"
-                  >
-                    Next
-                  </Button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      )}
     </div>
   );
 }

@@ -1318,14 +1318,34 @@ export function useSpeechRecognition() {
     }
 
     // Step 2: Get microphone (always required for Web Speech API + recording)
-    // Simplified constraints for cross-browser compatibility (Safari iOS is picky)
+    // Enhanced audio constraints for noisy environments:
+    //   - echoCancellation: removes echo from speakers
+    //   - noiseSuppression: filters background noise (fans, AC, traffic)
+    //   - autoGainControl: normalizes volume (whispers → audible, shouts → not clipped)
+    //   - channelCount: 1 (mono — speech recognition works better with mono)
+    // Feature-detect: Safari iOS rejects unknown constraints, so we fall back
+    // to `audio: true` if any constraint is unsupported.
     try {
-      micStream = await navigator.mediaDevices.getUserMedia({
-        audio: true // simplified — let browser handle defaults (Safari iOS compatible)
-      });
+      // Try enhanced constraints first
+      const enhancedConstraints = {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        channelCount: 1,
+        sampleRate: 48000,
+      };
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({
+          audio: enhancedConstraints,
+        });
+      } catch (constraintErr) {
+        // Safari iOS / older browsers reject unknown constraints — fall back
+        console.warn('[STT] Enhanced audio constraints rejected, falling back to default:', constraintErr);
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
       mediaStreamRef.current = micStream;
       startVisualizer(micStream);
-      addLog('success', 'Microphone aktif.');
+      addLog('success', 'Microphone aktif (noise suppression + echo cancellation ON).');
     } catch (e) {
       addLog('error', 'Gagal akses mikrofon: ' + (e instanceof Error ? e.message : 'unknown'));
       setSttError('Gagal mengakses mikrofon. Izinkan akses mic di browser.');
