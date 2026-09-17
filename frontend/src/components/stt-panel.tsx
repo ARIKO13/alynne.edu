@@ -354,13 +354,23 @@ export function STTPanel() {
                 </p>
               </div>
             )}
-            {interimTranscript && (
-              <div className="flex items-start gap-3 opacity-60">
-                <span className="text-[11px] font-mono text-zinc-600 shrink-0 pt-0.5 select-none w-16 text-right">
-                  {new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                </span>
-                <span className="text-zinc-600 shrink-0 pt-0.5 select-none">●</span>
-                <p className="text-sm leading-relaxed text-zinc-500 italic">{interimTranscript}</p>
+            {/* Interim preview DISABLED — user request: "tampilin apa adanya aja"
+                Interim text berubah-ubah saat Web Speech API update, bikin user
+                bingung ("kalimat 1 dh ada di preview tapi ilang, muncul kalimat 2").
+                Final text tetap masuk transcriptEntries (di atas), tidak hilang.
+                Cuma tampilan preview interim yang di-hide. */}
+            {isRecording && !interimTranscript && transcriptEntries.length === 0 && (
+              <div className="flex items-center justify-center h-[60px]">
+                <p className="text-sm text-zinc-600 italic animate-pulse">
+                  Mendengarkan... bicara sekarang
+                </p>
+              </div>
+            )}
+            {isRecording && interimTranscript && (
+              <div className="flex items-center justify-center h-[40px]">
+                <p className="text-[11px] text-zinc-600 animate-pulse">
+                  · · · memproses ucapan · · ·
+                </p>
               </div>
             )}
           </div>
