@@ -554,12 +554,12 @@ export function DatasetLibraryPanel() {
       )}
 
       {/* Storage section — disk usage, DB file size, table sizes */}
-      {section === 'storage' && storageInfo && (
+      {section === 'storage' && (
         <StorageView info={storageInfo} />
       )}
 
       {/* Schema section — ERD-style visualisasi arsitektur DB */}
-      {section === 'schema' && schemaInfo && (
+      {section === 'schema' && (
         <SchemaView info={schemaInfo} />
       )}
     </div>
@@ -743,17 +743,27 @@ function WordDetailView({ detail }: { detail: any }) {
 
 // ── StorageView: disk usage + DB file + table sizes ──
 function StorageView({ info }: { info: any }) {
-  if (!info) return null;
-  const { dbFile, disk, sqlite, tables, indexes } = info;
+  if (!info) {
+    return (
+      <div className="text-center py-8 text-sm text-zinc-500">
+        Loading storage info...
+      </div>
+    );
+  }
+  const dbFile = info.dbFile || { path: '', sizeBytes: 0, walSizeBytes: 0, shmSizeBytes: 0, totalBytes: 0, sizeMB: '0', walMB: '0' };
+  const disk = info.disk || { total: 0, used: 0, free: 0, usedPct: '0', freeGB: '0', totalGB: '0' };
+  const sqlite = info.sqlite || { pageCount: 0, pageSize: 4096, totalSize: 0, freePages: 0, fragmentationPct: '0', journalMode: 'unknown', synchronous: 1 };
+  const tables = info.tables || [];
+  const indexes = info.indexes || [];
 
   const formatBytes = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes} B`;
+    if (!bytes || bytes < 1024) return `${bytes || 0} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
     return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`;
   };
 
-  const diskUsedPct = parseFloat(disk.usedPct);
+  const diskUsedPct = parseFloat(disk.usedPct) || 0;
 
   return (
     <div className="space-y-3">
@@ -898,8 +908,16 @@ function StorageView({ info }: { info: any }) {
 
 // ── SchemaView: ERD-style visualisasi arsitektur DB ──
 function SchemaView({ info }: { info: any }) {
-  if (!info) return null;
-  const { tables, indexes, schemaVersion } = info;
+  if (!info) {
+    return (
+      <div className="text-center py-8 text-sm text-zinc-500">
+        Loading schema info...
+      </div>
+    );
+  }
+  const tables = info.tables || [];
+  const indexes = info.indexes || [];
+  const schemaVersion = info.schemaVersion || 'unknown';
 
   return (
     <div className="space-y-3">
