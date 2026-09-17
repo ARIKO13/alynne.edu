@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Database, RefreshCw } from 'lucide-react';
+import { Database, RefreshCw, HardDrive } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -15,6 +15,16 @@ interface D1Info {
     accountId: string;
     databaseId: string;
     region: string;
+    storage?: {
+      usedBytes: number;
+      usedKB: number;
+      usedMB: string;
+      limitBytes: number;
+      limitGB: string;
+      availableBytes: number;
+      availableMB: string;
+      usedPct: string;
+    };
   };
   timestamp: string;
 }
@@ -131,6 +141,43 @@ export function D1MonitoringView() {
           </div>
         </div>
       </div>
+
+      {/* D1 Storage Usage */}
+      {d1?.storage && (
+        <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+          <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
+            <HardDrive className="h-3 w-3" /> D1 Storage Usage
+          </p>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-zinc-400">
+                Used: <strong className="text-sky-300 font-mono">{d1.storage.usedMB} MB</strong>
+                <span className="text-zinc-600 ml-1">({d1.storage.usedKB.toLocaleString()} KB)</span>
+              </span>
+              <span className="text-zinc-400">
+                Available: <strong className="text-emerald-400 font-mono">{d1.storage.availableMB} MB</strong>
+              </span>
+              <span className="text-zinc-400">
+                Limit: <strong className="text-zinc-300 font-mono">{d1.storage.limitGB}</strong>
+              </span>
+            </div>
+            <div className="h-3 bg-[#18181b] rounded-full overflow-hidden border border-white/[0.04]">
+              <div
+                className={cn(
+                  'h-full rounded-full transition-all',
+                  parseFloat(d1.storage.usedPct) > 80 ? 'bg-red-500'
+                    : parseFloat(d1.storage.usedPct) > 50 ? 'bg-amber-500'
+                    : 'bg-sky-500'
+                )}
+                style={{ width: `${Math.min(parseFloat(d1.storage.usedPct), 100)}%` }}
+              />
+            </div>
+            <p className="text-[10px] text-zinc-500">
+              {d1.storage.usedPct}% used · {((5 * 1024 - parseFloat(d1.storage.usedMB)) / 1024).toFixed(2)} GB free
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Table counts */}
       <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
