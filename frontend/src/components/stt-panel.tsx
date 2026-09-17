@@ -3,9 +3,10 @@ import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AudioVisualizer } from '@/components/audio-visualizer';
+import { PersonalDictPanel } from '@/components/personal-dict-panel';
 import {
   Mic, MicOff, Wifi, WifiOff, RefreshCw, Trash2, AlertCircle, Radio,
-  FileText, Loader2, Rocket, Sparkles, Upload, Monitor, MonitorUp,
+  FileText, Loader2, Rocket, Sparkles, Upload, Monitor, MonitorUp, Brain,
 } from 'lucide-react';
 import { MaterialUpload } from '@/components/material-upload';
 import { YouTubeTranscript } from '@/components/youtube-transcript';
@@ -13,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { structureContent, generatePdf } from '@/lib/pdf-generator';
+import { getPersonalDictStats } from '@/lib/personal-dict';
 
 function ModeSelector({ disabled }: { disabled: boolean }) {
   const { sttAudioMode, setSttAudioMode } = useAppStore();
@@ -114,11 +116,18 @@ export function STTPanel() {
   const { transcriptEntries, sttAudioMode } = useAppStore();
   const [pdfLoading, setPdfLoading] = useState(false);
   const { setActiveTab } = useAppStore();
+  const [personalDictOpen, setPersonalDictOpen] = useState(false);
+  const [personalDictCount, setPersonalDictCount] = useState(0);
   const isRecording = sttStatus === 'recording';
   const isProcessing = sttStatus === 'processing';
   const transcriptScrollRef = useRef<HTMLDivElement>(null);
   const isScreenMode = sttAudioMode === 'screen';
   const isCombinedActive = isScreenMode && isRecording;
+
+  // Refresh personal dict count when panel closes or recording stops
+  useEffect(() => {
+    setPersonalDictCount(getPersonalDictStats().total);
+  }, [personalDictOpen, sttStatus]);
 
   // Auto-scroll to bottom when new transcript entries arrive or interim text changes
   useEffect(() => {
@@ -440,11 +449,30 @@ export function STTPanel() {
                 : transcript ? `${transcript.length} karakter` : 'Siap merekam'}
             </span>
           </div>
-          {sttSource === 'groq' && isRecording && !isReconnecting && (
-            <span className="text-amber-500">Auto-reconnect aktif</span>
-          )}
+          <div className="flex items-center gap-2">
+            {sttSource === 'groq' && isRecording && !isReconnecting && (
+              <span className="text-amber-500">Auto-reconnect aktif</span>
+            )}
+            {/* Personal Dict button — auto-learned words */}
+            <button
+              onClick={() => setPersonalDictOpen(true)}
+              className="flex items-center gap-1 px-2 py-0.5 rounded border border-[#8B5CF6]/15 bg-[#8B5CF6]/[0.03] hover:bg-[#8B5CF6]/10 text-zinc-400 hover:text-[#8B5CF6] transition-colors text-[11px]"
+              title="Personal Dictionary — kata yang dipelajari otomatis dari STT"
+            >
+              <Brain className="h-3 w-3" />
+              <span>Personal Dict</span>
+              {personalDictCount > 0 && (
+                <Badge className="bg-[#8B5CF6]/20 text-[#8B5CF6] border-[#8B5CF6]/30 text-[9px] px-1 py-0">
+                  {personalDictCount}
+                </Badge>
+              )}
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Personal Dict Panel — auto-learned words management */}
+      <PersonalDictPanel open={personalDictOpen} onOpenChange={setPersonalDictOpen} />
     </div>
   );
 }

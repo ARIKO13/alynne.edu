@@ -624,6 +624,28 @@ function shouldSkipFuzzy(word: string): boolean {
   return false;
 }
 
+// ── Personal dictionary (auto-learned from user's STT usage) ──
+// Client-side localStorage dict. Server receives it as part of request body
+// in /api/stt/fuzzy-correct, then merges with KBBI set so isKnown() returns
+// true for words the user has confirmed.
+//
+// Thread-local: each request sets its own personal dict before running
+// localCorrect(), then clears it. Avoids cross-request contamination.
+let _personalDict: Set<string> | null = null;
+
+/**
+ * Set personal dict for the current request.
+ * Called by /api/stt/fuzzy-correct when client sends personalDict in body.
+ * The dict is merged into isKnown() so user-confirmed words skip fuzzy match.
+ */
+export function setPersonalDictForRequest(words: string[] | null | undefined): void {
+  if (!words || !Array.isArray(words) || words.length === 0) {
+    _personalDict = null;
+    return;
+  }
+  _personalDict = new Set(words.map(w => w.toLowerCase().trim()).filter(Boolean));
+}
+
 function isKnown(word: string): boolean {
   const w = word.toLowerCase();
   if (w.length <= 1) return true;
@@ -635,6 +657,8 @@ function isKnown(word: string): boolean {
   if (_indoSlang && _indoSlang[w]) return true;
   if (_enSlang && _enSlang[w]) return true;
   if (fbSlang[w] !== undefined) return true;
+  // Personal dict (auto-learned from user's previous STT sessions)
+  if (_personalDict?.has(w)) return true;
   return false;
 }
 
@@ -925,6 +949,10 @@ export function localCorrect(rawText: string): CorrectionResult {
   const finalText = out.join('').replace(/\s{2,}/g, ' ').trim();
   const ratio = stats.totalWords > 0 ? stats.unknownWords / stats.totalWords : 0;
   const needsLLM = stats.totalWords >= 4 && ratio > 0.3;
+
+  // Reset personal dict after each call — prevents leaking across requests
+  // (server is single-threaded per request, but module state is shared)
+  _personalDict = null;
 
   return {
     text: finalText,

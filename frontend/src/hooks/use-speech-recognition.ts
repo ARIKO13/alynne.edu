@@ -5,6 +5,10 @@ import { useAppStore } from '@/lib/store';
 import { useScreenCv } from '@/hooks/use-screen-cv';
 import { setupRecognitionGrammar } from '@/lib/speech-grammar';
 import { registerSttStop, unregisterSttStop } from '@/lib/stt-controller';
+import {
+  recordHeardSentence,
+  getConfirmedPersonalWords,
+} from '@/lib/personal-dict';
 
 const GROQ_CHUNK_INTERVAL = 10000; // 10s chunks (was 4s) - bigger chunks have valid webm headers
 const NO_RESULT_TIMEOUT = 10000;
@@ -182,16 +186,61 @@ export function useSpeechRecognition() {
   //   1. Server-side: log raw text + unknown words to STTFailure table
   //      (auto-logged inside fuzzy-correct.ts when unknownWords > 0)
   //   2. Client-side: surface a tiny log entry so the user knows it was logged
+  //   3. Auto-learning: record heard words to personal dict (localStorage)
+  //      Words with high confidence that aren't in KBBI/slang get added to
+  //      personal dict candidates. After 2+ occurrences, they're confirmed
+  //      and sent in subsequent fuzzy-correct requests so isKnown() returns true.
   //
   // Fire-and-forget is intentional — we don't block the onresult callback,
   // and the actual transcript correction still happens later via enhanceNewEntries.
-  const logWebspeechFailures = useCallback((rawText: string) => {
+  const logWebspeechFailures = useCallback((rawText: string, confidence: number = 0.9) => {
     const text = (rawText || '').trim();
     if (!text) return;
+
+    // ── Auto-learning: record heard words to personal dict ──
+    // Pass a simple isKnown check (KBBI + tech terms). The personal dict
+    // will skip words that are already known.
+    // Confidence comes from Web Speech API result.confidence (0.0-1.0)
+    try {
+      const promoted = recordHeardSentence(text, confidence, (w) => {
+        // Simple client-side check — for things like tech terms + stock tickers
+        // Full KBBI check happens server-side. This is just a fast pre-filter.
+        const wl = w.toLowerCase();
+        if (wl.length <= 2) return true;
+        if (/^\d+$/.test(wl)) return true;
+        // Common Indonesian words that we know are valid (don't auto-learn these)
+        const commonWords = new Set([
+          'yang', 'dan', 'atau', 'tidak', 'untuk', 'dengan', 'dari', 'ke', 'di',
+          'ini', 'itu', 'ada', 'tidak', 'sudah', 'akan', 'bisa', 'harus', 'lebih',
+          'saya', 'kamu', 'dia', 'kami', 'kita', 'mereka', 'apa', 'siapa', 'mana',
+          'kapan', 'kenapa', 'bagaimana', 'berapa', 'dimana', 'kemana', 'darimana',
+          'karena', 'kalau', 'jika', 'tetapi', 'tapi', 'namun', 'sedangkan',
+          'sehingga', 'supaya', 'agar', 'oleh', 'tentang', 'seperti', 'antara',
+          'tetap', 'masih', 'sangat', 'sekali', 'juga', 'saja', 'bahwa', 'yaitu',
+          'ialah', 'adalah', 'serta', 'maupun', 'hingga', 'sampai', 'sebelum',
+          'sesudah', 'setelah', 'selama', 'selagi', 'ketika', 'saat', 'kini',
+          'nanti', 'sekarang', 'kemarin', 'besok', 'hari', 'bulan', 'tahun',
+        ]);
+        return commonWords.has(wl);
+      });
+      if (promoted.length > 0) {
+        addLog('success', `Kata baru dipelajari: ${promoted.join(', ')}`);
+      }
+    } catch (e) {
+      // Silent fail — don't disrupt STT for personal dict errors
+    }
+
+    // ── Fire-and-forget fuzzy-correct call ──
+    // Include personal dict (confirmed words) so server treats them as known
+    const personalWords = Array.from(getConfirmedPersonalWords());
     fetch('/api/stt/fuzzy-correct', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, source: 'webspeech' }),
+      body: JSON.stringify({
+        text,
+        source: 'webspeech',
+        personalDict: personalWords.length > 0 ? personalWords : undefined,
+      }),
     })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
@@ -887,6 +936,8 @@ export function useSpeechRecognition() {
         }, NO_RESULT_TIMEOUT);
 
         let interim = '', finalText = '';
+        let finalConfidence = 0;  // avg confidence of final results
+        let finalCount = 0;
         for (let i = event.resultIndex; i < event.results.length; i++) {
           if (event.results[i].isFinal) {
             // Skip if this final result index was already appended to the transcript
@@ -896,6 +947,14 @@ export function useSpeechRecognition() {
             if (best) {
               finalText += best;
               processedFinalIdxRef.current.add(i);
+              // Extract confidence for auto-learning threshold
+              // Web Speech API: event.results[i][bestIdx].confidence (0.0-1.0)
+              // Not all browsers populate this — default to 0.9 if undefined
+              const conf = (event.results[i] as any)?.[0]?.confidence;
+              if (typeof conf === 'number' && conf > 0) {
+                finalConfidence += conf;
+                finalCount++;
+              }
             }
           } else {
             const best = pickBestAlternative(event.results[i]);
@@ -904,8 +963,10 @@ export function useSpeechRecognition() {
         }
         if (finalText) {
           appendTranscript(finalText);
-          // Auto-log unknown words to STT Failures table (D1) via fuzzy-correct
-          logWebspeechFailures(finalText);
+          // Auto-log unknown words + auto-learn new words to personal dict
+          // Pass average confidence so the system can filter low-confidence words
+          const avgConfidence = finalCount > 0 ? finalConfidence / finalCount : 0.9;
+          logWebspeechFailures(finalText, avgConfidence);
           addLog('success', `"${finalText.slice(0, 100)}${finalText.length > 100 ? '...' : ''}"`);
         }
         setInterimTranscript(interim);
@@ -1154,6 +1215,8 @@ export function useSpeechRecognition() {
           if (noResultTimerRef.current) clearTimeout(noResultTimerRef.current);
 
           let interim = '', finalText = '';
+          let finalConfidence = 0;
+          let finalCount = 0;
           for (let i = event.resultIndex; i < event.results.length; i++) {
             if (event.results[i].isFinal) {
               // Skip if this final result index was already appended to the transcript
@@ -1163,6 +1226,12 @@ export function useSpeechRecognition() {
               if (best) {
                 finalText += best;
                 processedFinalIdxRef.current.add(i);
+                // Extract confidence for auto-learning threshold
+                const conf = (event.results[i] as any)?.[0]?.confidence;
+                if (typeof conf === 'number' && conf > 0) {
+                  finalConfidence += conf;
+                  finalCount++;
+                }
               }
             } else {
               const best = pickBestAlternative(event.results[i]);
@@ -1171,8 +1240,9 @@ export function useSpeechRecognition() {
           }
           if (finalText) {
             appendTranscript(finalText);
-            // Auto-log unknown words to STT Failures table (D1) via fuzzy-correct
-            logWebspeechFailures(finalText);
+            // Auto-log unknown words + auto-learn new words to personal dict
+            const avgConfidence = finalCount > 0 ? finalConfidence / finalCount : 0.9;
+            logWebspeechFailures(finalText, avgConfidence);
             addLog('success', `"${finalText.slice(0, 100)}${finalText.length > 100 ? '...' : ''}"`);
           }
           setInterimTranscript(interim);

@@ -1,14 +1,19 @@
 import type { APIRoute } from 'astro';
-import { localCorrect } from '@/lib/stt-dictionary';
+import { localCorrect, setPersonalDictForRequest } from '@/lib/stt-dictionary';
 import { d1 } from '@/lib/d1-client';
 import { getSession } from '@/lib/auth';
 
 /**
  * POST /api/stt/fuzzy-correct
- * Body: { text: string, source?: 'webspeech' | 'ocr' | 'cv' | 'audio' }
+ * Body: { text: string, source?: 'webspeech' | 'ocr' | 'cv' | 'audio', personalDict?: string[] }
  *
  * Applies the full localCorrect pipeline + fuzzy matching + phonetic map
  * to text from ANY of the combined STT methods.
+ *
+ * PERSONAL DICT (auto-learning system):
+ *   Client can send personalDict array (list of words the user has
+ *   auto-confirmed via repetition). These words are added to the known-words
+ *   set for THIS request only, so they skip fuzzy matching.
  *
  * AUTO-LOGGING: When unknownWords > 0 (the system couldn't recognize some
  * words), the raw text is logged to the `STTFailure` D1 table for later
@@ -20,6 +25,7 @@ export const POST: APIRoute = async ({ request }) => {
     const body = (await request.json().catch(() => ({}))) as {
       text?: string;
       source?: string;
+      personalDict?: string[];
     };
 
     const rawText = (body.text || '').trim();
@@ -31,6 +37,10 @@ export const POST: APIRoute = async ({ request }) => {
         needsLLM: false,
       });
     }
+
+    // Apply personal dict for this request (auto-learning system)
+    // Words in personalDict will be treated as "known" by isKnown()
+    setPersonalDictForRequest(body.personalDict);
 
     const result = localCorrect(rawText);
 
