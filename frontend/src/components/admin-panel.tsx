@@ -5,11 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
   Users, Trophy, Flame, Award, Search, RefreshCw, Shield,
-  Loader2, TrendingUp, Activity, FileText,
+  Loader2, TrendingUp, Activity, FileText, Database,
 } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
 import { TIERS } from '@/lib/tiers';
 import { cn } from '@/lib/utils';
+import { DatasetLibraryPanel } from '@/components/dataset-library-panel';
 
 interface AdminStats {
   totalUsers: number;
@@ -82,7 +83,7 @@ export function AdminPanel() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState<'overview' | 'users'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'users' | 'dataset'>('overview');
   // NOTE: STT Failures UI removed (privacy: storing raw user transcripts is
   // not appropriate). API endpoints remain at /api/admin/stt-failures for
   // debugging only.
@@ -196,6 +197,18 @@ export function AdminPanel() {
         >
           <Users className="h-3.5 w-3.5" />
           Users
+        </button>
+        <button
+          onClick={() => setActiveView('dataset')}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all',
+            activeView === 'dataset'
+              ? 'bg-[#8B5CF6]/15 text-[#8B5CF6]'
+              : 'text-zinc-500 hover:text-zinc-300'
+          )}
+        >
+          <Database className="h-3.5 w-3.5" />
+          Dataset
         </button>
         {/* STT Failures tab removed — privacy concern: storing raw user speech
             transcripts in D1 is not appropriate. API endpoints remain for
@@ -424,6 +437,10 @@ export function AdminPanel() {
             </div>
           )}
         </div>
+      )}
+
+      {activeView === 'dataset' && (
+        <DatasetLibraryPanel />
       )}
 
     </div>
