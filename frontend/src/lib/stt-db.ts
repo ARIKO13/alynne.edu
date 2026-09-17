@@ -83,6 +83,7 @@ CREATE TABLE IF NOT EXISTS word_cooccurrence (
 CREATE INDEX IF NOT EXISTS idx_cooccur_word_pos_dist ON word_cooccurrence(word, position, distance, count DESC);
 CREATE INDEX IF NOT EXISTS idx_cooccur_ctx_pos       ON word_cooccurrence(context_word, position);
 CREATE INDEX IF NOT EXISTS idx_cooccur_word_only     ON word_cooccurrence(word);
+CREATE INDEX IF NOT EXISTS idx_cooccur_prune        ON word_cooccurrence(count, updated_at);
 
 CREATE TABLE IF NOT EXISTS user_corrections (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
