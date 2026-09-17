@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import { MonitoringView } from '@/components/monitoring-view';
 import { ArchitectureView } from '@/components/architecture-view';
 
-type Section = 'stats' | 'words' | 'cooccurrence' | 'corrections' | 'summary' | 'word-detail' | 'storage' | 'schema' | 'monitoring' | 'architecture';
+type Section = 'stats' | 'words' | 'cooccurrence' | 'corrections' | 'summary' | 'word-detail' | 'storage' | 'schema' | 'monitoring' | 'architecture' | 'd1';
 type SourceFilter = '' | 'kbbi' | 'slang' | 'webspeech';
 
 interface DbStats {
@@ -76,6 +76,7 @@ export function DatasetLibraryPanel() {
   const [storageInfo, setStorageInfo] = useState<any>(null);
   const [schemaInfo, setSchemaInfo] = useState<any>(null);
   const [monitoringInfo, setMonitoringInfo] = useState<any>(null);
+  const [d1Info, setD1Info] = useState<any>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   const fetchData = useCallback(async (sec: Section, searchQuery: string = '', word: string = '', source: SourceFilter = '') => {
@@ -117,6 +118,8 @@ export function DatasetLibraryPanel() {
         setSchemaInfo(data);
       } else if (sec === 'monitoring') {
         setMonitoringInfo(data);
+      } else if (sec === 'd1') {
+        setD1Info(data);
       }
     } catch (e) {
       console.error('Dataset library fetch error:', e);
@@ -132,9 +135,9 @@ export function DatasetLibraryPanel() {
 
   // Auto-refresh monitoring tab every 10s
   useEffect(() => {
-    if (section !== 'monitoring' || !autoRefresh) return;
+    if ((section !== 'monitoring' && section !== 'd1') || !autoRefresh) return;
     const interval = setInterval(() => {
-      fetchData('monitoring');
+      fetchData(section as 'monitoring' | 'd1');
     }, 10000);
     return () => clearInterval(interval);
   }, [section, autoRefresh, fetchData]);
@@ -256,6 +259,9 @@ export function DatasetLibraryPanel() {
         </TabButton>
         <TabButton active={section === 'architecture'} onClick={() => { setSection('architecture'); setSearch(''); }}>
           <Network className="h-3.5 w-3.5" /> Architecture
+        </TabButton>
+        <TabButton active={section === 'd1'} onClick={() => { setSection('d1'); setSearch(''); }}>
+          <Database className="h-3.5 w-3.5" /> D1 (User DB)
         </TabButton>
       </div>
 
@@ -592,6 +598,11 @@ export function DatasetLibraryPanel() {
       {/* Architecture section — Mermaid diagrams: ERD + data flow */}
       {section === 'architecture' && (
         <ArchitectureView schemaInfo={schemaInfo} />
+      )}
+
+      {/* D1 (User Account DB) monitoring section */}
+      {section === 'd1' && (
+        <D1MonitoringView info={d1Info} autoRefresh={autoRefresh} onToggleAutoRefresh={() => setAutoRefresh(!autoRefresh)} onRefresh={() => fetchData('d1')} loading={loading} />
       )}
     </div>
   );
@@ -1098,6 +1109,170 @@ function SchemaView({ info }: { info: any }) {
             </div>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── D1MonitoringView: Cloudflare D1 (user account DB) monitoring ──
+function D1MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefresh, loading }: {
+  info: any;
+  autoRefresh: boolean;
+  onToggleAutoRefresh: () => void;
+  onRefresh: () => void;
+  loading: boolean;
+}) {
+  if (!info) {
+    return (
+      <div className="text-center py-8 text-sm text-zinc-500">
+        Loading D1 monitoring data...
+      </div>
+    );
+  }
+
+  const { d1, timestamp } = info;
+
+  const formatBytes = (bytes: number): string => {
+    if (!bytes || bytes < 1024) return `${bytes || 0} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] text-zinc-500 flex items-center gap-1.5">
+          <Database className="h-3 w-3" />
+          Cloudflare D1 — User Account Database
+          {timestamp && (
+            <span className="text-zinc-600 ml-2">
+              Updated: {new Date(timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </span>
+          )}
+        </p>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onToggleAutoRefresh}
+            className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] border transition-all ${
+              autoRefresh
+                ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
+                : 'border-white/[0.08] text-zinc-400 hover:bg-white/[0.06]'
+            }`}
+          >
+            {autoRefresh ? '⏸ Auto 10s' : '▶ Paused'}
+          </button>
+          <button
+            onClick={onRefresh}
+            className="p-1 rounded border border-white/[0.08] text-zinc-400 hover:bg-white/[0.06] text-[10px]"
+          >
+            <RefreshCw className={`h-2.5 w-2.5 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* D1 Info */}
+      <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+        <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
+          <Database className="h-3 w-3" /> D1 Connection Info
+        </p>
+        <div className="grid grid-cols-2 gap-2 text-[11px]">
+          <div>
+            <p className="text-zinc-500">Account ID</p>
+            <p className="text-zinc-300 font-mono text-[10px]">{d1?.accountId?.slice(0, 16)}...</p>
+          </div>
+          <div>
+            <p className="text-zinc-500">Database ID</p>
+            <p className="text-zinc-300 font-mono text-[10px]">{d1?.databaseId?.slice(0, 16)}...</p>
+          </div>
+          <div>
+            <p className="text-zinc-500">Region</p>
+            <p className="text-zinc-300 font-mono">{d1?.region}</p>
+          </div>
+          <div>
+            <p className="text-zinc-500">Type</p>
+            <p className="text-zinc-300 font-mono">Cloudflare D1 (HTTP API)</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Table counts */}
+      <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+        <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
+          <Database className="h-3 w-3" /> Tables ({d1?.tables?.length || 0})
+        </p>
+        <div className="space-y-1.5">
+          {d1?.tables?.map((t: any, i: number) => {
+            const maxCount = Math.max(...(d1?.tables || []).map((x: any) => x.count || 0));
+            const pct = maxCount > 0 ? (t.count / maxCount) * 100 : 0;
+            return (
+              <div key={i} className="rounded-md border border-white/[0.04] bg-[#18181b] p-2">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-mono text-[#8B5CF6]">{t.name}</span>
+                  <span className="text-[10px] text-zinc-400 font-mono">{t.count.toLocaleString()}</span>
+                </div>
+                {t.error && (
+                  <p className="text-[9px] text-red-400">Error: {t.error}</p>
+                )}
+                <div className="h-1.5 bg-[#0c0c0e] rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-[#8B5CF6]/60 rounded-full"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Recent users */}
+      {d1?.recentUsers?.length > 0 && (
+        <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+          <p className="text-[11px] text-zinc-400 mb-2">Recent Users (last 5)</p>
+          <div className="space-y-1">
+            {d1.recentUsers.map((u: any, i: number) => (
+              <div key={i} className="flex items-center gap-2 text-[11px] py-0.5">
+                <span className="font-mono text-zinc-300">{u.name || '—'}</span>
+                <span className="text-zinc-600">{u.email}</span>
+                <span className="text-zinc-600 ml-auto text-[10px]">
+                  {new Date(u.createdAt).toLocaleDateString('id-ID', { dateStyle: 'short' })}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent STT failures */}
+      {d1?.recentFailures?.length > 0 && (
+        <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+          <p className="text-[11px] text-zinc-400 mb-2">Recent STT Failures (last 5)</p>
+          <div className="space-y-1">
+            {d1.recentFailures.map((f: any, i: number) => (
+              <div key={i} className="flex items-center gap-2 text-[11px] py-0.5">
+                <Badge variant="outline" className="text-[9px] px-1 py-0 border-amber-500/30 text-amber-400 bg-amber-500/10">
+                  {f.source}
+                </Badge>
+                <span className="text-zinc-600">{f.unknownCount} unknown</span>
+                <span className="text-zinc-600 ml-auto text-[10px]">
+                  {new Date(f.createdAt).toLocaleDateString('id-ID', { dateStyle: 'short' })}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* D1 architecture note */}
+      <div className="rounded-lg border border-sky-500/15 bg-sky-500/[0.03] p-3">
+        <p className="text-[11px] text-sky-300 mb-1">ℹ️ D1 vs SQLite</p>
+        <p className="text-[10px] text-zinc-400 leading-relaxed">
+          D1 (Cloudflare) menyimpan data user account: Users, Certificates, Subscriptions, DailyProgress,
+          MindMaps, Bookmarks, STTFailure. Diakses via HTTP API (50-200ms per query).
+          SQLite di VPS SSD menyimpan STT dictionary (learned_words, cooccurrence, corrections) —
+          synchronous, {'<'}1ms per query.
+        </p>
       </div>
     </div>
   );

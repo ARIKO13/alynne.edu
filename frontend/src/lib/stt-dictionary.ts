@@ -24,6 +24,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { phoneticMatch, getPhoneticLookupSize } from '@/lib/phonetic-engine';
+import { sttDb as sttDbInstance } from '@/lib/stt-db';
 
 // ── SQLite-backed dataset (v2: SSD is source of truth, RAM is transient cache) ──
 // User request: 'aku mau ketika stt itu nyari dataset kata dan nambah data
@@ -69,9 +70,8 @@ function loadDict() {
   // RAM is just a transient cache built on-demand.
   let sqliteLoaded = false;
   try {
-    // Dynamic import to avoid circular dependency + skip if better-sqlite3 not installed
-    const sttDbModule = require('@/lib/stt-db') as typeof import('@/lib/stt-db');
-    const sttDb = sttDbModule.sttDb;
+    // Use the statically imported sttDb instance (no require() — ESM compatible)
+    const sttDb = sttDbInstance;
     // Query all confirmed words (KBBI + confirmed auto-learned)
     const rows = sttDb.getAll<{ word: string; source: string; phonetic_variations: string }>(
       `SELECT word, source, phonetic_variations FROM learned_words WHERE status = 'confirmed'`
