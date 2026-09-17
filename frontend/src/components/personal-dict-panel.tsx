@@ -47,7 +47,7 @@ export function PersonalDictPanel({ open, onOpenChange }: PersonalDictPanelProps
     if (open) refresh();
   }, [open, refresh]);
 
-  const handleDelete = async (id: string, word: string) => {
+  const handleDelete = async (id: number, word: string) => {
     const ok = await deleteLearnedWord(id);
     if (ok) {
       setWords(prev => prev.filter(w => w.id !== id));
@@ -252,7 +252,7 @@ function LearnedWordRow({
   isConfirmed: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const lastUsed = new Date(entry.lastUsedAt).toLocaleDateString('id-ID', { dateStyle: 'short' });
+  const lastUsed = new Date(entry.last_used_at).toLocaleDateString('id-ID', { dateStyle: 'short' });
 
   return (
     <div className={cn(
@@ -280,11 +280,19 @@ function LearnedWordRow({
           <span className="text-[10px] text-zinc-600" title="Jumlah kemunculan">
             ×{entry.count}
           </span>
+          {entry.vote_count > 0 && (
+            <span className="text-[10px] text-sky-500" title="Jumlah user berbeda yang submit">
+              👥{entry.vote_count}
+            </span>
+          )}
           <span className="text-[10px] text-zinc-600" title="Confidence rata-rata">
             {(entry.confidence * 100).toFixed(0)}%
           </span>
           <span className="text-[10px] text-zinc-600" title="Source">
             {entry.source}
+          </span>
+          <span className="text-[10px] text-zinc-600" title={`Status: ${entry.status}`}>
+            {entry.status === 'confirmed' ? '✓' : entry.status === 'candidate' ? '⏳' : '✗'}
           </span>
           <span className="text-[10px] text-zinc-600">{lastUsed}</span>
           <button

@@ -4,21 +4,25 @@ import { learnWord } from '@/lib/learned-word';
 
 /**
  * POST /api/stt/learn-word
- * Body: { word: string, confidence: number, source?: string }
+ * Body: {
+ *   word: string,
+ *   confidence: number,
+ *   source?: string,
+ *   contextBefore?: string[],   // up to 3 words before (oldest → newest)
+ *   contextAfter?: string[],    // up to 3 words after (closest → farthest)
+ * }
  *
- * Server-side auto-learning system:
- *   - Saat client (use-speech-recognition.ts) detect kata baru dengan confidence
- *     tinggi (2+ kali), panggil API ini.
- *   - Server simpan kata ke D1 table LearnedWord.
- *   - Server expand fonetik (misal "goceh" → ["go ceh", "goceh", "goseh", "gokeh", ...])
- *   - Server merge variations ke phonetic-map.json (file fisik di VPS)
- *   - Server reset dict cache supaya isKnown() pick up kata baru di request berikutnya
+ * Server-side auto-learning system (v2 — SQLite):
+ *   - Validate word (length, gibberish, particle check)
+ *   - Insert/update ke SQLite learned_words table
+ *   - Track unique userIds (vote_count = berapa user berbeda)
+ *   - Auto-promote status: candidate (1 user) → confirmed (2+ users OR 5+ occurrences)
+ *   - Track co-occurrence (3 before + 3 after) untuk context-aware correction
+ *   - Hanya kata confirmed yang merge ke phonetic-map.json (avoid noise di global dict)
  *
- * Authentication:
- *   - User harus login (kalau ga ada session, tetap belajar tapi userId=null)
- *   - Tidak ada role check — semua user boleh contribute ke global dict
- *
- * Response: { learned: boolean, variations: number, word: string, count: number }
+ * Auth:
+ *   - User harus login (kalau ga ada session, tetap belajar tapi userId=null,
+ *     vote_count tidak naik)
  */
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -26,11 +30,15 @@ export const POST: APIRoute = async ({ request }) => {
       word?: string;
       confidence?: number;
       source?: string;
+      contextBefore?: string[];
+      contextAfter?: string[];
     };
 
     const word = (body.word || '').trim();
     const confidence = Math.max(0, Math.min(1, Number(body.confidence) || 0));
     const source = (body.source || 'webspeech').trim();
+    const contextBefore = Array.isArray(body.contextBefore) ? body.contextBefore.slice(0, 3) : [];
+    const contextAfter = Array.isArray(body.contextAfter) ? body.contextAfter.slice(0, 3) : [];
 
     if (!word || word.length < 3) {
       return Response.json({
@@ -47,14 +55,14 @@ export const POST: APIRoute = async ({ request }) => {
       }, { status: 400 });
     }
 
-    // Get user ID if logged in (optional)
+    // Get user ID if logged in (for vote tracking)
     let userId: string | null = null;
     const session = await getSession(request);
     if (session?.user?.id) {
       userId = session.user.id;
     }
 
-    const result = await learnWord(word, confidence, userId, source);
+    const result = await learnWord(word, confidence, userId, source, contextBefore, contextAfter);
 
     return Response.json({
       success: true,

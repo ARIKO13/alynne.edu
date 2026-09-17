@@ -49,15 +49,16 @@ const CONFIDENCE_THRESHOLD = 0.85;
 const PROMOTION_THRESHOLD = 2; // need to hear 2+ times before promoting to server
 
 export interface LearnedWordEntry {
-  id: string;
+  id: number;
   word: string;
   phonetic_variations: string[];
   source: string;
   confidence: number;
   count: number;
-  userId: string | null;
-  createdAt: string;
-  lastUsedAt: string;
+  vote_count: number;
+  status: 'candidate' | 'confirmed' | 'rejected';
+  created_at: string;
+  last_used_at: string;
 }
 
 export interface LearnedWordsStats {
@@ -76,6 +77,8 @@ interface CandidateEntry {
   firstHeard: number;
   lastHeard: number;
   confidence: number;
+  contextBefore: string[];
+  contextAfter: string[];
 }
 
 function isBrowser(): boolean {
@@ -105,19 +108,22 @@ function saveCandidates(candidates: Record<string, CandidateEntry>): void {
  * Record a word heard by STT with confidence score.
  *
  * Client-side candidate tracking + server-side promotion.
+ * v2: juga pass contextBefore/contextAfter untuk co-occurrence tracking.
  *
  * Algorithm:
  *   1. If confidence < threshold → skip
- *   2. If word already in client candidates: increment count
- *   3. If count >= PROMOTION_THRESHOLD: POST to server + remove from candidates
+ *   2. If word already in client candidates: increment count + update context
+ *   3. If count >= PROMOTION_THRESHOLD: POST to server with context → remove from candidates
  *   4. If word is brand new: add to candidates with count=1
  *
- * Returns: { promoted: boolean, count: number } — for UI feedback
+ * Returns: { promoted: boolean, count: number, confirmed: boolean }
  */
 export async function recordHeardWord(
   word: string,
   confidence: number,
   isAlreadyKnown: boolean,
+  contextBefore: string[] = [],
+  contextAfter: string[] = [],
 ): Promise<{ promoted: boolean; count: number; confirmed: boolean }> {
   const w = word.toLowerCase().trim();
   if (!w || w.length < 3) return { promoted: false, count: 0, confirmed: false };
@@ -133,9 +139,12 @@ export async function recordHeardWord(
     existing.count += 1;
     existing.lastHeard = now;
     existing.confidence = (existing.confidence * (existing.count - 1) + confidence) / existing.count;
+    // Update context (most recent occurrence wins)
+    existing.contextBefore = contextBefore;
+    existing.contextAfter = contextAfter;
 
     if (existing.count >= PROMOTION_THRESHOLD) {
-      // Promote to server!
+      // Promote to server with context!
       try {
         const res = await fetch('/api/stt/learn-word', {
           method: 'POST',
@@ -144,16 +153,16 @@ export async function recordHeardWord(
             word: w,
             confidence: existing.confidence,
             source: 'webspeech',
+            contextBefore: existing.contextBefore,
+            contextAfter: existing.contextAfter,
           }),
         });
         if (res.ok) {
-          // Remove from candidates (it's now on server)
           delete candidates[w];
           saveCandidates(candidates);
           console.log(`[LearnedWord] ✓ Promoted to server: "${w}" (count=${existing.count})`);
           return { promoted: true, count: existing.count, confirmed: true };
         } else {
-          // Keep in candidates (will retry on next occurrence)
           saveCandidates(candidates);
           return { promoted: false, count: existing.count, confirmed: false };
         }
@@ -174,6 +183,8 @@ export async function recordHeardWord(
     firstHeard: now,
     lastHeard: now,
     confidence,
+    contextBefore,
+    contextAfter,
   };
   saveCandidates(candidates);
   return { promoted: false, count: 1, confirmed: false };
@@ -181,6 +192,8 @@ export async function recordHeardWord(
 
 /**
  * Process a full sentence — extract words and record each.
+ * v2: also pass context (3 words before + 3 after) for each word.
+ *
  * Returns array of words that got promoted to server (for toast notification).
  */
 export async function recordHeardSentence(
@@ -196,8 +209,12 @@ export async function recordHeardSentence(
     .filter(w => w.length >= 3);
 
   const promoted: string[] = [];
-  for (const w of words) {
-    const result = await recordHeardWord(w, confidence, isWordKnownFn(w));
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i];
+    // Build context: up to 3 words before + 3 after
+    const before = words.slice(Math.max(0, i - 3), i);   // oldest → newest (left → right)
+    const after = words.slice(i + 1, i + 4);              // closest → farthest
+    const result = await recordHeardWord(w, confidence, isWordKnownFn(w), before, after);
     if (result.promoted) promoted.push(w);
   }
   return promoted;
@@ -225,9 +242,9 @@ export async function fetchLearnedWords(): Promise<{
   }
 }
 
-export async function deleteLearnedWord(id: string): Promise<boolean> {
+export async function deleteLearnedWord(id: number): Promise<boolean> {
   try {
-    const res = await fetch(`/api/stt/learned-words?id=${encodeURIComponent(id)}`, {
+    const res = await fetch(`/api/stt/learned-words?id=${id}`, {
       method: 'DELETE',
     });
     return res.ok;

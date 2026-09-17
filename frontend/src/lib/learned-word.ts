@@ -1,22 +1,24 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { d1 } from '@/lib/d1-client';
-import { getSession } from '@/lib/auth';
+import { sttDb } from '@/lib/stt-db';
 import { resetDictionaryCache } from '@/lib/stt-dictionary';
 
 /**
- * Server-side auto-learning system untuk STT.
+ * Server-side auto-learning system untuk STT (v2 — SQLite based).
  *
- * Saat user bilang kata baru dengan confidence tinggi (2+ kali muncul),
- * kata itu dikirim ke sini. Server:
- *   1. Simpan ke D1 table `LearnedWord` (audit trail + count + userId)
- *   2. Generate phonetic variations (misal "goceh" → ["go ceh", "goceh", "goce", "gosheh"])
- *   3. Merge ke phonetic-map.json (file fisik)
- *   4. Hot-reload dict cache (resetDictionaryCache) supaya next request pick up kata baru
+ * Perubahan dari v1 (D1) → v2 (SQLite):
+ *   - Storage: SQLite di SSD VPS (better-sqlite3, synchronous, no network latency)
+ *   - D1 tetap untuk user account data (Users, Certificates, Subscriptions)
+ *   - SQLite khusus untuk STT (learned_words, word_cooccurrence, user_corrections)
  *
- * Semua user dapat benefit dari kata yang dipelajari user lain — global dict.
- * Tapi tracking userId + source tetap ada untuk audit trail (siapa yang pertama
- * bilang kata X).
+ * Tambah fitur baru:
+ *   - Validation: kata harus >= 4 chars, valid Indonesian (no gibberish)
+ *   - Multi-user vote: track unique userIds yang submit kata yang sama
+ *     (kata yang di-submit user berbeda lebih reliable daripada 1 user)
+ *   - Status: candidate (1 user) → confirmed (2+ users OR 5+ occurrences)
+ *     → rejected (admin manual reject atau LLM flag)
+ *   - Context tracking: simpan 3 kata sebelum + 3 sesudah (co-occurrence)
+ *     untuk dipake context-aware correction di fuzzy-correct.ts
  */
 
 // ── Indonesian letter pronunciation rules ──
@@ -50,62 +52,74 @@ const ALPHABET_PHONETICS: Record<string, string[]> = {
   Z: ['zet', 'ze', 'z'],
 };
 
+// ── Validation rules for new words ──
+const MIN_WORD_LENGTH = 4; // kata harus >= 4 huruf (filter noise 1-3 huruf)
+const MAX_WORD_LENGTH = 30;
+const CONFIRM_VOTE_THRESHOLD = 2; // 2 unique users → confirmed
+const CONFIRM_COUNT_THRESHOLD = 5; // OR 5 occurrences dari 1 user → confirmed
+
+/**
+ * Validate word sebelum di-accept ke database.
+ *
+ * Returns true kalau word valid (boleh di-learn), false kalau ditolak.
+ *
+ * Rules:
+ *   - Length 4-30 chars
+ *   - Hanya huruf (boleh hyphen, boleh spasi untuk multi-word)
+ *   - Tidak boleh angka murni
+ *   - Tidak boleh ada 3+ consecutive consonants aneh (gibberish detector)
+ *   - Tidak boleh ada 3+ consecutive vowels aneh (gibberish detector)
+ *   - Tidak boleh repeat char 4+ kali (e.g. "aaaaah" → reject)
+ *   - Tidak boleh contains common Indonesian particle words
+ */
+export function validateWord(word: string): { valid: boolean; reason?: string } {
+  const w = word.toLowerCase().trim();
+  if (!w) return { valid: false, reason: 'empty' };
+  if (w.length < MIN_WORD_LENGTH) return { valid: false, reason: `too short (min ${MIN_WORD_LENGTH})` };
+  if (w.length > MAX_WORD_LENGTH) return { valid: false, reason: `too long (max ${MAX_WORD_LENGTH})` };
+  if (!/^[a-zà-ÿ\-\s]+$/i.test(w)) return { valid: false, reason: 'invalid chars' };
+
+  // Gibberish detector: 5+ consecutive consonants (e.g. "bcdfgh")
+  if (/[bcdfghjklmnpqrstvwxyz]{5,}/i.test(w)) {
+    return { valid: false, reason: 'gibberish (5+ consonants)' };
+  }
+  // 4+ consecutive vowels (rare in Indonesian)
+  if (/[aeiou]{4,}/i.test(w)) {
+    return { valid: false, reason: 'gibberish (4+ vowels)' };
+  }
+  // Same char repeated 4+ times (e.g. "aaaaah" — likely STT glitch)
+  if (/(.)\1{3,}/.test(w)) {
+    return { valid: false, reason: 'repeated char (likely glitch)' };
+  }
+  // Common particles — don't auto-learn these (already in dict)
+  const particles = new Set(['yang', 'dan', 'atau', 'untuk', 'dengan', 'dari', 'karena', 'kalau', 'jika']);
+  if (particles.has(w)) return { valid: false, reason: 'common particle' };
+
+  return { valid: true };
+}
+
 /**
  * Generate phonetic variations for an Indonesian word.
- *
- * Menghasilkan 4 kategori variasi:
- *   1. Word as-is (lowercase) — exact match fallback
- *   2. Common Indonesian STT mishearings:
- *      - 'c' → 's' / 'k'  (e.g. "goceh" → "goseh", "gokeh")
- *      - 'v' → 'f'        (e.g. "vaksin" → "faksin")
- *      - 'z' → 's'        (e.g. "zaman" → "saman")
- *      - 'q' → 'k'        (e.g. "quran" → "kuran")
- *      - 'x' → 'ks'       (e.g. "tax" → "taks")
- *      - 'ph' → 'f'       (e.g. "phase" → "fase")
- *   3. Vowel swap variants (e.g. "solusi" → "solosi", "solasi")
- *   4. For single letters / short codes (≤3 chars), spell-out fonetik
- *
- * Returns: array of unique phonetic variations (without the original — caller adds it).
+ * Same as v1 — produces 5-15 variations per word.
  */
 export function expandPhoneticVariations(word: string): string[] {
   const w = word.toLowerCase().trim();
   if (!w || w.length < 2) return [];
 
   const variations = new Set<string>();
-
-  // 1. As-is (lowercase) — caller should add this separately
-  // (skip here to avoid duplication)
-
-  // 2. Letter substitution variants (common Indonesian mishearings)
   const substitutions: [RegExp, string][] = [
-    [/c/g, 's'],   // c → s (e.g. goceh → goseh)
-    [/c/g, 'k'],   // c → k (e.g. goceh → gokeh)
-    [/v/g, 'f'],   // v → f
-    [/z/g, 's'],   // z → s
-    [/q/g, 'k'],   // q → k
-    [/x/g, 'ks'],  // x → ks
-    [/ph/g, 'f'],  // ph → f
-    [/sh/g, 's'],  // sh → s
-    [/ck/g, 'k'],  // ck → k
-    [/ea/g, 'e'],  // ea → e (breakout → brekaut)
-    [/ou/g, 'u'],  // ou → u
-    [/ee/g, 'i'],  // ee → i (bebe → bibi)
+    [/c/g, 's'], [/c/g, 'k'], [/v/g, 'f'], [/z/g, 's'],
+    [/q/g, 'k'], [/x/g, 'ks'], [/ph/g, 'f'], [/sh/g, 's'], [/ck/g, 'k'],
+    [/ea/g, 'e'], [/ou/g, 'u'], [/ee/g, 'i'],
   ];
   for (const [pattern, replacement] of substitutions) {
     const variant = w.replace(pattern, replacement);
     if (variant !== w) variations.add(variant);
   }
 
-  // 3. Vowel swap variants — generate variants where each vowel is swapped
-  //    with similar-sounding vowels (a↔e, o↔u, i↔e, etc.)
   const vowelSwaps: Record<string, string[]> = {
-    a: ['e', 'o'],
-    e: ['a', 'i'],
-    i: ['e', 'y'],
-    o: ['u', 'a'],
-    u: ['o'],
+    a: ['e', 'o'], e: ['a', 'i'], i: ['e', 'y'], o: ['u', 'a'], u: ['o'],
   };
-  // Only swap first 2 vowels to limit combinatorial explosion
   const vowelIndices: number[] = [];
   for (let i = 0; i < w.length; i++) {
     if (vowelSwaps[w[i]]) vowelIndices.push(i);
@@ -121,8 +135,6 @@ export function expandPhoneticVariations(word: string): string[] {
     }
   }
 
-  // 4. For short words / abbreviations (≤3 chars uppercase), spell out letters
-  //    e.g. "BBCA" → "be be se a"
   if (word === word.toUpperCase() && word.length <= 4 && /^[A-Z]+$/.test(word)) {
     const spelledOut: string[] = [];
     for (const char of word) {
@@ -130,112 +142,187 @@ export function expandPhoneticVariations(word: string): string[] {
       if (opts) spelledOut.push(opts[0]);
     }
     if (spelledOut.length > 0) {
-      variations.add(spelledOut.join(' '));         // "be be se a"
-      variations.add(spelledOut.join(''));           // "bebesea"
-      variations.add(spelledOut.join('-'));           // "be-be-se-a"
+      variations.add(spelledOut.join(' '));
+      variations.add(spelledOut.join(''));
+      variations.add(spelledOut.join('-'));
     }
   }
 
-  // 5. Remove duplicate consonants (e.g. "massal" → "masal")
   const deduped = w.replace(/([bcdfghjklmnpqrstvwxyz])\1+/g, '$1');
   if (deduped !== w) variations.add(deduped);
-
-  // 6. Drop final 'h' (common in Indonesian STT — "goceh" → "goce")
-  if (w.endsWith('h') && w.length > 3) {
-    variations.add(w.slice(0, -1));
-  }
+  if (w.endsWith('h') && w.length > 3) variations.add(w.slice(0, -1));
 
   return Array.from(variations);
 }
 
 /**
- * Insert a new learned word into D1 + merge phonetic variations into phonetic-map.json.
+ * Track co-occurrence: kata yang sering muncul sebelum/sesudah kata yang baru
+ * dipelajari. Dipake context-aware correction di fuzzy-correct.ts.
  *
- * Called by /api/stt/learn-word when client detects a word that should be learned.
+ * @param word Kata utama yang baru di-learn
+ * @param contextBefore Array of words sebelum (max 3, oldest → newest)
+ * @param contextAfter Array of words sesudah (max 3, terdekat → terjauh)
+ */
+export function trackCooccurrence(
+  word: string,
+  contextBefore: string[] = [],
+  contextAfter: string[] = [],
+): number {
+  const w = word.toLowerCase().trim();
+  if (!w) return 0;
+
+  let inserted = 0;
+  const tx = sttDb.tx(() => {
+    // Before: oldest (distance 3) → newest (distance 1, closest to word)
+    for (let i = 0; i < Math.min(contextBefore.length, 3); i++) {
+      const ctx = contextBefore[i]?.toLowerCase().trim();
+      if (!ctx || ctx.length < 2) continue;
+      const distance = contextBefore.length - i;  // 3, 2, 1 (oldest → newest)
+      sttDb.run(
+        `INSERT INTO word_cooccurrence (word, context_word, position, distance, count)
+         VALUES (?, ?, 'before', ?, 1)
+         ON CONFLICT(word, context_word, position, distance)
+         DO UPDATE SET count = count + 1, updated_at = datetime('now')`,
+        [w, ctx, distance]
+      );
+      inserted++;
+    }
+    // After: closest (distance 1) → terjauh (distance 3)
+    for (let i = 0; i < Math.min(contextAfter.length, 3); i++) {
+      const ctx = contextAfter[i]?.toLowerCase().trim();
+      if (!ctx || ctx.length < 2) continue;
+      const distance = i + 1;
+      sttDb.run(
+        `INSERT INTO word_cooccurrence (word, context_word, position, distance, count)
+         VALUES (?, ?, 'after', ?, 1)
+         ON CONFLICT(word, context_word, position, distance)
+         DO UPDATE SET count = count + 1, updated_at = datetime('now')`,
+        [w, ctx, distance]
+      );
+      inserted++;
+    }
+  });
+  tx();
+  return inserted;
+}
+
+/**
+ * Learn a new word — insert/update ke SQLite + expand fonetik + merge phonetic-map.json.
  *
- * Behavior:
- *   - If word already in D1: increment count, update lastUsedAt
- *   - If new word: insert with count=1
- *   - Always merge phonetic variations into phonetic-map.json (idempotent)
- *   - Reset dict cache so next request picks up new word
- *
- * Returns: { learned: boolean, variations: number, word: string }
+ * v2 improvements:
+ *   - Validate word (length, gibberish, particles)
+ *   - Track unique userIds (vote_count = berapa user berbeda yang submit kata ini)
+ *   - Auto-promote status: candidate → confirmed kalau vote_count >= 2 OR count >= 5
+ *   - Track context words (3 before + 3 after) untuk co-occurrence stats
  */
 export async function learnWord(
   word: string,
   confidence: number,
   userId: string | null,
   source: string = 'webspeech',
-): Promise<{ learned: boolean; variations: number; word: string; count: number }> {
+  contextBefore: string[] = [],
+  contextAfter: string[] = [],
+): Promise<{
+  learned: boolean;
+  variations: number;
+  word: string;
+  count: number;
+  status: string;
+  voteCount: number;
+  validationError?: string;
+}> {
   const w = word.toLowerCase().trim();
-  if (!w || w.length < 3) {
-    return { learned: false, variations: 0, word: w, count: 0 };
+
+  // Validate word
+  const validation = validateWord(w);
+  if (!validation.valid) {
+    return {
+      learned: false, variations: 0, word: w, count: 0, status: 'rejected',
+      voteCount: 0, validationError: validation.reason,
+    };
   }
-
-  // Sanity: skip if word is already in KBBI (no need to learn)
-  // We let the client do this check first (faster), but also do it server-side
-  // for safety. However, this would require loading the dict — skip for now
-  // since client already filters.
-
-  // Ensure table exists
-  await d1.execute(`
-    CREATE TABLE IF NOT EXISTS LearnedWord (
-      id TEXT PRIMARY KEY,
-      word TEXT NOT NULL UNIQUE,
-      phonetic_variations TEXT,
-      source TEXT,
-      confidence REAL DEFAULT 0,
-      count INTEGER DEFAULT 1,
-      userId TEXT,
-      createdAt TEXT NOT NULL,
-      lastUsedAt TEXT NOT NULL
-    )
-  `).catch(() => {});
-
-  // Check if word already exists
-  const existing = await d1.query<{ id: string; count: number; confidence: number }>(
-    `SELECT id, count, confidence FROM LearnedWord WHERE word = ?`,
-    [w]
-  );
 
   const now = new Date().toISOString();
-  let newCount: number;
-  let avgConfidence: number;
+  const variations = expandPhoneticVariations(w);
+  const variationsJson = JSON.stringify(variations);
+  const userIds: string[] = userId ? [userId] : [];
 
-  if (existing.length > 0) {
-    // Update existing: increment count, update lastUsedAt, recalculate confidence
-    const row = existing[0];
-    newCount = (row.count || 0) + 1;
-    // Weighted average: existing confidence * (count-1) + new confidence, divided by count
-    avgConfidence = ((row.confidence || 0) * (newCount - 1) + confidence) / newCount;
-    await d1.execute(
-      `UPDATE LearnedWord SET count = ?, confidence = ?, lastUsedAt = ? WHERE word = ?`,
-      [newCount, avgConfidence, now, w]
-    );
-  } else {
-    // Insert new word
-    newCount = 1;
-    avgConfidence = confidence;
-    const id = crypto.randomUUID();
-    const variations = expandPhoneticVariations(w);
-    const variationsJson = JSON.stringify(variations);
-    await d1.execute(
-      `INSERT INTO LearnedWord (id, word, phonetic_variations, source, confidence, count, userId, createdAt, lastUsedAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, w, variationsJson, source, confidence, newCount, userId, now, now]
-    );
+  // Insert / update learned_words (atomic transaction)
+  const tx = sttDb.tx(() => {
+    const existing = sttDb.getOne<{
+      id: number; count: number; confidence: number; vote_count: number;
+      user_ids: string; status: string;
+    }>(`SELECT id, count, confidence, vote_count, user_ids, status FROM learned_words WHERE word = ?`, [w]);
+
+    let newCount: number;
+    let newConfidence: number;
+    let newVoteCount: number;
+    let newUserIds: string[];
+    let newStatus: string;
+
+    if (existing) {
+      // Update existing
+      newCount = (existing.count || 0) + 1;
+      newConfidence = ((existing.confidence || 0) * (newCount - 1) + confidence) / newCount;
+
+      // Track unique userIds (vote_count)
+      const existingUserIds: string[] = existing.user_ids ? JSON.parse(existing.user_ids) : [];
+      newUserIds = [...new Set([...existingUserIds, ...(userId ? [userId] : [])])];
+      newVoteCount = newUserIds.length;
+
+      // Auto-promote status
+      newStatus = existing.status;
+      if (newStatus === 'candidate') {
+        if (newVoteCount >= CONFIRM_VOTE_THRESHOLD || newCount >= CONFIRM_COUNT_THRESHOLD) {
+          newStatus = 'confirmed';
+        }
+      }
+
+      sttDb.run(
+        `UPDATE learned_words
+         SET count = ?, confidence = ?, vote_count = ?, user_ids = ?, status = ?, last_used_at = ?
+         WHERE word = ?`,
+        [newCount, newConfidence, newVoteCount, JSON.stringify(newUserIds), newStatus, now, w]
+      );
+    } else {
+      // Insert new word
+      newCount = 1;
+      newConfidence = confidence;
+      newVoteCount = userId ? 1 : 0;
+      newUserIds = userId ? [userId] : [];
+      newStatus = 'candidate';
+
+      sttDb.run(
+        `INSERT INTO learned_words (word, phonetic_variations, source, confidence, count, vote_count, user_ids, status, created_at, last_used_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [w, variationsJson, source, confidence, newCount, newVoteCount, JSON.stringify(newUserIds), newStatus, now, now]
+      );
+    }
+
+    return { newCount, newVoteCount, newStatus, newConfidence };
+  });
+
+  const { newCount, newVoteCount, newStatus } = tx();
+
+  // Track co-occurrence (async, don't block response)
+  try {
+    trackCooccurrence(w, contextBefore, contextAfter);
+  } catch (e) {
+    console.warn('[learn-word] cooccurrence tracking failed:', e);
   }
 
-  // Merge phonetic variations into phonetic-map.json
-  // This makes the word discoverable by the existing phonetic matching system
-  const variationsAdded = await mergeIntoPhoneticMap(w);
+  // Merge phonetic variations into phonetic-map.json (only for confirmed words)
+  let variationsAdded = 0;
+  if (newStatus === 'confirmed') {
+    variationsAdded = await mergeIntoPhoneticMap(w);
 
-  // Reset dict cache so isKnown() picks up the new word on next request
-  if (variationsAdded > 0) {
-    try {
-      resetDictionaryCache();
-    } catch (e) {
-      console.warn('[learn-word] Could not reset cache:', e);
+    // Reset dict cache so isKnown() picks up the new confirmed word
+    if (variationsAdded > 0) {
+      try {
+        resetDictionaryCache();
+      } catch (e) {
+        console.warn('[learn-word] could not reset cache:', e);
+      }
     }
   }
 
@@ -244,20 +331,19 @@ export async function learnWord(
     variations: variationsAdded,
     word: w,
     count: newCount,
+    status: newStatus,
+    voteCount: newVoteCount,
   };
 }
 
 /**
  * Merge a word's phonetic variations into phonetic-map.json.
- * Idempotent — if variations already exist, no change.
- *
- * Returns the number of NEW variations added (0 if all already present).
+ * Idempotent — only for confirmed words.
  */
 async function mergeIntoPhoneticMap(word: string): Promise<number> {
   const w = word.toLowerCase().trim();
   if (!w) return 0;
 
-  // Find phonetic-map.json on VPS or local
   const candidates = [
     join(process.cwd(), 'backend', 'data', 'phonetic-map.json'),
     '/root/lina-learning/backend/data/phonetic-map.json',
@@ -267,10 +353,7 @@ async function mergeIntoPhoneticMap(word: string): Promise<number> {
   for (const p of candidates) {
     if (existsSync(p)) { phoneticPath = p; break; }
   }
-  if (!phoneticPath) {
-    console.warn('[learn-word] phonetic-map.json not found, skipping merge');
-    return 0;
-  }
+  if (!phoneticPath) return 0;
 
   try {
     const raw = readFileSync(phoneticPath, 'utf-8');
@@ -279,102 +362,77 @@ async function mergeIntoPhoneticMap(word: string): Promise<number> {
     if (!ph.learned_words) ph.learned_words = {};
     if (!ph.phonetic_tickers) ph.phonetic_tickers = {};
 
-    // The word itself maps to itself (preserves case in output)
-    // We add it to learned_words so it's traceable + to phonetic_tickers so
-    // phoneticMatch() can find it
     const variations = expandPhoneticVariations(w);
     let added = 0;
 
-    // Add the word itself to phonetic_tickers (lowercase form → original word)
-    // This is what makes isKnown() work via the existing _phraseMap merge in stt-dictionary.ts
     if (!ph.phonetic_tickers[w]) {
-      ph.phonetic_tickers[w] = w;  // maps to itself — just mark as known
+      ph.phonetic_tickers[w] = w;
       added++;
     }
-
-    // Add phonetic variations → original word
     for (const variant of variations) {
       if (!ph.phonetic_tickers[variant]) {
         ph.phonetic_tickers[variant] = w;
         added++;
       }
     }
-
-    // Track learned word metadata
     ph.learned_words[w] = {
-      variations: variations.length + 1, // +1 for the word itself
+      variations: variations.length + 1,
       addedAt: new Date().toISOString(),
     };
 
-    // Update version metadata
-    ph._v = '3.0-auto-learning';
+    ph._v = '4.0-auto-learning-sqlite';
     const existingSource = ph._s || '';
-    if (!existingSource.includes('auto-learning')) {
-      ph._s = (existingSource + ' + auto-learning').replace(/^\s*\+\s*/, '');
+    if (!existingSource.includes('sqlite')) {
+      ph._s = (existingSource + ' + sqlite').replace(/^\s*\+\s*/, '');
     }
 
     if (added > 0) {
       writeFileSync(phoneticPath, JSON.stringify(ph, null, 2));
-      console.log(`[learn-word] ✓ Added ${added} phonetic variations for "${w}" to phonetic-map.json`);
+      console.log(`[learn-word] ✓ Added ${added} phonetic variations for "${w}" (status=confirmed)`);
     }
-
     return added;
   } catch (e) {
-    console.error('[learn-word] Failed to merge into phonetic-map.json:', e);
+    console.error('[learn-word] phonetic-map merge failed:', e);
     return 0;
   }
 }
 
 /**
- * Get all learned words from D1 (for UI display).
- * Ordered by lastUsedAt DESC (most recent first).
+ * Get all learned words from SQLite (for UI display).
  */
 export async function getLearnedWords(limit: number = 100, offset: number = 0): Promise<{
   words: Array<{
-    id: string;
+    id: number;
     word: string;
     phonetic_variations: string[];
     source: string;
     confidence: number;
     count: number;
-    userId: string | null;
-    createdAt: string;
-    lastUsedAt: string;
+    vote_count: number;
+    status: string;
+    created_at: string;
+    last_used_at: string;
   }>;
   total: number;
 }> {
-  // Ensure table exists
-  await d1.execute(`
-    CREATE TABLE IF NOT EXISTS LearnedWord (
-      id TEXT PRIMARY KEY,
-      word TEXT NOT NULL UNIQUE,
-      phonetic_variations TEXT,
-      source TEXT,
-      confidence REAL DEFAULT 0,
-      count INTEGER DEFAULT 1,
-      userId TEXT,
-      createdAt TEXT NOT NULL,
-      lastUsedAt TEXT NOT NULL
-    )
-  `).catch(() => {});
+  const totalRow = sttDb.getOne<{ c: number }>(`SELECT COUNT(*) as c FROM learned_words`);
+  const total = totalRow?.c ?? 0;
 
-  const countRows = await d1.query<{ c: number }>(`SELECT COUNT(*) as c FROM LearnedWord`);
-  const total = countRows[0]?.c ?? 0;
-
-  const rows = await d1.query<{
-    id: string;
+  const rows = sttDb.getAll<{
+    id: number;
     word: string;
-    phonetic_variations: string | null;
+    phonetic_variations: string;
     source: string;
     confidence: number;
     count: number;
-    userId: string | null;
-    createdAt: string;
-    lastUsedAt: string;
+    vote_count: number;
+    status: string;
+    created_at: string;
+    last_used_at: string;
   }>(
-    `SELECT id, word, phonetic_variations, source, confidence, count, userId, createdAt, lastUsedAt
-     FROM LearnedWord
-     ORDER BY lastUsedAt DESC
+    `SELECT id, word, phonetic_variations, source, confidence, count, vote_count, status, created_at, last_used_at
+     FROM learned_words
+     ORDER BY last_used_at DESC
      LIMIT ? OFFSET ?`,
     [limit, offset]
   );
@@ -382,29 +440,26 @@ export async function getLearnedWords(limit: number = 100, offset: number = 0): 
   return {
     words: (rows || []).map(r => ({
       ...r,
-      phonetic_variations: r.phonetic_variations
-        ? JSON.parse(r.phonetic_variations)
-        : [],
+      phonetic_variations: r.phonetic_variations ? JSON.parse(r.phonetic_variations) : [],
     })),
     total,
   };
 }
 
 /**
- * Delete a learned word by id. Also removes its phonetic variations from phonetic-map.json.
+ * Delete a learned word by id.
  */
-export async function deleteLearnedWord(id: string): Promise<{ deleted: boolean; word?: string }> {
-  // First fetch the word (so we can also clean up phonetic-map.json)
-  const rows = await d1.query<{ word: string }>(
-    `SELECT word FROM LearnedWord WHERE id = ?`,
-    [id]
+export async function deleteLearnedWord(id: number): Promise<{ deleted: boolean; word?: string }> {
+  const row = sttDb.getOne<{ word: string }>(
+    `SELECT word FROM learned_words WHERE id = ?`, [id]
   );
-  if (!rows.length) return { deleted: false };
+  if (!row) return { deleted: false };
 
-  const word = rows[0].word;
-  await d1.execute(`DELETE FROM LearnedWord WHERE id = ?`, [id]);
+  const word = row.word;
+  sttDb.run(`DELETE FROM learned_words WHERE id = ?`, [id]);
+  sttDb.run(`DELETE FROM word_cooccurrence WHERE word = ? OR context_word = ?`, [word, word]);
 
-  // Remove from phonetic-map.json
+  // Clean phonetic-map.json
   const candidates = [
     join(process.cwd(), 'backend', 'data', 'phonetic-map.json'),
     '/root/lina-learning/backend/data/phonetic-map.json',
@@ -419,21 +474,15 @@ export async function deleteLearnedWord(id: string): Promise<{ deleted: boolean;
       const raw = readFileSync(phoneticPath, 'utf-8');
       const ph = JSON.parse(raw);
       if (ph.phonetic_tickers) {
-        // Remove all entries that map to this word
         for (const key of Object.keys(ph.phonetic_tickers)) {
-          if (ph.phonetic_tickers[key] === word) {
-            delete ph.phonetic_tickers[key];
-          }
+          if (ph.phonetic_tickers[key] === word) delete ph.phonetic_tickers[key];
         }
       }
       if (ph.learned_words) delete ph.learned_words[word];
       writeFileSync(phoneticPath, JSON.stringify(ph, null, 2));
-      console.log(`[learn-word] ✓ Removed "${word}" from phonetic-map.json`);
-
-      // Reset cache
       try { resetDictionaryCache(); } catch {}
     } catch (e) {
-      console.error('[learn-word] Failed to clean phonetic-map.json:', e);
+      console.error('[learn-word] phonetic-map clean failed:', e);
     }
   }
 
@@ -445,32 +494,145 @@ export async function deleteLearnedWord(id: string): Promise<{ deleted: boolean;
  */
 export async function getLearnedWordsStats(): Promise<{
   total: number;
-  confirmed: number;  // count >= 2
-  candidates: number;  // count < 2
+  confirmed: number;
+  candidates: number;
 }> {
-  await d1.execute(`
-    CREATE TABLE IF NOT EXISTS LearnedWord (
-      id TEXT PRIMARY KEY,
-      word TEXT NOT NULL UNIQUE,
-      phonetic_variations TEXT,
-      source TEXT,
-      confidence REAL DEFAULT 0,
-      count INTEGER DEFAULT 1,
-      userId TEXT,
-      createdAt TEXT NOT NULL,
-      lastUsedAt TEXT NOT NULL
-    )
-  `).catch(() => {});
-
-  const totalRows = await d1.query<{ c: number }>(`SELECT COUNT(*) as c FROM LearnedWord`);
-  const confirmedRows = await d1.query<{ c: number }>(
-    `SELECT COUNT(*) as c FROM LearnedWord WHERE count >= 2`
+  const totalRow = sttDb.getOne<{ c: number }>(`SELECT COUNT(*) as c FROM learned_words`);
+  const confirmedRow = sttDb.getOne<{ c: number }>(
+    `SELECT COUNT(*) as c FROM learned_words WHERE status = 'confirmed'`
   );
-  const total = totalRows[0]?.c ?? 0;
-  const confirmed = confirmedRows[0]?.c ?? 0;
+  const total = totalRow?.c ?? 0;
+  const confirmed = confirmedRow?.c ?? 0;
   return {
     total,
     confirmed,
     candidates: total - confirmed,
   };
+}
+
+/**
+ * Get DB stats — for admin panel.
+ */
+export async function getDbStats(): Promise<{
+  learnedWords: { total: number; confirmed: number; candidates: number; rejected: number };
+  cooccurrence: { total: number; uniqueWords: number };
+  userCorrections: { total: number; pending: number };
+}> {
+  const lwTotal = sttDb.getOne<{ c: number }>(`SELECT COUNT(*) as c FROM learned_words`)?.c ?? 0;
+  const lwConfirmed = sttDb.getOne<{ c: number }>(`SELECT COUNT(*) as c FROM learned_words WHERE status = 'confirmed'`)?.c ?? 0;
+  const lwRejected = sttDb.getOne<{ c: number }>(`SELECT COUNT(*) as c FROM learned_words WHERE status = 'rejected'`)?.c ?? 0;
+  const coTotal = sttDb.getOne<{ c: number }>(`SELECT COUNT(*) as c FROM word_cooccurrence`)?.c ?? 0;
+  const coUniqueWords = sttDb.getOne<{ c: number }>(`SELECT COUNT(DISTINCT word) as c FROM word_cooccurrence`)?.c ?? 0;
+  const ucTotal = sttDb.getOne<{ c: number }>(`SELECT COUNT(*) as c FROM user_corrections`)?.c ?? 0;
+  const ucPending = sttDb.getOne<{ c: number }>(`SELECT COUNT(*) as c FROM user_corrections WHERE accepted = 0`)?.c ?? 0;
+
+  return {
+    learnedWords: {
+      total: lwTotal,
+      confirmed: lwConfirmed,
+      candidates: lwTotal - lwConfirmed - lwRejected,
+      rejected: lwRejected,
+    },
+    cooccurrence: {
+      total: coTotal,
+      uniqueWords: coUniqueWords,
+    },
+    userCorrections: {
+      total: ucTotal,
+      pending: ucPending,
+    },
+  };
+}
+
+/**
+ * Record user correction (when user manually edits transcript word).
+ * Used for feedback loop — high-quality corrections that override fuzzy-match.
+ */
+export async function recordUserCorrection(
+  originalWord: string,
+  correctedWord: string,
+  contextBefore: string[] = [],
+  contextAfter: string[] = [],
+  fullSentence: string | null,
+  userId: string | null,
+): Promise<{ recorded: boolean; voteId: number | null }> {
+  const original = originalWord.toLowerCase().trim();
+  const corrected = correctedWord.toLowerCase().trim();
+  if (!original || !corrected || original === corrected) {
+    return { recorded: false, voteId: null };
+  }
+
+  const tx = sttDb.tx(() => {
+    const result = sttDb.run(
+      `INSERT INTO user_corrections
+       (original_word, corrected_word, context_before, context_after, full_sentence, user_id, user_weight, accepted, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 0, datetime('now'))`,
+      [
+        original,
+        corrected,
+        contextBefore.join(' '),
+        contextAfter.join(' '),
+        fullSentence,
+        userId,
+        1.0, // default weight; admin bisa bump
+      ]
+    );
+    const voteId = Number(result.lastInsertRowid);
+
+    // Update correction_summary
+    sttDb.run(
+      `INSERT INTO correction_summary (original_word, corrected_word, total_votes, weighted_votes, last_voted_at)
+       VALUES (?, ?, 1, 1.0, datetime('now'))
+       ON CONFLICT(original_word, corrected_word)
+       DO UPDATE SET total_votes = total_votes + 1, weighted_votes = weighted_votes + 1.0, last_voted_at = datetime('now')`,
+      [original, corrected]
+    );
+
+    return voteId;
+  });
+
+  const voteId = tx();
+  return { recorded: true, voteId };
+}
+
+/**
+ * Get correction summary for an original word (used by context-aware correction).
+ */
+export function getCorrectionVotes(originalWord: string): Array<{
+  corrected_word: string;
+  total_votes: number;
+  weighted_votes: number;
+}> {
+  const w = originalWord.toLowerCase().trim();
+  return sttDb.getAll<{
+    corrected_word: string;
+    total_votes: number;
+    weighted_votes: number;
+  }>(
+    `SELECT corrected_word, total_votes, weighted_votes
+     FROM correction_summary
+     WHERE original_word = ?
+     ORDER BY weighted_votes DESC`,
+    [w]
+  );
+}
+
+/**
+ * Get co-occurrence stats for a word (used by context-aware correction).
+ */
+export function getCooccurrence(
+  word: string,
+  position: 'before' | 'after',
+): Array<{ context_word: string; distance: number; count: number }> {
+  const w = word.toLowerCase().trim();
+  return sttDb.getAll<{
+    context_word: string; distance: number; count: number;
+  }>(
+    `SELECT context_word, distance, count
+     FROM word_cooccurrence
+     WHERE word = ? AND position = ?
+     ORDER BY count DESC
+     LIMIT 20`,
+    [w, position]
+  );
 }
