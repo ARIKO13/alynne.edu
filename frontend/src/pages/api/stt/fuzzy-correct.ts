@@ -1,24 +1,39 @@
 import type { APIRoute } from 'astro';
 import { localCorrect, setPersonalDictForRequest } from '@/lib/stt-dictionary';
+import { contextAwareCorrect } from '@/lib/stt-context-corrector';
 import { d1 } from '@/lib/d1-client';
 import { getSession } from '@/lib/auth';
 
 /**
  * POST /api/stt/fuzzy-correct
- * Body: { text: string, source?: 'webspeech' | 'ocr' | 'cv' | 'audio', personalDict?: string[] }
+ * Body: {
+ *   text: string,
+ *   source?: 'webspeech' | 'ocr' | 'cv' | 'audio',
+ *   personalDict?: string[],
+ *   enableContextCorrect?: boolean  (default true)
+ * }
  *
- * Applies the full localCorrect pipeline + fuzzy matching + phonetic map
- * to text from ANY of the combined STT methods.
+ * Pipeline correction (3 layers, run sequentially):
  *
- * PERSONAL DICT (auto-learning system):
- *   Client can send personalDict array (list of words the user has
- *   auto-confirmed via repetition). These words are added to the known-words
- *   set for THIS request only, so they skip fuzzy matching.
+ *   1. localCorrect (existing)
+ *      - Phrase map (stock tickers, multi-word fixes)
+ *      - Slang → formal (e.g. "lebay" → "berlebihan")
+ *      - Direct fixes (e.g. "imformasi" → "informasi")
+ *      - Context homophones (e.g. "kekerasan" → "kecerdasan" in AI context)
+ *      - Phonetic matching (Double Metaphone for stock terms)
+ *      - Fuzzy matching (Levenshtein for typos)
  *
- * AUTO-LOGGING: When unknownWords > 0 (the system couldn't recognize some
- * words), the raw text is logged to the `STTFailure` D1 table for later
- * analysis. The user can view these failures in the admin panel and later
- * connect a spreadsheet sync.
+ *   2. contextAwareCorrect (NEW — Layer 3)
+ *      - For remaining unknown tokens, look at co-occurrence stats
+ *      - Disambiguate pairs like "produksi" vs "solusi" based on context
+ *      - Track 3 words before + 3 after as observations
+ *      - Vote-based: corrections from user_corrections table override
+ *      - Records observations back to word_cooccurrence (feedback loop)
+ *
+ *   3. Auto-log to STTFailure (existing)
+ *      - Logs raw + corrected text to D1 for admin review
+ *
+ * AUTH: optional (userId tracked if logged in)
  */
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -26,6 +41,7 @@ export const POST: APIRoute = async ({ request }) => {
       text?: string;
       source?: string;
       personalDict?: string[];
+      enableContextCorrect?: boolean;
     };
 
     const rawText = (body.text || '').trim();
@@ -38,36 +54,74 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    // Apply personal dict for this request (auto-learning system)
-    // Words in personalDict will be treated as "known" by isKnown()
-    setPersonalDictForRequest(body.personalDict);
+    // Get user ID if logged in (for context-aware corrector vote tracking)
+    let userId: string | null = null;
+    const session = await getSession(request);
+    if (session?.user?.id) userId = session.user.id;
 
+    // ─── LAYER 1: localCorrect (existing) ───
+    // Apply personal dict for this request
+    setPersonalDictForRequest(body.personalDict);
     const result = localCorrect(rawText);
 
-    // ── Auto-log failures ──
-    // When there are unknown words, log the raw text to D1 for later analysis.
-    // This helps the user build a dataset of what the STT system can't recognize,
-    // so they can add corrections to the dictionary.
+    let textAfterLayer1 = result.text;
+    const contextCorrections: Array<{
+      original: string;
+      corrected: string;
+      score: number;
+      confident: boolean;
+    }> = [];
+
+    // ─── LAYER 2: contextAwareCorrect (NEW) ───
+    // Run after localCorrect to handle remaining ambiguities
+    // e.g. "produksi" vs "solusi" — localCorrect's ctxHomophones rule only
+    // catches specific known pairs. contextAwareCorrect uses co-occurrence
+    // stats to pick the right one based on actual user behavior.
+    const enableContext = body.enableContextCorrect !== false; // default true
+    if (enableContext) {
+      try {
+        const ctxResult = contextAwareCorrect(textAfterLayer1, {
+          userId: userId || undefined,
+          recordObservations: true,
+          personalDict: body.personalDict
+            ? new Set(body.personalDict.map(w => w.toLowerCase()))
+            : new Set<string>(),
+        });
+
+        if (ctxResult.text && ctxResult.text !== textAfterLayer1) {
+          textAfterLayer1 = ctxResult.text;
+        }
+
+        contextCorrections.push(...ctxResult.corrections.map(c => ({
+          original: c.original,
+          corrected: c.corrected,
+          score: c.score,
+          confident: c.confident,
+        })));
+
+        if (ctxResult.corrections.length > 0) {
+          console.log(`[fuzzy-correct] Context-aware: ${ctxResult.corrections.length} corrections applied, ${ctxResult.observed} observations recorded`);
+        }
+      } catch (ctxErr) {
+        // Don't fail the request if context-aware correction fails
+        console.warn('[fuzzy-correct] Context-aware correction failed:', ctxErr);
+      }
+    }
+
+    // ─── Layer 3: Auto-log failures to D1 ───
     if (result.stats.unknownWords > 0 || result.needsLLM) {
       try {
-        // Extract the actual unknown words from the text
         const words = rawText.toLowerCase()
           .replace(/[^\w\s]/g, ' ')
           .split(/\s+/)
           .filter(w => w.length > 2);
-        // Filter to only unknown words (skip numbers + very short)
         const unknownWords = words.filter(w => !/^\d+$/.test(w) && w.length > 2);
-
-        let userId: string | null = null;
-        const session = await getSession(request);
-        if (session?.user?.id) userId = session.user.id;
 
         const id = crypto.randomUUID();
         const now = new Date().toISOString();
-        const unknownStr = unknownWords.slice(0, 20).join(','); // cap at 20 words
+        const unknownStr = unknownWords.slice(0, 20).join(',');
         const unknownCount = unknownWords.length;
 
-        // Create table if not exists
         await d1.execute(`
           CREATE TABLE IF NOT EXISTS STTFailure (
             id TEXT PRIMARY KEY,
@@ -84,23 +138,23 @@ export const POST: APIRoute = async ({ request }) => {
         await d1.execute(
           `INSERT INTO STTFailure (id, rawText, correctedText, source, unknownWords, unknownCount, userId, createdAt)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [id, rawText, result.text, body.source || 'unknown',
+          [id, rawText, textAfterLayer1, body.source || 'unknown',
            unknownStr, unknownCount, userId, now]
         );
       } catch (logErr) {
-        // Don't fail the request if logging fails
         console.warn('[fuzzy-correct] Failed to log failure:', logErr);
       }
     }
 
     return Response.json({
-      corrected: result.text,
+      corrected: textAfterLayer1,
       needsLLM: result.needsLLM,
       llmReason: result.llmReason,
       stats: result.stats,
+      contextCorrections: contextCorrections.length > 0 ? contextCorrections : undefined,
       source: body.source || 'unknown',
       originalLength: rawText.length,
-      correctedLength: result.text.length,
+      correctedLength: textAfterLayer1.length,
     });
   } catch (error) {
     console.error('[fuzzy-correct] error:', error);
@@ -113,4 +167,3 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 };
-
