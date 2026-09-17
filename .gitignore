@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+.astro/
+.next/
+
+# Model files (too large for git)
+*.gguf
+*.bin
+*.pt
+*.onnx
+models/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+pm2-logs/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Temp files
+tmp/
+*.tmp
+*.bak
+.deploy/
+.datasets/
+.datasets/

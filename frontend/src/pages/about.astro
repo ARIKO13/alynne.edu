@@ -1,0 +1,82 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import '@/styles/global.css';
+
+const agents = [
+  {
+    name: 'ALYNNE.EDU',
+    tagline: 'Belajar Cerdas, Raih Sertifikat!',
+    status: 'available',
+    href: '/edu',
+  },
+];
+---
+
+<Layout title="About - ALYNNE AI">
+  <main class="min-h-screen bg-[#09090b] pt-24 pb-16 px-6">
+    <div class="max-w-4xl mx-auto">
+      <!-- Header -->
+      <div class="mb-10">
+        <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-2">
+          Model <span class="text-[#8B5CF6]">ALYNNE AI</span>
+        </h1>
+        <p class="text-sm text-zinc-500">Pilih agent yang kamu butuhkan.</p>
+      </div>
+
+      <!-- Agent Grid -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+        {agents.map((agent) => (
+          <a
+            href={agent.href}
+            class:list={[
+              'group relative flex items-center justify-between rounded-xl border px-4 py-5 transition-colors',
+              agent.status === 'available'
+                ? 'border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.07] hover:border-white/[0.15]'
+                : 'border-white/[0.04] bg-white/[0.01] opacity-50 cursor-not-allowed',
+            ]}
+          >
+            <span class="text-sm font-medium text-zinc-200 truncate">
+              {agent.name.replace('ALYNNE.', '')}
+            </span>
+            {agent.status === 'available' ? (
+              <svg class="w-4 h-4 text-zinc-600 group-hover:text-zinc-300 shrink-0 transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            ) : (
+              <span class="text-[9px] font-medium text-zinc-600 bg-white/[0.04] border border-white/[0.06] px-2 py-0.5 rounded-full shrink-0">
+                Soon
+              </span>
+            )}
+          </a>
+        ))}
+      </div>
+
+      <!-- Agent Detail Card -->
+      {agents.map((agent) => (
+        <div class="mt-8 rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+          <div class="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="text-base font-semibold text-white">{agent.name}</span>
+              {agent.status === 'available' ? (
+                <span class="text-[9px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">Available</span>
+              ) : (
+                <span class="text-[9px] font-medium text-zinc-500 bg-white/[0.04] border border-white/[0.06] px-2 py-0.5 rounded-full">Coming Soon</span>
+              )}
+            </div>
+          </div>
+          <div class="px-6 py-4">
+            <p class="text-sm text-zinc-400 mb-2">{agent.tagline}</p>
+            <p class="text-xs text-zinc-600 leading-relaxed">
+              Platform belajar AI-powered dengan Speech-to-Text, auto-generate modul PDF, dan tracking progress. Upload materi pendukung, rekam suara, dan biar AI yang menyusun modul belajarmu.
+            </p>
+          </div>
+        </div>
+      ))}
+
+      <!-- Back -->
+      <div class="text-center mt-12">
+        <a href="/" class="text-sm text-zinc-500 hover:text-white transition-colors">
+          &larr; Kembali ke Home
+        </a>
+      </div>
+    </div>
+  </main>
+</Layout>

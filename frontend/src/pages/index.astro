@@ -1,0 +1,50 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import '@/styles/global.css';
+---
+
+<Layout title="ALYNNE AI">
+  <main class="min-h-screen bg-[#09090b] flex flex-col items-center justify-center px-6">
+    <div class="text-center max-w-2xl">
+      <div class="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-1.5 mb-8">
+        <svg class="h-3.5 w-3.5 text-[#8B5CF6]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        <span class="text-xs text-zinc-400">Multi-Model AI Platform</span>
+      </div>
+
+      <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white mb-6">
+        One agent for{' '}
+        <span class="bg-gradient-to-r from-[#8B5CF6] to-purple-400 bg-clip-text text-transparent">
+          all skills.
+        </span>
+      </h1>
+
+      <p class="text-base sm:text-lg text-zinc-500 max-w-lg mx-auto leading-relaxed mb-10">
+        Pilih agent yang kamu butuhkan. Setiap agent dirancang khusus untuk tugas yang berbeda.
+      </p>
+
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+        <a
+          href="/about"
+          class="inline-flex items-center gap-2 rounded-xl px-8 py-3.5 text-sm font-semibold text-white bg-[#8B5CF6] hover:bg-[#7c3aed] transition-colors"
+        >
+          MULAI
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+        <a
+          href="/billing"
+          class="inline-flex items-center gap-2 rounded-xl px-8 py-3.5 text-sm font-semibold text-zinc-200 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] transition-colors"
+        >
+          LIHAT PAKET
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M17 21v-5h-5v5"/><path d="M9 21v-5H4v5"/></svg>
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="border-t border-white/[0.04] py-6 px-6">
+    <div class="max-w-6xl mx-auto flex items-center justify-between">
+      <span class="text-[11px] text-zinc-700">Povycon Technology</span>
+      <span class="text-[11px] text-zinc-700">{new Date().getFullYear()}</span>
+    </div>
+  </footer>
+</Layout>
