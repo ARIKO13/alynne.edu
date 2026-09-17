@@ -11,6 +11,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { TIERS } from '@/lib/tiers';
 import { cn } from '@/lib/utils';
 import { DatasetLibraryPanel } from '@/components/dataset-library-panel';
+import { D1MonitoringView } from '@/components/d1-monitoring-view';
 
 interface AdminStats {
   totalUsers: number;
@@ -83,7 +84,7 @@ export function AdminPanel() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState<'overview' | 'users' | 'dataset'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'users' | 'dataset' | 'd1'>('overview');
   // NOTE: STT Failures UI removed (privacy: storing raw user transcripts is
   // not appropriate). API endpoints remain at /api/admin/stt-failures for
   // debugging only.
@@ -209,6 +210,18 @@ export function AdminPanel() {
         >
           <Database className="h-3.5 w-3.5" />
           Dataset
+        </button>
+        <button
+          onClick={() => setActiveView('d1')}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all',
+            activeView === 'd1'
+              ? 'bg-sky-500/15 text-sky-400'
+              : 'text-zinc-500 hover:text-zinc-300'
+          )}
+        >
+          <Database className="h-3.5 w-3.5" />
+          D1 Monitor
         </button>
         {/* STT Failures tab removed — privacy concern: storing raw user speech
             transcripts in D1 is not appropriate. API endpoints remain for
@@ -441,6 +454,10 @@ export function AdminPanel() {
 
       {activeView === 'dataset' && (
         <DatasetLibraryPanel />
+      )}
+
+      {activeView === 'd1' && (
+        <D1MonitoringView />
       )}
 
     </div>

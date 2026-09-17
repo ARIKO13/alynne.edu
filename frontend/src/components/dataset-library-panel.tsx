@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import { MonitoringView } from '@/components/monitoring-view';
 import { ArchitectureView } from '@/components/architecture-view';
 
-type Section = 'stats' | 'words' | 'cooccurrence' | 'corrections' | 'summary' | 'word-detail' | 'storage' | 'schema' | 'monitoring' | 'architecture' | 'd1';
+type Section = 'stats' | 'words' | 'cooccurrence' | 'corrections' | 'summary' | 'word-detail' | 'storage' | 'schema' | 'monitoring' | 'architecture';
 type SourceFilter = '' | 'kbbi' | 'slang' | 'webspeech';
 
 interface DbStats {
@@ -76,7 +76,6 @@ export function DatasetLibraryPanel() {
   const [storageInfo, setStorageInfo] = useState<any>(null);
   const [schemaInfo, setSchemaInfo] = useState<any>(null);
   const [monitoringInfo, setMonitoringInfo] = useState<any>(null);
-  const [d1Info, setD1Info] = useState<any>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   const fetchData = useCallback(async (sec: Section, searchQuery: string = '', word: string = '', source: SourceFilter = '') => {
@@ -118,8 +117,6 @@ export function DatasetLibraryPanel() {
         setSchemaInfo(data);
       } else if (sec === 'monitoring') {
         setMonitoringInfo(data);
-      } else if (sec === 'd1') {
-        setD1Info(data);
       }
     } catch (e) {
       console.error('Dataset library fetch error:', e);
@@ -135,9 +132,9 @@ export function DatasetLibraryPanel() {
 
   // Auto-refresh monitoring tab every 10s
   useEffect(() => {
-    if ((section !== 'monitoring' && section !== 'd1') || !autoRefresh) return;
+    if (section !== 'monitoring' || !autoRefresh) return;
     const interval = setInterval(() => {
-      fetchData(section as 'monitoring' | 'd1');
+      fetchData('monitoring');
     }, 10000);
     return () => clearInterval(interval);
   }, [section, autoRefresh, fetchData]);
@@ -259,9 +256,6 @@ export function DatasetLibraryPanel() {
         </TabButton>
         <TabButton active={section === 'architecture'} onClick={() => { setSection('architecture'); setSearch(''); }}>
           <Network className="h-3.5 w-3.5" /> Architecture
-        </TabButton>
-        <TabButton active={section === 'd1'} onClick={() => { setSection('d1'); setSearch(''); }}>
-          <Database className="h-3.5 w-3.5" /> D1 (User DB)
         </TabButton>
       </div>
 
@@ -598,11 +592,6 @@ export function DatasetLibraryPanel() {
       {/* Architecture section — Mermaid diagrams: ERD + data flow */}
       {section === 'architecture' && (
         <ArchitectureView schemaInfo={schemaInfo} />
-      )}
-
-      {/* D1 (User Account DB) monitoring section */}
-      {section === 'd1' && (
-        <D1MonitoringView info={d1Info} autoRefresh={autoRefresh} onToggleAutoRefresh={() => setAutoRefresh(!autoRefresh)} onRefresh={() => fetchData('d1')} loading={loading} />
       )}
     </div>
   );
