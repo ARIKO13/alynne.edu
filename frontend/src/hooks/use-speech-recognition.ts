@@ -7,7 +7,6 @@ import { setupRecognitionGrammar } from '@/lib/speech-grammar';
 import { registerSttStop, unregisterSttStop } from '@/lib/stt-controller';
 import {
   recordHeardSentence,
-  getConfirmedPersonalWords,
 } from '@/lib/personal-dict';
 
 const GROQ_CHUNK_INTERVAL = 10000; // 10s chunks (was 4s) - bigger chunks have valid webm headers
@@ -176,7 +175,7 @@ export function useSpeechRecognition() {
     console.log(`[STT ${type}] ${text}`);
   }, []);
 
-  // ── Fire-and-forget fuzzy-correct for Web Speech API final text ──
+  // ── Fire-and-forget fuzzy-correct + auto-learn words to server ──
   // Why: Previously only OCR text was sent to /api/stt/fuzzy-correct, which
   // means Web Speech API recognition failures (unknown words) were NEVER
   // logged to the STTFailure D1 table. Admin panel showed "No failures logged"
@@ -186,32 +185,29 @@ export function useSpeechRecognition() {
   //   1. Server-side: log raw text + unknown words to STTFailure table
   //      (auto-logged inside fuzzy-correct.ts when unknownWords > 0)
   //   2. Client-side: surface a tiny log entry so the user knows it was logged
-  //   3. Auto-learning: record heard words to personal dict (localStorage)
-  //      Words with high confidence that aren't in KBBI/slang get added to
-  //      personal dict candidates. After 2+ occurrences, they're confirmed
-  //      and sent in subsequent fuzzy-correct requests so isKnown() returns true.
+  //   3. Auto-learning: record heard words → after 2x occurrences, POST to
+  //      /api/stt/learn-word → server saves to D1 + phonetic-map.json +
+  //      hot-reloads dict cache. All users benefit from learned words.
   //
-  // Fire-and-forget is intentional — we don't block the onresult callback,
-  // and the actual transcript correction still happens later via enhanceNewEntries.
+  // Fire-and-forget is intentional — we don't block the onresult callback.
   const logWebspeechFailures = useCallback((rawText: string, confidence: number = 0.9) => {
     const text = (rawText || '').trim();
     if (!text) return;
 
-    // ── Auto-learning: record heard words to personal dict ──
-    // Pass a simple isKnown check (KBBI + tech terms). The personal dict
-    // will skip words that are already known.
-    // Confidence comes from Web Speech API result.confidence (0.0-1.0)
+    // ── Auto-learning: record heard words → server ──
+    // Client tracks candidates in localStorage. After 2+ occurrences with
+    // confidence > 0.85, POST to /api/stt/learn-word. Server expands
+    // phonetic variations + merges into phonetic-map.json + resets dict cache.
     try {
-      const promoted = recordHeardSentence(text, confidence, (w) => {
-        // Simple client-side check — for things like tech terms + stock tickers
-        // Full KBBI check happens server-side. This is just a fast pre-filter.
+      recordHeardSentence(text, confidence, (w) => {
+        // Simple client-side pre-filter — full KBBI check happens server-side
         const wl = w.toLowerCase();
         if (wl.length <= 2) return true;
         if (/^\d+$/.test(wl)) return true;
-        // Common Indonesian words that we know are valid (don't auto-learn these)
+        // Common Indonesian words — don't auto-learn these (already in KBBI)
         const commonWords = new Set([
           'yang', 'dan', 'atau', 'tidak', 'untuk', 'dengan', 'dari', 'ke', 'di',
-          'ini', 'itu', 'ada', 'tidak', 'sudah', 'akan', 'bisa', 'harus', 'lebih',
+          'ini', 'itu', 'ada', 'sudah', 'akan', 'bisa', 'harus', 'lebih',
           'saya', 'kamu', 'dia', 'kami', 'kita', 'mereka', 'apa', 'siapa', 'mana',
           'kapan', 'kenapa', 'bagaimana', 'berapa', 'dimana', 'kemana', 'darimana',
           'karena', 'kalau', 'jika', 'tetapi', 'tapi', 'namun', 'sedangkan',
@@ -222,25 +218,22 @@ export function useSpeechRecognition() {
           'nanti', 'sekarang', 'kemarin', 'besok', 'hari', 'bulan', 'tahun',
         ]);
         return commonWords.has(wl);
+      }).then((promoted) => {
+        if (promoted.length > 0) {
+          addLog('success', `Kata baru dipelajari: ${promoted.join(', ')}`);
+        }
+      }).catch(() => {
+        // Silent fail — don't disrupt STT for personal dict errors
       });
-      if (promoted.length > 0) {
-        addLog('success', `Kata baru dipelajari: ${promoted.join(', ')}`);
-      }
     } catch (e) {
-      // Silent fail — don't disrupt STT for personal dict errors
+      // Silent fail
     }
 
     // ── Fire-and-forget fuzzy-correct call ──
-    // Include personal dict (confirmed words) so server treats them as known
-    const personalWords = Array.from(getConfirmedPersonalWords());
     fetch('/api/stt/fuzzy-correct', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text,
-        source: 'webspeech',
-        personalDict: personalWords.length > 0 ? personalWords : undefined,
-      }),
+      body: JSON.stringify({ text, source: 'webspeech' }),
     })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {

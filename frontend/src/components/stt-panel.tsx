@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { structureContent, generatePdf } from '@/lib/pdf-generator';
-import { getPersonalDictStats } from '@/lib/personal-dict';
+import { fetchLearnedWords } from '@/lib/personal-dict';
 
 function ModeSelector({ disabled }: { disabled: boolean }) {
   const { sttAudioMode, setSttAudioMode } = useAppStore();
@@ -124,10 +124,17 @@ export function STTPanel() {
   const isScreenMode = sttAudioMode === 'screen';
   const isCombinedActive = isScreenMode && isRecording;
 
-  // Refresh personal dict count when panel closes or recording stops
+  // Refresh learned words count when panel closes or recording stops
   useEffect(() => {
-    setPersonalDictCount(getPersonalDictStats().total);
+    if (!personalDictOpen) {
+      fetchLearnedWords().then(({ total }) => setPersonalDictCount(total));
+    }
   }, [personalDictOpen, sttStatus]);
+
+  // Initial load
+  useEffect(() => {
+    fetchLearnedWords().then(({ total }) => setPersonalDictCount(total));
+  }, []);
 
   // Auto-scroll to bottom when new transcript entries arrive or interim text changes
   useEffect(() => {

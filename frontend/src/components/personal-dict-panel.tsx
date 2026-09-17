@@ -11,19 +11,15 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  BookOpen, Trash2, Plus, Loader2, Check, Search, Download, Upload,
-  AlertCircle, Sparkles, Brain,
+  BookOpen, Trash2, Plus, Loader2, Check, Search, Download,
+  AlertCircle, Sparkles, Brain, Globe,
 } from 'lucide-react';
 import {
-  getAllPersonalEntries,
-  confirmWord,
-  deleteWord,
-  clearAllPersonalDict,
-  getPersonalDictStats,
-  exportPersonalDict,
-  importPersonalDict,
-  PERSONAL_DICT_CONSTANTS,
-  type PersonalDict,
+  fetchLearnedWords,
+  deleteLearnedWord,
+  LEARNED_WORD_CONSTANTS,
+  type LearnedWordEntry,
+  type LearnedWordsStats,
 } from '@/lib/personal-dict';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -34,88 +30,61 @@ interface PersonalDictPanelProps {
 }
 
 export function PersonalDictPanel({ open, onOpenChange }: PersonalDictPanelProps) {
-  const [entries, setEntries] = useState<PersonalDict>({});
-  const [stats, setStats] = useState({ total: 0, confirmed: 0, candidates: 0 });
+  const [words, setWords] = useState<LearnedWordEntry[]>([]);
+  const [stats, setStats] = useState<LearnedWordsStats>({ total: 0, confirmed: 0, candidates: 0 });
   const [search, setSearch] = useState('');
-  const [newWord, setNewWord] = useState('');
-  const [showClearConfirm, setShowClearConfirm] = useState(false);
-  const [showImportInput, setShowImportInput] = useState(false);
-  const [importText, setImportText] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const refresh = useCallback(() => {
-    setEntries(getAllPersonalEntries());
-    setStats(getPersonalDictStats());
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    const data = await fetchLearnedWords();
+    setWords(data.words);
+    setStats(data.stats);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
     if (open) refresh();
   }, [open, refresh]);
 
-  const handleAddWord = () => {
-    const w = newWord.trim().toLowerCase();
-    if (!w) return;
-    if (w.length < 3) {
-      toast.error('Kata minimal 3 huruf');
-      return;
+  const handleDelete = async (id: string, word: string) => {
+    const ok = await deleteLearnedWord(id);
+    if (ok) {
+      setWords(prev => prev.filter(w => w.id !== id));
+      setStats(prev => ({
+        ...prev,
+        total: Math.max(0, prev.total - 1),
+        confirmed: Math.max(0, prev.confirmed - 1),
+      }));
+      toast.success(`"${word}" dihapus dari global dict`);
+    } else {
+      toast.error('Gagal menghapus kata');
     }
-    confirmWord(w);
-    setNewWord('');
-    refresh();
-    toast.success(`"${w}" ditambahkan ke personal dict`);
-  };
-
-  const handleDelete = (word: string) => {
-    deleteWord(word);
-    refresh();
-    toast.success(`"${word}" dihapus`);
-  };
-
-  const handleConfirmCandidate = (word: string) => {
-    confirmWord(word);
-    refresh();
-    toast.success(`"${word}" dikonfirmasi`);
-  };
-
-  const handleClearAll = () => {
-    clearAllPersonalDict();
-    setShowClearConfirm(false);
-    refresh();
-    toast.success('Personal dict dikosongkan');
   };
 
   const handleExport = () => {
-    const json = exportPersonalDict();
-    const blob = new Blob([json], { type: 'application/json' });
+    const data = JSON.stringify({
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      words,
+      stats,
+    }, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `alynne-personal-dict-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `alynne-learned-words-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success('Personal dict di-export');
+    toast.success('Learned words di-export');
   };
 
-  const handleImport = () => {
-    const result = importPersonalDict(importText);
-    setShowImportInput(false);
-    setImportText('');
-    refresh();
-    if (result.added > 0) {
-      toast.success(`Imported ${result.added} kata baru (+${result.skipped} merged)`);
-    } else if (result.skipped > 0) {
-      toast.success(`Merged ${result.skipped} kata (sudah ada)`);
-    } else {
-      toast.error('Import gagal — format JSON tidak valid');
-    }
-  };
-
-  // Filter entries by search
-  const filteredEntries = Object.entries(entries)
-    .filter(([word]) => word.toLowerCase().includes(search.toLowerCase()))
-    .sort(([, a], [, b]) => b.lastHeard - a.lastHeard);
-
-  const confirmedEntries = filteredEntries.filter(([, e]) => e.confirmed);
-  const candidateEntries = filteredEntries.filter(([, e]) => !e.confirmed);
+  // Filter by search
+  const filteredWords = words.filter(w =>
+    w.word.toLowerCase().includes(search.toLowerCase())
+  );
+  const confirmedWords = filteredWords.filter(w => w.count >= LEARNED_WORD_CONSTANTS.PROMOTION_THRESHOLD);
+  const candidateWords = filteredWords.filter(w => w.count < LEARNED_WORD_CONSTANTS.PROMOTION_THRESHOLD);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -124,11 +93,13 @@ export function PersonalDictPanel({ open, onOpenChange }: PersonalDictPanelProps
           <DialogHeader>
             <div className="flex items-center gap-2">
               <Brain className="h-5 w-5 text-[#8B5CF6]" />
-              <DialogTitle className="text-zinc-100">Personal Dictionary</DialogTitle>
+              <DialogTitle className="text-zinc-100">Learned Words (Global)</DialogTitle>
+              <Globe className="h-3.5 w-3.5 text-emerald-400 ml-1" aria-label="Shared across all users" />
             </div>
             <DialogDescription className="text-zinc-500">
-              Kata yang dipelajari otomatis dari STT. Confidence &gt; {PERSONAL_DICT_CONSTANTS.CONFIDENCE_THRESHOLD},
-              muncul {PERSONAL_DICT_CONSTANTS.PROMOTION_THRESHOLD}+ kali → dikonfirmasi.
+              Kata yang dipelajari otomatis dari STT — dipake semua user. Setiap kata
+              di-expand ke variasi fonetik (misal "goceh" → "go ceh", "goseh", "gokeh") supaya
+              phoneticMatch bisa kenalan.
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -150,26 +121,6 @@ export function PersonalDictPanel({ open, onOpenChange }: PersonalDictPanelProps
             </div>
           </div>
 
-          {/* Add new word */}
-          <div className="flex gap-2">
-            <Input
-              type="text"
-              value={newWord}
-              onChange={(e) => setNewWord(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleAddWord(); }}
-              placeholder="Tambah kata manual (e.g. 'goceh', 'anomali')..."
-              className="border-white/[0.08] bg-[#0c0c0e] text-zinc-200 placeholder:text-zinc-600"
-            />
-            <Button
-              onClick={handleAddWord}
-              disabled={!newWord.trim()}
-              className="bg-[#8B5CF6] hover:bg-[#7c3aed] text-white rounded-lg gap-1.5 shrink-0"
-            >
-              <Plus className="h-4 w-4" />
-              Tambah
-            </Button>
-          </div>
-
           {/* Search + actions */}
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
@@ -183,130 +134,71 @@ export function PersonalDictPanel({ open, onOpenChange }: PersonalDictPanelProps
               />
             </div>
             <Button
-              onClick={handleExport}
+              onClick={refresh}
+              disabled={loading}
               variant="outline"
               size="sm"
               className="border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] h-8 text-xs gap-1.5"
-              title="Export ke JSON"
             >
-              <Download className="h-3 w-3" />
-              Export
-            </Button>
-            <Button
-              onClick={() => setShowImportInput(!showImportInput)}
-              variant="outline"
-              size="sm"
-              className="border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] h-8 text-xs gap-1.5"
-              title="Import dari JSON"
-            >
-              <Upload className="h-3 w-3" />
-              Import
+              {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+              Refresh
             </Button>
             {stats.total > 0 && (
               <Button
-                onClick={() => setShowClearConfirm(true)}
+                onClick={handleExport}
                 variant="outline"
                 size="sm"
-                className="border-red-500/20 text-red-400 hover:text-white hover:bg-red-600/80 h-8 text-xs gap-1.5"
+                className="border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] h-8 text-xs gap-1.5"
+                title="Export ke JSON"
               >
-                <Trash2 className="h-3 w-3" />
-                Hapus Semua
+                <Download className="h-3 w-3" />
+                Export
               </Button>
             )}
           </div>
 
-          {/* Import textarea */}
-          {showImportInput && (
-            <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3 space-y-2">
-              <p className="text-[11px] text-zinc-400">Paste JSON dari hasil export:</p>
-              <textarea
-                value={importText}
-                onChange={(e) => setImportText(e.target.value)}
-                placeholder='{"word1": {"count": 2, "confirmed": true, ...}}'
-                className="w-full h-24 text-[11px] font-mono bg-[#18181b] border border-white/[0.06] rounded p-2 text-zinc-300 placeholder:text-zinc-700 focus:outline-none focus:border-[#8B5CF6]/40"
-              />
-              <div className="flex gap-2 justify-end">
-                <Button
-                  onClick={() => { setShowImportInput(false); setImportText(''); }}
-                  variant="outline"
-                  size="sm"
-                  className="border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] h-7 text-xs"
-                >
-                  Batal
-                </Button>
-                <Button
-                  onClick={handleImport}
-                  disabled={!importText.trim()}
-                  size="sm"
-                  className="bg-[#8B5CF6] hover:bg-[#7c3aed] text-white h-7 text-xs"
-                >
-                  Import
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Clear confirmation */}
-          {showClearConfirm && (
-            <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-3 flex items-center gap-3">
-              <AlertCircle className="h-5 w-5 text-red-400 shrink-0" />
-              <div className="flex-1">
-                <p className="text-xs font-medium text-red-300">Hapus semua {stats.total} kata?</p>
-                <p className="text-[10px] text-red-400/70 mt-0.5">Tidak bisa dibatalkan. Personal dict akan dimulai dari nol.</p>
-              </div>
-              <div className="flex gap-1.5">
-                <Button
-                  onClick={() => setShowClearConfirm(false)}
-                  variant="outline"
-                  size="sm"
-                  className="border-white/[0.08] text-zinc-300 hover:bg-white/[0.06] h-7 text-xs"
-                >
-                  Batal
-                </Button>
-                <Button
-                  onClick={handleClearAll}
-                  size="sm"
-                  className="bg-red-600 hover:bg-red-700 text-white h-7 text-xs"
-                >
-                  Hapus
-                </Button>
-              </div>
-            </div>
-          )}
-
           {/* Empty state */}
-          {stats.total === 0 && (
+          {!loading && stats.total === 0 && (
             <div className="text-center py-8 rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
               <BookOpen className="h-8 w-8 text-zinc-700 mx-auto mb-2" />
-              <p className="text-sm text-zinc-500">Personal dict masih kosong</p>
+              <p className="text-sm text-zinc-500">Belum ada kata yang dipelajari</p>
               <p className="text-[10px] text-zinc-600 mt-1 max-w-sm mx-auto leading-relaxed">
-                Saat kamu pakai STT, kata yang kamu ucap dengan confidence tinggi & muncul
-                2+ kali akan otomatis masuk ke sini. Kamu juga bisa tambah manual di atas.
+                Saat user pakai STT, kata yang diucapkan dengan confidence tinggi &amp; muncul
+                2+ kali akan otomatis masuk ke sini. Server juga generate variasi fonetik
+                supaya kata mirip bisa dikenali.
               </p>
             </div>
           )}
 
+          {/* Loading state */}
+          {loading && (
+            <div className="text-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-[#8B5CF6] mx-auto" />
+              <p className="text-xs text-zinc-500 mt-2">Memuat learned words...</p>
+            </div>
+          )}
+
           {/* List */}
-          {stats.total > 0 && (
-            <div className="space-y-3 max-h-[400px] overflow-y-auto">
+          {!loading && stats.total > 0 && (
+            <div className="space-y-3 max-h-[450px] overflow-y-auto">
               {/* Confirmed */}
-              {confirmedEntries.length > 0 && (
+              {confirmedWords.length > 0 && (
                 <div>
                   <div className="flex items-center gap-1.5 mb-1.5">
                     <Check className="h-3 w-3 text-emerald-400" />
                     <p className="text-[11px] font-medium text-emerald-400">
-                      Confirmed ({confirmedEntries.length})
+                      Confirmed ({confirmedWords.length})
                     </p>
-                    <span className="text-[10px] text-zinc-600">— dikenali oleh isKnown()</span>
+                    <span className="text-[10px] text-zinc-600">
+                      — muncul {LEARNED_WORD_CONSTANTS.PROMOTION_THRESHOLD}+ kali
+                    </span>
                   </div>
                   <div className="space-y-1">
-                    {confirmedEntries.slice(0, 50).map(([word, entry]) => (
-                      <PersonalDictRow
-                        key={word}
-                        word={word}
+                    {confirmedWords.slice(0, 100).map((entry) => (
+                      <LearnedWordRow
+                        key={entry.id}
                         entry={entry}
-                        onDelete={handleDelete}
-                        onConfirm={handleConfirmCandidate}
+                        onDelete={() => handleDelete(entry.id, entry.word)}
                         isConfirmed
                       />
                     ))}
@@ -315,25 +207,23 @@ export function PersonalDictPanel({ open, onOpenChange }: PersonalDictPanelProps
               )}
 
               {/* Candidates */}
-              {candidateEntries.length > 0 && (
+              {candidateWords.length > 0 && (
                 <div>
                   <div className="flex items-center gap-1.5 mb-1.5">
                     <Sparkles className="h-3 w-3 text-amber-400" />
                     <p className="text-[11px] font-medium text-amber-400">
-                      Candidates ({candidateEntries.length})
+                      Candidates ({candidateWords.length})
                     </p>
                     <span className="text-[10px] text-zinc-600">
-                      — perlu {PERSONAL_DICT_CONSTANTS.PROMOTION_THRESHOLD}+ kemunculan untuk auto-confirm
+                      — perlu {LEARNED_WORD_CONSTANTS.PROMOTION_THRESHOLD}+ kemunculan untuk confirm
                     </span>
                   </div>
                   <div className="space-y-1">
-                    {candidateEntries.slice(0, 50).map(([word, entry]) => (
-                      <PersonalDictRow
-                        key={word}
-                        word={word}
+                    {candidateWords.slice(0, 50).map((entry) => (
+                      <LearnedWordRow
+                        key={entry.id}
                         entry={entry}
-                        onDelete={handleDelete}
-                        onConfirm={handleConfirmCandidate}
+                        onDelete={() => handleDelete(entry.id, entry.word)}
                         isConfirmed={false}
                       />
                     ))}
@@ -341,9 +231,9 @@ export function PersonalDictPanel({ open, onOpenChange }: PersonalDictPanelProps
                 </div>
               )}
 
-              {(confirmedEntries.length > 50 || candidateEntries.length > 50) && (
+              {(filteredWords.length > 100) && (
                 <p className="text-center text-[11px] text-zinc-600 pt-2">
-                  {filteredEntries.length > 100 ? 'Menampilkan 100 kata pertama. Pakai search untuk filter.' : `Menampilkan ${filteredEntries.length} kata`}
+                  {filteredWords.length > 150 ? 'Menampilkan 150 kata pertama. Pakai search untuk filter.' : `Menampilkan ${filteredWords.length} kata`}
                 </p>
               )}
             </div>
@@ -354,54 +244,73 @@ export function PersonalDictPanel({ open, onOpenChange }: PersonalDictPanelProps
   );
 }
 
-function PersonalDictRow({
-  word, entry, onDelete, onConfirm, isConfirmed,
+function LearnedWordRow({
+  entry, onDelete, isConfirmed,
 }: {
-  word: string;
-  entry: { count: number; firstHeard: number; lastHeard: number; confidence: number; confirmed: boolean };
-  onDelete: (word: string) => void;
-  onConfirm: (word: string) => void;
+  entry: LearnedWordEntry;
+  onDelete: () => void;
   isConfirmed: boolean;
 }) {
-  const lastHeard = new Date(entry.lastHeard).toLocaleDateString('id-ID', { dateStyle: 'short' });
+  const [expanded, setExpanded] = useState(false);
+  const lastUsed = new Date(entry.lastUsedAt).toLocaleDateString('id-ID', { dateStyle: 'short' });
+
   return (
     <div className={cn(
-      'flex items-center gap-2 rounded-md border px-2.5 py-1.5 group',
+      'rounded-md border px-2.5 py-1.5 group',
       isConfirmed
         ? 'border-emerald-500/15 bg-emerald-500/[0.03]'
         : 'border-amber-500/15 bg-amber-500/[0.03]'
     )}>
-      <span className={cn(
-        'text-sm font-mono',
-        isConfirmed ? 'text-emerald-300' : 'text-amber-300'
-      )}>
-        {word}
-      </span>
-      <div className="flex items-center gap-2 ml-auto">
-        <span className="text-[10px] text-zinc-600" title="Jumlah kemunculan">
-          ×{entry.count}
-        </span>
-        <span className="text-[10px] text-zinc-600" title="Confidence rata-rata">
-          {(entry.confidence * 100).toFixed(0)}%
-        </span>
-        <span className="text-[10px] text-zinc-600">{lastHeard}</span>
-        {!isConfirmed && (
-          <button
-            onClick={() => onConfirm(word)}
-            title="Konfirmasi manual"
-            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-emerald-500/15 text-zinc-500 hover:text-emerald-400"
-          >
-            <Check className="h-3 w-3" />
-          </button>
-        )}
+      <div className="flex items-center gap-2">
         <button
-          onClick={() => onDelete(word)}
-          title="Hapus"
-          className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-red-500/15 text-zinc-500 hover:text-red-400"
+          onClick={() => setExpanded(!expanded)}
+          className="text-sm font-mono flex-1 text-left"
+          title="Klik untuk lihat variasi fonetik"
         >
-          <Trash2 className="h-3 w-3" />
+          <span className={isConfirmed ? 'text-emerald-300' : 'text-amber-300'}>
+            {entry.word}
+          </span>
+          {entry.phonetic_variations.length > 0 && (
+            <span className="text-[10px] text-zinc-600 ml-2">
+              ({entry.phonetic_variations.length} variasi)
+            </span>
+          )}
         </button>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-zinc-600" title="Jumlah kemunculan">
+            ×{entry.count}
+          </span>
+          <span className="text-[10px] text-zinc-600" title="Confidence rata-rata">
+            {(entry.confidence * 100).toFixed(0)}%
+          </span>
+          <span className="text-[10px] text-zinc-600" title="Source">
+            {entry.source}
+          </span>
+          <span className="text-[10px] text-zinc-600">{lastUsed}</span>
+          <button
+            onClick={onDelete}
+            title="Hapus dari global dict"
+            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-red-500/15 text-zinc-500 hover:text-red-400"
+          >
+            <Trash2 className="h-3 w-3" />
+          </button>
+        </div>
       </div>
+      {expanded && entry.phonetic_variations.length > 0 && (
+        <div className="mt-1.5 pt-1.5 border-t border-white/[0.04]">
+          <p className="text-[10px] text-zinc-500 mb-1">Variasi fonetik (auto-generated):</p>
+          <div className="flex flex-wrap gap-1">
+            {entry.phonetic_variations.map((v, i) => (
+              <span
+                key={i}
+                className="text-[10px] font-mono text-zinc-400 bg-[#18181b] border border-white/[0.06] rounded px-1.5 py-0.5"
+              >
+                {v}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

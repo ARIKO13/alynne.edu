@@ -1,5 +1,5 @@
 /**
- * Personal Dictionary — auto-learning system untuk STT.
+ * Personal Dictionary — auto-learning system untuk STT (server-side version).
  *
  * WHY:
  *   Web Speech API kadang dengar kata yang belum ada di KBBI/dict (e.g. nama
@@ -8,195 +8,186 @@
  *   salah (e.g. "goceh" → "goa", "anomali" → "anomali").
  *
  *   Dengan auto-learn, kata yang confidence-nya tinggi DAN muncul berkali-kali
- *   otomatis masuk ke personal dict user. Next time kata itu muncul, isKnown()
- *   return true → tidak di-fuzzy-match.
+ *   otomatis masuk ke global dictionary (D1 + phonetic-map.json). Next time
+ *   kata itu muncul, isKnown() return true → tidak di-fuzzy-match.
  *
- * DESIGN (solusi untuk "bingung gimana kata baru yang ditangkep biar sesuai
- * dengan user katakan"):
+ * ARCHITECTURE (v2 — server-side):
+ *   Client (use-speech-recognition.ts):
+ *     1. Saat STT dapat final text dengan confidence > threshold,
+ *        extract each word
+ *     2. Filter: skip words yang sudah known (KBBI/slang/common)
+ *     3. POST ke /api/stt/learn-word dengan word + confidence
  *
- *   Tidak ada cara 100% pasti untuk tahu "apa yang user katakan" tanpa ground
- *   truth. Tapi kita bisa pakai 3 filter probabilistik:
+ *   Server (/api/stt/learn-word):
+ *     1. Insert ke D1 table LearnedWord (id, word, phonetic_variations, ...)
+ *     2. expandPhoneticVariations(word) → generate ["go ceh", "goceh", "goseh", ...]
+ *     3. Merge ke phonetic-map.json (file fisik di VPS)
+ *     4. resetDictionaryCache() supaya isKnown() pick up kata baru di request berikutnya
  *
- *   1. CONFIDENCE FILTER
- *      Web Speech API kasih confidence score per result (0.0 - 1.0).
- *      Kalau confidence > 0.85, kemungkinan besar kata itu benar apa yang
- *      user katakan. Kalau confidence rendah, kita skip — terlalu berisiko
- *      salah disimpan.
+ *   Server (/api/stt/learned-words):
+ *     1. GET — list all learned words (untuk UI panel)
+ *     2. DELETE — hapus word (juga clean phonetic-map.json)
  *
- *   2. REPETITION FILTER
- *      Satu kali muncul dengan confidence tinggi → belum cukup bukti. Bisa
- *      false positive satu kali. Kalau kata yang sama muncul 2+ kali di
- *      session berbeda, kemungkinan besar itu kata valid yang sering user
- *      pakai → promote ke confirmed personal dict.
+ * STORAGE:
+ *   - D1 table LearnedWord (audit trail + count + userId + source)
+ *   - phonetic-map.json (variasi fonetik, dipake oleh phoneticMatch)
+ *   - localStorage cache (untuk UI fast-render, optional)
  *
- *   3. CONTEXT VALIDATION (opsional, future)
- *      Kalau kata muncul dalam kalimat yang grammatically reasonable
- *      (e.g. ada verb sebelum/sesudah), kemungkinan valid. Implementasi
- *      future: pakai rule-based atau LLM.
+ * PROMOTION RULES (di client side, untuk avoid spamming server):
+ *   - Client track candidate count di localStorage (sebelum POST ke server)
+ *   - Hanya POST setelah kata muncul 2+ kali dengan confidence > 0.85
+ *   - Server increment count kalau kata sudah ada, insert kalau baru
  *
- * STORAGE (client-side only, privacy-safe):
- *   - localStorage key 'alynnePersonalDict'
- *   - Format: { [word]: { count, firstHeard, lastHeard, confidence } }
- *   - Tidak dikirim ke server (privacy: kata-kata user stays di browser)
- *   - Tapi dikirim sebagai additional info saat /api/stt/fuzzy-correct request
- *     supaya server tau "kata X valid buat user ini"
- *
- * LIFECYCLE:
- *   1. User bilang kata "X" dengan confidence 0.9
- *   2. STT dapat "X", cek isKnown() → belum ada di KBBI/slang/personal
- *   3. Tambah ke candidates: personalDict['X'] = { count: 1, ... }
- *   4. User bilang "X" lagi (session lain, confidence 0.92)
- *   5. Cek candidates: count=1 → increment jadi 2
- *   6. count >= PROMOTION_THRESHOLD (2) → confirm ke personalDict
- *   7. isKnown() sekarang return true untuk "X"
- *   8. Next STT: "X" tidak di-fuzzy-match → text akurat
+ * PRIVACY:
+ *   - Tidak menyimpan raw transcripts — hanya word yang sudah di-extract
+ *   - userId optional (untuk audit trail siapa yang pertama bilang kata X)
+ *   - Semua user dapat benefit dari kata yang dipelajari user lain (global dict)
  */
 
-const STORAGE_KEY = 'alynnePersonalDict';
+const CANDIDATES_STORAGE_KEY = 'alynneLearnedWordCandidates';
 const CONFIDENCE_THRESHOLD = 0.85;
-const PROMOTION_THRESHOLD = 2; // need to hear 2+ times before promoting
+const PROMOTION_THRESHOLD = 2; // need to hear 2+ times before promoting to server
 
-export interface PersonalDictEntry {
+export interface LearnedWordEntry {
+  id: string;
+  word: string;
+  phonetic_variations: string[];
+  source: string;
+  confidence: number;
+  count: number;
+  userId: string | null;
+  createdAt: string;
+  lastUsedAt: string;
+}
+
+export interface LearnedWordsStats {
+  total: number;
+  confirmed: number;
+  candidates: number;
+}
+
+// ── Client-side candidate tracking (before sending to server) ─────
+// We track candidates in localStorage to avoid spamming the server with
+// single-occurrence false positives. Only after count >= PROMOTION_THRESHOLD
+// do we POST to /api/stt/learn-word.
+
+interface CandidateEntry {
   count: number;
   firstHeard: number;
   lastHeard: number;
-  confidence: number; // average confidence
-  confirmed: boolean; // true after promotion threshold reached
+  confidence: number;
 }
 
-export type PersonalDict = Record<string, PersonalDictEntry>;
-
-// ─── Internal cache (lazy-loaded) ──────────────────────────────
-let _cache: PersonalDict | null = null;
-
-// ─── Browser detection (for SSR safety) ────────────────────────
 function isBrowser(): boolean {
   return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
 }
 
-// ─── Load from localStorage (with caching) ─────────────────────
-export function loadPersonalDict(): PersonalDict {
+function loadCandidates(): Record<string, CandidateEntry> {
   if (!isBrowser()) return {};
-  if (_cache) return _cache;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    _cache = raw ? JSON.parse(raw) : {};
+    const raw = localStorage.getItem(CANDIDATES_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
   } catch {
-    _cache = {};
+    return {};
   }
-  return _cache!;
 }
 
-// ─── Save to localStorage (write-through cache) ────────────────
-function savePersonalDict(dict: PersonalDict): void {
+function saveCandidates(candidates: Record<string, CandidateEntry>): void {
   if (!isBrowser()) return;
-  _cache = dict;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(dict));
+    localStorage.setItem(CANDIDATES_STORAGE_KEY, JSON.stringify(candidates));
   } catch (e) {
-    console.warn('[PersonalDict] save failed:', e);
+    console.warn('[LearnedWord] save candidates failed:', e);
   }
-}
-
-/**
- * Check if a word is in the confirmed personal dictionary.
- * Called by isKnown() in stt-dictionary.ts to skip fuzzy-matching.
- */
-export function isPersonalKnown(word: string): boolean {
-  const w = word.toLowerCase().trim();
-  if (!w) return false;
-  const dict = loadPersonalDict();
-  const entry = dict[w];
-  return !!(entry && entry.confirmed);
-}
-
-/**
- * Get all confirmed personal words as a Set (for fast lookup).
- * Used by stt-dictionary.ts to bulk-merge into the known-words set.
- */
-export function getConfirmedPersonalWords(): Set<string> {
-  const dict = loadPersonalDict();
-  const result = new Set<string>();
-  for (const [word, entry] of Object.entries(dict)) {
-    if (entry.confirmed) result.add(word);
-  }
-  return result;
 }
 
 /**
  * Record a word heard by STT with confidence score.
  *
- * Called from use-speech-recognition.ts onresult handler.
+ * Client-side candidate tracking + server-side promotion.
  *
  * Algorithm:
- *   1. If word already known in KBBI/slang → skip (no need to learn)
- *   2. If confidence < CONFIDENCE_THRESHOLD → skip (too uncertain)
- *   3. If word in personal candidates: increment count
- *   4. If count >= PROMOTION_THRESHOLD: promote to confirmed
- *   5. Save to localStorage
+ *   1. If confidence < threshold → skip
+ *   2. If word already in client candidates: increment count
+ *   3. If count >= PROMOTION_THRESHOLD: POST to server + remove from candidates
+ *   4. If word is brand new: add to candidates with count=1
  *
  * Returns: { promoted: boolean, count: number } — for UI feedback
  */
-export function recordHeardWord(
+export async function recordHeardWord(
   word: string,
   confidence: number,
   isAlreadyKnown: boolean,
-): { promoted: boolean; count: number; confirmed: boolean } {
+): Promise<{ promoted: boolean; count: number; confirmed: boolean }> {
   const w = word.toLowerCase().trim();
   if (!w || w.length < 3) return { promoted: false, count: 0, confirmed: false };
-
-  // Skip if word already in KBBI/slang — no need to learn
   if (isAlreadyKnown) return { promoted: false, count: 0, confirmed: false };
-
-  // Skip if confidence too low
   if (confidence < CONFIDENCE_THRESHOLD) return { promoted: false, count: 0, confirmed: false };
-
-  // Skip words that look like noise (all caps, mixed case weirdness)
   if (!/^[a-zà-ÿ\-\s]+$/i.test(w)) return { promoted: false, count: 0, confirmed: false };
 
-  const dict = loadPersonalDict();
+  const candidates = loadCandidates();
   const now = Date.now();
-  const existing = dict[w];
+  const existing = candidates[w];
 
   if (existing) {
-    // Increment count, update lastHeard, average confidence
     existing.count += 1;
     existing.lastHeard = now;
     existing.confidence = (existing.confidence * (existing.count - 1) + confidence) / existing.count;
-    const wasConfirmed = existing.confirmed;
-    if (!wasConfirmed && existing.count >= PROMOTION_THRESHOLD) {
-      existing.confirmed = true;
-      savePersonalDict(dict);
-      console.log(`[PersonalDict] ✓ Promoted: "${w}" (count=${existing.count}, conf=${existing.confidence.toFixed(2)})`);
-      return { promoted: true, count: existing.count, confirmed: true };
+
+    if (existing.count >= PROMOTION_THRESHOLD) {
+      // Promote to server!
+      try {
+        const res = await fetch('/api/stt/learn-word', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            word: w,
+            confidence: existing.confidence,
+            source: 'webspeech',
+          }),
+        });
+        if (res.ok) {
+          // Remove from candidates (it's now on server)
+          delete candidates[w];
+          saveCandidates(candidates);
+          console.log(`[LearnedWord] ✓ Promoted to server: "${w}" (count=${existing.count})`);
+          return { promoted: true, count: existing.count, confirmed: true };
+        } else {
+          // Keep in candidates (will retry on next occurrence)
+          saveCandidates(candidates);
+          return { promoted: false, count: existing.count, confirmed: false };
+        }
+      } catch (e) {
+        console.warn('[LearnedWord] promote failed:', e);
+        saveCandidates(candidates);
+        return { promoted: false, count: existing.count, confirmed: false };
+      }
     }
-    savePersonalDict(dict);
-    return { promoted: false, count: existing.count, confirmed: existing.confirmed };
+
+    saveCandidates(candidates);
+    return { promoted: false, count: existing.count, confirmed: false };
   }
 
-  // First time hearing this word
-  dict[w] = {
+  // First occurrence
+  candidates[w] = {
     count: 1,
     firstHeard: now,
     lastHeard: now,
     confidence,
-    confirmed: false, // need 2+ occurrences to confirm
   };
-  savePersonalDict(dict);
+  saveCandidates(candidates);
   return { promoted: false, count: 1, confirmed: false };
 }
 
 /**
  * Process a full sentence — extract words and record each.
- * Convenience function for use in onresult handler.
- *
- * Returns array of words that got promoted this call (for toast notification).
+ * Returns array of words that got promoted to server (for toast notification).
  */
-export function recordHeardSentence(
+export async function recordHeardSentence(
   text: string,
   confidence: number,
   isWordKnownFn: (word: string) => boolean,
-): string[] {
+): Promise<string[]> {
   if (!text || !confidence) return [];
 
   const words = text.toLowerCase()
@@ -206,145 +197,60 @@ export function recordHeardSentence(
 
   const promoted: string[] = [];
   for (const w of words) {
-    const result = recordHeardWord(w, confidence, isWordKnownFn(w));
+    const result = await recordHeardWord(w, confidence, isWordKnownFn(w));
     if (result.promoted) promoted.push(w);
   }
   return promoted;
 }
 
-// ─── Management functions (for Settings UI) ───────────────────
+// ── Server-side data fetching (for UI) ─────────────────────────
 
-/**
- * Get all entries (confirmed + candidates) for display in Settings.
- */
-export function getAllPersonalEntries(): PersonalDict {
-  return loadPersonalDict();
-}
-
-/**
- * Get only confirmed entries.
- */
-export function getConfirmedEntries(): PersonalDict {
-  const dict = loadPersonalDict();
-  const result: PersonalDict = {};
-  for (const [word, entry] of Object.entries(dict)) {
-    if (entry.confirmed) result[word] = entry;
-  }
-  return result;
-}
-
-/**
- * Manually confirm a candidate word (user clicked "Add" in UI).
- */
-export function confirmWord(word: string): boolean {
-  const w = word.toLowerCase().trim();
-  if (!w) return false;
-  const dict = loadPersonalDict();
-  if (!dict[w]) {
-    // Add new entry with default values
-    dict[w] = {
-      count: 1,
-      firstHeard: Date.now(),
-      lastHeard: Date.now(),
-      confidence: 1.0,
-      confirmed: true,
-    };
-  } else {
-    dict[w].confirmed = true;
-  }
-  savePersonalDict(dict);
-  return true;
-}
-
-/**
- * Delete a word from personal dict.
- */
-export function deleteWord(word: string): boolean {
-  const w = word.toLowerCase().trim();
-  if (!w) return false;
-  const dict = loadPersonalDict();
-  if (!dict[w]) return false;
-  delete dict[w];
-  savePersonalDict(dict);
-  return true;
-}
-
-/**
- * Clear all personal dict entries.
- */
-export function clearAllPersonalDict(): void {
-  if (!isBrowser()) return;
-  _cache = {};
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch (e) {
-    console.warn('[PersonalDict] clear failed:', e);
-  }
-}
-
-/**
- * Get stats for display in UI.
- */
-export function getPersonalDictStats(): {
+export async function fetchLearnedWords(): Promise<{
+  words: LearnedWordEntry[];
   total: number;
-  confirmed: number;
-  candidates: number;
-} {
-  const dict = loadPersonalDict();
-  let confirmed = 0;
-  for (const entry of Object.values(dict)) {
-    if (entry.confirmed) confirmed++;
-  }
-  return {
-    total: Object.keys(dict).length,
-    confirmed,
-    candidates: Object.keys(dict).length - confirmed,
-  };
-}
-
-/**
- * Export personal dict as JSON (for backup/transfer between devices).
- */
-export function exportPersonalDict(): string {
-  return JSON.stringify(loadPersonalDict(), null, 2);
-}
-
-/**
- * Import personal dict from JSON (merge with existing).
- */
-export function importPersonalDict(jsonStr: string): { added: number; skipped: number } {
+  stats: LearnedWordsStats;
+}> {
   try {
-    const imported = JSON.parse(jsonStr) as PersonalDict;
-    if (typeof imported !== 'object' || imported === null) {
-      return { added: 0, skipped: 0 };
-    }
-    const dict = loadPersonalDict();
-    let added = 0, skipped = 0;
-    for (const [word, entry] of Object.entries(imported)) {
-      if (typeof entry === 'object' && typeof entry.count === 'number') {
-        if (!dict[word]) {
-          dict[word] = entry;
-          added++;
-        } else {
-          // Merge: take max count, keep confirmed if either is confirmed
-          dict[word].count = Math.max(dict[word].count, entry.count);
-          dict[word].confirmed = dict[word].confirmed || entry.confirmed;
-          dict[word].lastHeard = Math.max(dict[word].lastHeard, entry.lastHeard || 0);
-          skipped++;
-        }
-      }
-    }
-    savePersonalDict(dict);
-    return { added, skipped };
+    const res = await fetch('/api/stt/learned-words?limit=500');
+    if (!res.ok) return { words: [], total: 0, stats: { total: 0, confirmed: 0, candidates: 0 } };
+    const data = await res.json();
+    return {
+      words: data.words || [],
+      total: data.total || 0,
+      stats: data.stats || { total: 0, confirmed: 0, candidates: 0 },
+    };
   } catch (e) {
-    console.warn('[PersonalDict] import failed:', e);
-    return { added: 0, skipped: 0 };
+    console.warn('[LearnedWord] fetch failed:', e);
+    return { words: [], total: 0, stats: { total: 0, confirmed: 0, candidates: 0 } };
   }
 }
 
-// ─── Constants exported for UI display ────────────────────────
-export const PERSONAL_DICT_CONSTANTS = {
+export async function deleteLearnedWord(id: string): Promise<boolean> {
+  try {
+    const res = await fetch(`/api/stt/learned-words?id=${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+    return res.ok;
+  } catch (e) {
+    console.warn('[LearnedWord] delete failed:', e);
+    return false;
+  }
+}
+
+// ── Client-side candidate stats (for live UI update without server refetch) ─
+
+export function getCandidateCount(): number {
+  const candidates = loadCandidates();
+  return Object.keys(candidates).length;
+}
+
+export function clearCandidates(): void {
+  if (!isBrowser()) return;
+  localStorage.removeItem(CANDIDATES_STORAGE_KEY);
+}
+
+export const LEARNED_WORD_CONSTANTS = {
   CONFIDENCE_THRESHOLD,
   PROMOTION_THRESHOLD,
-  STORAGE_KEY,
+  CANDIDATES_STORAGE_KEY,
 };
