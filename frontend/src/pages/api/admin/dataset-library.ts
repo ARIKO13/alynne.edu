@@ -417,6 +417,135 @@ export const GET: APIRoute = async ({ request, url }) => {
       });
     }
 
+    // ── Section: monitoring-info — real-time VPS + PM2 + SQLite stats ──
+    if (section === 'monitoring-info') {
+      const dbPath = process.env.STT_DB_PATH || '/root/lina-learning/data/stt.db';
+
+      // VPS CPU + Memory stats via /proc + free
+      let cpuUsage = 0;
+      let memTotal = 0;
+      let memUsed = 0;
+      let memFree = 0;
+      let memAvailable = 0;
+      let loadAvg: [number, number, number] = [0, 0, 0];
+      let uptime = 0;
+
+      try {
+        const { readFileSync } = await import('node:fs');
+        // Memory info
+        const meminfo = readFileSync('/proc/meminfo', 'utf-8');
+        const memMatch = (re: RegExp) => {
+          const m = meminfo.match(re);
+          return m ? parseInt(m[1], 10) * 1024 : 0; // kB → bytes
+        };
+        memTotal = memMatch(/MemTotal:\s+(\d+)/);
+        memFree = memMatch(/MemFree:\s+(\d+)/);
+        memAvailable = memMatch(/MemAvailable:\s+(\d+)/);
+        memUsed = memTotal - memAvailable;
+
+        // Load average
+        const loadavg = readFileSync('/proc/loadavg', 'utf-8').trim().split(/\s+/);
+        loadAvg = [parseFloat(loadavg[0]), parseFloat(loadavg[1]), parseFloat(loadavg[2])];
+
+        // Uptime
+        const uptimeStr = readFileSync('/proc/uptime', 'utf-8').trim().split(/\s+/)[0];
+        uptime = parseFloat(uptimeStr);
+
+        // CPU usage: sample /proc/stat twice with 100ms delay
+        const cpuStat1 = readFileSync('/proc/stat', 'utf-8').split('\n')[0].split(/\s+/).slice(1).map(Number);
+        await new Promise(r => setTimeout(r, 100));
+        const cpuStat2 = readFileSync('/proc/stat', 'utf-8').split('\n')[0].split(/\s+/).slice(1).map(Number);
+        const idleDiff = cpuStat2[3] - cpuStat1[3];
+        const totalDiff = cpuStat2.reduce((a, b) => a + b, 0) - cpuStat1.reduce((a, b) => a + b, 0);
+        cpuUsage = totalDiff > 0 ? ((1 - idleDiff / totalDiff) * 100) : 0;
+      } catch (e) {
+        console.warn('[monitoring-info] VPS stats failed:', e instanceof Error ? e.message : e);
+      }
+
+      // PM2 stats via pm2 jlist
+      let pm2Process: any = null;
+      try {
+        const { execSync } = await import('node:child_process');
+        const pm2Json = execSync('pm2 jlist 2>/dev/null', { encoding: 'utf-8', timeout: 5000 });
+        const pm2List = JSON.parse(pm2Json);
+        pm2Process = pm2List.find((p: any) => p.name === 'lina-learning');
+      } catch (e) {
+        console.warn('[monitoring-info] PM2 stats failed:', e instanceof Error ? e.message : e);
+      }
+
+      // SQLite stats
+      let sqliteStats: any = {};
+      try {
+        const journalMode = sttDb.getOne<{ journal_mode: string }>(`PRAGMA journal_mode`)?.journal_mode;
+        const cacheSize = sttDb.getOne<{ cache_size: number }>(`PRAGMA cache_size`)?.cache_size;
+        const walCheckpoint = sttDb.getOne<{ wal: number; frames: number; checkpointed: number }>(`PRAGMA wal_checkpoint`) ?? { wal: 0, frames: 0, checkpointed: 0 };
+        const totalTables = sttDb.getOne<{ c: number }>(`SELECT COUNT(*) as c FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_%'`)?.c ?? 0;
+        const totalIndexes = sttDb.getOne<{ c: number }>(`SELECT COUNT(*) as c FROM sqlite_master WHERE type='index' AND sql IS NOT NULL`)?.c ?? 0;
+        const learnedCount = sttDb.getOne<{ c: number }>(`SELECT COUNT(*) as c FROM learned_words`)?.c ?? 0;
+        const cooccurrenceCount = sttDb.getOne<{ c: number }>(`SELECT COUNT(*) as c FROM word_cooccurrence`)?.c ?? 0;
+        const userCorrectionsCount = sttDb.getOne<{ c: number }>(`SELECT COUNT(*) as c FROM user_corrections`)?.c ?? 0;
+
+        // Quick query perf test (measure time for simple SELECT)
+        const t0 = Date.now();
+        sttDb.getOne<{ c: number }>(`SELECT COUNT(*) as c FROM learned_words WHERE word LIKE '%a%'`);
+        const queryMs = Date.now() - t0;
+
+        sqliteStats = {
+          journalMode,
+          cacheSize,
+          walCheckpoint,
+          totalTables,
+          totalIndexes,
+          learnedCount,
+          cooccurrenceCount,
+          userCorrectionsCount,
+          queryMs,
+        };
+      } catch (e) {
+        console.warn('[monitoring-info] SQLite stats failed:', e instanceof Error ? e.message : e);
+      }
+
+      // DB file size + WAL
+      let dbFileSize = 0, walFileSize = 0;
+      try {
+        const fs = await import('node:fs');
+        dbFileSize = fs.statSync(dbPath).size;
+        try { walFileSize = fs.statSync(dbPath + '-wal').size; } catch {}
+      } catch {}
+
+      return Response.json({
+        vps: {
+          cpuUsage: cpuUsage.toFixed(1),
+          loadAvg,
+          uptime, // seconds
+          memory: {
+            total: memTotal,
+            used: memUsed,
+            free: memFree,
+            available: memAvailable,
+            usedPct: memTotal > 0 ? ((memUsed / memTotal) * 100).toFixed(1) : '0',
+          },
+        },
+        pm2: pm2Process ? {
+          name: pm2Process.name,
+          pid: pm2Process.pid,
+          status: pm2Process.pm2_env?.status,
+          uptime: pm2Process.pm2_env?.pm_uptime || 0,
+          restarts: pm2Process.pm2_env?.restart_time || 0,
+          unstableRestarts: pm2Process.pm2_env?.unstable_restarts || 0,
+          memory: pm2Process.monit?.memory || 0,
+          cpu: pm2Process.monit?.cpu || 0,
+        } : null,
+        sqlite: sqliteStats,
+        dbFile: {
+          path: dbPath,
+          sizeBytes: dbFileSize,
+          walSizeBytes: walFileSize,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     return Response.json({ error: 'Invalid section' }, { status: 400 });
   } catch (error) {
     console.error('[admin/dataset-library] GET error:', error);
