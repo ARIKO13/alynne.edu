@@ -423,16 +423,19 @@ export const GET: APIRoute = async ({ request, url }) => {
       const CF_API_TOKEN = process.env.CF_API_TOKEN || 'cfut_bLNtQhqVmPfkc8jLKydN2QCm52Vw4MmA9cdefw3M5cceff97';
 
       const queries = [
-        { name: 'users', sql: "SELECT COUNT(*) as c FROM User" },
-        { name: 'certificates', sql: "SELECT COUNT(*) as c FROM Certificate" },
-        { name: 'subscriptions', sql: "SELECT COUNT(*) as c FROM Subscription" },
-        { name: 'sttFailures', sql: "SELECT COUNT(*) as c FROM STTFailure" },
-        { name: 'dailyProgress', sql: "SELECT COUNT(*) as c FROM DailyProgress" },
-        { name: 'mindmaps', sql: "SELECT COUNT(*) as c FROM MindMap" },
-        { name: 'bookmarks', sql: "SELECT COUNT(*) as c FROM Bookmark" },
+        { name: 'User', sql: "SELECT COUNT(*) as c FROM User" },
+        { name: 'Certificate', sql: "SELECT COUNT(*) as c FROM Certificate" },
+        { name: 'Subscription', sql: "SELECT COUNT(*) as c FROM Subscription" },
+        { name: 'STTFailure', sql: "SELECT COUNT(*) as c FROM STTFailure" },
+        { name: 'DailyProgress', sql: "SELECT COUNT(*) as c FROM DailyProgress" },
+        { name: 'MindMap', sql: "SELECT COUNT(*) as c FROM MindMap" },
+        { name: 'MonthlyRecap', sql: "SELECT COUNT(*) as c FROM MonthlyRecap" },
+        { name: 'YearlyRecord', sql: "SELECT COUNT(*) as c FROM YearlyRecord" },
+        { name: 'LearnedWord (old)', sql: "SELECT COUNT(*) as c FROM LearnedWord" },
       ];
 
       const d1Stats: Array<{ name: string; count: number; error?: string }> = [];
+      let d1DbSize = 0; // bytes — captured from D1 meta.size_after
       for (const q of queries) {
         try {
           const payload = JSON.stringify({ sql: q.sql });
@@ -448,6 +451,9 @@ export const GET: APIRoute = async ({ request, url }) => {
             const data = await res.json();
             const count = data?.result?.[0]?.results?.[0]?.c ?? 0;
             d1Stats.push({ name: q.name, count });
+            // Capture DB size from D1 meta (last query response)
+            const sizeAfter = data?.result?.[0]?.meta?.size_after;
+            if (sizeAfter) d1DbSize = sizeAfter;
           } else {
             d1Stats.push({ name: q.name, count: 0, error: `HTTP ${res.status}` });
           }
@@ -508,6 +514,18 @@ export const GET: APIRoute = async ({ request, url }) => {
           accountId: '949a2a6e1039019782c46a8c7ddb19fe',
           databaseId: '2e9133ea-dad7-4227-ac92-03c0fbe48c45',
           region: 'APAC (HKG)',
+          storage: {
+            usedBytes: d1DbSize,
+            usedKB: Math.round(d1DbSize / 1024),
+            usedMB: (d1DbSize / 1024 / 1024).toFixed(2),
+            // D1 Free plan: 5GB storage limit
+            // D1 Paid plan: 10GB storage limit
+            limitBytes: 5 * 1024 * 1024 * 1024, // 5GB free plan
+            limitGB: '5 GB (free plan)',
+            availableBytes: (5 * 1024 * 1024 * 1024) - d1DbSize,
+            availableMB: ((5 * 1024 * 1024 * 1024 - d1DbSize) / 1024 / 1024).toFixed(2),
+            usedPct: d1DbSize > 0 ? ((d1DbSize / (5 * 1024 * 1024 * 1024)) * 100).toFixed(4) : '0',
+          },
         },
         timestamp: new Date().toISOString(),
       });
