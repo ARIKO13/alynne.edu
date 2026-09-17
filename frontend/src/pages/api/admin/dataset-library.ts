@@ -36,6 +36,7 @@ export const GET: APIRoute = async ({ request, url }) => {
     const offset = parseInt(url.searchParams.get('offset') || '0', 10);
     const search = url.searchParams.get('search') || '';
     const word = url.searchParams.get('word') || '';
+    const sourceFilter = url.searchParams.get('source') || ''; // 'kbbi' | 'slang' | 'webspeech' | '' (all)
 
     // ── Section: stats ──
     if (section === 'stats') {
@@ -53,6 +54,11 @@ export const GET: APIRoute = async ({ request, url }) => {
         } catch { /* WAL might not exist */ }
       } catch { /* ignore */ }
 
+      // Get breakdown by source (kbbi / slang / webspeech)
+      const sourceBreakdown = sttDb.getAll<{ source: string; status: string; c: number }>(
+        `SELECT source, status, COUNT(*) as c FROM learned_words GROUP BY source, status ORDER BY source`
+      );
+
       return Response.json({
         stats: dbStats,
         dbFile: {
@@ -61,42 +67,51 @@ export const GET: APIRoute = async ({ request, url }) => {
           walSizeBytes: walFileSize,
           sizeMB: (dbFileSize / 1024 / 1024).toFixed(2),
         },
+        sourceBreakdown: sourceBreakdown || [],
       });
     }
 
-    // ── Section: words (with search) ──
+    // ── Section: words (with search + source filter) ──
     if (section === 'words') {
+      // Build WHERE clause: combine search + sourceFilter
+      const conditions: string[] = [];
+      const params: unknown[] = [];
       if (search) {
-        // Search words
-        const rows = sttDb.getAll<{
-          id: number; word: string; phonetic_variations: string;
-          source: string; confidence: number; count: number; vote_count: number;
-          status: string; created_at: string; last_used_at: string;
-        }>(
-          `SELECT id, word, phonetic_variations, source, confidence, count, vote_count, status, created_at, last_used_at
-           FROM learned_words
-           WHERE word LIKE ? COLLATE NOCASE
-           ORDER BY last_used_at DESC
-           LIMIT ? OFFSET ?`,
-          [`%${search}%`, limit, offset]
-        );
-        const totalRow = sttDb.getOne<{ c: number }>(
-          `SELECT COUNT(*) as c FROM learned_words WHERE word LIKE ? COLLATE NOCASE`,
-          [`%${search}%`]
-        );
-        return Response.json({
-          words: (rows || []).map(r => ({
-            ...r,
-            phonetic_variations: r.phonetic_variations ? JSON.parse(r.phonetic_variations) : [],
-          })),
-          total: totalRow?.c ?? 0,
-          limit,
-          offset,
-        });
+        conditions.push('word LIKE ? COLLATE NOCASE');
+        params.push(`%${search}%`);
       }
+      if (sourceFilter) {
+        conditions.push('source = ?');
+        params.push(sourceFilter);
+      }
+      const where = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
 
-      const { words, total } = await getLearnedWords(limit, offset);
-      return Response.json({ words, total, limit, offset });
+      const rows = sttDb.getAll<{
+        id: number; word: string; phonetic_variations: string;
+        source: string; confidence: number; count: number; vote_count: number;
+        status: string; created_at: string; last_used_at: string;
+      }>(
+        `SELECT id, word, phonetic_variations, source, confidence, count, vote_count, status, created_at, last_used_at
+         FROM learned_words
+         ${where}
+         ORDER BY last_used_at DESC
+         LIMIT ? OFFSET ?`,
+        [...params, limit, offset]
+      );
+      const totalRow = sttDb.getOne<{ c: number }>(
+        `SELECT COUNT(*) as c FROM learned_words ${where}`,
+        params
+      );
+      return Response.json({
+        words: (rows || []).map(r => ({
+          ...r,
+          phonetic_variations: r.phonetic_variations ? JSON.parse(r.phonetic_variations) : [],
+        })),
+        total: totalRow?.c ?? 0,
+        limit,
+        offset,
+        sourceFilter: sourceFilter || null,
+      });
     }
 
     // ── Section: cooccurrence (with optional word filter) ──

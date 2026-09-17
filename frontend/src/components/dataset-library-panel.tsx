@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 type Section = 'stats' | 'words' | 'cooccurrence' | 'corrections' | 'summary' | 'word-detail';
+type SourceFilter = '' | 'kbbi' | 'slang' | 'webspeech';
 
 interface DbStats {
   learnedWords: { total: number; confirmed: number; candidates: number; rejected: number };
@@ -23,6 +24,11 @@ interface DbFile {
   sizeBytes: number;
   walSizeBytes: number;
   sizeMB: string;
+}
+interface SourceBreakdown {
+  source: string;
+  status: string;
+  c: number;
 }
 
 interface LearnedWord {
@@ -53,22 +59,25 @@ export function DatasetLibraryPanel() {
   const [section, setSection] = useState<Section>('stats');
   const [stats, setStats] = useState<DbStats | null>(null);
   const [dbFile, setDbFile] = useState<DbFile | null>(null);
+  const [sourceBreakdown, setSourceBreakdown] = useState<SourceBreakdown[]>([]);
   const [words, setWords] = useState<LearnedWord[]>([]);
   const [cooccurrences, setCooccurrences] = useState<Cooccurrence[]>([]);
   const [corrections, setCorrections] = useState<Correction[]>([]);
   const [summaries, setSummaries] = useState<Summary[]>([]);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('');
   const [loading, setLoading] = useState(false);
   const [selectedWord, setSelectedWord] = useState<string>('');
   const [wordDetail, setWordDetail] = useState<any>(null);
 
-  const fetchData = useCallback(async (sec: Section, searchQuery: string = '', word: string = '') => {
+  const fetchData = useCallback(async (sec: Section, searchQuery: string = '', word: string = '', source: SourceFilter = '') => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ section: sec, limit: '200' });
       if (searchQuery) params.set('search', searchQuery);
       if (word) params.set('word', word);
+      if (source) params.set('source', source);
 
       const res = await fetch(`/api/admin/dataset-library?${params}`);
       if (res.status === 403) {
@@ -80,6 +89,7 @@ export function DatasetLibraryPanel() {
       if (sec === 'stats') {
         setStats(data.stats);
         setDbFile(data.dbFile);
+        setSourceBreakdown(data.sourceBreakdown || []);
       } else if (sec === 'words') {
         setWords(data.words || []);
         setTotal(data.total || 0);
@@ -104,15 +114,22 @@ export function DatasetLibraryPanel() {
   }, []);
 
   useEffect(() => {
-    fetchData(section, search, selectedWord);
-  }, [section, fetchData, selectedWord]);
+    fetchData(section, search, selectedWord, sourceFilter);
+  }, [section, fetchData, selectedWord, sourceFilter]);
 
   const handleSearch = (val: string) => {
     setSearch(val);
     if (section === 'words' && val.length >= 2) {
-      fetchData('words', val);
+      fetchData('words', val, '', sourceFilter);
     } else if (section === 'words' && val.length === 0) {
-      fetchData('words');
+      fetchData('words', '', '', sourceFilter);
+    }
+  };
+
+  const handleSourceFilterChange = (val: SourceFilter) => {
+    setSourceFilter(val);
+    if (section === 'words') {
+      fetchData('words', search, '', val);
     }
   };
 
@@ -122,7 +139,7 @@ export function DatasetLibraryPanel() {
       const res = await fetch(`/api/admin/dataset-library?id=${id}&section=words`, { method: 'DELETE' });
       if (res.ok) {
         toast.success(`"${word}" dihapus`);
-        fetchData(section, search);
+        fetchData(section, search, '', sourceFilter);
       } else {
         toast.error('Gagal hapus');
       }
@@ -178,7 +195,7 @@ export function DatasetLibraryPanel() {
           )}
         </div>
         <Button
-          onClick={() => fetchData(section, search, selectedWord)}
+          onClick={() => fetchData(section, search, selectedWord, sourceFilter)}
           disabled={loading}
           variant="outline"
           size="sm"
@@ -210,15 +227,44 @@ export function DatasetLibraryPanel() {
 
       {/* Search box (for words section) */}
       {section === 'words' && (
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-600" />
-          <Input
-            type="text"
-            value={search}
-            onChange={(e) => handleSearch(e.target.value)}
-            placeholder="Cari kata... (min 2 huruf)"
-            className="pl-8 border-white/[0.08] bg-[#0c0c0e] text-zinc-200 text-xs placeholder:text-zinc-600 h-8"
-          />
+        <div className="space-y-2">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-600" />
+            <Input
+              type="text"
+              value={search}
+              onChange={(e) => handleSearch(e.target.value)}
+              placeholder="Cari kata... (min 2 huruf)"
+              className="pl-8 border-white/[0.08] bg-[#0c0c0e] text-zinc-200 text-xs placeholder:text-zinc-600 h-8"
+            />
+          </div>
+          {/* Source filter — pilih: All / KBBI / Slang / Auto-learned */}
+          <div className="flex gap-1 flex-wrap">
+            <SourcePill
+              active={sourceFilter === ''}
+              onClick={() => handleSourceFilterChange('')}
+              icon="📚"
+              label="All"
+            />
+            <SourcePill
+              active={sourceFilter === 'kbbi'}
+              onClick={() => handleSourceFilterChange('kbbi')}
+              icon="📖"
+              label="KBBI"
+            />
+            <SourcePill
+              active={sourceFilter === 'slang'}
+              onClick={() => handleSourceFilterChange('slang')}
+              icon="💬"
+              label="Slang"
+            />
+            <SourcePill
+              active={sourceFilter === 'webspeech'}
+              onClick={() => handleSourceFilterChange('webspeech')}
+              icon="🎙️"
+              label="Auto-learned"
+            />
+          </div>
         </div>
       )}
 
@@ -248,6 +294,33 @@ export function DatasetLibraryPanel() {
             <StatCard label="User Votes" value={stats.userCorrections.total} icon="🗳️" color="violet" />
             <StatCard label="Pending Review" value={stats.userCorrections.pending} icon="⏸️" color="amber" />
           </div>
+
+          {/* Source breakdown — tampilin distribusi KBBI/slang/auto-learned */}
+          {sourceBreakdown.length > 0 && (
+            <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+              <p className="text-[11px] text-zinc-400 mb-2">📊 Breakdown by Source</p>
+              <div className="space-y-1.5">
+                {sourceBreakdown.map((row, i) => {
+                  const sourceLabels: Record<string, { label: string; icon: string; color: string }> = {
+                    kbbi: { label: 'KBBI', icon: '📖', color: 'text-purple-400' },
+                    slang: { label: 'Slang', icon: '💬', color: 'text-sky-400' },
+                    webspeech: { label: 'Auto-learned', icon: '🎙️', color: 'text-emerald-400' },
+                  };
+                  const meta = sourceLabels[row.source] || { label: row.source, icon: '❓', color: 'text-zinc-400' };
+                  return (
+                    <div key={i} className="flex items-center gap-2 text-[11px]">
+                      <span>{meta.icon}</span>
+                      <span className={cn('font-medium', meta.color)}>{meta.label}</span>
+                      <span className="text-zinc-500">/</span>
+                      <span className="text-zinc-400">{row.status}</span>
+                      <span className="text-zinc-300 font-mono ml-auto">{row.c.toLocaleString()}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {dbFile && (
             <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
               <p className="text-[11px] text-zinc-500 mb-1">DB File</p>
@@ -290,6 +363,19 @@ export function DatasetLibraryPanel() {
                       )}
                     >
                       {w.status}
+                    </Badge>
+                    {/* Source badge — KBBI / Slang / Auto-learned */}
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        'text-[9px] px-1.5 py-0',
+                        w.source === 'kbbi' ? 'border-purple-500/30 text-purple-400 bg-purple-500/10'
+                          : w.source === 'slang' ? 'border-sky-500/30 text-sky-400 bg-sky-500/10'
+                          : 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
+                      )}
+                      title={`Source: ${w.source}`}
+                    >
+                      {w.source === 'kbbi' ? '📖 KBBI' : w.source === 'slang' ? '💬 Slang' : w.source === 'webspeech' ? '🎙️ Auto' : w.source}
                     </Badge>
                     <div className="flex items-center gap-2 ml-auto">
                       <span className="text-[10px] text-zinc-600" title="Occurrences">×{w.count}</span>
@@ -460,6 +546,28 @@ function TabButton({ active, onClick, children }: {
       )}
     >
       {children}
+    </button>
+  );
+}
+
+function SourcePill({ active, onClick, icon, label }: {
+  active: boolean;
+  onClick: () => void;
+  icon: string;
+  label: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] font-medium transition-all',
+        active
+          ? 'border-[#8B5CF6]/40 bg-[#8B5CF6]/15 text-[#8B5CF6]'
+          : 'border-white/[0.08] bg-white/[0.02] text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]'
+      )}
+    >
+      <span>{icon}</span>
+      {label}
     </button>
   );
 }
