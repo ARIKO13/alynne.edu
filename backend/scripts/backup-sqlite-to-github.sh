@@ -23,12 +23,41 @@
 set -e
 
 DB_PATH="/root/lina-learning/data/stt.db"
-BACKUP_REPO="/root/lina-learning"  # use main repo, commit to backup branch
+BACKUP_REPO="/root/lina-learning-git"  # cloned repo for backup, commit to backup branch
 BACKUP_DIR="$BACKUP_REPO/backup/sqlite"
 BRANCH="dataset-backup"
 TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S UTC")
 
+# GitHub token untuk auth (repo private)
+# Token disimpan di /root/.github-token (file rwx------)
+GITHUB_TOKEN_FILE="/root/.github-token"
+if [ ! -f "$GITHUB_TOKEN_FILE" ]; then
+  echo "[ERROR] GitHub token file not found: $GITHUB_TOKEN_FILE"
+  echo "        Create it with: echo 'ghp_YOUR_TOKEN' > $GITHUB_TOKEN_FILE && chmod 600 $GITHUB_TOKEN_FILE"
+  exit 1
+fi
+GITHUB_TOKEN=$(cat "$GITHUB_TOKEN_FILE" | tr -d '[:space:]')
+
 echo "── [$TIMESTAMP] SQLite backup to GitHub ──"
+
+# 0. Ensure backup repo exists (clone if missing)
+if [ ! -d "$BACKUP_REPO/.git" ]; then
+  echo "  Cloning repo for backup..."
+  git clone --depth 1 -b main "https://${GITHUB_TOKEN}@github.com/ARIKO13/alynne.edu.git" "$BACKUP_REPO" 2>&1 | tail -3
+  if [ ! -d "$BACKUP_REPO/.git" ]; then
+    echo "[ERROR] Failed to clone repo"
+    exit 1
+  fi
+fi
+
+cd "$BACKUP_REPO"
+
+# Set git remote URL with token (in case it was cloned without token)
+git remote set-url origin "https://${GITHUB_TOKEN}@github.com/ARIKO13/alynne.edu.git"
+
+# Configure git user if not set
+git config user.name 2>/dev/null || git config user.name "ALYNNE Bot"
+git config user.email 2>/dev/null || git config user.email "noreply@alynne.my.id"
 
 # 1. WAL checkpoint (TRUNCATE = also zero the WAL file)
 echo "  WAL checkpoint..."
@@ -48,26 +77,23 @@ COCUR=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM word_cooccurrence")
 VOTES=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM user_corrections")
 
 echo "  Stats:"
-echo "    Total words:     $TOTAL"
+echo "    Total words:        $TOTAL"
 echo "    Seeded (KBBI/slang): $SEEDED"
-echo "    User-learned:     $USER_LEARNED"
-echo "    Co-occurrences:   $COCUR"
-echo "    User votes:       $VOTES"
-echo "    DB size:          $(du -h "$DB_PATH" | cut -f1)"
+echo "    User-learned:        $USER_LEARNED"
+echo "    Co-occurrences:      $COCUR"
+echo "    User votes:          $VOTES"
+echo "    DB size:             $(du -h "$DB_PATH" | cut -f1)"
 
-# 5. Git commit + push (to dataset-backup branch)
-cd "$BACKUP_REPO"
+# 5. Fetch latest main branch (so backup branch is based on current main)
+git fetch origin main 2>&1 | tail -2
 
-# Save current branch
-ORIG_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+# 6. Create/switch to backup branch (based on main)
+git checkout -B "$BRANCH" origin/main 2>&1 | tail -2
 
-# Create/switch to backup branch
-git checkout -B "$BRANCH" 2>/dev/null || git checkout "$BRANCH"
-
-# Add only the backup file
+# 7. Add only the backup file
 git add backup/sqlite/stt.db
 
-# Commit (will fail gracefully if no changes)
+# 8. Commit (will fail gracefully if no changes — that's OK)
 git commit -m "chore: backup SQLite dataset ($TIMESTAMP)
 
 Stats:
@@ -80,11 +106,9 @@ Stats:
 
 Auto-backup by cron (every 6 hours)." 2>&1 | tail -3
 
-# Push to GitHub
+# 9. Push to GitHub
 echo "  Pushing to GitHub (branch: $BRANCH)..."
-git push origin "$BRANCH" 2>&1 | tail -3
-
-# Switch back to original branch
-git checkout "$ORIG_BRANCH" 2>/dev/null
+git push origin "$BRANCH" --force 2>&1 | tail -3
 
 echo "── Backup complete ──"
+

@@ -55,7 +55,7 @@ const ALPHABET_PHONETICS: Record<string, string[]> = {
 // ── Validation rules for new words ──
 const MIN_WORD_LENGTH = 4; // kata harus >= 4 huruf (filter noise 1-3 huruf)
 const MAX_WORD_LENGTH = 30;
-const CONFIRM_VOTE_THRESHOLD = 2; // 2 unique users → confirmed
+const CONFIRM_VOTE_THRESHOLD = 3; // 3 unique users → confirmed (Phase 1: naik dari 2 → 3 untuk scale 1000+ users)
 const CONFIRM_COUNT_THRESHOLD = 5; // OR 5 occurrences dari 1 user → confirmed
 
 /**
