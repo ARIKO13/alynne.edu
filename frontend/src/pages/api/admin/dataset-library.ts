@@ -417,6 +417,102 @@ export const GET: APIRoute = async ({ request, url }) => {
       });
     }
 
+    // ── Section: d1-monitoring — Cloudflare D1 (user account DB) monitoring ──
+    if (section === 'd1-monitoring') {
+      const D1_API_URL = `https://api.cloudflare.com/client/v4/accounts/949a2a6e1039019782c46a8c7ddb19fe/d1/database/2e9133ea-dad7-4227-ac92-03c0fbe48c45/query`;
+      const CF_API_TOKEN = process.env.CF_API_TOKEN || 'cfut_bLNtQhqVmPfkc8jLKydN2QCm52Vw4MmA9cdefw3M5cceff97';
+
+      const queries = [
+        { name: 'users', sql: "SELECT COUNT(*) as c FROM User" },
+        { name: 'certificates', sql: "SELECT COUNT(*) as c FROM Certificate" },
+        { name: 'subscriptions', sql: "SELECT COUNT(*) as c FROM Subscription" },
+        { name: 'sttFailures', sql: "SELECT COUNT(*) as c FROM STTFailure" },
+        { name: 'dailyProgress', sql: "SELECT COUNT(*) as c FROM DailyProgress" },
+        { name: 'mindmaps', sql: "SELECT COUNT(*) as c FROM MindMap" },
+        { name: 'bookmarks', sql: "SELECT COUNT(*) as c FROM Bookmark" },
+      ];
+
+      const d1Stats: Array<{ name: string; count: number; error?: string }> = [];
+      for (const q of queries) {
+        try {
+          const payload = JSON.stringify({ sql: q.sql });
+          const res = await fetch(D1_API_URL, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${CF_API_TOKEN}`,
+              'Content-Type': 'application/json',
+            },
+            body: payload,
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const count = data?.result?.[0]?.results?.[0]?.c ?? 0;
+            d1Stats.push({ name: q.name, count });
+          } else {
+            d1Stats.push({ name: q.name, count: 0, error: `HTTP ${res.status}` });
+          }
+        } catch (e) {
+          d1Stats.push({ name: q.name, count: 0, error: e instanceof Error ? e.message : 'unknown' });
+        }
+      }
+
+      // Get recent users (last 5)
+      let recentUsers: Array<{ id: string; name: string; email: string; createdAt: string }> = [];
+      try {
+        const payload = JSON.stringify({
+          sql: "SELECT id, name, email, createdAt FROM User ORDER BY createdAt DESC LIMIT 5"
+        });
+        const res = await fetch(D1_API_URL, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${CF_API_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+          body: payload,
+        });
+        if (res.ok) {
+          const data = await res.json();
+          recentUsers = data?.result?.[0]?.results || [];
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      // Get recent STT failures (last 5)
+      let recentFailures: Array<{ id: string; source: string; createdAt: string; unknownCount: number }> = [];
+      try {
+        const payload = JSON.stringify({
+          sql: "SELECT id, source, createdAt, unknownCount FROM STTFailure ORDER BY createdAt DESC LIMIT 5"
+        });
+        const res = await fetch(D1_API_URL, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${CF_API_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+          body: payload,
+        });
+        if (res.ok) {
+          const data = await res.json();
+          recentFailures = data?.result?.[0]?.results || [];
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      return Response.json({
+        d1: {
+          tables: d1Stats,
+          recentUsers,
+          recentFailures,
+          accountId: '949a2a6e1039019782c46a8c7ddb19fe',
+          databaseId: '2e9133ea-dad7-4227-ac92-03c0fbe48c45',
+          region: 'APAC (HKG)',
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     // ── Section: monitoring-info — real-time VPS + PM2 + SQLite stats ──
     if (section === 'monitoring-info') {
       const dbPath = process.env.STT_DB_PATH || '/root/lina-learning/data/stt.db';
