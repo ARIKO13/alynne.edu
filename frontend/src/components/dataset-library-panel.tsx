@@ -6,12 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Database, Trash2, RefreshCw, Search, Brain, Link2, Vote, BarChart3,
-  ChevronRight, ArrowLeft, FileText, HardDrive, GitBranch,
+  ChevronRight, ArrowLeft, FileText, HardDrive, GitBranch, Activity, Network,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { MonitoringView } from '@/components/monitoring-view';
+import { ArchitectureView } from '@/components/architecture-view';
 
-type Section = 'stats' | 'words' | 'cooccurrence' | 'corrections' | 'summary' | 'word-detail' | 'storage' | 'schema';
+type Section = 'stats' | 'words' | 'cooccurrence' | 'corrections' | 'summary' | 'word-detail' | 'storage' | 'schema' | 'monitoring' | 'architecture';
 type SourceFilter = '' | 'kbbi' | 'slang' | 'webspeech';
 
 interface DbStats {
@@ -73,6 +75,8 @@ export function DatasetLibraryPanel() {
   const [wordDetail, setWordDetail] = useState<any>(null);
   const [storageInfo, setStorageInfo] = useState<any>(null);
   const [schemaInfo, setSchemaInfo] = useState<any>(null);
+  const [monitoringInfo, setMonitoringInfo] = useState<any>(null);
+  const [autoRefresh, setAutoRefresh] = useState(true);
 
   const fetchData = useCallback(async (sec: Section, searchQuery: string = '', word: string = '', source: SourceFilter = '') => {
     setLoading(true);
@@ -111,6 +115,8 @@ export function DatasetLibraryPanel() {
         setStorageInfo(data);
       } else if (sec === 'schema') {
         setSchemaInfo(data);
+      } else if (sec === 'monitoring') {
+        setMonitoringInfo(data);
       }
     } catch (e) {
       console.error('Dataset library fetch error:', e);
@@ -123,6 +129,15 @@ export function DatasetLibraryPanel() {
   useEffect(() => {
     fetchData(section, search, selectedWord, sourceFilter);
   }, [section, fetchData, selectedWord, sourceFilter]);
+
+  // Auto-refresh monitoring tab every 10s
+  useEffect(() => {
+    if (section !== 'monitoring' || !autoRefresh) return;
+    const interval = setInterval(() => {
+      fetchData('monitoring');
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [section, autoRefresh, fetchData]);
 
   const handleSearch = (val: string) => {
     setSearch(val);
@@ -235,6 +250,12 @@ export function DatasetLibraryPanel() {
         </TabButton>
         <TabButton active={section === 'schema'} onClick={() => { setSection('schema'); setSearch(''); }}>
           <GitBranch className="h-3.5 w-3.5" /> Schema
+        </TabButton>
+        <TabButton active={section === 'monitoring'} onClick={() => { setSection('monitoring'); setSearch(''); }}>
+          <Activity className="h-3.5 w-3.5" /> Monitor
+        </TabButton>
+        <TabButton active={section === 'architecture'} onClick={() => { setSection('architecture'); setSearch(''); }}>
+          <Network className="h-3.5 w-3.5" /> Architecture
         </TabButton>
       </div>
 
@@ -561,6 +582,16 @@ export function DatasetLibraryPanel() {
       {/* Schema section — ERD-style visualisasi arsitektur DB */}
       {section === 'schema' && (
         <SchemaView info={schemaInfo} />
+      )}
+
+      {/* Monitoring section — real-time VPS + PM2 + SQLite stats */}
+      {section === 'monitoring' && (
+        <MonitoringView info={monitoringInfo} autoRefresh={autoRefresh} onToggleAutoRefresh={() => setAutoRefresh(!autoRefresh)} onRefresh={() => fetchData('monitoring')} loading={loading} />
+      )}
+
+      {/* Architecture section — Mermaid diagrams: ERD + data flow */}
+      {section === 'architecture' && (
+        <ArchitectureView schemaInfo={schemaInfo} />
       )}
     </div>
   );
