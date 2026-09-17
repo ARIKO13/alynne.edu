@@ -6,12 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Database, Trash2, RefreshCw, Search, Brain, Link2, Vote, BarChart3,
-  ChevronRight, ArrowLeft, FileText,
+  ChevronRight, ArrowLeft, FileText, HardDrive, GitBranch,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
-type Section = 'stats' | 'words' | 'cooccurrence' | 'corrections' | 'summary' | 'word-detail';
+type Section = 'stats' | 'words' | 'cooccurrence' | 'corrections' | 'summary' | 'word-detail' | 'storage' | 'schema';
 type SourceFilter = '' | 'kbbi' | 'slang' | 'webspeech';
 
 interface DbStats {
@@ -71,6 +71,8 @@ export function DatasetLibraryPanel() {
   const [loading, setLoading] = useState(false);
   const [selectedWord, setSelectedWord] = useState<string>('');
   const [wordDetail, setWordDetail] = useState<any>(null);
+  const [storageInfo, setStorageInfo] = useState<any>(null);
+  const [schemaInfo, setSchemaInfo] = useState<any>(null);
 
   const fetchData = useCallback(async (sec: Section, searchQuery: string = '', word: string = '', source: SourceFilter = '') => {
     setLoading(true);
@@ -105,6 +107,10 @@ export function DatasetLibraryPanel() {
         setTotal(data.total || 0);
       } else if (sec === 'word-detail') {
         setWordDetail(data);
+      } else if (sec === 'storage') {
+        setStorageInfo(data);
+      } else if (sec === 'schema') {
+        setSchemaInfo(data);
       }
     } catch (e) {
       console.error('Dataset library fetch error:', e);
@@ -223,6 +229,12 @@ export function DatasetLibraryPanel() {
         </TabButton>
         <TabButton active={section === 'summary'} onClick={() => { setSection('summary'); setSearch(''); }}>
           <FileText className="h-3.5 w-3.5" /> Summary
+        </TabButton>
+        <TabButton active={section === 'storage'} onClick={() => { setSection('storage'); setSearch(''); }}>
+          <HardDrive className="h-3.5 w-3.5" /> Storage
+        </TabButton>
+        <TabButton active={section === 'schema'} onClick={() => { setSection('schema'); setSearch(''); }}>
+          <GitBranch className="h-3.5 w-3.5" /> Schema
         </TabButton>
       </div>
 
@@ -540,6 +552,16 @@ export function DatasetLibraryPanel() {
           )}
         </div>
       )}
+
+      {/* Storage section — disk usage, DB file size, table sizes */}
+      {section === 'storage' && storageInfo && (
+        <StorageView info={storageInfo} />
+      )}
+
+      {/* Schema section — ERD-style visualisasi arsitektur DB */}
+      {section === 'schema' && schemaInfo && (
+        <SchemaView info={schemaInfo} />
+      )}
     </div>
   );
 }
@@ -715,6 +737,319 @@ function WordDetailView({ detail }: { detail: any }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── StorageView: disk usage + DB file + table sizes ──
+function StorageView({ info }: { info: any }) {
+  if (!info) return null;
+  const { dbFile, disk, sqlite, tables, indexes } = info;
+
+  const formatBytes = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+    return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`;
+  };
+
+  const diskUsedPct = parseFloat(disk.usedPct);
+
+  return (
+    <div className="space-y-3">
+      {/* Disk usage overview */}
+      <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+        <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
+          <HardDrive className="h-3 w-3" /> VPS Disk Usage
+        </p>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-zinc-400">Used: <strong className="text-zinc-200">{formatBytes(disk.used)}</strong> ({disk.usedPct}%)</span>
+            <span className="text-zinc-400">Free: <strong className="text-emerald-400">{formatBytes(disk.free)}</strong> ({disk.freeGB} GB)</span>
+            <span className="text-zinc-400">Total: <strong className="text-zinc-200">{disk.totalGB} GB</strong></span>
+          </div>
+          {/* Disk usage bar */}
+          <div className="h-3 bg-[#18181b] rounded-full overflow-hidden border border-white/[0.04]">
+            <div
+              className={cn(
+                'h-full rounded-full transition-all',
+                diskUsedPct > 90 ? 'bg-red-500'
+                  : diskUsedPct > 75 ? 'bg-amber-500'
+                  : 'bg-emerald-500'
+              )}
+              style={{ width: `${Math.min(diskUsedPct, 100)}%` }}
+            />
+          </div>
+          {diskUsedPct > 75 && (
+            <p className="text-[10px] text-amber-400 mt-1">
+              ⚠️ Disk hampir penuh ({diskUsedPct}%). Backup file akan jadi besar kalau dataset tumbuh.
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* DB File info */}
+      <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+        <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
+          <Database className="h-3 w-3" /> SQLite DB File
+        </p>
+        <p className="text-xs text-zinc-300 font-mono break-all mb-2">{dbFile.path}</p>
+        <div className="grid grid-cols-3 gap-2 text-[11px]">
+          <div>
+            <p className="text-zinc-500">Main DB</p>
+            <p className="text-zinc-200 font-mono">{dbFile.sizeMB} MB</p>
+          </div>
+          <div>
+            <p className="text-zinc-500">WAL file</p>
+            <p className="text-zinc-200 font-mono">{dbFile.walMB} MB</p>
+          </div>
+          <div>
+            <p className="text-zinc-500">Total</p>
+            <p className="text-zinc-200 font-mono">{formatBytes(dbFile.totalBytes)}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* SQLite internals */}
+      <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+        <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
+          <Database className="h-3 w-3" /> SQLite Internal Stats
+        </p>
+        <div className="grid grid-cols-2 gap-2 text-[11px]">
+          <div>
+            <p className="text-zinc-500">Journal Mode</p>
+            <p className="text-zinc-200 font-mono">{sqlite.journalMode}</p>
+          </div>
+          <div>
+            <p className="text-zinc-500">Synchronous</p>
+            <p className="text-zinc-200 font-mono">{sqlite.synchronous === 1 ? 'NORMAL' : sqlite.synchronous === 2 ? 'FULL' : sqlite.synchronous}</p>
+          </div>
+          <div>
+            <p className="text-zinc-500">Page Count</p>
+            <p className="text-zinc-200 font-mono">{sqlite.pageCount.toLocaleString()}</p>
+          </div>
+          <div>
+            <p className="text-zinc-500">Page Size</p>
+            <p className="text-zinc-200 font-mono">{formatBytes(sqlite.pageSize)}</p>
+          </div>
+          <div>
+            <p className="text-zinc-500">Total Size</p>
+            <p className="text-zinc-200 font-mono">{formatBytes(sqlite.totalSize)}</p>
+          </div>
+          <div>
+            <p className="text-zinc-500">Free Pages</p>
+            <p className="text-zinc-200 font-mono">{sqlite.freePages.toLocaleString()} ({sqlite.fragmentationPct}% frag)</p>
+          </div>
+        </div>
+        {parseFloat(sqlite.fragmentationPct) > 20 && (
+          <p className="text-[10px] text-amber-400 mt-2">
+            💡 Fragmentation {sqlite.fragmentationPct}% — recommend: VACUUM untuk reclaim space
+          </p>
+        )}
+      </div>
+
+      {/* Table sizes breakdown */}
+      <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+        <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
+          <FileText className="h-3 w-3" /> Tables ({tables.length})
+        </p>
+        <div className="space-y-1.5 max-h-[300px] overflow-y-auto">
+          {tables.map((t: any, i: number) => {
+            const maxRows = Math.max(...tables.map((x: any) => x.rows || 0));
+            const rowPct = maxRows > 0 ? (t.rows / maxRows) * 100 : 0;
+            return (
+              <div key={i} className="rounded-md border border-white/[0.04] bg-[#18181b] p-2">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-mono text-[#8B5CF6]">{t.name}</span>
+                  <span className="text-[10px] text-zinc-500">{t.columns} cols</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-zinc-400 w-20">{t.rows.toLocaleString()} rows</span>
+                  <div className="flex-1 h-1.5 bg-[#0c0c0e] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[#8B5CF6]/60 rounded-full"
+                      style={{ width: `${rowPct}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-zinc-400 w-16 text-right">{formatBytes(t.sizeBytes)}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Indexes list */}
+      <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+        <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
+          <GitBranch className="h-3 w-3" /> Indexes ({indexes.length})
+        </p>
+        <div className="flex flex-wrap gap-1">
+          {indexes.map((idx: any, i: number) => (
+            <span key={i} className="text-[9px] font-mono text-zinc-400 bg-[#18181b] border border-white/[0.06] rounded px-1.5 py-0.5" title={`Table: ${idx.table}\nSQL: ${idx.sql}`}>
+              {idx.name}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SchemaView: ERD-style visualisasi arsitektur DB ──
+function SchemaView({ info }: { info: any }) {
+  if (!info) return null;
+  const { tables, indexes, schemaVersion } = info;
+
+  return (
+    <div className="space-y-3">
+      {/* Header */}
+      <div className="rounded-lg border border-[#8B5CF6]/15 bg-[#8B5CF6]/[0.03] p-3">
+        <p className="text-[11px] text-zinc-400 mb-1 flex items-center gap-1.5">
+          <GitBranch className="h-3 w-3" /> Database Schema (ERD)
+        </p>
+        <p className="text-[10px] text-zinc-500">
+          Schema version: <strong className="text-[#8B5CF6] font-mono">{schemaVersion}</strong>
+          {' · '}
+          {tables.length} tables · {indexes.length} indexes
+        </p>
+      </div>
+
+      {/* ERD-style table cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {tables.map((t: any, i: number) => (
+          <div key={i} className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] overflow-hidden">
+            {/* Table header */}
+            <div className="px-3 py-2 bg-[#8B5CF6]/10 border-b border-[#8B5CF6]/20">
+              <p className="text-xs font-mono font-semibold text-[#8B5CF6] flex items-center gap-1.5">
+                <Database className="h-3 w-3" />
+                {t.name}
+                {t.foreignKeys.length > 0 && (
+                  <Badge variant="outline" className="text-[8px] px-1 py-0 border-sky-500/30 text-sky-400 bg-sky-500/10 ml-1">
+                    {t.foreignKeys.length} FK
+                  </Badge>
+                )}
+              </p>
+            </div>
+
+            {/* Columns */}
+            <div className="p-2 space-y-0.5">
+              {t.columns.map((col: any, ci: number) => (
+                <div key={ci} className="flex items-center gap-2 text-[11px] py-0.5">
+                  {col.pk ? (
+                    <span className="text-amber-400 shrink-0" title="Primary Key">🔑</span>
+                  ) : (
+                    <span className="w-3 shrink-0" />
+                  )}
+                  <span className={cn('font-mono', col.pk ? 'text-amber-300' : 'text-zinc-300')}>
+                    {col.name}
+                  </span>
+                  <span className="text-zinc-500 text-[10px]">{col.type || '(no type)'}</span>
+                  {col.notNull && (
+                    <Badge variant="outline" className="text-[8px] px-1 py-0 border-red-500/30 text-red-400 bg-red-500/10">
+                      NOT NULL
+                    </Badge>
+                  )}
+                  {col.default && (
+                    <span className="text-[9px] text-zinc-600 font-mono">
+                      = {col.default}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Foreign keys */}
+            {t.foreignKeys.length > 0 && (
+              <div className="px-2 py-1.5 border-t border-white/[0.04] bg-sky-500/[0.02]">
+                <p className="text-[9px] text-sky-400/70 uppercase tracking-wider mb-1">Foreign Keys</p>
+                {t.foreignKeys.map((fk: any, fi: number) => (
+                  <div key={fi} className="flex items-center gap-1.5 text-[10px] py-0.5">
+                    <span className="font-mono text-sky-300">{fk.from}</span>
+                    <span className="text-zinc-600">→</span>
+                    <span className="font-mono text-emerald-300">{fk.table}.{fk.to}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Indexes on this table */}
+            {t.indexes.length > 0 && (
+              <div className="px-2 py-1.5 border-t border-white/[0.04]">
+                <p className="text-[9px] text-zinc-500 uppercase tracking-wider mb-1">Indexes ({t.indexes.length})</p>
+                <div className="flex flex-wrap gap-1">
+                  {t.indexes.map((idx: any, ii: number) => (
+                    <span
+                      key={ii}
+                      className={cn(
+                        'text-[9px] font-mono px-1.5 py-0.5 rounded border',
+                        idx.unique
+                          ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/5'
+                          : 'border-white/[0.08] text-zinc-400 bg-[#18181b]'
+                      )}
+                      title={`Columns: ${idx.columns.join(', ')}${idx.unique ? ' (UNIQUE)' : ''}`}
+                    >
+                      {idx.unique && '🔒 '}{idx.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Relationships summary */}
+      <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+        <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
+          <Link2 className="h-3 w-3" /> Relationships (Foreign Keys)
+        </p>
+        {(() => {
+          const allFks: Array<{ table: string; fk: any; key: string }> = [];
+          for (const t of tables) {
+            t.foreignKeys.forEach((fk: any, fi: number) => {
+              allFks.push({ table: t.name, fk, key: `${t.name}-${fi}` });
+            });
+          }
+          if (allFks.length === 0) {
+            return (
+              <p className="text-[10px] text-zinc-500 italic">
+                Tidak ada foreign key constraints di schema ini. Relasi di-handle di application layer (lihat learned-word.ts).
+              </p>
+            );
+          }
+          return (
+            <div className="space-y-1">
+              {allFks.map(({ table, fk, key }: { table: string; fk: any; key: string }) => (
+                <div key={key} className="flex items-center gap-2 text-[11px] py-0.5">
+                  <span className="font-mono text-zinc-300">{table}.{fk.from}</span>
+                  <ChevronRight className="h-2.5 w-2.5 text-zinc-600" />
+                  <span className="font-mono text-emerald-300">{fk.table}.{fk.to}</span>
+                  <span className="text-[9px] text-zinc-600 ml-auto">
+                    ON UPDATE: {fk.onUpdate} · ON DELETE: {fk.onDelete}
+                  </span>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* All indexes summary */}
+      <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+        <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
+          <GitBranch className="h-3 w-3" /> All Indexes ({indexes.length})
+        </p>
+        <div className="space-y-1 max-h-[200px] overflow-y-auto">
+          {indexes.map((idx: any, i: number) => (
+            <div key={i} className="flex items-center gap-2 text-[10px] py-0.5">
+              <span className="font-mono text-[#8B5CF6]">{idx.tbl_name}</span>
+              <span className="text-zinc-600">·</span>
+              <span className="font-mono text-zinc-400">{idx.name}</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
