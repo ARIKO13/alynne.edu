@@ -6,8 +6,23 @@ import { isAdmin } from '@/lib/admin';
 export const GET: APIRoute = async ({ request }) => {
   try {
     const session = await getSession(request);
+    // Debug logging untuk troubleshoot 403
+    const cookie = request.headers.get('cookie') || '';
+    const hasCookie = cookie.includes('lina-session=');
+    const sessionEmail = session?.user?.email || 'NO_EMAIL';
+    const sessionName = session?.user?.name || 'NO_NAME';
+    console.log(`[admin/stats] DEBUG: hasCookie=${hasCookie}, sessionNull=${!session}, email=${sessionEmail}, name=${sessionName}, isAdmin=${isAdmin(sessionEmail)}`);
+
     if (!session?.user?.email || !isAdmin(session.user.email)) {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
+      return Response.json({
+        error: 'Forbidden',
+        debug: {
+          hasCookie,
+          sessionExists: !!session,
+          email: sessionEmail,
+          isAdmin: isAdmin(sessionEmail),
+        }
+      }, { status: 403 });
     }
 
     const today = new Date().toISOString().split('T')[0];
