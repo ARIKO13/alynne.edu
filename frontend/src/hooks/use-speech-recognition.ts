@@ -10,11 +10,12 @@ import {
 } from '@/lib/personal-dict';
 
 const GROQ_CHUNK_INTERVAL = 10000; // 10s chunks (was 4s) - bigger chunks have valid webm headers
-const NO_RESULT_TIMEOUT = 10000;
+const NO_RESULT_TIMEOUT = 8000; // 8s (was 10s) — faster disconnect detection
 const MAX_WEBSPEECH_RESTARTS = 50;
 const WEBSPEECH_RESTART_DELAY = 500;
 const LIVE_ENHANCE_INTERVAL = 30000;
 const WHISPER_BACKEND = '/api/whisper/transcribe';
+const SILENCE_GAP_THRESHOLD = 12000; // 12s — if no result for this long, mark as "gap" (likely internet drop)
 // Screen capture: audio-only transcription via Groq Whisper
 
 interface SpeechRecognitionEvent {
@@ -166,6 +167,13 @@ export function useSpeechRecognition() {
   // This Set is reset every time a new SpeechRecognition instance is created
   // (in onstart handler) so that fresh result indexes can be processed normally.
   const processedFinalIdxRef = useRef<Set<number>>(new Set());
+
+  // ── Gap tracking: detect when Web Speech goes silent (internet drop) ──
+  // When Web Speech API loses internet, it goes silent without error.
+  // We track the last time we received a result. If silence > SILENCE_GAP_THRESHOLD,
+  // we log a warning so the user knows audio was likely lost during that period.
+  const lastResultTimeRef = useRef<number>(Date.now());
+  const gapCountRef = useRef<number>(0);
 
 
 
@@ -548,22 +556,62 @@ export function useSpeechRecognition() {
 
       addLog('success', `faster-whisper: ${text.length} chars in ${data.processing_time}s${data.chunked ? ` (${data.chunk_count} chunks)` : ''}`);
 
-      // Replace all transcript entries with whisper result
-      const sentences = splitIntoSentences(text);
-      const startTime = useAppStore.getState().transcriptEntries[0]?.time || '00:00:00';
-      const [hh, mm, ss] = startTime.split(':').map(Number);
-      const correctedEntries = sentences.map((sentence, i) => {
-        const totalSec = hh * 3600 + mm * 60 + ss + i * 5;
-        const h = Math.floor(totalSec / 3600) % 24;
-        const m = Math.floor((totalSec % 3600) / 60);
-        const s = totalSec % 60;
-        return {
-          time: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`,
-          text: sentence,
-        };
-      });
-      useAppStore.getState().replaceEntriesFrom(0, correctedEntries);
-      return true;
+      // ── MERGE STRATEGY (v2): Don't replace all entries, only fill gaps ──
+      // Old behavior: replaceEntriesFrom(0, correctedEntries) → replaces ALL
+      //   Web Speech entries with Whisper output. Bad because:
+      //   - Web Speech might have captured 5000 words correctly
+      //   - Whisper also imperfect → we lose good Web Speech entries
+      //   - Causes massive substitution errors
+      //
+      // New behavior: INTELLIGENT MERGE
+      //   1. Count existing Web Speech entries (word count)
+      //   2. Count Whisper output (word count)
+      //   3. If Web Speech captured <60% of Whisper's word count → Web Speech
+      //      had massive deletions (internet drop) → use Whisper as primary
+      //   4. If Web Speech captured >60% → Web Speech was mostly working →
+      //      keep Web Speech entries, DON'T replace with Whisper
+      //      (Whisper output is available as backup but not force-replaced)
+      //   5. If Web Speech captured >90% → Web Speech was excellent →
+      //      skip Whisper entirely, just do LLM enhance
+
+      const existingEntries = useAppStore.getState().transcriptEntries;
+      const existingWordCount = existingEntries.reduce((sum, e) => sum + e.text.split(/\s+/).filter(Boolean).length, 0);
+      const whisperWordCount = text.split(/\s+/).filter(Boolean).length;
+      const coverageRatio = whisperWordCount > 0 ? existingWordCount / whisperWordCount : 0;
+
+      console.log(`[STT-Whisper] Merge: WebSpeech=${existingWordCount} words, Whisper=${whisperWordCount} words, coverage=${(coverageRatio * 100).toFixed(1)}%`);
+
+      if (coverageRatio >= 0.9) {
+        // Web Speech captured >90% of what Whisper found → Web Speech was good
+        // Don't replace — just do LLM enhance on unenhanced entries
+        addLog('info', `Web Speech coverage ${(coverageRatio * 100).toFixed(0)}% — bagus, skip Whisper replace, pakai LLM enhance`);
+        return false; // signal: don't use Whisper, use LLM enhance instead
+      } else if (coverageRatio >= 0.6) {
+        // Web Speech captured 60-90% → partial coverage, some gaps
+        // Keep Web Speech entries (they're real-time, more accurate per-segment)
+        // Just do LLM enhance to clean up
+        addLog('info', `Web Speech coverage ${(coverageRatio * 100).toFixed(0)}% — cukup, pakai LLM enhance (skip Whisper replace)`);
+        return false;
+      } else {
+        // Web Speech captured <60% → massive deletions (internet drop)
+        // Replace with Whisper (Whisper transcribed full audio)
+        addLog('info', `Web Speech coverage ${(coverageRatio * 100).toFixed(0)}% — rendah, replace dengan Whisper (${whisperWordCount} words)`);
+        const sentences = splitIntoSentences(text);
+        const startTime = existingEntries[0]?.time || '00:00:00';
+        const [hh, mm, ss] = startTime.split(':').map(Number);
+        const correctedEntries = sentences.map((sentence, i) => {
+          const totalSec = hh * 3600 + mm * 60 + ss + i * 5;
+          const h = Math.floor(totalSec / 3600) % 24;
+          const m = Math.floor((totalSec % 3600) / 60);
+          const s = totalSec % 60;
+          return {
+            time: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`,
+            text: sentence,
+          };
+        });
+        useAppStore.getState().replaceEntriesFrom(0, correctedEntries);
+        return true;
+      }
     } catch (e) {
       addLog('info', `faster-whisper tidak tersedia: ${e instanceof Error ? e.message : 'unknown'}`);
       return false;
@@ -921,6 +969,15 @@ export function useSpeechRecognition() {
         hasReceivedResultRef.current = true;
         webspeechRestartCountRef.current = 0;
 
+        // ── Gap detection: check if there was a long silence since last result ──
+        const now = Date.now();
+        const silenceDuration = now - lastResultTimeRef.current;
+        if (silenceDuration > SILENCE_GAP_THRESHOLD && lastResultTimeRef.current > 0) {
+          gapCountRef.current++;
+          addLog('error', `⚠️ Gap terdeteksi: ${Math.round(silenceDuration / 1000)}s tanpa hasil — kemungkinan internet putus. Audio tetap direkam, akan di-recover oleh Whisper.`);
+        }
+        lastResultTimeRef.current = now;
+
         if (noResultTimerRef.current) clearTimeout(noResultTimerRef.current);
         noResultTimerRef.current = setTimeout(() => {
           if (isRecordingRef.current && !manualStopRef.current && !isStoppingRef.current) {
@@ -1205,6 +1262,15 @@ export function useSpeechRecognition() {
           hasReceivedResultRef.current = true;
           webspeechRestartCountRef.current = 0;
 
+          // ── Gap detection ──
+          const now = Date.now();
+          const silenceDuration = now - lastResultTimeRef.current;
+          if (silenceDuration > SILENCE_GAP_THRESHOLD && lastResultTimeRef.current > 0) {
+            gapCountRef.current++;
+            addLog('error', `⚠️ Gap terdeteksi: ${Math.round(silenceDuration / 1000)}s tanpa hasil — kemungkinan internet putus. Audio tetap direkam, akan di-recover oleh Whisper.`);
+          }
+          lastResultTimeRef.current = now;
+
           if (noResultTimerRef.current) clearTimeout(noResultTimerRef.current);
 
           let interim = '', finalText = '';
@@ -1308,6 +1374,9 @@ export function useSpeechRecognition() {
     // Fresh recording session → clear processed-final tracker so result indexes
     // from any previous recording don't accidentally suppress new appends.
     processedFinalIdxRef.current.clear();
+    // Reset gap tracking for new recording session
+    lastResultTimeRef.current = Date.now();
+    gapCountRef.current = 0;
     setSttError('');
     setSttWarning('');
     setSttStatus('recording');
@@ -1590,6 +1659,12 @@ export function useSpeechRecognition() {
 
     const finalLen = useAppStore.getState().transcript.length;
     addLog('info', `Recording dihentikan. Total: ${finalLen} karakter.`);
+    if (gapCountRef.current > 0) {
+      addLog('error', `⚠️ ${gapCountRef.current} gap terdeteksi saat recording (total ${gapCountRef.current}x internet drop). Whisper akan recover audio yang hilang.`);
+    }
+    // Reset gap tracking
+    gapCountRef.current = 0;
+    lastResultTimeRef.current = Date.now();
 
     if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} recognitionRef.current = null; }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') { try { mediaRecorderRef.current.stop(); } catch {} mediaRecorderRef.current = null; }
