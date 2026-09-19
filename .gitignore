@@ -42,3 +42,6 @@ tmp/
 .deploy/
 .datasets/
 .datasets/
+backend/data/datasets/wikipedia-dump-extracted.json
+backend/data/stt.db.gz.part-*
+*.db.gz
