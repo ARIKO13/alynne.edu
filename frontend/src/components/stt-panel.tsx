@@ -1,3 +1,4 @@
+// cache-buster: 20260921133651
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
