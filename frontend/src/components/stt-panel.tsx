@@ -17,6 +17,7 @@ import { structureContent, generatePdf } from '@/lib/pdf-generator';
 import { fetchLearnedWords } from '@/lib/personal-dict';
 import { ModelSelector } from '@/components/ModelSelector';
 import { FileUploadChunked } from '@/components/FileUploadChunked';
+import { useWhisperSTT } from '@/hooks/use-whisper-stt';
 
 function ModeSelector({ disabled }: { disabled: boolean }) {
   const { sttAudioMode, setSttAudioMode } = useAppStore();
@@ -494,6 +495,17 @@ export function STTPanel() {
 
       {/* Personal Dict Panel — auto-learned words management */}
       <PersonalDictPanel open={personalDictOpen} onOpenChange={setPersonalDictOpen} />
+
+        {/* ModelSelector Popup */}
+        <ModelSelector
+          open={modelSelectorOpen}
+          onClose={() => setModelSelectorOpen(false)}
+          onModelReady={(modelId) => {
+            setWhisperModelReady(true);
+            console.log('[STT] Whisper model ready:', modelId);
+          }}
+        />
+
     </div>
   );
 }
