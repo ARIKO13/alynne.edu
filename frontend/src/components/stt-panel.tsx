@@ -498,7 +498,7 @@ export function STTPanel() {
 
         {/* ModelSelector Popup */}
         <ModelSelector
-          open={m[modelSelectorOpen}
+          open={[modelSelectorOpen}
           onClose={() => setM[modelSelectorOpen(false)}
           onModelReady={(modelId) => {
             setWhisperModelReady(true);
