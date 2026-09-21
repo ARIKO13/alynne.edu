@@ -1,4 +1,4 @@
-// cache-buster: 20260921163803
+// cache-buster: 20260921164752
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -117,7 +117,20 @@ export function STTPanel() {
     sttWarning, isGroqProcessing, isEnhancing, isWhisperProcessing,
     screenCv,
   } = useSpeechRecognition();
-  const { transcriptEntries, sttAudioMode } = useAppStore();
+  
+const { transcriptEntries, sttAudioMode } = useAppStore();
+
+  // Whisper STT hook — client-side, jalan di browser via Web Worker
+  const whisperSTT = useWhisperSTT({
+    onModelRequired: () => setModelSelectorOpen(true),
+    onTranscript: (text, isFinal) => {
+      if (isFinal) {
+        appendTranscript(text);
+      }
+    },
+    onInterim: (text) => setInterimTranscript(text),
+    onError: (err) => toast.error(`STT error: ${err}`),
+  });
   const [pdfLoading, setPdfLoading] = useState(false);
   const { setActiveTab } = useAppStore();
   const [personalDictOpen, setPersonalDictOpen] = useState(false);
@@ -183,7 +196,7 @@ export function STTPanel() {
             title="Pilih model Whisper untuk STT"
           >
             <Cpu className="h-3.5 w-3.5" />
-            {whisperModelReady ? 'Model Siap' : 'Pilih Model'}
+            {whisperSTT.isModelLoaded ? 'Model Siap' : 'Pilih Model'}
           </Button>
           <Badge
             variant="outline"
@@ -394,7 +407,16 @@ export function STTPanel() {
         {/* Controls */}
         <div className="flex items-center gap-3">
           <Button
-            onClick={toggleRecording}
+            onClick={() => {
+              // Priority: use Whisper (client-side) jika model sudah loaded
+              if (whisperSTT.isModelLoaded || whisperSTT.status === 'recording') {
+                whisperSTT.toggleRecording();
+              } else {
+                // Model belum loaded → buka popup pilih model
+                setModelSelectorOpen(true);
+                toast.info('Pilih model Whisper dulu sebelum mulai rekam');
+              }
+            }}
             disabled={isProcessing}
             size="lg"
             className={cn(
@@ -511,7 +533,7 @@ export function STTPanel() {
           onClose={() => setModelSelectorOpen(false)}
           onModelReady={(modelId) => {
             setWhisperModelReady(true);
-            console.log('[STT] Whisper model ready:', modelId);
+            toast.success(`Model "${modelId}" siap! Klik Start Recording untuk mulai`);
           }}
         />
 
