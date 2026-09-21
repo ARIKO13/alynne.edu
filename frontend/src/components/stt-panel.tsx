@@ -1,4 +1,4 @@
-// cache-buster: 20260921150344
+// cache-buster: 20260921162348
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -176,15 +176,14 @@ export function STTPanel() {
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
         <h3 className="text-sm font-medium text-zinc-200">Speech to Text</h3>
         <div className="flex items-center gap-2">
+          {/* Model STT — TOMBOL KRUSIAL: user harus pilih model sebelum pakai STT */}
           <Button
-            variant="outline"
-            size="sm"
             onClick={() => setModelSelectorOpen(true)}
-            className="h-7 gap-1.5 px-2.5 text-[11px] border-white/[0.08] text-zinc-300 hover:text-white hover:bg-white/5"
-            title="Pilih model Whisper untuk STT"
+            className="h-8 gap-1.5 px-3 text-xs font-semibold bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] hover:from-[#7C3AED] hover:to-[#6D28D9] text-white border-[#8B5CF6]/50 shadow-lg shadow-[#8B5CF6]/20 animate-pulse"
+            title="WAJIB: Pilih model Whisper sebelum mulai transkripsi"
           >
-            <Cpu className="h-3.5 w-3.5" />
-            Model STT
+            <Sparkles className="h-3.5 w-3.5" />
+            Pilih Model STT
           </Button>
           <Badge
             variant="outline"
