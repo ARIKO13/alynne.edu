@@ -26,6 +26,41 @@ import { join } from 'node:path';
 import { phoneticMatch, getPhoneticLookupSize } from '@/lib/phonetic-engine';
 import { sttDb as sttDbInstance } from '@/lib/stt-db';
 
+// === BEGIN SYLLABLES PATCH ===
+import { syllabifyWord, syllableSimilarity } from '@/lib/syllabify';
+
+const syllablesCache = new Map<string, string>();
+
+export function getSyllablesForWord(word: string): string {
+  const w = word.toLowerCase().trim();
+  if (!w) return '';
+  const cached = syllablesCache.get(w);
+  if (cached !== undefined) return cached;
+  const syl = syllabifyWord(w);
+  syllablesCache.set(w, syl);
+  return syl;
+}
+
+export function findBySyllableSimilarity(
+  input: string,
+  candidates: string[],
+  threshold: number = 0.6,
+): Array<{ word: string; similarity: number; syllables: string }> {
+  const inputSyl = syllabifyWord(input);
+  if (!inputSyl) return [];
+  const results: Array<{ word: string; similarity: number; syllables: string }> = [];
+  for (const word of candidates) {
+    const sim = syllableSimilarity(input, word);
+    if (sim >= threshold) {
+      results.push({ word, similarity: sim, syllables: syllabifyWord(word) });
+    }
+  }
+  results.sort((a, b) => b.similarity - a.similarity);
+  return results;
+}
+// === END SYLLABLES PATCH ===
+
+
 // ── SQLite-backed dataset (v2: SSD is source of truth, RAM is transient cache) ──
 // User request: 'aku mau ketika stt itu nyari dataset kata dan nambah data
 // baru itu di ssd, jdi ram cuma processing aja, bukan menyimpan data.'

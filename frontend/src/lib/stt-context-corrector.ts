@@ -51,6 +51,21 @@
 import { sttDb, type LearnedWordRow, type CooccurrenceRow, type CorrectionSummaryRow } from '@/lib/stt-db';
 import { getPhoneticCodes, phoneticMatch } from '@/lib/phonetic-engine';
 
+// === BEGIN SYLLABLES PATCH ===
+import { syllableSimilarity, getSyllables } from '@/lib/syllabify';
+
+function computeSyllableScore(input: string, candidate: string): number {
+  if (!input || !candidate) return 0;
+  if (input === candidate) return 1;
+  return syllableSimilarity(input, candidate);
+}
+
+export function isSyllableSimilar(input: string, candidate: string, threshold: number = 0.7): boolean {
+  return computeSyllableScore(input, candidate) >= threshold;
+}
+// === END SYLLABLES PATCH ===
+
+
 // ── Scoring weights (tunable) ──────────────────────────────────────────────
 export interface CorrectionWeights {
   phonetic: number;

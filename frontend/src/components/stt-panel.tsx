@@ -15,6 +15,8 @@ import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { structureContent, generatePdf } from '@/lib/pdf-generator';
 import { fetchLearnedWords } from '@/lib/personal-dict';
+import { ModelSelector } from '@/components/ModelSelector';
+import { FileUploadChunked } from '@/components/FileUploadChunked';
 
 function ModeSelector({ disabled }: { disabled: boolean }) {
   const { sttAudioMode, setSttAudioMode } = useAppStore();
@@ -118,6 +120,8 @@ export function STTPanel() {
   const { setActiveTab } = useAppStore();
   const [personalDictOpen, setPersonalDictOpen] = useState(false);
   const [personalDictCount, setPersonalDictCount] = useState(0);
+  const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
+  const [whisperModelReady, setWhisperModelReady] = useState(false);
   const isRecording = sttStatus === 'recording';
   const isProcessing = sttStatus === 'processing';
   const transcriptScrollRef = useRef<HTMLDivElement>(null);

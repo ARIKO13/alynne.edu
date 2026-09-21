@@ -3,6 +3,15 @@ import { join } from 'node:path';
 import { sttDb } from '@/lib/stt-db';
 import { resetDictionaryCache } from '@/lib/stt-dictionary';
 
+// === BEGIN SYLLABLES PATCH ===
+import { syllabifyWord } from '@/lib/syllabify';
+
+function generateSyllables(word: string): string {
+  try { return syllabifyWord(word); } catch { return ''; }
+}
+// === END SYLLABLES PATCH ===
+
+
 /**
  * Server-side auto-learning system untuk STT (v2 — SQLite based).
  *
