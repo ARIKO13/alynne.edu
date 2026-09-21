@@ -45,3 +45,9 @@ tmp/
 backend/data/datasets/wikipedia-dump-extracted.json
 backend/data/stt.db.gz.part-*
 *.db.gz
+backup/sqlite/
+frontend/data/stt-dictionary.json
+frontend/data/stt-dictionary.json.*
+frontend/data/stt.db*
+backend/data/datasets/
+backend/data/phonetic-map.json
