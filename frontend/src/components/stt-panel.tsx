@@ -1,4 +1,4 @@
-// cache-buster: 20260921140845
+// cache-buster: 20260921150344
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -176,6 +176,16 @@ export function STTPanel() {
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
         <h3 className="text-sm font-medium text-zinc-200">Speech to Text</h3>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setModelSelectorOpen(true)}
+            className="h-7 gap-1.5 px-2.5 text-[11px] border-white/[0.08] text-zinc-300 hover:text-white hover:bg-white/5"
+            title="Pilih model Whisper untuk STT"
+          >
+            <Cpu className="h-3.5 w-3.5" />
+            Model STT
+          </Button>
           <Badge
             variant="outline"
             className={cn(
@@ -493,20 +503,7 @@ export function STTPanel() {
           </div>
         </div>
       </div>
-
-{/* Model STT Selector Button — trigger popup */}
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setModelSelectorOpen(true)}
-        className="border-white/10 text-zinc-300 hover:text-white hover:bg-white/5"
-        title="Pilih model Whisper untuk STT"
-      >
-        <Cpu className="h-3.5 w-3.5 mr-1.5" />
-        Model STT
-      </Button>
-
-            {/* Personal Dict Panel — auto-learned words management */}
+      {/* Personal Dict Panel — auto-learned words management */}
       <PersonalDictPanel open={personalDictOpen} onOpenChange={setPersonalDictOpen} />
 
         {/* ModelSelector Popup */}
