@@ -1,4 +1,4 @@
-// cache-buster: 20260921140140
+// cache-buster: 20260921140442
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -401,7 +401,7 @@ export function STTPanel() {
             {isProcessing ? 'Memproses...' : isRecording ? 'Stop Recording' : isScreenMode ? 'Start Screen Capture' : 'Start Recording'}
           </Button>
           {transcript && (
-            <Button
+                <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setModelSelectorOpen(true)}
@@ -411,6 +411,7 @@ export function STTPanel() {
                   <Cpu className="h-3.5 w-3.5 mr-1.5" />
                   Model STT
                 </Button>
+
                 <Button onClick={clearTranscript} disabled={isRecording || isProcessing} variant="outline" size="lg" className="gap-2 rounded-lg border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06]">
               <Trash2 className="h-4 w-4" />
               <span className="hidden sm:inline">Clear</span>
