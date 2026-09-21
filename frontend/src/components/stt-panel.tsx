@@ -1,4 +1,4 @@
-// cache-buster: 20260921133651
+// cache-buster: 20260921140140
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { AudioVisualizer } from '@/components/audio-visualizer';
 import { PersonalDictPanel } from '@/components/personal-dict-panel';
 import {
   Mic, MicOff, Wifi, WifiOff, RefreshCw, Trash2, AlertCircle, Radio,
-  FileText, Loader2, Rocket, Sparkles, Upload, Monitor, MonitorUp, Brain,
+  FileText, Loader2, Rocket, Sparkles, Upload, Monitor, MonitorUp, Brain, Cpu,
 } from 'lucide-react';
 import { MaterialUpload } from '@/components/material-upload';
 import { YouTubeTranscript } from '@/components/youtube-transcript';
@@ -401,7 +401,17 @@ export function STTPanel() {
             {isProcessing ? 'Memproses...' : isRecording ? 'Stop Recording' : isScreenMode ? 'Start Screen Capture' : 'Start Recording'}
           </Button>
           {transcript && (
-            <Button onClick={clearTranscript} disabled={isRecording || isProcessing} variant="outline" size="lg" className="gap-2 rounded-lg border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06]">
+            <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setModelSelectorOpen(true)}
+                  className="border-white/10 text-zinc-300 hover:text-white hover:bg-white/5"
+                  title="Pilih model Whisper untuk STT"
+                >
+                  <Cpu className="h-3.5 w-3.5 mr-1.5" />
+                  Model STT
+                </Button>
+                <Button onClick={clearTranscript} disabled={isRecording || isProcessing} variant="outline" size="lg" className="gap-2 rounded-lg border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06]">
               <Trash2 className="h-4 w-4" />
               <span className="hidden sm:inline">Clear</span>
             </Button>
