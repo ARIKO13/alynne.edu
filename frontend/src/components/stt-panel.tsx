@@ -498,8 +498,8 @@ export function STTPanel() {
 
         {/* ModelSelector Popup */}
         <ModelSelector
-          open={modelSelectorOpen}
-          onClose={() => setModelSelectorOpen(false)}
+          open={m[modelSelectorOpen}
+          onClose={() => setM[modelSelectorOpen(false)}
           onModelReady={(modelId) => {
             setWhisperModelReady(true);
             console.log('[STT] Whisper model ready:', modelId);
