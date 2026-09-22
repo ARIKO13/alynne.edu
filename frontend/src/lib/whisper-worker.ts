@@ -59,7 +59,7 @@ self.addEventListener('message', async (e: MessageEvent) => {
 
     loadingModel = model;
     abortController = new AbortController();
-    self.postMessage({ type: 'loading', progress: 0, model, status: 'initializing' });
+    self.postMessage({ type: 'loading', progress: 0, model, status: 'Initializing model (5-30s)...' });
 
     // ===== Timeout: 5 menit untuk load (cache atau download) =====
     let timeoutHandle: any = null;
@@ -68,20 +68,6 @@ self.addEventListener('message', async (e: MessageEvent) => {
         reject(new Error('Model load timeout (5 min) — coba refresh page'));
       }, 5 * 60 * 1000);
     });
-
-    // ===== Heartbeat: kasih progress update tiap 2 detik (untuk avoid UI stuck) =====
-    let heartbeatCount = 0;
-    const heartbeat = setInterval(() => {
-      heartbeatCount++;
-      // Progress naik pelan untuk show activity (max 90% sampai bener2 selesai)
-      const fakeProgress = Math.min(90, heartbeatCount * 5);
-      self.postMessage({ 
-        type: 'loading', 
-        progress: fakeProgress, 
-        model,
-        status: heartbeatCount < 5 ? 'Memuat dari cache...' : 'Memproses model...'
-      });
-    }, 2000);
 
     try {
       // Free previous model
@@ -120,14 +106,12 @@ self.addEventListener('message', async (e: MessageEvent) => {
 
       // Success
       clearTimeout(timeoutHandle);
-      clearInterval(heartbeat);
       currentModel = model;
       loadingModel = null;
       abortController = null;
       self.postMessage({ type: 'loaded', model });
     } catch (err: any) {
       clearTimeout(timeoutHandle);
-      clearInterval(heartbeat);
       loadingModel = null;
       abortController = null;
       
