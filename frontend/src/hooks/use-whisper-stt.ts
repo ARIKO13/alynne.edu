@@ -45,7 +45,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
   const [interimText, setInterimText] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loadProgress, setLoadProgress] = useState(0);
-  const [m[modelId, setModelId] = useState<string | null>(null);
+  const [modelId, setModelId] = useState<string | null>(null);
 
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
