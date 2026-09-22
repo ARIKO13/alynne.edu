@@ -22,6 +22,9 @@ import {
   getCurrentModel,
   setCallbacks,
   freeModel,
+  autoLoadSavedModel,
+  requestPersistentStorage,
+  isStoragePersistent,
 } from '@/lib/whisper-client';
 import { getModel, getSavedModelId, WHISPER_MODELS } from '@/lib/whisper-models';
 
@@ -42,7 +45,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
   const [interimText, setInterimText] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loadProgress, setLoadProgress] = useState(0);
-  const [modelId, setModelId] = useState<string | null>(null);
+  const [m[modelId, setModelId] = useState<string | null>(null);
 
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -68,6 +71,50 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
       },
     });
   }, [options]);
+
+
+  // ===== AUTO-LOAD SAVED MODEL + PERSISTENT STORAGE =====
+  // Saat hook pertama kali jalan, coba auto-load model yang sudah tersaved
+  // Supaya user yang balik ke app langsung siap pakai, ga perlu download ulang
+  const [isAutoLoading, setIsAutoLoading] = useState(false);
+  const [storagePersistent, setStoragePersistent] = useState(false);
+
+  useEffect(() => {
+    const initStorage = async () => {
+      // 1. Request persistent storage supaya model ga ke-evict browser
+      const persisted = await requestPersistentStorage();
+      setStoragePersistent(persisted);
+      console.log('[Whisper] Persistent storage:', persisted ? 'ACTIVE' : 'NOT GRANTED');
+
+      // 2. Cek apakah persistent storage sudah aktif (kalau user pernah grant sebelumnya)
+      if (!persisted) {
+        const alreadyPersisted = await isStoragePersistent();
+        setStoragePersistent(alreadyPersisted);
+      }
+
+      // 3. Auto-load saved model dari cache
+      setIsAutoLoading(true);
+      try {
+        const loaded = await autoLoadSavedModel();
+        if (loaded) {
+          const hfId = getCurrentModel();
+          const model = WHISPER_MODELS.find(m => m.hfId === hfId);
+          if (model) {
+            setModelId(model.id);
+            console.log('[Whisper] Auto-loaded model from cache:', model.id);
+          }
+        } else {
+          console.log('[Whisper] No saved model to auto-load');
+        }
+      } catch (err) {
+        console.warn('[Whisper] Auto-load failed:', err);
+      } finally {
+        setIsAutoLoading(false);
+      }
+    };
+
+    initStorage();
+  }, []);
 
   // Check current model on mount
   useEffect(() => {
@@ -359,6 +406,8 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
     error,
     loadProgress,
     modelId,
+    isAutoLoading,
+    storagePersistent,
     isRecording: isRecordingRef.current,
     isModelLoaded: isModelLoaded(),
     toggleRecording,

@@ -416,3 +416,91 @@ export async function recordForDuration(
     }, durationMs);
   });
 }
+
+
+/**
+ * Request persistent storage dari browser.
+ * Setelah granted, browser TIDAK akan auto-evict IndexedDB/CacheStorage
+ * bahkan kalau storage mulai penuh.
+ *
+ * User data (model Whisper) akan persist forever di browser.
+ */
+export async function requestPersistentStorage(): Promise<boolean> {
+  if (typeof navigator === 'undefined' || !navigator.storage || !navigator.storage.persist) {
+    return false;
+  }
+  try {
+    const isPersisted = await navigator.storage.persisted();
+    if (isPersisted) {
+      return true;
+    }
+    const granted = await navigator.storage.persist();
+    return granted;
+  } catch (err) {
+    return false;
+  }
+}
+
+/**
+ * Cek apakah persistent storage sudah aktif.
+ */
+export async function isStoragePersistent(): Promise<boolean> {
+  if (typeof navigator === 'undefined' || !navigator.storage || !navigator.storage.persisted) {
+    return false;
+  }
+  try {
+    return await navigator.storage.persisted();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Cek estimasi storage yang tersedia di browser.
+ */
+export async function getStorageEstimate(): Promise<{ usage: number; quota: number }> {
+  if (typeof navigator === 'undefined' || !navigator.storage || !navigator.storage.estimate) {
+    return { usage: 0, quota: 0 };
+  }
+  try {
+    const est = await navigator.storage.estimate();
+    return { usage: est.usage || 0, quota: est.quota || 0 };
+  } catch {
+    return { usage: 0, quota: 0 };
+  }
+}
+
+/**
+ * Auto-load model yang sudah tersaved di localStorage.
+ * Dipanggil saat app start untuk instant resume.
+ *
+ * Returns true kalau model berhasil di-load dari cache (instant, no download).
+ */
+export async function autoLoadSavedModel(): Promise<boolean> {
+  // Cek dulu apakah model sudah di-memory
+  if (isModelLoaded()) {
+    return true;
+  }
+
+  // Cek localStorage untuk model ID yang tersaved
+  try {
+    const savedId = localStorage.getItem('whisper-selected-model');
+    if (!savedId) {
+      return false;
+    }
+
+    // Cek apakah model masih ada di cache (IndexedDB/CacheStorage)
+    const cached = await isModelCached(savedId);
+    if (!cached) {
+      // Model hilang dari cache (mungkin user clear data), hapus localStorage
+      localStorage.removeItem('whisper-selected-model');
+      return false;
+    }
+
+    // Load model dari cache (instant, no download)
+    await loadModel(savedId);
+    return true;
+  } catch (err) {
+    return false;
+  }
+}

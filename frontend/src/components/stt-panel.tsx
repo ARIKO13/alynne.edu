@@ -1,4 +1,4 @@
-// cache-buster: 20260921164752
+// cache-buster: 20260922005628
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -196,7 +196,11 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
             title="Pilih model Whisper untuk STT"
           >
             <Cpu className="h-3.5 w-3.5" />
-            {whisperSTT.isModelLoaded ? 'Model Siap' : 'Pilih Model'}
+            {whisperSTT.isAutoLoading
+            ? 'Loading...'
+            : whisperSTT.isModelLoaded
+            ? 'Model Siap'
+            : 'Pilih Model'}
           </Button>
           <Badge
             variant="outline"
@@ -533,7 +537,10 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
           onClose={() => setModelSelectorOpen(false)}
           onModelReady={(modelId) => {
             setWhisperModelReady(true);
-            toast.success(`Model "${modelId}" siap! Klik Start Recording untuk mulai`);
+            const persistentMsg = whisperSTT.storagePersistent
+              ? 'Model tersimpan permanen di browser — tidak hilang walau browser ditutup'
+              : 'Model tersimpan di browser cache';
+            toast.success(`Model "${modelId}" siap! ${persistentMsg}`);
           }}
         />
 
