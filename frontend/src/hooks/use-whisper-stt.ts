@@ -383,6 +383,17 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
   }, []);
 
   /**
+   * Toggle recording (start/stop).
+   */
+  const toggleRecording = useCallback(() => {
+    if (isRecordingRef.current) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  }, [startRecording, stopRecording]);
+
+  /**
    * Process a single audio chunk (Blob → Float32 → transcribe).
    * Deprecated: sekarang pakai full-blob approach di onstop handler.
    * Tetap ada untuk backward compatibility (kalau dipanggil dari kode lain).
