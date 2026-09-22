@@ -192,17 +192,29 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
     if (savedId) {
       const model = getModel(savedId);
       if (model) {
-        // Auto-load dari disk (instant, ga buka popup)
+        // Auto-load dari disk dengan timeout 60 detik
         try {
           setStatus('loading-model');
           setLoadProgress(0);
-          await loadModel(savedId);
+          console.log('[Whisper] Loading model from disk:', savedId);
+
+          const loadPromise = loadModel(savedId);
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('Timeout loading model (60s)')), 60000);
+          });
+
+          await Promise.race([loadPromise, timeoutPromise]);
           setModelId(savedId);
           setStatus('idle');
+          console.log('[Whisper] Model loaded successfully');
           return true;
         } catch (err) {
-          // Model hilang dari disk (user clear data?) — buka popup untuk download ulang
-          console.warn('[Whisper] Auto-load failed, model may be deleted from disk:', err);
+          const errMsg = err instanceof Error ? err.message : String(err);
+          console.error('[Whisper] Auto-load failed:', errMsg);
+          setStatus('error');
+          setError(`Gagal memuat model: ${errMsg}`);
+          options.onError?.(`Gagal memuat model: ${errMsg}`);
+          // Hapus saved model kalau corrupt
           try { localStorage.removeItem('whisper-selected-model'); } catch {}
           options.onModelRequired?.();
           return false;
@@ -211,6 +223,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
     }
 
     // 3. Belum pernah download — buka popup (first time)
+    console.log('[Whisper] No saved model — opening popup');
     options.onModelRequired?.();
     return false;
   }, [options]);
@@ -220,6 +233,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
    */
   const startRecording = useCallback(async () => {
     setError(null);
+    console.log('[Whisper] Start recording clicked');
 
     // Cancel pending RAM cleanup (user mau record lagi)
     if (ramCleanupTimerRef.current) {
@@ -229,8 +243,19 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
     }
 
     // Pastikan model loaded (kalau belum, auto-load dari disk)
-    const ready = await ensureModelLoaded();
-    if (!ready) return;
+    let ready: boolean;
+    try {
+      ready = await ensureModelLoaded();
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.error('[Whisper] ensureModelLoaded error:', errMsg);
+      options.onError?.(`Error: ${errMsg}`);
+      return;
+    }
+    if (!ready) {
+      console.log('[Whisper] Model not ready — popup should be open');
+      return;
+    }
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({

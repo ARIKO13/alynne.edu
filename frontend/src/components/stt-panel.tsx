@@ -1,4 +1,4 @@
-// cache-buster: 20260922033522
+// cache-buster: 20260922065314
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -419,18 +419,15 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
         <div className="flex items-center gap-3">
           <Button
             onClick={() => {
+              // Jika lagi loading model → jangan ganggu
+              if (whisperSTT.status === 'loading-model') return;
               // Jika lagi recording → stop
               if (whisperSTT.status === 'recording') {
                 whisperSTT.toggleRecording();
                 return;
               }
-              // Jika model sudah di RAM → langsung start
-              if (whisperSTT.isModelLoaded) {
-                whisperSTT.toggleRecording();
-                return;
-              }
-              // Auto-load dari disk kalau sudah pernah download (no popup)
-              // ensureModelLoaded akan handle: kalo ada saved model → load, kalo ga ada → buka popup
+              // Auto-handle via toggleRecording
+              // ensureModelLoaded akan: load dari disk kalau ada, buka popup kalau belum
               whisperSTT.toggleRecording();
             }}
             disabled={isProcessing}
@@ -444,8 +441,8 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
                 : 'bg-[#8B5CF6] hover:bg-[#d14e1c] text-white'
             )}
           >
-            {isProcessing ? <RefreshCw className="h-5 w-5 animate-spin" /> : isRecording ? <MicOff className="h-5 w-5" /> : isScreenMode ? <MonitorUp className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-            {isProcessing ? 'Memproses...' : isRecording ? 'Stop Recording' : isScreenMode ? 'Start Screen Capture' : 'Start Recording'}
+            {whisperSTT.status === 'loading-model' ? <Loader2 className="h-5 w-5 animate-spin" /> : isProcessing ? <RefreshCw className="h-5 w-5 animate-spin" /> : isRecording ? <MicOff className="h-5 w-5" /> : isScreenMode ? <MonitorUp className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+            {whisperSTT.status === 'loading-model' ? 'Memuat Model...' : isProcessing ? 'Memproses...' : isRecording ? 'Stop Recording' : isScreenMode ? 'Start Screen Capture' : 'Start Recording'}
           </Button>
           {transcript && (
                 <Button onClick={clearTranscript} disabled={isRecording || isProcessing} variant="outline" size="lg" className="gap-2 rounded-lg border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06]">
