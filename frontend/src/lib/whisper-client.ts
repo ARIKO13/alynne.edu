@@ -146,12 +146,15 @@ export async function loadModel(
     options = mergedOpts;
   }
 
-  // Create loading promise that concurrent callers can wait on
-  const loadPromise = new Promise<void>((resolve, reject) => {
-    loadingPromise = loadPromise;
+  // Declare loadPromise FIRST (sebelum assignment di executor) untuk avoid TDZ error
+  let loadPromise: Promise<void>;
+  loadPromise = new Promise<void>((resolve, reject) => {
+    // loadingPromise sudah di-set di luar (setelah declaration)
     const timeout = setTimeout(() => {
       reject(new Error('Model load timeout (10 min)'));
       isLoading = false;
+      loadingModel = null;
+      loadingPromise = null;
     }, 10 * 60 * 1000);
 
     const originalOnLoaded = options.onLoaded;
@@ -179,6 +182,7 @@ export async function loadModel(
     w.postMessage({ type: 'load', model: model.hfId });
   });
 
+  // Set loadingPromise AFTER declaration (avoid TDZ)
   loadingPromise = loadPromise;
   return loadPromise;
 }
