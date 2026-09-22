@@ -231,6 +231,19 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
   /**
    * Start recording from microphone.
    */
+  /**
+   * Start recording — full audio capture (bukan chunk-by-chunk)
+   *
+   * Flow:
+   *   1. Pastikan model loaded
+   *   2. Start MediaRecorder (capture full audio ke 1 blob)
+   *   3. Saat stop → decode full blob → transcribe → tampilkan
+   *
+   * Kenapa bukan chunk real-time?
+   *   - WebM/Opus chunks tiap 5s tidak punya valid WebM header
+   *   - AudioContext.decodeAudioData gagal → EncodingError
+   *   - Full blob punya valid header → decode sukses
+   */
   const startRecording = useCallback(async () => {
     setError(null);
     console.log('[Whisper] Start recording clicked');
@@ -271,155 +284,121 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
 
       const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
         ? 'audio/webm;codecs=opus'
-        : 'audio/webm';
+        : MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : '';
 
-      const recorder = new MediaRecorder(stream, {
-        mimeType,
-        audioBitsPerSecond: 16000,
-      });
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 16000 })
+        : new MediaRecorder(stream);
       mediaRecorderRef.current = recorder;
 
       chunksRef.current = [];
-      sessionBufferRef.current = new Float32Array(0);
-      lastFinalTextRef.current = '';
       isRecordingRef.current = true;
 
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
           chunksRef.current.push(e.data);
-          // Process this chunk
-          processChunk(e.data);
         }
       };
 
-      recorder.onstop = () => {
+      recorder.onstop = async () => {
+        console.log('[Whisper] Recorder stopped, processing full audio...');
         isRecordingRef.current = false;
-        // Process remaining chunks
-        flushPendingChunks();
+        setStatus('processing');
+
+        // Stop all tracks
+        if (mediaStreamRef.current) {
+          mediaStreamRef.current.getTracks().forEach(t => t.stop());
+          mediaStreamRef.current = null;
+        }
+
+        // Combine all chunks jadi 1 blob (full recording)
+        if (chunksRef.current.length === 0) {
+          console.warn('[Whisper] No audio chunks recorded');
+          setStatus('idle');
+          return;
+        }
+
+        const fullBlob = new Blob(chunksRef.current, {
+          type: mimeType || 'audio/webm',
+        });
+        console.log(`[Whisper] Full audio: ${fullBlob.size} bytes`);
+
+        try {
+          // Decode full blob → Float32Array (ini yang gagal sebelumnya)
+          const audioData = await blobToFloat32Audio(fullBlob);
+          console.log(`[Whisper] Decoded: ${audioData.length} samples (${(audioData.length / SAMPLE_RATE).toFixed(1)}s)`);
+
+          // Transcribe via worker
+          const result = await transcribe(audioData, 'indonesian');
+          const text = result.text.trim();
+          console.log(`[Whisper] Transcription: "${text.substring(0, 100)}..."`);
+
+          if (text) {
+            // Tampilkan hasil transkripsi
+            options.onTranscript?.(text, true);
+          } else {
+            options.onError?.('Transkripsi kosong — coba bicara lebih jelas');
+          }
+        } catch (err) {
+          const errMsg = err instanceof Error ? err.message : String(err);
+          console.error('[Whisper] Process error:', errMsg);
+          options.onError?.(`Gagal transkripsi: ${errMsg}`);
+        } finally {
+          setStatus('idle');
+          // Auto-free RAM setelah 30 detik
+          if (ramCleanupTimerRef.current) clearTimeout(ramCleanupTimerRef.current);
+          ramCleanupTimerRef.current = setTimeout(() => {
+            console.log('[Whisper] 30s idle — freeing RAM');
+            freeModel();
+            setModelId(null);
+          }, 30000);
+        }
       };
 
-      // Capture in 5s chunks
-      recorder.start(CHUNK_DURATION_MS);
+      // Start recording — request data setiap 1 detik (untuk update chunksRef)
+      // tapi tidak transcribe chunk-by-chunk
+      recorder.start(1000);  // collect data tiap 1s
       setStatus('recording');
+      console.log('[Whisper] Recording started');
     } catch (err) {
       setStatus('error');
       const msg = err instanceof Error ? err.message : String(err);
       setError(`Microphone access failed: ${msg}`);
-      options.onError?.(msg);
+      options.onError?.(`Microphone access failed: ${msg}`);
     }
   }, [ensureModelLoaded, options]);
 
   /**
    * Stop recording.
-   * Setelah stop, model akan di-free dari RAM setelah 30 detik idle (auto-cleanup).
-   * Model tetap tersimpan di disk (OPFS/CacheStorage) — tinggal load lagi saat user mau record lagi.
+   * Setelah stop, full audio akan di-transcribe (di onstop handler).
    */
   const stopRecording = useCallback(() => {
+    console.log('[Whisper] Stop recording clicked');
     isRecordingRef.current = false;
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
     }
-    if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach(t => t.stop());
-      mediaStreamRef.current = null;
-    }
-    if (status === 'recording') {
-      setStatus('processing');
-    }
-
-    // ===== AUTO-FREE RAM setelah 30 detik idle =====
-    // Model tetap di disk (OPFS/IndexedDB), cuma RAM yang dibebaskan
-    // User bisa start recording lagi kapan saja — model akan di-load ulang dari disk (instant, ~1-2 detik)
-    if (ramCleanupTimerRef.current) {
-      clearTimeout(ramCleanupTimerRef.current);
-    }
-    ramCleanupTimerRef.current = setTimeout(() => {
-      console.log('[Whisper] 30s idle — freeing RAM (model tetap di disk)');
-      freeModel();
-      setModelId(null);
-      // Reset status ke idle (bukan error)
-      setStatus('idle');
-    }, 30000);  // 30 detik
-  }, [status]);
-
-  /**
-   * Toggle recording.
-   */
-  const toggleRecording = useCallback(() => {
-    if (isRecordingRef.current) {
-      stopRecording();
-    } else {
-      startRecording();
-    }
-  }, [startRecording, stopRecording]);
+  }, []);
 
   /**
    * Process a single audio chunk (Blob → Float32 → transcribe).
+   * Deprecated: sekarang pakai full-blob approach di onstop handler.
+   * Tetap ada untuk backward compatibility (kalau dipanggil dari kode lain).
    */
   const processChunk = useCallback(async (blob: Blob) => {
-    try {
-      const audioData = await blobToFloat32Audio(blob);
-
-      // Append to session buffer (untuk context whisper)
-      const newBuffer = new Float32Array(sessionBufferRef.current.length + audioData.length);
-      newBuffer.set(sessionBufferRef.current);
-      newBuffer.set(audioData, sessionBufferRef.current.length);
-      sessionBufferRef.current = newBuffer;
-
-      pendingChunksRef.current.push(audioData);
-      processQueue();
-    } catch (err) {
-      console.error('processChunk error:', err);
-    }
+    // No-op: full audio diproses di onstop handler
+    console.log('[Whisper] processChunk called (no-op, full blob processed at stop)');
   }, []);
 
   /**
    * Process pending chunks sequentially.
+   * Deprecated: sekarang pakai full-blob approach.
    */
   const processQueue = useCallback(async () => {
-    if (isProcessingRef.current) return;
-    if (pendingChunksRef.current.length === 0) return;
-
-    isProcessingRef.current = true;
-
-    while (pendingChunksRef.current.length > 0) {
-      const chunk = pendingChunksRef.current.shift()!;
-      try {
-        // Transcribe this chunk
-        const result = await transcribe(chunk, 'indonesian');
-        const text = result.text.trim();
-
-        if (text) {
-          // Interim update
-          setInterimText(text);
-          options.onInterim?.(text);
-
-          // Final: append to transcript
-          if (!isRecordingRef.current && pendingChunksRef.current.length === 0) {
-            // Recording stopped + this is last chunk → final
-            const finalText = (lastFinalTextRef.current + ' ' + text).trim();
-            lastFinalTextRef.current = finalText;
-            setInterimText('');
-            options.onTranscript?.(text, true);
-          } else {
-            // Still recording → still interim
-            options.onTranscript?.(text, false);
-          }
-        }
-      } catch (err) {
-        console.error('transcribe error:', err);
-        const msg = err instanceof Error ? err.message : String(err);
-        setError(`Transcription failed: ${msg}`);
-      }
-    }
-
-    isProcessingRef.current = false;
-
-    // If recording stopped and all chunks processed, set idle
-    if (!isRecordingRef.current && status === 'processing') {
-      setStatus('idle');
-    }
-  }, [options, status]);
+    // No-op: full audio diproses di onstop handler
+  }, []);
 
   /**
    * Flush remaining chunks after stop.
