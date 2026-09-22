@@ -170,33 +170,49 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
 
   /**
    * Pastikan model sudah di-load sebelum recording.
-   * Returns true jika model ready, false jika perlu download.
+   *
+   * Flow:
+   *   1. Kalau model sudah di RAM → return true (instant)
+   *   2. Kalau ada saved model di localStorage → auto-load dari disk (instant, ga popup)
+   *      - Ini yang membuat user "tinggal pakai" setelah download sekali
+   *   3. Kalau belum pernah download → buka popup (first time only)
    */
   const ensureModelLoaded = useCallback(async (): Promise<boolean> => {
+    // 1. Model sudah di RAM — siap pakai
     if (isModelLoaded()) return true;
 
-    const savedId = getSavedModelId();
-    const model = getModel(savedId);
-    if (!model) {
-      // Trigger popup
-      options.onModelRequired?.();
-      return false;
+    // 2. Cek localStorage — kalau user pernah download, auto-load dari disk
+    let savedId: string | null = null;
+    try {
+      savedId = localStorage.getItem('whisper-selected-model');
+    } catch {
+      savedId = null;
     }
 
-    try {
-      setStatus('loading-model');
-      setLoadProgress(0);
-      await loadModel(savedId);
-      setModelId(savedId);
-      setStatus('idle');
-      return true;
-    } catch (err) {
-      setStatus('error');
-      setError(err instanceof Error ? err.message : String(err));
-      // Trigger popup selector
-      options.onModelRequired?.();
-      return false;
+    if (savedId) {
+      const model = getModel(savedId);
+      if (model) {
+        // Auto-load dari disk (instant, ga buka popup)
+        try {
+          setStatus('loading-model');
+          setLoadProgress(0);
+          await loadModel(savedId);
+          setModelId(savedId);
+          setStatus('idle');
+          return true;
+        } catch (err) {
+          // Model hilang dari disk (user clear data?) — buka popup untuk download ulang
+          console.warn('[Whisper] Auto-load failed, model may be deleted from disk:', err);
+          try { localStorage.removeItem('whisper-selected-model'); } catch {}
+          options.onModelRequired?.();
+          return false;
+        }
+      }
     }
+
+    // 3. Belum pernah download — buka popup (first time)
+    options.onModelRequired?.();
+    return false;
   }, [options]);
 
   /**

@@ -1,4 +1,4 @@
-// cache-buster: 20260922012803
+// cache-buster: 20260922033522
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -419,14 +419,19 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
         <div className="flex items-center gap-3">
           <Button
             onClick={() => {
-              // Priority: use Whisper (client-side) jika model sudah loaded
-              if (whisperSTT.isModelLoaded || whisperSTT.status === 'recording') {
+              // Jika lagi recording → stop
+              if (whisperSTT.status === 'recording') {
                 whisperSTT.toggleRecording();
-              } else {
-                // Model belum loaded → buka popup pilih model
-                setModelSelectorOpen(true);
-                toast.info('Pilih model Whisper dulu sebelum mulai rekam');
+                return;
               }
+              // Jika model sudah di RAM → langsung start
+              if (whisperSTT.isModelLoaded) {
+                whisperSTT.toggleRecording();
+                return;
+              }
+              // Auto-load dari disk kalau sudah pernah download (no popup)
+              // ensureModelLoaded akan handle: kalo ada saved model → load, kalo ga ada → buka popup
+              whisperSTT.toggleRecording();
             }}
             disabled={isProcessing}
             size="lg"
@@ -544,10 +549,7 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
           onClose={() => setModelSelectorOpen(false)}
           onModelReady={(modelId) => {
             setWhisperModelReady(true);
-            const persistentMsg = whisperSTT.storagePersistent
-              ? 'Model tersimpan permanen di browser — tidak hilang walau browser ditutup'
-              : 'Model tersimpan di browser cache';
-            toast.success(`Model "${modelId}" siap! ${persistentMsg}`);
+            toast.success('Model siap! Klik Start Recording untuk mulai');
           }}
         />
 
