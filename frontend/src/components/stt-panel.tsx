@@ -1,4 +1,4 @@
-// cache-buster: 20260922011344
+// cache-buster: 20260922012803
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -201,7 +201,7 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
             : 'Pilih Model'}
           </Button>
           <Button
-            onClick={() => setActiveTab('settings')}
+            onClick={() => window.location.href = '/settings'}
             size="sm"
             variant="ghost"
             className="h-7 w-7 p-0 text-zinc-400 hover:text-white hover:bg-white/5"
