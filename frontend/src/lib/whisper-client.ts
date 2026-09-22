@@ -33,6 +33,8 @@ interface WhisperClientOptions {
 let worker: Worker | null = null;
 let currentModelId: string | null = null;
 let isLoading = false;
+let loadingModel: string | null = null;
+let loadingPromise: Promise<void> | null = null;
 let pendingTranscriptions: Map<string, (text: string, chunks: any[]) => void> = new Map();
 let pendingErrors: Map<string, (err: string) => void> = new Map();
 let options: WhisperClientOptions = {};
