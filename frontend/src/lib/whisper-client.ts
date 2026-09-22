@@ -110,16 +110,32 @@ export async function loadModel(
     throw new Error(`Unknown model: ${modelId}`);
   }
 
+  // Already loaded → done
   if (currentModelId === model.hfId) {
     inlineOpts?.onLoaded?.();
-    return; // Already loaded
+    return;
   }
 
-  if (isLoading) {
-    throw new Error('Another model is loading. Wait or abort first.');
+  // Same model is currently loading → WAIT for it (don't error)
+  if (isLoading && loadingModel === model.hfId && loadingPromise) {
+    console.log('[Whisper] Model already loading, waiting for it...');
+    await loadingPromise;
+    inlineOpts?.onLoaded?.();
+    return;
+  }
+
+  // Different model loading → cancel it first, then load new one
+  if (isLoading && loadingModel !== model.hfId) {
+    console.log('[Whisper] Different model loading, aborting previous...');
+    if (abortController) abortController.abort();
+    // Wait a bit for abort to complete
+    if (loadingPromise) {
+      try { await loadingPromise; } catch {}
+    }
   }
 
   isLoading = true;
+  loadingModel = model.hfId;
   const w = ensureWorker();
 
   // Merge inline opts with global
@@ -128,7 +144,9 @@ export async function loadModel(
     options = mergedOpts;
   }
 
-  return new Promise((resolve, reject) => {
+  // Create loading promise that concurrent callers can wait on
+  const loadPromise = new Promise<void>((resolve, reject) => {
+    loadingPromise = loadPromise;
     const timeout = setTimeout(() => {
       reject(new Error('Model load timeout (10 min)'));
       isLoading = false;
@@ -139,6 +157,9 @@ export async function loadModel(
       clearTimeout(timeout);
       options.onLoaded = originalOnLoaded;
       originalOnLoaded?.();
+      isLoading = false;
+      loadingModel = null;
+      loadingPromise = null;
       resolve();
     };
 
@@ -147,11 +168,17 @@ export async function loadModel(
       clearTimeout(timeout);
       options.onError = originalOnError;
       originalOnError?.(err, phase);
+      isLoading = false;
+      loadingModel = null;
+      loadingPromise = null;
       reject(new Error(err));
     };
 
     w.postMessage({ type: 'load', model: model.hfId });
   });
+
+  loadingPromise = loadPromise;
+  return loadPromise;
 }
 
 /**
