@@ -39,23 +39,49 @@ self.addEventListener('message', async (e: MessageEvent) => {
   if (type === 'load') {
     const { model, quantized } = data;
 
+    // Already loaded
     if (currentModel === model) {
       self.postMessage({ type: 'loaded', model });
       return;
     }
 
+    // Same model already loading — ignore (don't start another)
     if (loadingModel === model) {
-      return; // Already loading
+      return;
     }
 
     // Cancel any ongoing load
     if (abortController) {
       abortController.abort();
+      // Wait a tiny bit for abort to complete
+      await new Promise(r => setTimeout(r, 100));
     }
 
     loadingModel = model;
     abortController = new AbortController();
-    self.postMessage({ type: 'loading', progress: 0, model });
+    self.postMessage({ type: 'loading', progress: 0, model, status: 'initializing' });
+
+    // ===== Timeout: 5 menit untuk load (cache atau download) =====
+    let timeoutHandle: any = null;
+    const loadTimeout = new Promise<never>((_, reject) => {
+      timeoutHandle = setTimeout(() => {
+        reject(new Error('Model load timeout (5 min) — coba refresh page'));
+      }, 5 * 60 * 1000);
+    });
+
+    // ===== Heartbeat: kasih progress update tiap 2 detik (untuk avoid UI stuck) =====
+    let heartbeatCount = 0;
+    const heartbeat = setInterval(() => {
+      heartbeatCount++;
+      // Progress naik pelan untuk show activity (max 90% sampai bener2 selesai)
+      const fakeProgress = Math.min(90, heartbeatCount * 5);
+      self.postMessage({ 
+        type: 'loading', 
+        progress: fakeProgress, 
+        model,
+        status: heartbeatCount < 5 ? 'Memuat dari cache...' : 'Memproses model...'
+      });
+    }, 2000);
 
     try {
       // Free previous model
@@ -68,11 +94,10 @@ self.addEventListener('message', async (e: MessageEvent) => {
         currentModel = null;
       }
 
-      // Determine quantization
-      // Default: quantized=true untuk semua kecuali tiny & base
       const useQuantized = quantized !== undefined ? quantized : !model.includes('tiny') && !model.includes('base');
 
-      transcriber = await pipeline('automatic-speech-recognition', model, {
+      // Race: pipeline load vs timeout
+      const pipelinePromise = pipeline('automatic-speech-recognition', model, {
         quantized: useQuantized,
         progress_callback: (p: any) => {
           if (p.status === 'progress') {
@@ -83,23 +108,31 @@ self.addEventListener('message', async (e: MessageEvent) => {
               loaded: p.loaded,
               total: p.total,
               model,
+              status: 'downloading',
             });
           } else if (p.status === 'ready') {
-            self.postMessage({ type: 'loading', progress: 100, model });
+            self.postMessage({ type: 'loading', progress: 100, model, status: 'ready' });
           }
         },
       });
 
+      transcriber = await Promise.race([pipelinePromise, loadTimeout]);
+
+      // Success
+      clearTimeout(timeoutHandle);
+      clearInterval(heartbeat);
       currentModel = model;
       loadingModel = null;
       abortController = null;
       self.postMessage({ type: 'loaded', model });
     } catch (err: any) {
-      const isAborted = abortController?.signal.aborted || 
-                       err?.name === 'AbortError' ||
-                       err?.message?.includes('abort');
+      clearTimeout(timeoutHandle);
+      clearInterval(heartbeat);
       loadingModel = null;
       abortController = null;
+      
+      const isAborted = err?.name === 'AbortError' ||
+                       err?.message?.includes('abort');
       
       if (isAborted) {
         self.postMessage({ type: 'cancelled', model });
