@@ -294,11 +294,16 @@ export async function deleteModel(modelId: string): Promise<boolean> {
 
 /**
  * Check apakah model tertentu sudah di-cache di browser.
+ * Cek CacheStorage + IndexedDB (transformers.js pakai ini).
  */
 export async function isModelCached(modelId: string): Promise<boolean> {
   const model = getModel(modelId);
   if (!model) return false;
 
+  const hfIdLower = model.hfId.toLowerCase();
+  const modelNameLower = model.hfId.split('/').pop()!.toLowerCase();
+
+  // 1. Cek CacheStorage
   if (typeof caches !== 'undefined') {
     try {
       const cacheList = await caches.keys();
@@ -306,14 +311,50 @@ export async function isModelCached(modelId: string): Promise<boolean> {
         const cache = await caches.open(cacheName);
         const keys = await cache.keys();
         for (const req of keys) {
-          if (req.url.toLowerCase().includes(model.hfId.toLowerCase()) ||
-              req.url.toLowerCase().includes(model.hfId.split('/').pop()!.toLowerCase())) {
+          const url = req.url.toLowerCase();
+          if (url.includes(hfIdLower) || url.includes(modelNameLower)) {
             return true;
           }
         }
       }
     } catch {}
   }
+
+  // 2. Cek IndexedDB (transformers.js v2 pakai ini)
+  if (typeof indexedDB !== 'undefined') {
+    try {
+      const result = await new Promise<boolean>((resolve) => {
+        const dbReq = indexedDB.open('transformers-cache');
+        dbReq.onsuccess = (event) => {
+          const db = (event.target as IDBOpenDBRequest).result;
+          if (db.objectStoreNames.contains('keyval')) {
+            const tx = db.transaction('keyval', 'readonly');
+            const store = tx.objectStore('keyval');
+            const allKeys = store.getAllKeys();
+            (allKeys as IDBRequest).onsuccess = () => {
+              const keys = (allKeys as IDBRequest).result as (string | number)[];
+              for (const k of keys) {
+                const keyStr = String(k).toLowerCase();
+                if (keyStr.includes(hfIdLower) || keyStr.includes(modelNameLower)) {
+                  resolve(true);
+                  return;
+                }
+              }
+              resolve(false);
+            };
+            (allKeys as IDBRequest).onerror = () => resolve(false);
+          } else {
+            resolve(false);
+          }
+          db.close();
+        };
+        dbReq.onerror = () => resolve(false);
+        dbReq.onupgradeneeded = () => resolve(false);
+      });
+      if (result) return true;
+    } catch {}
+  }
+
   return false;
 }
 

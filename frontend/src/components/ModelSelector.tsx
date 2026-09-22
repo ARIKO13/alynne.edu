@@ -288,38 +288,33 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
           >
             Batal
           </Button>
-          {isAlreadyLoaded && !loading ? (
-            <Button
-              onClick={handleUseExisting}
-              className="bg-[#8B5CF6] hover:bg-[#7C3AED]"
-            >
-              <CheckCircle2 className="h-4 w-4 mr-2" />
-              Gunakan Model Ini
-            </Button>
-          ) : (
-            <Button
-              onClick={handleDownload}
-              disabled={loading || !selectedModel}
-              className="bg-[#8B5CF6] hover:bg-[#7C3AED]"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Mengunduh... {loadProgress.toFixed(0)}%
-                </>
-              ) : isCached ? (
-                <>
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Load dari Cache
-                </>
-              ) : (
-                <>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download & Gunakan
-                </>
-              )}
-            </Button>
-          )}
+          <Button
+            onClick={handleDownload}
+            disabled={loading || !selectedModel}
+            className="bg-[#8B5CF6] hover:bg-[#7C3AED]"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                {isCached ? 'Memuat dari cache...' : 'Mengunduh...'} {loadProgress.toFixed(0)}%
+              </>
+            ) : isAlreadyLoaded ? (
+              <>
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Gunakan Model Ini
+              </>
+            ) : isCached ? (
+              <>
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Gunakan Model (Cache)
+              </>
+            ) : (
+              <>
+                <Download className="h-4 w-4 mr-2" />
+                Download & Gunakan
+              </>
+            )}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
