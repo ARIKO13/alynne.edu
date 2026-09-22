@@ -1,4 +1,4 @@
-// cache-buster: 20260922010446
+// cache-buster: 20260922011344
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { AudioVisualizer } from '@/components/audio-visualizer';
 import { PersonalDictPanel } from '@/components/personal-dict-panel';
 import {
   Mic, MicOff, Wifi, WifiOff, RefreshCw, Trash2, AlertCircle, Radio,
-  FileText, Loader2, Rocket, Sparkles, Upload, Monitor, MonitorUp, Brain, Cpu,
+  FileText, Loader2, Rocket, Sparkles, Upload, Monitor, MonitorUp, Brain, Cpu, HardDrive,
 } from 'lucide-react';
 import { MaterialUpload } from '@/components/material-upload';
 import { YouTubeTranscript } from '@/components/youtube-transcript';
@@ -199,6 +199,15 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
             {whisperSTT.isModelLoaded
             ? 'Model Siap'
             : 'Pilih Model'}
+          </Button>
+          <Button
+            onClick={() => setActiveTab('settings')}
+            size="sm"
+            variant="ghost"
+            className="h-7 w-7 p-0 text-zinc-400 hover:text-white hover:bg-white/5"
+            title="Pengaturan penyimpanan"
+          >
+            <HardDrive className="h-3.5 w-3.5" />
           </Button>
           <Badge
             variant="outline"

@@ -54,6 +54,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
   const pendingChunksRef = useRef<Float32Array[]>([]);
   const isProcessingRef = useRef(false);
   const sessionBufferRef = useRef<Float32Array>(new Float32Array(0));
+  const ramCleanupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastFinalTextRef = useRef<string>('');
 
   // Set callbacks on mount
@@ -204,7 +205,14 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
   const startRecording = useCallback(async () => {
     setError(null);
 
-    // Pastikan model loaded
+    // Cancel pending RAM cleanup (user mau record lagi)
+    if (ramCleanupTimerRef.current) {
+      clearTimeout(ramCleanupTimerRef.current);
+      ramCleanupTimerRef.current = null;
+      console.log('[Whisper] Cancelled RAM cleanup — user starting recording again');
+    }
+
+    // Pastikan model loaded (kalau belum, auto-load dari disk)
     const ready = await ensureModelLoaded();
     if (!ready) return;
 
@@ -262,6 +270,8 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
 
   /**
    * Stop recording.
+   * Setelah stop, model akan di-free dari RAM setelah 30 detik idle (auto-cleanup).
+   * Model tetap tersimpan di disk (OPFS/CacheStorage) — tinggal load lagi saat user mau record lagi.
    */
   const stopRecording = useCallback(() => {
     isRecordingRef.current = false;
@@ -275,6 +285,20 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
     if (status === 'recording') {
       setStatus('processing');
     }
+
+    // ===== AUTO-FREE RAM setelah 30 detik idle =====
+    // Model tetap di disk (OPFS/IndexedDB), cuma RAM yang dibebaskan
+    // User bisa start recording lagi kapan saja — model akan di-load ulang dari disk (instant, ~1-2 detik)
+    if (ramCleanupTimerRef.current) {
+      clearTimeout(ramCleanupTimerRef.current);
+    }
+    ramCleanupTimerRef.current = setTimeout(() => {
+      console.log('[Whisper] 30s idle — freeing RAM (model tetap di disk)');
+      freeModel();
+      setModelId(null);
+      // Reset status ke idle (bukan error)
+      setStatus('idle');
+    }, 30000);  // 30 detik
   }, [status]);
 
   /**
