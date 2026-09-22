@@ -1,4 +1,4 @@
-// cache-buster: 20260922005628
+// cache-buster: 20260922010446
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -196,9 +196,7 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
             title="Pilih model Whisper untuk STT"
           >
             <Cpu className="h-3.5 w-3.5" />
-            {whisperSTT.isAutoLoading
-            ? 'Loading...'
-            : whisperSTT.isModelLoaded
+            {whisperSTT.isModelLoaded
             ? 'Model Siap'
             : 'Pilih Model'}
           </Button>

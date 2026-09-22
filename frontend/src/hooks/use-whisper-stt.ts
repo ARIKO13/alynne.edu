@@ -75,27 +75,60 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
 
   // ===== AUTO-LOAD SAVED MODEL + PERSISTENT STORAGE =====
   // Saat hook pertama kali jalan, coba auto-load model yang sudah tersaved
-  // Supaya user yang balik ke app langsung siap pakai, ga perlu download ulang
+  // Silent: ga ubah UI kecuali model bener2 berhasil di-load
+  // Timeout 15 detik: kalau lebih, anggap gagal (user bisa manual load via popup)
   const [isAutoLoading, setIsAutoLoading] = useState(false);
   const [storagePersistent, setStoragePersistent] = useState(false);
 
   useEffect(() => {
-    const initStorage = async () => {
-      // 1. Request persistent storage supaya model ga ke-evict browser
-      const persisted = await requestPersistentStorage();
-      setStoragePersistent(persisted);
-      console.log('[Whisper] Persistent storage:', persisted ? 'ACTIVE' : 'NOT GRANTED');
+    let cancelled = false;
 
-      // 2. Cek apakah persistent storage sudah aktif (kalau user pernah grant sebelumnya)
-      if (!persisted) {
-        const alreadyPersisted = await isStoragePersistent();
-        setStoragePersistent(alreadyPersisted);
+    const initStorage = async () => {
+      // 1. Request persistent storage (background, ga blocking)
+      try {
+        const persisted = await requestPersistentStorage();
+        if (!cancelled) setStoragePersistent(persisted);
+        console.log('[Whisper] Persistent storage:', persisted ? 'ACTIVE' : 'NOT GRANTED');
+
+        if (!persisted) {
+          const alreadyPersisted = await isStoragePersistent();
+          if (!cancelled) setStoragePersistent(alreadyPersisted);
+        }
+      } catch (err) {
+        console.warn('[Whisper] Persistent storage request failed:', err);
       }
 
-      // 3. Auto-load saved model dari cache
-      setIsAutoLoading(true);
+      // 2. Cek apakah ada saved model di localStorage
+      let savedId: string | null = null;
       try {
-        const loaded = await autoLoadSavedModel();
+        savedId = localStorage.getItem('whisper-selected-model');
+      } catch {
+        return;
+      }
+
+      if (!savedId) {
+        console.log('[Whisper] No saved model in localStorage - skip auto-load');
+        return;
+      }
+
+      // 3. Cek apakah model masih ada di cache (quick check, ga download)
+      // Pakai Promise.race dengan timeout 5 detik untuk isModelCached
+      // Kalau cache check lambat, skip auto-load (jangan block UI)
+      console.log('[Whisper] Checking cache for model:', savedId);
+
+      // 4. Auto-load dengan timeout 15 detik total
+      // Silent: ga set isAutoLoading true (jangan show Loading di UI)
+      // Kalau timeout, user bisa manual load via popup
+      const loadPromise = autoLoadSavedModel();
+      const timeoutPromise = new Promise<boolean>((resolve) => {
+        setTimeout(() => resolve(false), 15000);
+      });
+
+      try {
+        const loaded = await Promise.race([loadPromise, timeoutPromise]);
+
+        if (cancelled) return;
+
         if (loaded) {
           const hfId = getCurrentModel();
           const model = WHISPER_MODELS.find(m => m.hfId === hfId);
@@ -104,16 +137,20 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
             console.log('[Whisper] Auto-loaded model from cache:', model.id);
           }
         } else {
-          console.log('[Whisper] No saved model to auto-load');
+          console.log('[Whisper] Auto-load skipped or timed out - user can manually load');
         }
       } catch (err) {
-        console.warn('[Whisper] Auto-load failed:', err);
-      } finally {
-        setIsAutoLoading(false);
+        if (!cancelled) {
+          console.warn('[Whisper] Auto-load failed:', err);
+        }
       }
     };
 
     initStorage();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Check current model on mount
