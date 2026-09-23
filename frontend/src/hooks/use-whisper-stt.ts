@@ -15,17 +15,20 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import {
-  loadModel,
-  transcribe,
-  blobToFloat32Audio,
-  isModelLoaded,
-  getCurrentModel,
-  setCallbacks,
-  freeModel,
-  autoLoadSavedModel,
-  requestPersistentStorage,
-  isStoragePersistent,
-} from '@/lib/whisper-client';
+  loadModel as whisperCppLoadModel,
+  transcribe as whisperCppTranscribe,
+  freeModel as whisperCppFreeModel,
+  isModelLoaded as whisperCppIsModelLoaded,
+} from '@/lib/whisper-cpp-client';
+
+// Re-export with different names for compatibility
+const loadModel = whisperCppLoadModel;
+const transcribe = whisperCppTranscribe;
+const freeModel = whisperCppFreeModel;
+const isModelLoaded = whisperCppIsModelLoaded;
+const autoLoadSavedModel = async () => false;
+const requestPersistentStorage = async () => false;
+const isStoragePersistent = async () => false;
 import { getModel, getSavedModelId, WHISPER_MODELS } from '@/lib/whisper-models';
 
 const CHUNK_DURATION_MS = 5000; // 5 detik per chunk
