@@ -14,18 +14,7 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import {
-  loadModel,
-  transcribe,
-  blobToFloat32Audio,
-  isModelLoaded,
-  getCurrentModel,
-  setCallbacks,
-  freeModel,
-  autoLoadSavedModel,
-  requestPersistentStorage,
-  isStoragePersistent,
-} from '@/lib/whisper-client';
+import { transcribeViaServer } from '@/lib/server-whisper';
 import { getModel, getSavedModelId, WHISPER_MODELS } from '@/lib/whisper-models';
 
 const CHUNK_DURATION_MS = 5000; // 5 detik per chunk
@@ -274,19 +263,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
     }
 
     // Pastikan model loaded (kalau belum, auto-load dari disk)
-    let ready: boolean;
-    try {
-      ready = await ensureModelLoaded();
-    } catch (err) {
-      const errMsg = err instanceof Error ? err.message : String(err);
-      console.error('[Whisper] ensureModelLoaded error:', errMsg);
-      options.onError?.(`Error: ${errMsg}`);
-      return;
-    }
-    if (!ready) {
-      console.log('[Whisper] Model not ready — popup should be open');
-      return;
-    }
+    // Server-side Whisper — no model needed in browser
 
     try {
       // 1. getUserMedia
@@ -409,9 +386,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
 
             // ===== STEP 8: Transcribe =====
             // Copy audio karena transcribe akan transfer buffer ke worker
-            const audioCopy = new Float32Array(audioData);
-            const result = await transcribe(audioCopy, 'indonesian');
-            const text = result.text.trim();
+            const text = await transcribeViaServer(audioData);
             console.log(`[Whisper] Transcription: "${text.substring(0, 100)}..."`);
 
             if (text) {

@@ -1,4 +1,4 @@
-// cache-buster: 20260923012442 20260922065314
+// cache-buster: 20260923014627 20260922065314
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { AudioVisualizer } from '@/components/audio-visualizer';
 import { PersonalDictPanel } from '@/components/personal-dict-panel';
 import {
-  Mic, MicOff, Wifi, WifiOff, RefreshCw, Trash2, AlertCircle, Radio,
+  Mic, MicOff, Wifi, WifiOff, RefreshCw, Trash2, CheckCircle2, Radio,
   FileText, Loader2, Rocket, Sparkles, Upload, Monitor, MonitorUp, Brain, Cpu, HardDrive, CheckCircle2,
 } from 'lucide-react';
 import { MaterialUpload } from '@/components/material-upload';
@@ -51,9 +51,9 @@ function ModeSelector({ disabled }: { disabled: boolean }) {
   // Mobile: hide mode selector entirely
   if (isMobile) {
     return (
-      <div className="rounded-lg border border-amber-500/15 bg-amber-500/[0.03] p-3">
+      <div className="rounded-lg border border-amber-500/15 bg-emerald-500/[0.03] p-3">
         <div className="flex items-start gap-2">
-          <AlertCircle className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
+          <CheckCircle2 className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
           <div className="text-xs text-amber-300/80 leading-relaxed">
             <p className="font-medium text-amber-300 mb-0.5">Mode Mobile</p>
             <p>Untuk transkripsi di HP/tablet, gunakan <strong>Upload File</strong> atau <strong>YouTube Transkrip</strong> di bawah.</p>
@@ -186,12 +186,12 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
   return (
     <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] overflow-hidden">
       {/* Info Banner - Whisper required for accurate STT */}
-      <div className="px-5 py-2 bg-amber-500/[0.03] border-b border-amber-500/10">
-        <div className="flex items-center gap-2 text-[11px] text-amber-400/80">
-          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+      <div className="px-5 py-2 bg-emerald-500/[0.03] border-b border-emerald-500/10">
+        <div className="flex items-center gap-2 text-[11px] text-emerald-400/80">
+          <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
           <span>
-            <strong>Pilih model Whisper dulu</strong> untuk akurasi maksimal.
-            Audio direkam → dikirim ke Whisper → transkrip akurat muncul.
+            <strong>STT siap pakai</strong> — langsung klik Start Recording.
+            Audio diproses server-side Whisper (akurat, no download needed).
           </span>
         </div>
       </div>
@@ -275,19 +275,19 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
 
         {!webspeechSupported && !isScreenMode && (
           <div className="flex items-start gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 text-sm text-amber-300">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
             <span>Browser ini tidak mendukung Web Speech API. Groq API akan digunakan sebagai fallback.</span>
           </div>
         )}
         {sttError && (
           <div className="flex items-start gap-2 rounded-lg border border-red-500/20 bg-red-500/5 p-3 text-sm text-red-400">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{sttError}</span>
           </div>
         )}
         {sttWarning && !sttError && (
           <div className="flex items-start gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 text-sm text-amber-300">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{sttWarning}</span>
           </div>
         )}
@@ -431,11 +431,6 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
           <Button
             onClick={() => {
               // Whisper STT: AudioWorklet rekam → Whisper transkrip (akurat)
-              if (modelSelectorOpen) {
-                toast.info('Selesaikan dulu pemilihan model di popup');
-                return;
-              }
-              if (whisperSTT.status === 'loading-model') return;
               whisperSTT.toggleRecording();
             }}
             disabled={isProcessing}
