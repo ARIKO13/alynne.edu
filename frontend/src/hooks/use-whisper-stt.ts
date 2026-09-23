@@ -244,6 +244,24 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
    *   - AudioContext.decodeAudioData gagal → EncodingError
    *   - Full blob punya valid header → decode sukses
    */
+  /**
+   * Start recording — pakai AudioWorklet (PCM direct, tanpa MediaRecorder)
+   *
+   * Kenapa AudioWorklet bukan MediaRecorder?
+   *   - MediaRecorder capture WebM/Opus → AudioContext.decodeAudioData GAGAL (EncodingError)
+   *   - AudioWorklet capture PCM Float32 langsung → ga perlu decode!
+   *   - Bonus: 16kHz mono langsung (tanpa resample)
+   *
+   * Flow:
+   *   1. Pastikan model loaded
+   *   2. getUserMedia → AudioContext → AudioWorklet
+   *   3. Capture PCM samples real-time (di worklet thread)
+   *   4. Saat stop → combine samples → transcribe → tampilkan
+   */
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioWorkletNodeRef = useRef<AudioWorkletNode | null>(null);
+  const recordedSamplesRef = useRef<Float32Array | null>(null);
+
   const startRecording = useCallback(async () => {
     setError(null);
     console.log('[Whisper] Start recording clicked');
@@ -271,6 +289,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
     }
 
     try {
+      // 1. getUserMedia
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -281,92 +300,74 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
         },
       });
       mediaStreamRef.current = stream;
+      console.log('[Whisper] Microphone stream acquired');
 
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : MediaRecorder.isTypeSupported('audio/webm')
-        ? 'audio/webm'
-        : '';
+      // 2. Create AudioContext + load AudioWorklet
+      const audioContext = new AudioContext({ sampleRate: SAMPLE_RATE });
+      audioContextRef.current = audioContext;
 
-      const recorder = mimeType
-        ? new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 16000 })
-        : new MediaRecorder(stream);
-      mediaRecorderRef.current = recorder;
+      // Load worklet processor
+      await audioContext.audioWorklet.addModule('/audio-recorder-worklet.js');
+      console.log('[Whisper] AudioWorklet module loaded');
 
-      chunksRef.current = [];
-      isRecordingRef.current = true;
+      // 3. Connect stream → AudioWorklet
+      const source = audioContext.createMediaStreamSource(stream);
+      const workletNode = new AudioWorkletNode(audioContext, 'audio-recorder-processor');
+      audioWorkletNodeRef.current = workletNode;
 
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunksRef.current.push(e.data);
-        }
-      };
+      // Listen for result saat stop
+      workletNode.port.onmessage = async (e) => {
+        if (e.data.type === 'result') {
+          console.log('[Whisper] Got recorded samples:', e.data.data.length);
+          recordedSamplesRef.current = e.data.data;
 
-      recorder.onstop = async () => {
-        console.log('[Whisper] Recorder stopped, processing full audio...');
-        isRecordingRef.current = false;
-        setStatus('processing');
+          // Process: transcribe
+          setStatus('processing');
+          try {
+            const audioData = e.data.data as Float32Array;
+            console.log(`[Whisper] Audio: ${audioData.length} samples (${(audioData.length / SAMPLE_RATE).toFixed(1)}s)`);
 
-        // Stop all tracks
-        if (mediaStreamRef.current) {
-          mediaStreamRef.current.getTracks().forEach(t => t.stop());
-          mediaStreamRef.current = null;
-        }
+            // Transcribe via worker
+            const result = await transcribe(audioData, 'indonesian');
+            const text = result.text.trim();
+            console.log(`[Whisper] Transcription: "${text.substring(0, 100)}..."`);
 
-        // Combine all chunks jadi 1 blob (full recording)
-        if (chunksRef.current.length === 0) {
-          console.warn('[Whisper] No audio chunks recorded');
-          setStatus('idle');
-          return;
-        }
-
-        const fullBlob = new Blob(chunksRef.current, {
-          type: mimeType || 'audio/webm',
-        });
-        console.log(`[Whisper] Full audio: ${fullBlob.size} bytes`);
-
-        try {
-          // Decode full blob → Float32Array (ini yang gagal sebelumnya)
-          const audioData = await blobToFloat32Audio(fullBlob);
-          console.log(`[Whisper] Decoded: ${audioData.length} samples (${(audioData.length / SAMPLE_RATE).toFixed(1)}s)`);
-
-          // Transcribe via worker
-          const result = await transcribe(audioData, 'indonesian');
-          const text = result.text.trim();
-          console.log(`[Whisper] Transcription: "${text.substring(0, 100)}..."`);
-
-          if (text) {
-            // Tampilkan hasil transkripsi
-            options.onTranscript?.(text, true);
-          } else {
-            options.onError?.('Transkripsi kosong — coba bicara lebih jelas');
+            if (text) {
+              options.onTranscript?.(text, true);
+            } else {
+              options.onError?.('Transkripsi kosong — coba bicara lebih jelas');
+            }
+          } catch (err) {
+            const errMsg = err instanceof Error ? err.message : String(err);
+            console.error('[Whisper] Transcribe error:', errMsg);
+            options.onError?.(`Gagal transkripsi: ${errMsg}`);
+          } finally {
+            setStatus('idle');
+            // Auto-free RAM setelah 30 detik
+            if (ramCleanupTimerRef.current) clearTimeout(ramCleanupTimerRef.current);
+            ramCleanupTimerRef.current = setTimeout(() => {
+              console.log('[Whisper] 30s idle — freeing RAM');
+              freeModel();
+              setModelId(null);
+            }, 30000);
           }
-        } catch (err) {
-          const errMsg = err instanceof Error ? err.message : String(err);
-          console.error('[Whisper] Process error:', errMsg);
-          options.onError?.(`Gagal transkripsi: ${errMsg}`);
-        } finally {
-          setStatus('idle');
-          // Auto-free RAM setelah 30 detik
-          if (ramCleanupTimerRef.current) clearTimeout(ramCleanupTimerRef.current);
-          ramCleanupTimerRef.current = setTimeout(() => {
-            console.log('[Whisper] 30s idle — freeing RAM');
-            freeModel();
-            setModelId(null);
-          }, 30000);
         }
       };
 
-      // Start recording — request data setiap 1 detik (untuk update chunksRef)
-      // tapi tidak transcribe chunk-by-chunk
-      recorder.start(1000);  // collect data tiap 1s
+      // 4. Start recording
+      workletNode.port.postMessage({ type: 'start' });
+      source.connect(workletNode);
+      // Note: tidak connect ke destination (no echo/playback)
+
+      isRecordingRef.current = true;
       setStatus('recording');
-      console.log('[Whisper] Recording started');
+      console.log('[Whisper] Recording started (AudioWorklet PCM)');
     } catch (err) {
       setStatus('error');
       const msg = err instanceof Error ? err.message : String(err);
-      setError(`Microphone access failed: ${msg}`);
-      options.onError?.(`Microphone access failed: ${msg}`);
+      console.error('[Whisper] Start recording error:', msg);
+      setError(`Recording failed: ${msg}`);
+      options.onError?.(`Recording failed: ${msg}`);
     }
   }, [ensureModelLoaded, options]);
 
@@ -377,9 +378,27 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
   const stopRecording = useCallback(() => {
     console.log('[Whisper] Stop recording clicked');
     isRecordingRef.current = false;
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
+
+    // Signal worklet to stop + send result
+    if (audioWorkletNodeRef.current) {
+      audioWorkletNodeRef.current.port.postMessage({ type: 'stop' });
     }
+
+    // Disconnect + close audio context
+    setTimeout(() => {
+      if (audioWorkletNodeRef.current) {
+        audioWorkletNodeRef.current.disconnect();
+        audioWorkletNodeRef.current = null;
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(t => t.stop());
+        mediaStreamRef.current = null;
+      }
+    }, 100);  // small delay to let worklet send result
   }, []);
 
   /**
