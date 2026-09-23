@@ -21,9 +21,18 @@
 
 import { pipeline, env } from '@xenova/transformers';
 
+// ===== ONNX Runtime Web config (fix OrtRun error) =====
 env.allowRemoteModels = true;
 env.allowLocalModels = false;
 env.useBrowserCache = true;
+
+// Fix OrtRun "offset is out of bounds" error:
+// 1. Single thread (avoid threading bugs in WASM)
+env.backends.onnx.wasm.numThreads = 1;
+// 2. Don't use proxy worker (simpler, less memory issues)
+env.backends.onnx.wasm.proxy = false;
+// 3. Enable SIMD if available (faster + more stable)
+env.backends.onnx.wasm.simd = true;
 
 type Pipeline = Awaited<ReturnType<typeof pipeline>>;
 
@@ -175,15 +184,30 @@ self.addEventListener('message', async (e: MessageEvent) => {
         return;
       }
 
-      // Make a copy — model may modify the buffer
-      const audioCopy = new Float32Array(audio);
+      // ===== Pad audio to 30 seconds (Whisper's expected input length) =====
+      // Whisper expects 30s audio. Shorter audio → OrtRun error.
+      // Pad with silence if shorter, truncate if longer.
+      const TARGET_LENGTH = 16000 * 30;  // 30 seconds @ 16kHz
+      let paddedAudio: Float32Array;
+      if (audio.length >= TARGET_LENGTH) {
+        // Truncate to 30s
+        paddedAudio = audio.slice(0, TARGET_LENGTH);
+      } else {
+        // Pad with silence
+        paddedAudio = new Float32Array(TARGET_LENGTH);
+        paddedAudio.set(audio);
+        console.log(`[Worker] Padded audio from ${audio.length} to ${TARGET_LENGTH} samples (30s)`);
+      }
 
+      // Make a copy — model may modify the buffer
+      const audioCopy = new Float32Array(paddedAudio);
+
+      // ===== Simplified transcribe options (no chunking, no timestamps) =====
       const output: any = await (transcriber as any)(audioCopy, {
         language,
         task: 'transcribe',
-        chunk_length_s: 30,
-        stride_length_s: 5,
-        return_timestamps: true,  // true for proper chunking
+        // NO chunk_length_s, NO stride_length_s — let pipeline handle internally
+        // NO return_timestamps — simpler output
       });
 
       const text = output?.text?.trim() || '';
