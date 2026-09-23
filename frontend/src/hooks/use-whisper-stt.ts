@@ -60,18 +60,8 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
   const ramCleanupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastFinalTextRef = useRef<string>('');
 
-  // Set callbacks on mount
-  useEffect(() => {
-    // setCallbacks removed (not in whisper-cpp-client)
-        setStatus('idle');
-      },
-      onError: (err, phase) => {
-        setError(`${phase}: ${err}`);
-        setStatus('error');
-        options.onError?.(err);
-      },
-    });
-  }, [options]);
+  // Callbacks not needed for whisper.cpp (uses Web Worker messages)
+  // useEffect intentionally empty
 
 
   // ===== AUTO-LOAD SAVED MODEL + PERSISTENT STORAGE =====
