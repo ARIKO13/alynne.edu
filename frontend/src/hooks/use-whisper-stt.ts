@@ -319,88 +319,116 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
       workletNode.port.onmessage = async (e) => {
         if (e.data.type === 'result') {
           console.log('[Whisper] Got recorded samples:', e.data.data?.length || 0);
-          recordedSamplesRef.current = e.data.data;
 
           // Process: transcribe
           setStatus('processing');
           try {
             let audioData = e.data.data as Float32Array;
 
-            // ===== VALIDASI AUDIO =====
-            // 1. Cek length minimal (0.5 detik = 8000 samples @ 16kHz)
-            if (!audioData || audioData.length < SAMPLE_RATE * 0.5) {
-              console.warn(`[Whisper] Audio too short: ${audioData?.length || 0} samples`);
+            // ===== STEP 1: Validate basic =====
+            if (!audioData || audioData.length === 0) {
+              options.onError?.('Audio kosong — cek mikrofon');
+              setStatus('idle');
+              return;
+            }
+
+            // ===== STEP 2: Remove NaN/Infinity (causes OrtRun crash) =====
+            let hasBadValues = false;
+            for (let i = 0; i < audioData.length; i++) {
+              if (!isFinite(audioData[i]) || isNaN(audioData[i])) {
+                audioData[i] = 0;
+                hasBadValues = true;
+              }
+            }
+            if (hasBadValues) {
+              console.warn('[Whisper] Audio had NaN/Infinity values — replaced with 0');
+            }
+
+            // ===== STEP 3: Get actual sample rate from AudioContext =====
+            const actualSampleRate = audioContextRef.current?.sampleRate || SAMPLE_RATE;
+            console.log(`[Whisper] Audio: ${audioData.length} samples @ ${actualSampleRate}Hz`);
+
+            // ===== STEP 4: Resample ke 16kHz kalau perlu =====
+            if (actualSampleRate !== SAMPLE_RATE) {
+              console.log(`[Whisper] Resampling from ${actualSampleRate}Hz to ${SAMPLE_RATE}Hz`);
+              const ratio = actualSampleRate / SAMPLE_RATE;
+              const newLength = Math.floor(audioData.length / ratio);
+              const resampled = new Float32Array(newLength);
+              for (let i = 0; i < newLength; i++) {
+                const srcIdx = i * ratio;
+                const srcIdxFloor = Math.floor(srcIdx);
+                const srcIdxCeil = Math.min(srcIdxFloor + 1, audioData.length - 1);
+                const frac = srcIdx - srcIdxFloor;
+                // Linear interpolation
+                resampled[i] = audioData[srcIdxFloor] * (1 - frac) + audioData[srcIdxCeil] * frac;
+              }
+              audioData = resampled;
+              console.log(`[Whisper] Resampled: ${audioData.length} samples @ ${SAMPLE_RATE}Hz`);
+            }
+
+            // ===== STEP 5: Validate length (min 0.5s = 8000 samples) =====
+            if (audioData.length < SAMPLE_RATE * 0.5) {
+              console.warn(`[Whisper] Audio too short: ${audioData.length} samples`);
               options.onError?.('Audio terlalu pendek (min 0.5 detik) — coba bicara lebih lama');
               setStatus('idle');
               return;
             }
 
-            // 2. Normalize audio (range -1 to 1) — penting untuk OrtRun
+            // ===== STEP 6: Check amplitude =====
             let maxAmp = 0;
             for (let i = 0; i < audioData.length; i++) {
               const abs = Math.abs(audioData[i]);
               if (abs > maxAmp) maxAmp = abs;
             }
             console.log(`[Whisper] Max amplitude: ${maxAmp}`);
+
             if (maxAmp === 0) {
               options.onError?.('Audio kosong (tidak ada suara) — cek mikrofon');
               setStatus('idle');
               return;
             }
-            // Normalize kalau amplitude terlalu kecil
+
+            // Normalize kalau amplitude terlalu kecil (< 0.1)
             if (maxAmp < 0.1) {
               const scale = 1 / maxAmp;
               const normalized = new Float32Array(audioData.length);
               for (let i = 0; i < audioData.length; i++) {
-                normalized[i] = audioData[i] * scale;
+                normalized[i] = Math.max(-1, Math.min(1, audioData[i] * scale));
               }
               audioData = normalized;
               console.log('[Whisper] Audio normalized (amplitude was too low)');
             }
 
-            // 3. Trim silence di awal dan akhir (5% dari max amplitude threshold)
-            const threshold = maxAmp * 0.05;
-            let startIdx = 0;
-            let endIdx = audioData.length;
+            // ===== STEP 7: Clamp values to [-1, 1] (Whisper requirement) =====
             for (let i = 0; i < audioData.length; i++) {
-              if (Math.abs(audioData[i]) > threshold) {
-                startIdx = Math.max(0, i - SAMPLE_RATE * 0.1);  // 100ms padding
-                break;
-              }
+              if (audioData[i] > 1) audioData[i] = 1;
+              if (audioData[i] < -1) audioData[i] = -1;
             }
-            for (let i = audioData.length - 1; i >= 0; i--) {
-              if (Math.abs(audioData[i]) > threshold) {
-                endIdx = Math.min(audioData.length, i + SAMPLE_RATE * 0.1);
-                break;
-              }
-            }
-            if (endIdx - startIdx > SAMPLE_RATE * 0.3) {  // only trim if result > 0.3s
-              audioData = audioData.slice(startIdx, endIdx);
-            }
+
             console.log(`[Whisper] Final audio: ${audioData.length} samples (${(audioData.length / SAMPLE_RATE).toFixed(1)}s)`);
 
-            // 4. Transcribe via worker
-            const result = await transcribe(audioData, 'indonesian');
+            // ===== STEP 8: Transcribe =====
+            // Copy audio karena transcribe akan transfer buffer ke worker
+            const audioCopy = new Float32Array(audioData);
+            const result = await transcribe(audioCopy, 'indonesian');
             const text = result.text.trim();
             console.log(`[Whisper] Transcription: "${text.substring(0, 100)}..."`);
 
             if (text) {
               options.onTranscript?.(text, true);
             } else {
-              options.onError?.('Transkripsi kosong — coba bicara lebih jelas atau dekat ke mikrofon');
+              options.onError?.('Transkripsi kosong — coba bicara lebih jelas');
             }
           } catch (err) {
             const errMsg = err instanceof Error ? err.message : String(err);
             console.error('[Whisper] Transcribe error:', errMsg);
-            // Specific error messages
-            if (errMsg.includes('OrtRun') || errMsg.includes('error code = 1')) {
-              options.onError?.('Model error — coba re-download model atau pakai model lain');
+            if (errMsg.includes('OrtRun') || errMsg.includes('error code = 1') || errMsg.includes('offset')) {
+              options.onError?.('Model error — coba pakai model Small atau download ulang');
             } else {
               options.onError?.(`Gagal transkripsi: ${errMsg}`);
             }
           } finally {
             setStatus('idle');
-            // Auto-free RAM setelah 30 detik
             if (ramCleanupTimerRef.current) clearTimeout(ramCleanupTimerRef.current);
             ramCleanupTimerRef.current = setTimeout(() => {
               console.log('[Whisper] 30s idle — freeing RAM');

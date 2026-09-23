@@ -164,21 +164,26 @@ self.addEventListener('message', async (e: MessageEvent) => {
         return;
       }
 
-      const output: any = await (transcriber as any)(audio, {
+      // Validate audio before sending to model
+      if (audio.length < 8000) {  // min 0.5s @ 16kHz
+        self.postMessage({
+          type: 'error',
+          error: 'Audio too short for Whisper (min 0.5s required)',
+          phase: 'transcribe',
+          sessionId,
+        });
+        return;
+      }
+
+      // Make a copy — model may modify the buffer
+      const audioCopy = new Float32Array(audio);
+
+      const output: any = await (transcriber as any)(audioCopy, {
         language,
         task: 'transcribe',
         chunk_length_s: 30,
         stride_length_s: 5,
-        return_timestamps: false,
-        callback: (batch: any) => {
-          if (batch?.progress != null) {
-            self.postMessage({
-              type: 'transcribing',
-              progress: batch.progress,
-              sessionId,
-            });
-          }
-        },
+        return_timestamps: true,  // true for proper chunking
       });
 
       const text = output?.text?.trim() || '';
