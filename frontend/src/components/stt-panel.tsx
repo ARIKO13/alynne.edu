@@ -1,4 +1,4 @@
-// cache-buster: 20260923005704 20260922065314
+// cache-buster: 20260923010704 20260922065314
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { AudioVisualizer } from '@/components/audio-visualizer';
 import { PersonalDictPanel } from '@/components/personal-dict-panel';
 import {
   Mic, MicOff, Wifi, WifiOff, RefreshCw, Trash2, AlertCircle, Radio,
-  FileText, Loader2, Rocket, Sparkles, Upload, Monitor, MonitorUp, Brain, Cpu, HardDrive,
+  FileText, Loader2, Rocket, Sparkles, Upload, Monitor, MonitorUp, Brain, Cpu, HardDrive, CheckCircle2,
 } from 'lucide-react';
 import { MaterialUpload } from '@/components/material-upload';
 import { YouTubeTranscript } from '@/components/youtube-transcript';
@@ -185,6 +185,17 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
 
   return (
     <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] overflow-hidden">
+      {/* Info Banner - STT siap pakai tanpa download */}
+      <div className="px-5 py-2 bg-emerald-500/[0.03] border-b border-emerald-500/10">
+        <div className="flex items-center gap-2 text-[11px] text-emerald-400/80">
+          <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+          <span>
+            <strong>STT siap pakai</strong> — Web Speech API aktif, langsung klik Start Recording.
+            Whisper (tombol "Koreksi") opsional untuk improve akurasi.
+          </span>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
         <h3 className="text-sm font-medium text-zinc-200">Speech to Text</h3>
@@ -193,12 +204,12 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
             onClick={() => setModelSelectorOpen(true)}
             size="sm"
             className="h-7 gap-1.5 px-2.5 text-[11px] font-medium bg-[#8B5CF6] hover:bg-[#7C3AED] text-white border-[#8B5CF6]/30"
-            title="Pilih model Whisper untuk STT"
+            title="Opsional: Download Whisper untuk koreksi akurasi (STT tetap jalan tanpa ini)"
           >
             <Cpu className="h-3.5 w-3.5" />
             {whisperSTT.isModelLoaded
-            ? 'Model Siap'
-            : 'Pilih Model'}
+            ? 'Whisper Siap'
+            : 'Koreksi (Opsional)'}
           </Button>
           <Button
             onClick={() => window.location.href = '/settings'}

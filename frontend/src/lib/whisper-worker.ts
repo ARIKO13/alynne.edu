@@ -65,8 +65,8 @@ self.addEventListener('message', async (e: MessageEvent) => {
     let timeoutHandle: any = null;
     const loadTimeout = new Promise<never>((_, reject) => {
       timeoutHandle = setTimeout(() => {
-        reject(new Error('Model load timeout (5 min) — coba refresh page'));
-      }, 5 * 60 * 1000);
+        reject(new Error('Download timeout (10 min) - model terlalu besar atau koneksi lambat — coba refresh page'));
+      }, 10 * 60 * 1000);
     });
 
     try {
@@ -94,10 +94,14 @@ self.addEventListener('message', async (e: MessageEvent) => {
               loaded: p.loaded,
               total: p.total,
               model,
-              status: 'downloading',
+              status: `Downloading: ${p.file ? p.file.split('/').pop() : '...'} (${(p.progress || 0).toFixed(1)}%)`,
             });
           } else if (p.status === 'ready') {
             self.postMessage({ type: 'loading', progress: 100, model, status: 'ready' });
+          } else if (p.status === 'download') {
+            self.postMessage({ type: 'loading', progress: 0, model, status: 'Starting download...' });
+          } else if (p.status === 'done') {
+            self.postMessage({ type: 'loading', progress: 100, model, status: 'Download complete, initializing...' });
           }
         },
       });
