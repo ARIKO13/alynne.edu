@@ -62,10 +62,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
 
   // Set callbacks on mount
   useEffect(() => {
-    setCallbacks({
-      onLoading: (progress) => setLoadProgress(progress),
-      onLoaded: () => {
-        setLoadProgress(100);
+    // setCallbacks removed (not in whisper-cpp-client)
         setStatus('idle');
       },
       onError: (err, phase) => {
@@ -90,7 +87,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
     const initStorage = async () => {
       // 1. Request persistent storage (background, ga blocking)
       try {
-        const persisted = await requestPersistentStorage();
+      const persisted = false; // requestPersistentStorage removed
         if (!cancelled) setStoragePersistent(persisted);
         console.log('[Whisper] Persistent storage:', persisted ? 'ACTIVE' : 'NOT GRANTED');
 
