@@ -1,4 +1,4 @@
-// cache-buster: 20260922171632 20260922065314
+// cache-buster: 20260923005704 20260922065314
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -419,21 +419,9 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
         <div className="flex items-center gap-3">
           <Button
             onClick={() => {
-              // Jika popup ModelSelector lagi terbuka → jangan trigger Start
-              if (modelSelectorOpen) {
-                toast.info('Selesaikan dulu pemilihan model di popup');
-                return;
-              }
-              // Jika lagi loading model → jangan ganggu
-              if (whisperSTT.status === 'loading-model') return;
-              // Jika lagi recording → stop
-              if (whisperSTT.status === 'recording') {
-                whisperSTT.toggleRecording();
-                return;
-              }
-              // Auto-handle via toggleRecording
-              // ensureModelLoaded akan: load dari disk kalau ada, buka popup kalau belum
-              whisperSTT.toggleRecording();
+              // Web Speech API sebagai primary recorder (real-time transcript)
+              // Whisper sebagai post-processor koreksi (setelah stop)
+              toggleRecording();
             }}
             disabled={isProcessing}
             size="lg"

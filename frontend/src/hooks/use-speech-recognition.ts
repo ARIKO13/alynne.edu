@@ -1,6 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { correctWithWhisper } from '@/lib/whisper-corrector';
+import { isModelLoaded as isWhisperModelLoaded } from '@/lib/whisper-client';
+import {import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppStore } from '@/lib/store';
 import { useScreenCv } from '@/hooks/use-screen-cv';
 import { setupRecognitionGrammar } from '@/lib/speech-grammar';
@@ -139,6 +141,13 @@ export function useSpeechRecognition() {
   const chunkCountRef = useRef(0);
   const liveEnhanceTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastEnhancedIdxRef = useRef(0);
+
+  // Whisper audio capture (parallel dengan Web Speech API)
+  const whisperAudioContextRef = useRef<AudioContext | null>(null);
+  const whisperWorkletNodeRef = useRef<AudioWorkletNode | null>(null);
+  const whisperMediaStreamRef = useRef<MediaStream | null>(null);
+  const whisperRecordedSamplesRef = useRef<Float32Array | null>(null);
+  const [isWhisperCorrecting, setIsWhisperCorrecting] = useState(false);
 
   // Audio visualizer refs
   const [audioLevels, setAudioLevels] = useState<number[]>(new Array(32).fill(0));
