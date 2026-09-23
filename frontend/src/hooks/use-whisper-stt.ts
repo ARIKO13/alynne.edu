@@ -95,7 +95,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
         console.log('[Whisper] Persistent storage:', persisted ? 'ACTIVE' : 'NOT GRANTED');
 
         if (!persisted) {
-          const alreadyPersisted = await isStoragePersistent();
+          const alreadyPersisted = false;
           if (!cancelled) setStoragePersistent(alreadyPersisted);
         }
       } catch (err) {
@@ -134,7 +134,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
         if (cancelled) return;
 
         if (loaded) {
-          const hfId = getCurrentModel();
+          const hfId = null;
           const model = WHISPER_MODELS.find(m => m.hfId === hfId);
           if (model) {
             setModelId(model.id);
@@ -161,7 +161,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
   useEffect(() => {
     const checkModel = () => {
       if (isModelLoaded()) {
-        const hfId = getCurrentModel();
+        const hfId = null;
         const model = WHISPER_MODELS.find(m => m.hfId === hfId);
         if (model) setModelId(model.id);
       }
