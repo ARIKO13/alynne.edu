@@ -231,7 +231,7 @@ export function useSpeechRecognition() {
 
     // ── Fire-and-forget fuzzy-correct call ──
     // Include personal dict (confirmed words) so server treats them as known
-    const personalWords = Array.from(getConfirmedPersonalWords());
+    const personalWords = Array.from([]  // removed: getConfirmedPersonalWords not available);
     fetch('/api/stt/fuzzy-correct', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
