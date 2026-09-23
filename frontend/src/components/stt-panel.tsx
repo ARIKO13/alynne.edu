@@ -1,4 +1,4 @@
-// cache-buster: 20260923020000
+// cache-buster: 20260923015250
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -200,17 +200,6 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
         <h3 className="text-sm font-medium text-zinc-200">Speech to Text</h3>
         <div className="flex items-center gap-2">
-          <Button
-            onClick={() => setModelSelectorOpen(true)}
-            size="sm"
-            className="h-7 gap-1.5 px-2.5 text-[11px] font-medium bg-[#8B5CF6] hover:bg-[#7C3AED] text-white border-[#8B5CF6]/30"
-            title="Opsional: Download Whisper untuk koreksi akurasi (STT tetap jalan tanpa ini)"
-          >
-            <Cpu className="h-3.5 w-3.5" />
-            {whisperSTT.isModelLoaded
-            ? 'Model Siap'
-            : 'Pilih Model'}
-          </Button>
           <Button
             onClick={() => window.location.href = '/settings'}
             size="sm"
@@ -444,8 +433,8 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
                 : 'bg-[#8B5CF6] hover:bg-[#d14e1c] text-white'
             )}
           >
-            {whisperSTT.status === 'loading-model' ? <Loader2 className="h-5 w-5 animate-spin" /> : isProcessing ? <RefreshCw className="h-5 w-5 animate-spin" /> : isRecording ? <MicOff className="h-5 w-5" /> : isScreenMode ? <MonitorUp className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-            {whisperSTT.status === 'loading-model' ? 'Memuat Model...' : isProcessing ? 'Memproses...' : isRecording ? 'Stop Recording' : isScreenMode ? 'Start Screen Capture' : 'Start Recording'}
+            {isProcessing ? <RefreshCw className="h-5 w-5 animate-spin" /> : isRecording ? <MicOff className="h-5 w-5" /> : isScreenMode ? <MonitorUp className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+            {isProcessing ? 'Memproses...' : isRecording ? 'Stop Recording' : isScreenMode ? 'Start Screen Capture' : 'Start Recording'}
           </Button>
           {transcript && (
                 <Button onClick={clearTranscript} disabled={isRecording || isProcessing} variant="outline" size="lg" className="gap-2 rounded-lg border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06]">

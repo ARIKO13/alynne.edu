@@ -580,7 +580,6 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
     isAutoLoading,
     storagePersistent,
     isRecording: isRecordingRef.current,
-    isModelLoaded: isModelLoaded(),
     toggleRecording,
     startRecording,
     stopRecording,
