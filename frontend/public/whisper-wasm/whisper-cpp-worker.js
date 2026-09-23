@@ -1,11 +1,12 @@
 /**
- * whisper-cpp-worker.js — Web Worker for whisper.cpp WASM
+ * whisper-cpp-worker.js v4 — Fix Module init
  *
- * Handle BOTH Module patterns:
- *   1. Classic: Module is object, importScripts loads it
- *   2. Modularize: Module is factory function, need to call it
+ * Key insight: main.js starts with:
+ *   var Module=typeof Module!="undefined"?Module:{};
  *
- * Also handle WASM file loading (main.js references whisper.wasm)
+ * So we set self.Module BEFORE importScripts.
+ * But importScripts overwrites self.Module.
+ * Fix: use globalThis.Module and DON'T set it after importScripts.
  */
 
 var modelLoaded = false;
@@ -13,10 +14,10 @@ var contextIndex = 0;
 var transcriptionText = '';
 var isProcessing = false;
 var runtimeReady = false;
-var Module = null;
 
-// Module config
-var moduleConfig = {
+// Set Module config BEFORE importScripts
+// main.js will pick this up: var Module=typeof Module!="undefined"?Module:{}
+var Module = {
   print: function(text) {
     if (text && text.match(/\[\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3}\]/)) {
       var match = text.match(/\]\s*(.+)$/);
@@ -26,124 +27,51 @@ var moduleConfig = {
       }
     }
   },
-  printErr: function(text) { console.error('[whisper-cpp]', text); },
+  printErr: function(text) {
+    console.error('[whisper-cpp]', text);
+  },
   onRuntimeInitialized: function() {
-    console.log('[whisper-cpp] Runtime ready');
+    console.log('[whisper-cpp] Runtime initialized!');
+    console.log('[whisper-cpp] Module.FS available:', typeof Module.FS);
+    console.log('[whisper-cpp] Module.init available:', typeof Module._init || typeof Module.init);
     runtimeReady = true;
     self.postMessage({ type: 'ready' });
   },
   noInitialRun: true,
   noExitRuntime: true,
-  // Tell Emscripten where to find the .wasm file
-  locateFile: function(path) {
-    return '/whisper-wasm/' + path;
-  },
+  // WASM is embedded in main.js (SINGLE_FILE build)
+  // No need for locateFile
 };
 
-// Load WASM — try multiple approaches
-async function initWasm() {
-  console.log('[whisper-cpp] Loading WASM module...');
+// Load main.js — it will use our Module config
+console.log('[whisper-cpp] Loading WASM module (main.js)...');
+importScripts('/whisper-wasm/main.js');
 
-  return new Promise((resolve, reject) => {
-    var timeout = setTimeout(() => {
-      reject(new Error('WASM init timeout (30s)'));
-    }, 30000);
+// After importScripts, Module is now the Emscripten module object
+// It should have FS, init, free, full_default
+console.log('[whisper-cpp] After importScripts:');
+console.log('[whisper-cpp] typeof Module:', typeof Module);
+console.log('[whisper-cpp] Module.FS:', typeof Module?.FS);
+console.log('[whisper-cpp] Module.init:', typeof Module?.init);
+console.log('[whisper-cpp] Module._init:', typeof Module?._init);
 
-    // Override onRuntimeInitialized to resolve promise
-    var origInit = moduleConfig.onRuntimeInitialized;
-    moduleConfig.onRuntimeInitialized = function() {
-      clearTimeout(timeout);
-      console.log('[whisper-cpp] Runtime initialized');
-      runtimeReady = true;
-      origInit && origInit();
-      resolve();
-    };
-
-    // Approach 1: Set Module config before importScripts
-    // Emscripten classic build will pick up self.Module
-    self.Module = moduleConfig;
-
-    // Load the script
-    try {
-      importScripts('/whisper-wasm/main.js');
-    } catch (e) {
-      console.error('[whisper-cpp] importScripts failed:', e);
-    }
-
-    // After importScripts, check what Module is
-    setTimeout(() => {
-      if (typeof Module === 'undefined') {
-        // Maybe main.js set it as self.Module
-        Module = self.Module;
-      }
-
-      if (typeof Module === 'function') {
-        // Modularize pattern — call Module(config) to get instance
-        console.log('[whisper-cpp] Module is function (Modularize), calling it...');
-        Module(moduleConfig).then(function(instance) {
-          Module = instance;
-          console.log('[whisper-cpp] Module instance created');
-          // onRuntimeInitialized will fire from instance
-        }).catch(function(err) {
-          clearTimeout(timeout);
-          reject(err);
-        });
-      } else if (typeof Module === 'object' && Module !== null) {
-        // Classic pattern — Module is already the object
-        console.log('[whisper-cpp] Module is object (Classic)');
-        // Check if FS is available
-        if (Module.FS) {
-          console.log('[whisper-cpp] FS available immediately');
-          runtimeReady = true;
-          clearTimeout(timeout);
-          resolve();
-        }
-        // Otherwise wait for onRuntimeInitialized
-      } else {
-        // Module not set — maybe script failed
-        clearTimeout(timeout);
-        reject(new Error('Module not defined after importScripts'));
-      }
-    }, 1000);
-  });
-}
-
-// Wait for Module.FS to be available
-function waitForFS(timeout) {
-  return new Promise((resolve, reject) => {
-    var waited = 0;
-    var check = setInterval(() => {
-      if (Module && Module.FS) {
-        clearInterval(check);
-        resolve();
-      } else if (Module && typeof Module === 'object' && Module._init) {
-        // _init exists but FS might not — try to use it anyway
-        clearInterval(check);
-        console.log('[whisper-cpp] _init available, FS might not be');
-        resolve();
-      } else {
-        waited += 500;
-        if (waited >= timeout) {
-          clearInterval(check);
-          reject(new Error('Module.FS not available (timeout ' + (timeout/1000) + 's)'));
-        }
-      }
-    }, 500);
-  });
-}
-
-// Initialize WASM on worker start
-initWasm().then(() => {
-  console.log('[whisper-cpp] WASM initialized successfully');
-  return waitForFS(15000);
-}).then(() => {
-  console.log('[whisper-cpp] FS ready');
-  self.postMessage({ type: 'ready' });
-}).catch((err) => {
-  console.error('[whisper-cpp] Init failed:', err);
-  // Still post ready so user can try — maybe model load will work
-  self.postMessage({ type: 'ready' });
-});
+// If onRuntimeInitialized didn't fire yet, check periodically
+var initCheckCount = 0;
+var initCheck = setInterval(function() {
+  initCheckCount++;
+  if (Module && Module.FS && (Module.init || Module._init)) {
+    clearInterval(initCheck);
+    runtimeReady = true;
+    console.log('[whisper-cpp] Runtime ready (poll check, attempt ' + initCheckCount + ')');
+    self.postMessage({ type: 'ready' });
+  } else if (initCheckCount > 60) { // 30 seconds
+    clearInterval(initCheck);
+    console.error('[whisper-cpp] Runtime not ready after 30s');
+    console.log('[whisper-cpp] Module keys:', Module ? Object.keys(Module).slice(0, 20) : 'undefined');
+    // Post ready anyway — let user try
+    self.postMessage({ type: 'ready' });
+  }
+}, 500);
 
 // Message handler
 self.onmessage = async function(e) {
@@ -164,10 +92,19 @@ async function loadModel(modelUrl) {
     console.log('[whisper-cpp] Loading model from:', modelUrl);
     self.postMessage({ type: 'model-loading', progress: 0 });
 
-    // Wait for FS
+    // Wait for runtime
+    var waited = 0;
+    while (!runtimeReady && waited < 30000) {
+      await new Promise(r => setTimeout(r, 500));
+      waited += 500;
+    }
+
+    // Check FS
     if (!Module || !Module.FS) {
-      console.log('[whisper-cpp] Waiting for FS...');
-      await waitForFS(30000);
+      console.error('[whisper-cpp] Module.FS not available!');
+      console.log('[whisper-cpp] Module type:', typeof Module);
+      console.log('[whisper-cpp] Module keys:', Module ? Object.keys(Module).slice(0, 30) : 'null');
+      throw new Error('Module.FS not available');
     }
 
     // Fetch model
@@ -205,7 +142,13 @@ async function loadModel(modelUrl) {
     console.log('[whisper-cpp] Model written to FS');
 
     // Init whisper context
-    contextIndex = Module.init(modelPath);
+    // Try Module.init() first, then Module._init()
+    var initFn = Module.init || Module._init;
+    if (typeof initFn !== 'function') {
+      throw new Error('Module.init not available. Available: ' + Object.keys(Module).filter(k => k.startsWith('init') || k.startsWith('_init')).join(', '));
+    }
+
+    contextIndex = initFn.call(Module, modelPath);
     if (contextIndex === 0) throw new Error('Failed to init whisper context');
 
     modelLoaded = true;
@@ -231,7 +174,13 @@ async function transcribe(audioData, language) {
     transcriptionText = '';
     self.postMessage({ type: 'transcribing', progress: 0 });
 
-    var result = Module.full_default(contextIndex, audioData, language, 4, false);
+    // Try Module.full_default or Module._full_default
+    var transcribeFn = Module.full_default || Module._full_default;
+    if (typeof transcribeFn !== 'function') {
+      throw new Error('full_default not available');
+    }
+
+    var result = transcribeFn.call(Module, contextIndex, audioData, language, 4, false);
     if (result !== 0) throw new Error('Transcription failed: ' + result);
 
     // Wait for text to stabilize
@@ -261,7 +210,10 @@ async function transcribe(audioData, language) {
 
 function freeModel() {
   if (contextIndex > 0 && Module) {
-    Module.free(contextIndex);
+    var freeFn = Module.free || Module._free;
+    if (typeof freeFn === 'function') {
+      freeFn.call(Module, contextIndex);
+    }
     contextIndex = 0;
     modelLoaded = false;
     self.postMessage({ type: 'freed' });
