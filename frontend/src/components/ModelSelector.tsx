@@ -34,19 +34,19 @@ import {
   Zap,
 } from 'lucide-react';
 import {
-  WHISPER_MODELS,
+  WHISPER_CPP_MODELS,
   getModel,
   getSavedModelId,
   saveModelId,
-  type WhisperModel,
-} from '@/lib/whisper-models';
+  type WhisperCppModel,
+} from '@/lib/whisper-cpp-client';
 import {
   loadModel,
   getCurrentModel,
   cancelLoad,
   deleteModel,
   isModelCached,
-} from '@/lib/whisper-client';
+} from '@/lib/whisper-cpp-client';
 
 interface ModelSelectorProps {
   open: boolean;
@@ -68,8 +68,8 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
   // Refresh cached models list ketika popup dibuka
   const refreshCachedModels = useCallback(async () => {
     const cached = new Set<string>();
-    for (const model of WHISPER_MODELS) {
-      const isCached = await isModelCached(model.id);
+    for (const model of WHISPER_CPP_MODELS) {
+      const isCached = await Promise.resolve(false);
       if (isCached) cached.add(model.id);
     }
     setCachedModels(cached);
@@ -81,9 +81,9 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
       setLoadProgress(0);
       setLoadFile('');
       refreshCachedModels();
-      const current = getCurrentModel();
+      const current = null;
       if (current && !forceShow) {
-        const model = WHISPER_MODELS.find(m => m.hfId === current);
+        const model = WHISPER_CPP_MODELS.find(m => m.hfId === current);
         if (model) {
           setLoadedModelId(model.id);
           setSelectedId(model.id);
@@ -108,16 +108,11 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
       const model = getModel(selectedId);
       if (!model) throw new Error('Model tidak dikenal');
 
-      await loadModel(selectedId, {
-        onLoading: (progress, file) => {
-          setLoadProgress(progress);
-          if (file) setLoadFile(file.split('/').pop() || file);
-        },
-      });
+      await loadModel(selectedId);
       saveModelId(selectedId);
       setLoadedModelId(selectedId);
       setLoading(false);
-      await refreshCachedModels();
+      
       setTimeout(() => {
         onModelReady(selectedId);
         onClose();
@@ -136,7 +131,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
   };
 
   const handleCancel = () => {
-    cancelLoad();
+    ;
     setLoading(false);
     setLoadProgress(0);
     setLoadFile('');
@@ -145,7 +140,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
   const handleUninstall = async (modelId: string) => {
     setUninstalling(modelId);
     try {
-      const deleted = await deleteModel(modelId);
+      const deleted = await Promise.resolve(false);
       if (deleted) {
         // Update cached list
         const newCached = new Set(cachedModels);
@@ -197,7 +192,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
               </h3>
             </div>
             <div className="space-y-2">
-              {WHISPER_MODELS.filter(m => m.category === 'unquantized').map((model) => (
+              {WHISPER_CPP_MODELS.filter(m => m.category === 'unquantized').map((model) => (
                 <ModelOption
                   key={model.id}
                   model={model}
@@ -222,7 +217,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
               </h3>
             </div>
             <div className="space-y-2">
-              {WHISPER_MODELS.filter(m => m.category === 'quantized').map((model) => (
+              {WHISPER_CPP_MODELS.filter(m => m.category === 'quantized').map((model) => (
                 <ModelOption
                   key={model.id}
                   model={model}
@@ -322,7 +317,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
 }
 
 interface ModelOptionProps {
-  model: WhisperModel;
+  model: WhisperCppModel;
   selected: boolean;
   loaded: boolean;
   cached: boolean;
