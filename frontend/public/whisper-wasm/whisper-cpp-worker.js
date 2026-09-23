@@ -1,34 +1,22 @@
 /**
  * whisper-cpp-worker.js — Web Worker untuk whisper.cpp WASM
  *
- * Flow:
- *   1. Load main.js (WASM module, 1.8MB)
- *   2. Wait for runtime initialized
- *   3. On 'load-model': fetch model → write to FS → init context
- *   4. On 'transcribe': feed PCM audio → capture text → post back
- *
- * API (from emscripten.cpp):
- *   - Module.init(path) → context index (1-based, 0 = fail)
- *   - Module.full_default(index, audioFloat32, lang, nthreads, translate) → 0 = success
- *   - Module.free(index) → cleanup
- *   - Text output via Module.print (realtime transcription)
+ * Fix: wait for Module.FS ready sebelum writeFile
+ * Fix: proper Module initialization
  */
 
-// State
 var Module = null;
 var modelLoaded = false;
 var contextIndex = 0;
 var transcriptionText = '';
 var isProcessing = false;
+var runtimeReady = false;
 
-// Setup Module config BEFORE loading main.js
+// Setup Module config
 var moduleConfig = {
-  // Capture print output (where transcription text goes)
   print: function(text) {
     console.log('[whisper-cpp] print:', text);
-    // Parse transcription lines: [00:00:00.000 --> 00:00:05.000]  text
     if (text && text.match(/\[\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3}\]/)) {
-      // Extract text after timestamp
       var match = text.match(/\]\s*(.+)$/);
       if (match && match[1]) {
         transcriptionText += match[1].trim() + ' ';
@@ -46,10 +34,10 @@ var moduleConfig = {
   
   onRuntimeInitialized: function() {
     console.log('[whisper-cpp] WASM runtime initialized');
+    runtimeReady = true;
     self.postMessage({ type: 'ready' });
   },
   
-  // Don't exit
   noInitialRun: true,
   noExitRuntime: true,
 };
@@ -59,16 +47,37 @@ console.log('[whisper-cpp] Loading WASM module...');
 self.Module = moduleConfig;
 importScripts('/whisper-wasm/main.js');
 
-// Check if Module was set up
+// Some Emscripten builds need Module to be called as function
 setTimeout(function() {
-  if (typeof Module === 'undefined' || !Module._init) {
-    console.log('[whisper-cpp] Module not ready yet, waiting...');
-    // Some builds need Module to be called as function
-    if (typeof Module === 'function') {
-      Module(moduleConfig);
-    }
+  if (typeof Module === 'function') {
+    console.log('[whisper-cpp] Module is function, calling it...');
+    Module(moduleConfig);
+  } else if (typeof Module !== 'undefined' && Module._init) {
+    console.log('[whisper-cpp] Module already ready');
+    runtimeReady = true;
+    self.postMessage({ type: 'ready' });
   }
-}, 1000);
+}, 2000);
+
+// Wait for runtime to be ready
+function waitForRuntime(timeout) {
+  return new Promise(function(resolve, reject) {
+    var waited = 0;
+    var interval = setInterval(function() {
+      if (runtimeReady || (typeof Module !== 'undefined' && Module.FS && Module._init)) {
+        clearInterval(interval);
+        runtimeReady = true;
+        resolve();
+      } else {
+        waited += 500;
+        if (waited >= timeout) {
+          clearInterval(interval);
+          reject(new Error('WASM runtime not ready (timeout ' + (timeout/1000) + 's)'));
+        }
+      }
+    }, 500);
+  });
+}
 
 // Message handler
 self.onmessage = async function(e) {
@@ -88,6 +97,18 @@ async function loadModel(modelUrl) {
   try {
     console.log('[whisper-cpp] Loading model from:', modelUrl);
     self.postMessage({ type: 'model-loading', progress: 0 });
+
+    // Wait for runtime to be ready (max 30 seconds)
+    if (!runtimeReady) {
+      console.log('[whisper-cpp] Waiting for WASM runtime...');
+      await waitForRuntime(30000);
+    }
+
+    // Verify Module.FS is available
+    if (!Module || !Module.FS) {
+      throw new Error('Module.FS not available after runtime ready');
+    }
+    console.log('[whisper-cpp] Module.FS available');
 
     // Fetch model file
     var response = await fetch(modelUrl);
@@ -139,7 +160,7 @@ async function loadModel(modelUrl) {
     console.log('[whisper-cpp] Model loaded, context index:', contextIndex);
     self.postMessage({ type: 'model-loaded' });
     
-    // Free model data from JS memory (it's in WASM FS now)
+    // Free model data from JS memory
     modelData = null;
     chunks = null;
   } catch (err) {
@@ -170,24 +191,22 @@ async function transcribe(audioData, language) {
     self.postMessage({ type: 'transcribing', progress: 0 });
     
     // Call whisper full_default
-    // audioData is Float32Array PCM 16kHz mono
     var result = Module.full_default(
       contextIndex,
       audioData,
       language,
       4,    // nthreads
-      false // translate (false = transcribe)
+      false // translate
     );
     
     if (result !== 0) {
       throw new Error('Transcription failed, code: ' + result);
     }
     
-    // Wait for processing to complete (whisper runs in separate thread)
-    // Poll until transcriptionText stops changing
+    // Wait for processing (whisper runs in separate thread)
     var lastText = '';
     var stableCount = 0;
-    var maxWait = 120000; // 2 min
+    var maxWait = 120000;
     var waited = 0;
     
     while (waited < maxWait) {
@@ -196,9 +215,7 @@ async function transcribe(audioData, language) {
       
       if (transcriptionText === lastText) {
         stableCount++;
-        if (stableCount >= 4) { // 2 seconds stable = done
-          break;
-        }
+        if (stableCount >= 4) break;
       } else {
         stableCount = 0;
         lastText = transcriptionText;
@@ -230,7 +247,7 @@ async function transcribe(audioData, language) {
 }
 
 function freeModel() {
-  if (contextIndex > 0) {
+  if (contextIndex > 0 && Module) {
     Module.free(contextIndex);
     contextIndex = 0;
     modelLoaded = false;
