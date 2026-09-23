@@ -7,8 +7,7 @@ import { setupRecognitionGrammar } from '@/lib/speech-grammar';
 import { registerSttStop, unregisterSttStop } from '@/lib/stt-controller';
 import {
   recordHeardSentence,
-  getConfirmedPersonalWords,
-} from '@/lib/personal-dict';
+  } from '@/lib/personal-dict';
 
 const GROQ_CHUNK_INTERVAL = 10000; // 10s chunks (was 4s) - bigger chunks have valid webm headers
 const NO_RESULT_TIMEOUT = 10000;
