@@ -1,4 +1,4 @@
-// cache-buster: 20260923010704 20260922065314
+// cache-buster: 20260923012442 20260922065314
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -185,13 +185,13 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
 
   return (
     <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] overflow-hidden">
-      {/* Info Banner - STT siap pakai tanpa download */}
-      <div className="px-5 py-2 bg-emerald-500/[0.03] border-b border-emerald-500/10">
-        <div className="flex items-center gap-2 text-[11px] text-emerald-400/80">
-          <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+      {/* Info Banner - Whisper required for accurate STT */}
+      <div className="px-5 py-2 bg-amber-500/[0.03] border-b border-amber-500/10">
+        <div className="flex items-center gap-2 text-[11px] text-amber-400/80">
+          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
           <span>
-            <strong>STT siap pakai</strong> — Web Speech API aktif, langsung klik Start Recording.
-            Whisper (tombol "Koreksi") opsional untuk improve akurasi.
+            <strong>Pilih model Whisper dulu</strong> untuk akurasi maksimal.
+            Audio direkam → dikirim ke Whisper → transkrip akurat muncul.
           </span>
         </div>
       </div>
@@ -208,8 +208,8 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
           >
             <Cpu className="h-3.5 w-3.5" />
             {whisperSTT.isModelLoaded
-            ? 'Whisper Siap'
-            : 'Koreksi (Opsional)'}
+            ? 'Model Siap'
+            : 'Pilih Model'}
           </Button>
           <Button
             onClick={() => window.location.href = '/settings'}
@@ -430,9 +430,13 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
         <div className="flex items-center gap-3">
           <Button
             onClick={() => {
-              // Web Speech API sebagai primary recorder (real-time transcript)
-              // Whisper sebagai post-processor koreksi (setelah stop)
-              toggleRecording();
+              // Whisper STT: AudioWorklet rekam → Whisper transkrip (akurat)
+              if (modelSelectorOpen) {
+                toast.info('Selesaikan dulu pemilihan model di popup');
+                return;
+              }
+              if (whisperSTT.status === 'loading-model') return;
+              whisperSTT.toggleRecording();
             }}
             disabled={isProcessing}
             size="lg"

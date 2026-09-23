@@ -318,16 +318,68 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
       // Listen for result saat stop
       workletNode.port.onmessage = async (e) => {
         if (e.data.type === 'result') {
-          console.log('[Whisper] Got recorded samples:', e.data.data.length);
+          console.log('[Whisper] Got recorded samples:', e.data.data?.length || 0);
           recordedSamplesRef.current = e.data.data;
 
           // Process: transcribe
           setStatus('processing');
           try {
-            const audioData = e.data.data as Float32Array;
-            console.log(`[Whisper] Audio: ${audioData.length} samples (${(audioData.length / SAMPLE_RATE).toFixed(1)}s)`);
+            let audioData = e.data.data as Float32Array;
 
-            // Transcribe via worker
+            // ===== VALIDASI AUDIO =====
+            // 1. Cek length minimal (0.5 detik = 8000 samples @ 16kHz)
+            if (!audioData || audioData.length < SAMPLE_RATE * 0.5) {
+              console.warn(`[Whisper] Audio too short: ${audioData?.length || 0} samples`);
+              options.onError?.('Audio terlalu pendek (min 0.5 detik) — coba bicara lebih lama');
+              setStatus('idle');
+              return;
+            }
+
+            // 2. Normalize audio (range -1 to 1) — penting untuk OrtRun
+            let maxAmp = 0;
+            for (let i = 0; i < audioData.length; i++) {
+              const abs = Math.abs(audioData[i]);
+              if (abs > maxAmp) maxAmp = abs;
+            }
+            console.log(`[Whisper] Max amplitude: ${maxAmp}`);
+            if (maxAmp === 0) {
+              options.onError?.('Audio kosong (tidak ada suara) — cek mikrofon');
+              setStatus('idle');
+              return;
+            }
+            // Normalize kalau amplitude terlalu kecil
+            if (maxAmp < 0.1) {
+              const scale = 1 / maxAmp;
+              const normalized = new Float32Array(audioData.length);
+              for (let i = 0; i < audioData.length; i++) {
+                normalized[i] = audioData[i] * scale;
+              }
+              audioData = normalized;
+              console.log('[Whisper] Audio normalized (amplitude was too low)');
+            }
+
+            // 3. Trim silence di awal dan akhir (5% dari max amplitude threshold)
+            const threshold = maxAmp * 0.05;
+            let startIdx = 0;
+            let endIdx = audioData.length;
+            for (let i = 0; i < audioData.length; i++) {
+              if (Math.abs(audioData[i]) > threshold) {
+                startIdx = Math.max(0, i - SAMPLE_RATE * 0.1);  // 100ms padding
+                break;
+              }
+            }
+            for (let i = audioData.length - 1; i >= 0; i--) {
+              if (Math.abs(audioData[i]) > threshold) {
+                endIdx = Math.min(audioData.length, i + SAMPLE_RATE * 0.1);
+                break;
+              }
+            }
+            if (endIdx - startIdx > SAMPLE_RATE * 0.3) {  // only trim if result > 0.3s
+              audioData = audioData.slice(startIdx, endIdx);
+            }
+            console.log(`[Whisper] Final audio: ${audioData.length} samples (${(audioData.length / SAMPLE_RATE).toFixed(1)}s)`);
+
+            // 4. Transcribe via worker
             const result = await transcribe(audioData, 'indonesian');
             const text = result.text.trim();
             console.log(`[Whisper] Transcription: "${text.substring(0, 100)}..."`);
@@ -335,12 +387,17 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
             if (text) {
               options.onTranscript?.(text, true);
             } else {
-              options.onError?.('Transkripsi kosong — coba bicara lebih jelas');
+              options.onError?.('Transkripsi kosong — coba bicara lebih jelas atau dekat ke mikrofon');
             }
           } catch (err) {
             const errMsg = err instanceof Error ? err.message : String(err);
             console.error('[Whisper] Transcribe error:', errMsg);
-            options.onError?.(`Gagal transkripsi: ${errMsg}`);
+            // Specific error messages
+            if (errMsg.includes('OrtRun') || errMsg.includes('error code = 1')) {
+              options.onError?.('Model error — coba re-download model atau pakai model lain');
+            } else {
+              options.onError?.(`Gagal transkripsi: ${errMsg}`);
+            }
           } finally {
             setStatus('idle');
             // Auto-free RAM setelah 30 detik
