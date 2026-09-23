@@ -1,4 +1,4 @@
-// cache-buster: 20260923014627 20260922065314
+// cache-buster: 20260923020000
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { AudioVisualizer } from '@/components/audio-visualizer';
 import { PersonalDictPanel } from '@/components/personal-dict-panel';
 import {
   Mic, MicOff, Wifi, WifiOff, RefreshCw, Trash2, CheckCircle2, Radio,
-  FileText, Loader2, Rocket, Sparkles, Upload, Monitor, MonitorUp, Brain, Cpu, HardDrive, CheckCircle2,
+  FileText, Loader2, Rocket, Sparkles, Upload, Monitor, MonitorUp, Brain, Cpu, HardDrive,
 } from 'lucide-react';
 import { MaterialUpload } from '@/components/material-upload';
 import { YouTubeTranscript } from '@/components/youtube-transcript';
