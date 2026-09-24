@@ -110,7 +110,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
       // 4. Auto-load dengan timeout 15 detik total
       // Silent: ga set isAutoLoading true (jangan show Loading di UI)
       // Kalau timeout, user bisa manual load via popup
-      const loadPromise = autoLoadSavedModel();
+      const loadPromise = false;
       const timeoutPromise = new Promise<boolean>((resolve) => {
         setTimeout(() => resolve(false), 15000);
       });
