@@ -184,30 +184,21 @@ self.addEventListener('message', async (e: MessageEvent) => {
         return;
       }
 
-      // ===== Pad audio to 30 seconds (Whisper's expected input length) =====
-      // Whisper expects 30s audio. Shorter audio → OrtRun error.
-      // Pad with silence if shorter, truncate if longer.
-      const TARGET_LENGTH = 16000 * 30;  // 30 seconds @ 16kHz
-      let paddedAudio: Float32Array;
-      if (audio.length >= TARGET_LENGTH) {
-        // Truncate to 30s
-        paddedAudio = audio.slice(0, TARGET_LENGTH);
-      } else {
-        // Pad with silence
-        paddedAudio = new Float32Array(TARGET_LENGTH);
-        paddedAudio.set(audio);
-        console.log(`[Worker] Padded audio from ${audio.length} to ${TARGET_LENGTH} samples (30s)`);
-      }
+      // No padding needed — chunking handles short audio internally
+      // chunk_length_s: 30 will split audio into 30s chunks
+      // Short audio (< 30s) will be processed as single chunk
+      const audioCopy = new Float32Array(audio);
 
-      // Make a copy — model may modify the buffer
-      const audioCopy = new Float32Array(paddedAudio);
-
-      // ===== Simplified transcribe options (no chunking, no timestamps) =====
+      // ===== Chunking ACTIVE — hemat RAM (proses 30s chunk, bukan full audio) =====
+      // chunk_length_s: proses audio dalam chunk 30 detik
+      // stride_length_s: overlap 5 detik antar chunk (avoid missing words di boundary)
+      // return_timestamps: true untuk proper chunk handling
       const output: any = await (transcriber as any)(audioCopy, {
         language,
         task: 'transcribe',
-        // NO chunk_length_s, NO stride_length_s — let pipeline handle internally
-        // NO return_timestamps — simpler output
+        chunk_length_s: 30,
+        stride_length_s: 5,
+        return_timestamps: true,
       });
 
       const text = output?.text?.trim() || '';
