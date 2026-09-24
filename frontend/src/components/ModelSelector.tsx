@@ -34,19 +34,19 @@ import {
   Zap,
 } from 'lucide-react';
 import {
-  WHISPER_CPP_MODELS,
+  WHISPER_MODELS,
   getModel,
   getSavedModelId,
   saveModelId,
-  type WhisperCppModel,
-} from '@/lib/whisper-cpp-client';
+  type WhisperModel,
+} from '@/lib/whisper-models';
 import {
   loadModel,
   getCurrentModel,
   cancelLoad,
   deleteModel,
   isModelCached,
-} from '@/lib/whisper-cpp-client';
+} from '@/lib/whisper-models';
 
 interface ModelSelectorProps {
   open: boolean;
@@ -68,7 +68,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
   // Refresh cached models list ketika popup dibuka
   const refreshCachedModels = useCallback(async () => {
     const cached = new Set<string>();
-    for (const model of WHISPER_CPP_MODELS) {
+    for (const model of WHISPER_MODELS) {
       const isCached = await Promise.resolve(false);
       if (isCached) cached.add(model.id);
     }
@@ -83,7 +83,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
       refreshCachedModels();
       const current = null;
       if (current && !forceShow) {
-        const model = WHISPER_CPP_MODELS.find(m => m.hfId === current);
+        const model = WHISPER_MODELS.find(m => m.hfId === current);
         if (model) {
           setLoadedModelId(model.id);
           setSelectedId(model.id);
@@ -192,7 +192,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
               </h3>
             </div>
             <div className="space-y-2">
-              {WHISPER_CPP_MODELS.filter(m => m.category === 'unquantized').map((model) => (
+              {WHISPER_MODELS.filter(m => m.category === 'unquantized').map((model) => (
                 <ModelOption
                   key={model.id}
                   model={model}
@@ -217,7 +217,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
               </h3>
             </div>
             <div className="space-y-2">
-              {WHISPER_CPP_MODELS.filter(m => m.category === 'quantized').map((model) => (
+              {WHISPER_MODELS.filter(m => m.category === 'quantized').map((model) => (
                 <ModelOption
                   key={model.id}
                   model={model}
@@ -317,7 +317,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
 }
 
 interface ModelOptionProps {
-  model: WhisperCppModel;
+  model: WhisperModel;
   selected: boolean;
   loaded: boolean;
   cached: boolean;
