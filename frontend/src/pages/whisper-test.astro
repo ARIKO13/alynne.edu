@@ -1,0 +1,200 @@
+---
+import "@/styles/global.css";
+---
+
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whisper Test - ALYNNE</title>
+</head>
+<body class="bg-[#09090b] text-white min-h-screen p-8">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-2xl font-bold mb-4">Whisper Test Page</h1>
+        <p class="text-sm text-zinc-400 mb-4">Test transformers.js langsung tanpa app</p>
+        
+        <div class="space-y-4">
+            <div>
+                <button id="loadBtn" class="px-4 py-2 bg-[#8B5CF6] rounded-lg text-sm font-medium">Load Small Model</button>
+                <span id="loadStatus" class="ml-3 text-sm text-zinc-400"></span>
+            </div>
+            
+            <div>
+                <button id="recordBtn" class="px-4 py-2 bg-green-600 rounded-lg text-sm font-medium" disabled>Start Recording</button>
+                <span id="recordStatus" class="ml-3 text-sm text-zinc-400"></span>
+            </div>
+            
+            <div>
+                <p class="text-sm text-zinc-400 mb-2">Transcript:</p>
+                <textarea id="transcript" class="w-full h-32 bg-white/5 border border-white/10 rounded-lg p-3 text-sm" readonly></textarea>
+            </div>
+            
+            <div id="log" class="bg-black/50 rounded-lg p-3 text-xs font-mono text-green-400 h-48 overflow-auto"></div>
+        </div>
+    </div>
+    
+    <script type="module">
+        let transcriber = null;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+        
+        const log = (msg) => {
+            const el = document.getElementById("log");
+            const time = new Date().toLocaleTimeString();
+            el.innerHTML += "[" + time + "] " + msg + "<br>";
+            el.scrollTop = el.scrollHeight;
+            console.log("[Test]", msg);
+        };
+        
+        // Load model
+        document.getElementById("loadBtn").addEventListener("click", async () => {
+            const status = document.getElementById("loadStatus");
+            const btn = document.getElementById("loadBtn");
+            
+            try {
+                btn.disabled = true;
+                status.textContent = "Loading...";
+                log("Importing transformers.js...");
+                
+                const { pipeline, env } = await import("https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2");
+                
+                env.allowRemoteModels = true;
+                env.allowLocalModels = false;
+                env.useBrowserCache = true;
+                env.backends.onnx.wasm.numThreads = 1;
+                env.backends.onnx.wasm.proxy = false;
+                
+                log("Loading Small model (155MB)...");
+                status.textContent = "Downloading Small (155MB)...";
+                
+                transcriber = await pipeline("automatic-speech-recognition", "Xenova/whisper-small", {
+                    quantized: true,
+                    progress_callback: (p) => {
+                        if (p.status === "progress") {
+                            status.textContent = "Downloading: " + (p.progress || 0).toFixed(1) + "%";
+                            if (Math.round(p.progress || 0) % 10 === 0) {
+                                log("Download: " + (p.progress || 0).toFixed(1) + "%");
+                            }
+                        } else if (p.status === "ready") {
+                            log("Model ready!");
+                        }
+                    }
+                });
+                
+                log("Model loaded successfully!");
+                status.textContent = "Model Siap!";
+                document.getElementById("recordBtn").disabled = false;
+            } catch (err) {
+                log("ERROR: " + err.message);
+                status.textContent = "Error: " + err.message;
+                btn.disabled = false;
+            }
+        });
+        
+        // Recording
+        document.getElementById("recordBtn").addEventListener("click", async () => {
+            if (isRecording) {
+                // Stop
+                isRecording = false;
+                mediaRecorder.stop();
+                document.getElementById("recordBtn").textContent = "Start Recording";
+                document.getElementById("recordStatus").textContent = "Processing...";
+                return;
+            }
+            
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioChunks = [];
+                
+                // Use AudioContext for PCM capture
+                const audioContext = new AudioContext({ sampleRate: 16000 });
+                const source = audioContext.createMediaStreamSource(stream);
+                
+                // Use MediaRecorder for simplicity
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) audioChunks.push(e.data);
+                };
+                mediaRecorder.onstop = async () => {
+                    log("Recording stopped, processing...");
+                    
+                    const blob = new Blob(audioChunks, { type: "audio/webm" });
+                    log("Blob size: " + blob.size + " bytes");
+                    
+                    // Decode
+                    const arrayBuffer = await blob.arrayBuffer();
+                    const decoded = await audioContext.decodeAudioData(arrayBuffer);
+                    log("Decoded: " + decoded.length + " samples, " + decoded.sampleRate + "Hz");
+                    
+                    // Get mono
+                    let audioData;
+                    if (decoded.numberOfChannels > 1) {
+                        audioData = new Float32Array(decoded.length);
+                        for (let i = 0; i < decoded.length; i++) {
+                            let sum = 0;
+                            for (let ch = 0; ch < decoded.numberOfChannels; ch++) {
+                                sum += decoded.getChannelData(ch)[i];
+                            }
+                            audioData[i] = sum / decoded.numberOfChannels;
+                        }
+                    } else {
+                        audioData = decoded.getChannelData(0);
+                    }
+                    
+                    // Validate
+                    let maxAmp = 0;
+                    for (let i = 0; i < audioData.length; i++) {
+                        if (!isFinite(audioData[i])) audioData[i] = 0;
+                        if (audioData[i] > 1) audioData[i] = 1;
+                        if (audioData[i] < -1) audioData[i] = -1;
+                        const abs = Math.abs(audioData[i]);
+                        if (abs > maxAmp) maxAmp = abs;
+                    }
+                    log("Max amplitude: " + maxAmp);
+                    log("Audio: " + audioData.length + " samples (" + (audioData.length / 16000).toFixed(1) + "s)");
+                    
+                    if (audioData.length < 8000) {
+                        log("ERROR: Audio too short (< 0.5s)");
+                        document.getElementById("recordStatus").textContent = "Audio too short";
+                        return;
+                    }
+                    
+                    // Transcribe
+                    log("Transcribing with Whisper...");
+                    try {
+                        const result = await transcriber(audioData, {
+                            language: "indonesian",
+                            task: "transcribe",
+                            chunk_length_s: 30,
+                            stride_length_s: 5,
+                            return_timestamps: true,
+                        });
+                        
+                        const text = result.text.trim();
+                        log("Transcription: " + text);
+                        document.getElementById("transcript").value = text;
+                        document.getElementById("recordStatus").textContent = "Done!";
+                    } catch (err) {
+                        log("TRANSCRIBE ERROR: " + err.message);
+                        document.getElementById("recordStatus").textContent = "Error: " + err.message;
+                    }
+                    
+                    // Stop tracks
+                    stream.getTracks().forEach(t => t.stop());
+                    audioContext.close();
+                };
+                
+                mediaRecorder.start();
+                isRecording = true;
+                document.getElementById("recordBtn").textContent = "Stop Recording";
+                document.getElementById("recordStatus").textContent = "Recording...";
+                log("Recording started");
+            } catch (err) {
+                log("ERROR: " + err.message);
+            }
+        });
+    </script>
+</body>
+</html>
