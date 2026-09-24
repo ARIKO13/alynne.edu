@@ -46,7 +46,8 @@ import {
   cancelLoad,
   deleteModel,
   isModelCached,
-} from '@/lib/whisper-models';
+  isModelLoaded,
+} from '@/lib/whisper-client';
 
 interface ModelSelectorProps {
   open: boolean;
