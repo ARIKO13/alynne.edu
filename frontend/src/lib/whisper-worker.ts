@@ -21,18 +21,19 @@
 
 import { pipeline, env } from '@xenova/transformers';
 
-// ===== ONNX Runtime Web config (fix OrtRun error) =====
+// ===== WebGPU config (fix OrtRun error + enable GPU acceleration) =====
 env.allowRemoteModels = true;
 env.allowLocalModels = false;
 env.useBrowserCache = true;
 
-// Fix OrtRun "offset is out of bounds" error:
-// 1. Single thread (avoid threading bugs in WASM)
+// PRIMARY: WebGPU backend (GPU acceleration, avoids WASM OrtRun crash)
+// WebGPU allocates memory di GPU VRAM (bukan RAM), bisa handle model besar
 env.backends.onnx.wasm.numThreads = 1;
-// 2. Don't use proxy worker (simpler, less memory issues)
 env.backends.onnx.wasm.proxy = false;
-// 3. Enable SIMD if available (faster + more stable)
 env.backends.onnx.wasm.simd = true;
+
+// WebGPU will be used as device parameter in pipeline() call
+// Fallback ke WASM kalau WebGPU tidak support
 
 type Pipeline = Awaited<ReturnType<typeof pipeline>>;
 
@@ -102,6 +103,49 @@ self.addEventListener('message', async (e: MessageEvent) => {
               file: p.file,
               loaded: p.loaded,
               total: p.total,
+              model,
+              status: `Downloading: ${p.file ? p.file.split('/').pop() : '...'} (${(p.progress || 0).toFixed(1)}%)`,
+            });
+          } else if (p.status === 'ready') {
+            self.postMessage({ type: 'loading', progress: 100, model, status: 'ready' });
+          } else if (p.status === 'download') {
+            self.postMessage({ type: 'loading', progress: 0, model, status: 'Starting download...' });
+          } else if (p.status === 'done') {
+            self.postMessage({ type: 'loading', progress: 100, model, status: 'Download complete, initializing...' });
+          }
+        },
+      });
+
+            // ===== Try WebGPU first, fallback to WASM =====
+      let useDevice = 'wasm';  // default fallback
+      try {
+        // Check if WebGPU is available
+        if (navigator.gpu) {
+          const adapter = await navigator.gpu.requestAdapter();
+          if (adapter) {
+            useDevice = 'webgpu';
+            console.log('[Worker] WebGPU available! Using GPU acceleration');
+          } else {
+            console.log('[Worker] WebGPU not available (no adapter), using WASM');
+          }
+        } else {
+          console.log('[Worker] WebGPU not supported, using WASM');
+        }
+      } catch (e) {
+        console.log('[Worker] WebGPU check failed, using WASM:', e);
+      }
+
+      // Pipeline with device parameter
+      const pipelinePromise = pipeline('automatic-speech-recognition', model, {
+        quantized: useQuantized,
+        device: useDevice,  // 'webgpu' or 'wasm'
+        dtype: useDevice === 'webgpu' ? 'fp32' : undefined,  // WebGPU pakai fp32
+        progress_callback: (p: any) => {
+          if (p.status === 'progress') {
+            self.postMessage({
+              type: 'loading',
+              progress: p.progress || 0,
+              file: p.file,
               model,
               status: `Downloading: ${p.file ? p.file.split('/').pop() : '...'} (${(p.progress || 0).toFixed(1)}%)`,
             });

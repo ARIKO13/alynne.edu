@@ -65,12 +65,33 @@ import "@/styles/global.css";
                 env.useBrowserCache = true;
                 env.backends.onnx.wasm.numThreads = 1;
                 env.backends.onnx.wasm.proxy = false;
+                // WebGPU will be detected and used if available
+                env.backends.onnx.wasm.proxy = false;
                 
                 log("Loading Small model (155MB)...");
                 status.textContent = "Downloading Small (155MB)...";
                 
+                // Check WebGPU
+                let useDevice = "wasm";
+                try {
+                    if (navigator.gpu) {
+                        const adapter = await navigator.gpu.requestAdapter();
+                        if (adapter) {
+                            useDevice = "webgpu";
+                            log("WebGPU available! Using GPU");
+                        } else {
+                            log("WebGPU no adapter, using WASM");
+                        }
+                    } else {
+                        log("WebGPU not supported, using WASM");
+                    }
+                } catch (e) {
+                    log("WebGPU check failed: " + e.message);
+                }
+                
                 transcriber = await pipeline("automatic-speech-recognition", "Xenova/whisper-small", {
                     quantized: true,
+                    device: useDevice,
                     progress_callback: (p) => {
                         if (p.status === "progress") {
                             status.textContent = "Downloading: " + (p.progress || 0).toFixed(1) + "%";
