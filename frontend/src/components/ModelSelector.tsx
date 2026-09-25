@@ -109,7 +109,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
       const model = getModel(selectedId);
       if (!model) throw new Error('Model tidak dikenal');
 
-      await loadModel(selectedId);
+      await loadModel(selectedId, (progress) => { setLoadProgress(progress); });
       saveModelId(selectedId);
       setLoadedModelId(selectedId);
       setLoading(false);

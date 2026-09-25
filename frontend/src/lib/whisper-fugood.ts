@@ -119,10 +119,42 @@ export async function loadModel(
 
     // Init whisper with model URL
     // @fugood/whisper.node handles download + cache + FS write internally
+    // Download model manually first (with progress tracking)
+    onProgress?.(0);
+    console.log('[Whisper-Fugood] Downloading model...');
+    
+    const response = await fetch(model.url);
+    if (!response.ok) throw new Error('Failed to fetch model: ' + response.status);
+    
+    const contentLength = response.headers.get('content-length');
+    const total = parseInt(contentLength, 10);
+    const reader = response.body.getReader();
+    const chunks = [];
+    let received = 0;
+    
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      received += value.length;
+      if (total) {
+        const progress = (received / total) * 100;
+        onProgress?.(progress);
+        if (Math.round(progress) % 10 === 0) {
+          console.log('[Whisper-Fugood] Download:', progress.toFixed(1) + '%');
+        }
+      }
+    }
+    
+    // Create blob URL for cached model
+    const blob = new Blob(chunks);
+    const blobUrl = URL.createObjectURL(blob);
+    console.log('[Whisper-Fugood] Model downloaded:', received, 'bytes');
+    onProgress?.(100);
+    
     whisperInstance = await initWhisper({
-      filePath: model.url,
-      useGpu: false, // Set true kalau WebGPU support confirmed
-      // Model download cached di browser Cache Storage by default
+      filePath: blobUrl,
+      useGpu: false,
     });
 
     currentModelId = modelId;
