@@ -19,7 +19,7 @@
  *   - Free model dari memory (untuk switch atau hemat RAM)
  */
 
-import { pipeline, env } from '@xenova/transformers';
+import { pipeline, env } from '@huggingface/transformers';
 
 // ===== WebGPU config (fix OrtRun error + enable GPU acceleration) =====
 env.allowRemoteModels = true;
