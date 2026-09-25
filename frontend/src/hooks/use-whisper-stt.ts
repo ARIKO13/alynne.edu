@@ -14,7 +14,7 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { transcribeViaServer } from '@/lib/server-whisper';
+import { loadModel as fgLoadModel, transcribe as fgTranscribe, freeModel as fgFreeModel, isModelLoaded as fgIsModelLoaded, getSavedModelId as fgGetSavedModelId, getModel as fgGetModel } from '@/lib/whisper-fugood';
 
 // Direct imports from whisper-client (transformers.js)
 
@@ -397,7 +397,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
             // Copy audio karena transcribe akan transfer buffer ke worker
             // Copy audio karena transcribe akan transfer buffer ke worker
             const audioCopy = new Float32Array(audioData);
-            const text = await transcribeViaServer(audioData);
+            const result = await fgTranscribe(audioData, "id"); const text = result.text;
             // text already set by transcribeViaServer
             console.log(`[Whisper] Transcription: "${text.substring(0, 100)}..."`);
 
@@ -517,7 +517,18 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
    * Transcribe a full File (upload mode).
    */
   const transcribeFile = useCallback(async (file: File): Promise<string> => {
-    const ready = true; // Server-side Whisper - no model needed
+    let ready = true;
+    try {
+      if (!fgIsModelLoaded()) {
+        const savedId = fgGetSavedModelId();
+        console.log("[Whisper] Auto-loading from cache:", savedId);
+        await fgLoadModel(savedId);
+      }
+      ready = fgIsModelLoaded();
+    } catch (err) {
+      console.warn("[Whisper] Auto-load failed:", err);
+      ready = false;
+    }
     if (!ready) throw new Error('Model not loaded');
 
     setStatus('processing');
