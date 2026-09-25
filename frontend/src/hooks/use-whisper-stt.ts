@@ -19,6 +19,7 @@ import {
   transcribe,
   freeModel,
   isModelLoaded,
+  transcribeViaServer,
 } from '@/lib/server-whisper';
 
 // Direct imports from whisper-client (transformers.js)
@@ -403,7 +404,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
             // Copy audio karena transcribe akan transfer buffer ke worker
             const audioCopy = new Float32Array(audioData);
             const text = await transcribeViaServer(audioData);
-            const text = result.text.trim();
+            // text already set by transcribeViaServer
             console.log(`[Whisper] Transcription: "${text.substring(0, 100)}..."`);
 
             if (text) {
@@ -569,7 +570,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
       if (isModelLoaded()) {
         freeModel();
       }
-      await loadModel(newModelId);
+      // server-side: no loadModel needed
       setModelId(newModelId);
       setStatus('idle');
     } catch (err) {
