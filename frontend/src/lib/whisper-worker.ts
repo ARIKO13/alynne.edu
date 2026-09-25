@@ -92,7 +92,38 @@ self.addEventListener('message', async (e: MessageEvent) => {
 
       const useQuantized = quantized !== undefined ? quantized : !model.includes('tiny') && !model.includes('base');
 
-      // Race: pipeline load vs timeout
+      // WebGPU detection
+      let useDevice = 'wasm';
+      try {
+        if (typeof navigator !== 'undefined' && navigator.gpu) {
+          const adapter = await navigator.gpu.requestAdapter();
+          if (adapter) {
+            useDevice = 'webgpu';
+            console.log('[Worker] WebGPU available! Using GPU');
+          } else {
+            console.log('[Worker] WebGPU no adapter, using WASM');
+          }
+        } else {
+          console.log('[Worker] WebGPU not supported, using WASM');
+        }
+      } catch (e) {
+        console.log('[Worker] WebGPU check failed:', e);
+      }
+
+      // Pipeline with device (WebGPU or WASM)
+      const pipelinePromise = pipeline('automatic-speech-recognition', model, {
+        quantized: useQuantized,
+        device: useDevice,
+        progress_callback: (p: any) => {
+          if (p.status === 'progress') {
+            self.postMessage({ type: 'loading', progress: p.progress || 0, model });
+          } else if (p.status === 'ready') {
+            self.postMessage({ type: 'loading', progress: 100, model });
+          }
+        },
+      });
+
+      transcriber = await Promise.race([pipelinePromise, loadTimeout]);
 
       // Success
       clearTimeout(timeoutHandle);
