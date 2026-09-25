@@ -125,7 +125,7 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
     onModelRequired: () => setModelSelectorOpen(true),
     onTranscript: (text, isFinal) => {
       if (isFinal) {
-        appendTranscript(text);
+        useAppStore.getState().const store = useAppStore.getState(); if (store.appendTranscript) { store.appendTranscript(text); } else { store.setTranscript((store.transcript || "") + " " + text); }
       }
     },
     onInterim: (text) => setInterimTranscript(text),
