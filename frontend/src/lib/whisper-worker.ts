@@ -110,19 +110,25 @@ self.addEventListener('message', async (e: MessageEvent) => {
         console.log('[Worker] WebGPU check failed:', e);
       }
 
-      // Pipeline with device (WebGPU or WASM)
-      const pipelinePromise = pipeline('automatic-speech-recognition', model, {
-        quantized: useQuantized,
-        device: useDevice,
-        progress_callback: (p: any) => {
+      // v4 API: device + dtype for WebGPU
+      const pipelineOpts = {
+        progress_callback: (p) => {
           if (p.status === 'progress') {
             self.postMessage({ type: 'loading', progress: p.progress || 0, model });
           } else if (p.status === 'ready') {
             self.postMessage({ type: 'loading', progress: 100, model });
           }
         },
-      });
-
+      };
+      if (useDevice === 'webgpu') {
+        pipelineOpts.device = 'webgpu';
+        pipelineOpts.dtype = 'fp32';
+      } else {
+        pipelineOpts.device = 'wasm';
+        pipelineOpts.dtype = useQuantized ? 'q8' : 'fp32';
+      }
+      console.log('[Worker] Pipeline:', pipelineOpts.device, pipelineOpts.dtype);
+      const pipelinePromise = pipeline('automatic-speech-recognition', model, pipelineOpts);
       transcriber = await Promise.race([pipelinePromise, loadTimeout]);
 
       // Success
