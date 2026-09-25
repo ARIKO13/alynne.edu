@@ -87,7 +87,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
       // 2. Cek apakah ada saved model di localStorage
       let savedId: string | null = null;
       try {
-        savedId = localStorage.getItem('whisper-selected-model');
+        savedId = fgGetSavedModelId();
       } catch {
         return;
       }
@@ -169,13 +169,13 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
     // 2. Cek localStorage — kalau user pernah download, auto-load dari disk
     let savedId: string | null = null;
     try {
-      savedId = localStorage.getItem('whisper-selected-model');
+      savedId = fgGetSavedModelId();
     } catch {
       savedId = null;
     }
 
     if (savedId) {
-      const model = getModel(savedId);
+      const model = fgGetModel(savedId);
       if (model) {
         // Auto-load dari disk dengan timeout 60 detik
         try {
@@ -183,7 +183,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
           setLoadProgress(0);
           console.log('[Whisper] Loading model from disk:', savedId);
 
-          const loadPromise = loadModel(savedId);
+          const loadPromise = fgLoadModel(savedId);
           const timeoutPromise = new Promise<never>((_, reject) => {
             setTimeout(() => reject(new Error('Timeout loading model (60s)')), 60000);
           });
@@ -200,7 +200,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
           setError(`Gagal memuat model: ${errMsg}`);
           options.onError?.(`Gagal memuat model: ${errMsg}`);
           // Hapus saved model kalau corrupt
-          try { localStorage.removeItem('whisper-selected-model'); } catch {}
+          try { localStorage.removeItem('whisper-fugood-model'); } catch {}
           options.onModelRequired?.();
           return false;
         }
