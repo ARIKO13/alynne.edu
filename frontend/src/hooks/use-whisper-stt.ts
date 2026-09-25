@@ -19,7 +19,7 @@ import {
   transcribe,
   freeModel,
   isModelLoaded,
-} from '@/lib/whisper-client';
+} from '@/lib/server-whisper';
 
 // Direct imports from whisper-client (transformers.js)
 
@@ -274,7 +274,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
       options.onError?.(`Error: ${errMsg}`);
       return;
     }
-    if (!ready) {
+    if (!ready) { // always true for server-side
       console.log('[Whisper] Model not ready — popup should be open');
       return;
     }
@@ -402,7 +402,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
             // Copy audio karena transcribe akan transfer buffer ke worker
             // Copy audio karena transcribe akan transfer buffer ke worker
             const audioCopy = new Float32Array(audioData);
-            const result = await transcribe(audioCopy, 'indonesian');
+            const text = await transcribeViaServer(audioData);
             const text = result.text.trim();
             console.log(`[Whisper] Transcription: "${text.substring(0, 100)}..."`);
 
@@ -522,7 +522,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
    * Transcribe a full File (upload mode).
    */
   const transcribeFile = useCallback(async (file: File): Promise<string> => {
-    const ready = await ensureModelLoaded();
+    const ready = true; // Server-side Whisper - no model needed
     if (!ready) throw new Error('Model not loaded');
 
     setStatus('processing');

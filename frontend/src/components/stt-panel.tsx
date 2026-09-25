@@ -1,4 +1,4 @@
-// cache-buster: 20260923023605
+// cache-buster: 20260925155306
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -186,8 +186,8 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
         <div className="flex items-center gap-2 text-[11px] text-emerald-400/80">
           <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
           <span>
-            <strong>Pilih model whisper.cpp</strong> — Q5_0 asli, pure client-side.
-            Audio direkam di browser → diproses Whisper di client (no server load).
+            <strong>STT siap pakai</strong> — server-side Whisper (akurat, no download).
+            Audio direkam di browser → diproses server Whisper (reliable, no crash).
           </span>
         </div>
       </div>
