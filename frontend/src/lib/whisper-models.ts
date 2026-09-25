@@ -33,7 +33,7 @@ export const WHISPER_MODELS: WhisperModel[] = [
   // === TANPA KUANTISASI (FP16, ukuran asli) ===
   {
     id: 'tiny',
-    hfId: 'Xenova/whisper-tiny',
+    hfId: 'onnx-community/whisper-tiny',
     name: 'Tiny (Unquantized)',
     sizeMB: 75,
     ramMB: 350,
@@ -47,7 +47,7 @@ export const WHISPER_MODELS: WhisperModel[] = [
   },
   {
     id: 'base',
-    hfId: 'Xenova/whisper-base',
+    hfId: 'onnx-community/whisper-base',
     name: 'Base (Unquantized)',
     sizeMB: 145,
     ramMB: 500,
@@ -62,7 +62,7 @@ export const WHISPER_MODELS: WhisperModel[] = [
   // === DENGAN KUANTISASI (Q5/Q8, compressed) ===
   {
     id: 'small',
-    hfId: 'Xenova/whisper-small',
+    hfId: 'onnx-community/whisper-small',
     name: 'Small (Quantized)',
     sizeMB: 155,
     ramMB: 800,
@@ -76,7 +76,7 @@ export const WHISPER_MODELS: WhisperModel[] = [
   },
   {
     id: 'medium',
-    hfId: 'Xenova/whisper-medium',
+    hfId: 'onnx-community/whisper-medium',
     name: 'Medium (Quantized)',
     sizeMB: 470,
     ramMB: 1800,
@@ -90,7 +90,7 @@ export const WHISPER_MODELS: WhisperModel[] = [
   },
   {
     id: 'large-turbo',
-    hfId: 'onnx-community/whisper-large-v3-turbo_timestamped',
+    hfId: 'onnx-community/whisper-large-v3-turbo',
     name: 'Large v3 Turbo (Quantized)',
     sizeMB: 580,
     ramMB: 900,
@@ -104,7 +104,7 @@ export const WHISPER_MODELS: WhisperModel[] = [
   },
   {
     id: 'large-full',
-    hfId: 'Xenova/whisper-large-v3',
+    hfId: 'onnx-community/whisper-large-v3',
     name: 'Large v3 Full (Quantized)',
     sizeMB: 1100,
     ramMB: 2500,
