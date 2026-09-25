@@ -14,13 +14,7 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import {
-  loadModel,
-  transcribe,
-  freeModel,
-  isModelLoaded,
-  transcribeViaServer,
-} from '@/lib/server-whisper';
+import { transcribeViaServer } from '@/lib/server-whisper';
 
 // Direct imports from whisper-client (transformers.js)
 
