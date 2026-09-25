@@ -19,7 +19,7 @@ export default defineConfig({
       format: 'es',
     },
     ssr: {
-      noExternal: ['zustand', 'jose', 'sonner', 'lucide-react', 'clsx', 'tailwind-merge', 'class-variance-authority', 'recharts', 'date-fns', 'react-markdown', 'framer-motion'],
+      noExternal: ['zustand', 'jose', 'sonner', 'lucide-react', 'clsx', 'tailwind-merge', 'class-variance-authority', 'recharts', 'date-fns', 'react-markdown', 'framer-motion', '@fugood/whisper.node', '@fugood/node-whisper-wasm'],
     },
   },
 });

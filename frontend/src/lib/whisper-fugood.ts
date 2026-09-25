@@ -111,10 +111,15 @@ export async function loadModel(
 
     console.log('[Whisper-Fugood] Loading model:', model.name, model.url);
 
-    // Configure WASM - use worker for UI responsiveness
+    // Configure WASM dengan explicit paths ke public/
     configureWasm({
       worker: true,
       threads: typeof SharedArrayBuffer !== 'undefined',
+      jsPath: '/whisper-fugood/whisper-node.js',
+      wasmPath: '/whisper-fugood/whisper-node.wasm',
+      threadsJsPath: '/whisper-fugood/whisper-node.threads.js',
+      threadsWasmPath: '/whisper-fugood/whisper-node.threads.wasm',
+      workerPath: '/whisper-fugood/worker.js',
     });
 
     // Init whisper with model URL
