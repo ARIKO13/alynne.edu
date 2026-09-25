@@ -419,7 +419,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
             if (ramCleanupTimerRef.current) clearTimeout(ramCleanupTimerRef.current);
             ramCleanupTimerRef.current = setTimeout(() => {
               console.log('[Whisper] 30s idle — freeing RAM');
-              freeModel();
+              fgFreeModel();
               setModelId(null);
             }, 30000);
           }
@@ -553,7 +553,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
         channelData = decoded.getChannelData(0);
       }
 
-      const result = await transcribe(channelData, 'indonesian');
+      const result = await fgTranscribe(channelData, 'indonesian');
       setStatus('idle');
       return result.text.trim();
     } catch (err) {
@@ -573,7 +573,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
     try {
       // Free current model first
       if (fgIsModelLoaded()) {
-        freeModel();
+        fgFreeModel();
       }
       // server-side: no loadModel needed
       setModelId(newModelId);
