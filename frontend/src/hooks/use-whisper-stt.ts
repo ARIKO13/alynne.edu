@@ -142,7 +142,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
   // Check current model on mount
   useEffect(() => {
     const checkModel = () => {
-      if (isModelLoaded()) {
+      if (fgIsModelLoaded()) {
         const hfId = null;
         const model = WHISPER_MODELS.find(m => m.hfId === hfId);
         if (model) setModelId(model.id);
@@ -164,7 +164,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
    */
   const ensureModelLoaded = useCallback(async (): Promise<boolean> => {
     // 1. Model sudah di RAM — siap pakai
-    if (isModelLoaded()) return true;
+    if (fgIsModelLoaded()) return true;
 
     // 2. Cek localStorage — kalau user pernah download, auto-load dari disk
     let savedId: string | null = null;
@@ -572,7 +572,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
     setLoadProgress(0);
     try {
       // Free current model first
-      if (isModelLoaded()) {
+      if (fgIsModelLoaded()) {
         freeModel();
       }
       // server-side: no loadModel needed
@@ -603,7 +603,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
     isAutoLoading,
     storagePersistent,
     isRecording: isRecordingRef.current,
-    isModelLoaded: isModelLoaded(),
+    isModelLoaded: fgIsModelLoaded(),
     toggleRecording,
     startRecording,
     stopRecording,
