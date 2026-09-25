@@ -40,62 +40,25 @@ let pendingErrors: Map<string, (err: string) => void> = new Map();
 let options: WhisperClientOptions = {};
 let sessionIdCounter = 0;
 
-function ensureWorker(): Worker {
-  if (worker) return worker;
+// Direct main-thread approach (no Web Worker)
+// Worker has ~256MB memory limit → Array buffer allocation failed
+// Main thread has ~2-4GB → can handle model download + inference
 
-  worker = new Worker(
-    new URL('./whisper-worker.ts', import.meta.url),
-    { type: 'module' }
-  );
+let pipelineModule: any = null;
 
-  worker.addEventListener('message', (e: MessageEvent<WorkerMessage>) => {
-    const msg = e.data;
-    switch (msg.type) {
-      case 'loading':
-        options.onLoading?.(msg.progress, msg.file);
-        break;
-      case 'loaded':
-        isLoading = false;
-        currentModelId = msg.model;
-        options.onLoaded?.();
-        break;
-      case 'transcribing':
-        options.onTranscribing?.(msg.progress);
-        break;
-      case 'result': {
-        const resolve = pendingTranscriptions.get(msg.sessionId || '');
-        if (resolve) {
-          resolve(msg.text, msg.chunks);
-          pendingTranscriptions.delete(msg.sessionId || '');
-          pendingErrors.delete(msg.sessionId || '');
-        }
-        options.onResult?.(msg.text, msg.chunks);
-        break;
-      }
-      case 'error': {
-        if (msg.phase === 'transcribe') {
-          const reject = pendingErrors.get(msg.sessionId || '');
-          if (reject) {
-            reject(msg.error);
-            pendingTranscriptions.delete(msg.sessionId || '');
-            pendingErrors.delete(msg.sessionId || '');
-          }
-        }
-        options.onError?.(msg.error, msg.phase);
-        break;
-      }
-      case 'freed':
-        currentModelId = null;
-        break;
-    }
-  });
-
-  worker.addEventListener('error', (e) => {
-    options.onError?.(e.message || 'Worker error', 'worker');
-    isLoading = false;
-  });
-
-  return worker;
+async function ensurePipeline() {
+  if (!pipelineModule) {
+    const transformers = await import('@huggingface/transformers');
+    pipelineModule = transformers.pipeline;
+    
+    // Configure env
+    transformers.env.allowRemoteModels = true;
+    transformers.env.allowLocalModels = false;
+    transformers.env.useBrowserCache = true;
+    transformers.env.backends.onnx.wasm.numThreads = 1;
+    transformers.env.backends.onnx.wasm.proxy = false;
+  }
+  return pipelineModule;
 }
 
 /**
@@ -217,9 +180,12 @@ export async function transcribe(
  * Free model from memory (untuk switch model atau release RAM).
  */
 export function freeModel(): void {
-  if (!worker) return;
-  worker.postMessage({ type: 'free' });
-  currentModelId = null;
+  if (transcriber) {
+    try { (transcriber as any).dispose?.(); } catch {}
+    transcriber = null;
+    currentModelId = null;
+    console.log('[Whisper] Model freed');
+  }
 }
 
 /**
