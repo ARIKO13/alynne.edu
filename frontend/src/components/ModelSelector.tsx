@@ -34,12 +34,12 @@ import {
   Zap,
 } from 'lucide-react';
 import {
-  WHISPER_MODELS,
+  FUGOOD_MODELS,
   getModel,
   getSavedModelId,
   saveModelId,
-  type WhisperModel,
-} from '@/lib/whisper-models';
+  type FugoodModel,
+} from '@/lib/whisper-fugood';
 import {
   loadModel,
   getCurrentModel,
@@ -47,7 +47,7 @@ import {
   deleteModel,
   isModelCached,
   isModelLoaded,
-} from '@/lib/whisper-client';
+} from '@/lib/whisper-fugood';
 
 interface ModelSelectorProps {
   open: boolean;
@@ -69,7 +69,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
   // Refresh cached models list ketika popup dibuka
   const refreshCachedModels = useCallback(async () => {
     const cached = new Set<string>();
-    for (const model of WHISPER_MODELS) {
+    for (const model of FUGOOD_MODELS) {
       const isCached = await Promise.resolve(false);
       if (isCached) cached.add(model.id);
     }
@@ -84,7 +84,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
       refreshCachedModels();
       const current = null;
       if (current && !forceShow) {
-        const model = WHISPER_MODELS.find(m => m.hfId === current);
+        const model = FUGOOD_MODELS.find(m => m.hfId === current);
         if (model) {
           setLoadedModelId(model.id);
           setSelectedId(model.id);
@@ -193,7 +193,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
               </h3>
             </div>
             <div className="space-y-2">
-              {WHISPER_MODELS.filter(m => m.category === 'unquantized').map((model) => (
+              {FUGOOD_MODELS.filter(m => m.category === 'unquantized').map((model) => (
                 <ModelOption
                   key={model.id}
                   model={model}
@@ -218,7 +218,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
               </h3>
             </div>
             <div className="space-y-2">
-              {WHISPER_MODELS.filter(m => m.category === 'quantized').map((model) => (
+              {FUGOOD_MODELS.filter(m => m.category === 'quantized').map((model) => (
                 <ModelOption
                   key={model.id}
                   model={model}
@@ -318,7 +318,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
 }
 
 interface ModelOptionProps {
-  model: WhisperModel;
+  model: FugoodModel;
   selected: boolean;
   loaded: boolean;
   cached: boolean;
