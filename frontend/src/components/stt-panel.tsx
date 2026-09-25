@@ -123,11 +123,7 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
   // Whisper STT hook — client-side, jalan di browser via Web Worker
   const whisperSTT = useWhisperSTT({
     onModelRequired: () => setModelSelectorOpen(true),
-    onTranscript: (text, isFinal) => {
-      if (isFinal) {
-        useAppStore.getState().const store = useAppStore.getState(); if (store.appendTranscript) { store.appendTranscript(text); } else { store.setTranscript((store.transcript || "") + " " + text); }
-      }
-    },
+    onTranscript: (text, isFinal) => { if (isFinal && text) { useAppStore.getState().appendTranscript(text); } },
     onInterim: (text) => setInterimTranscript(text),
     onError: (err) => toast.error(`STT error: ${err}`),
   });
