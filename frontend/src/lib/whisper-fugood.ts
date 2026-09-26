@@ -159,22 +159,31 @@ export async function transcribe(
   console.log('[Whisper-Fugood] Transcribing:', audio.length, 'samples');
 
   try {
-    // Convert Float32Array to WAV blob for transcribeFile
     const wavBlob = float32ToWavBlob(audio);
+    console.log('[Whisper-Fugood] WAV blob:', wavBlob.size, 'bytes');
 
-    // Create URL from blob
     const url = URL.createObjectURL(wavBlob);
+    console.log('[Whisper-Fugood] Blob URL created, calling transcribeFile...');
 
     const { promise } = whisperInstance.transcribeFile(url, {
       language,
       maxThreads: typeof SharedArrayBuffer !== 'undefined' ? 4 : 1,
     });
 
-    const result = await promise;
+    console.log('[Whisper-Fugood] transcribeFile called, waiting for result...');
+
+    // Timeout 5 menit
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Transcribe timeout (5 min)')), 5 * 60 * 1000);
+    });
+
+    const result = await Promise.race([promise, timeoutPromise]);
     URL.revokeObjectURL(url);
 
+    console.log('[Whisper-Fugood] Raw result:', JSON.stringify(result).substring(0, 500));
+
     const text = result?.text?.trim() || '';
-    console.log('[Whisper-Fugood] Result:', text.substring(0, 100));
+    console.log('[Whisper-Fugood] Final text:', text.substring(0, 200));
     return { text };
   } catch (err) {
     console.error('[Whisper-Fugood] Transcribe error:', err);
