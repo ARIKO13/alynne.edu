@@ -1,4 +1,4 @@
-// cache-buster: 20260926024617
+// cache-buster: 20260926025058
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import { fetchLearnedWords } from '@/lib/personal-dict';
 import { ModelSelector } from '@/components/ModelSelector';
 import { FileUploadChunked } from '@/components/FileUploadChunked';
 import { useWhisperSTT } from '@/hooks/use-whisper-stt';
+import { isModelLoaded as fgIsModelLoadedCheck } from '@/lib/whisper-fugood';
 
 function ModeSelector({ disabled }: { disabled: boolean }) {
   const { sttAudioMode, setSttAudioMode } = useAppStore();
@@ -131,10 +132,107 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
   const { setActiveTab } = useAppStore();
   const [personalDictOpen, setPersonalDictOpen] = useState(false);
   const [personalDictCount, setPersonalDictCount] = useState(0);
+  const [isWhisperProcessing, setIsWhisperProcessing] = useState(false);
+  const hybridRecorderRef = useRef<MediaRecorder | null>(null);
+  const hybridChunksRef = useRef<Blob[]>([]);
+  const hybridStreamRef = useRef<MediaStream | null>(null);
+
+  // HYBRID: Start parallel MediaRecorder saat Web Speech API start
+  // Audio di-capture untuk Whisper, Web Speech API handle real-time text
+  useEffect(() => {
+    if (sttStatus === 'recording' && !hybridRecorderRef.current) {
+      // Start MediaRecorder in parallel
+      navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 } })
+        .then(stream => {
+          hybridStreamRef.current = stream;
+          const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+          const recorder = new MediaRecorder(stream, { mimeType });
+          hybridRecorderRef.current = recorder;
+          hybridChunksRef.current = [];
+          recorder.ondataavailable = (e) => { if (e.data.size > 0) hybridChunksRef.current.push(e.data); };
+          recorder.onstop = async () => {
+            console.log('[Hybrid] MediaRecorder stopped, sending to Whisper...');
+            if (hybridChunksRef.current.length === 0) return;
+            const blob = new Blob(hybridChunksRef.current, { type: mimeType });
+            console.log('[Hybrid] Audio:', blob.size, 'bytes');
+            setIsWhisperProcessing(true);
+            try {
+              // Decode + resample
+              const arrayBuffer = await blob.arrayBuffer();
+              const ctx = new AudioContext({ sampleRate: 16000 });
+              const decoded = await ctx.decodeAudioData(arrayBuffer);
+              ctx.close();
+              let audioData: Float32Array;
+              if (decoded.numberOfChannels > 1) {
+                audioData = new Float32Array(decoded.length);
+                for (let i = 0; i < decoded.length; i++) {
+                  let s = 0; for (let ch = 0; ch < decoded.numberOfChannels; ch++) s += decoded.getChannelData(ch)[i];
+                  audioData[i] = s / decoded.numberOfChannels;
+                }
+              } else { audioData = decoded.getChannelData(0); }
+              if (decoded.sampleRate !== 16000) {
+                const ratio = decoded.sampleRate / 16000;
+                const newLen = Math.floor(audioData.length / ratio);
+                const resampled = new Float32Array(newLen);
+                for (let i = 0; i < newLen; i++) {
+                  const si = i * ratio, f = Math.floor(si), cl = Math.min(f+1, audioData.length-1), fr = si-f;
+                  resampled[i] = audioData[f]*(1-fr) + audioData[cl]*fr;
+                }
+                audioData = resampled;
+              }
+              for (let i = 0; i < audioData.length; i++) {
+                if (!isFinite(audioData[i])) audioData[i] = 0;
+                if (audioData[i] > 1) audioData[i] = 1;
+                if (audioData[i] < -1) audioData[i] = -1;
+              }
+              console.log('[Hybrid] Sending to Whisper:', audioData.length, 'samples');
+              // Load model if needed + transcribe
+              const { loadModel: fgLoadModel, transcribe: fgTranscribe } = await import('@/lib/whisper-fugood');
+              if (!fgIsModelLoadedCheck()) {
+                console.log('[Hybrid] Loading Whisper model...');
+                await fgLoadModel('tiny');
+              }
+              const result = await fgTranscribe(audioData, 'id');
+              console.log('[Hybrid] Whisper result:', result.text);
+              if (result.text) {
+                // Replace transcript dengan Whisper result (lebih akurat)
+                useAppStore.getState().setTranscript(result.text);
+                toast.success('Transkrip diperbaiki dengan Whisper');
+              }
+            } catch (err) {
+              console.error('[Hybrid] Whisper error:', err);
+              toast.error('Whisper gagal, tetap pakai Web Speech API result');
+            } finally {
+              setIsWhisperProcessing(false);
+              if (hybridStreamRef.current) {
+                hybridStreamRef.current.getTracks().forEach(t => t.stop());
+                hybridStreamRef.current = null;
+              }
+              hybridRecorderRef.current = null;
+            }
+          };
+          recorder.start(1000);
+          console.log('[Hybrid] MediaRecorder started (parallel with Web Speech API)');
+        }).catch(err => console.error('[Hybrid] MediaRecorder failed:', err));
+    }
+  }, [sttStatus]);
+
+  // Stop MediaRecorder saat Web Speech API stop
+  useEffect(() => {
+    if (sttStatus !== 'recording' && hybridRecorderRef.current && hybridRecorderRef.current.state !== 'inactive') {
+      console.log('[Hybrid] Stopping MediaRecorder...');
+      hybridRecorderRef.current.requestData();
+      setTimeout(() => {
+        if (hybridRecorderRef.current && hybridRecorderRef.current.state !== 'inactive') {
+          hybridRecorderRef.current.stop();
+        }
+      }, 200);
+    }
+  }, [sttStatus]);
   const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
   const [whisperModelReady, setWhisperModelReady] = useState(false);
-  const isRecording = whisperSTT.status === 'recording' || whisperSTT.isRecording || sttStatus === 'recording';
-  const isProcessing = whisperSTT.status === 'processing' || sttStatus === 'processing';
+  const isRecording = sttStatus === 'recording' || whisperSTT.status === 'recording';
+  const isProcessing = whisperSTT.status === 'processing' || sttStatus === 'processing' || isWhisperProcessing;
   const transcriptScrollRef = useRef<HTMLDivElement>(null);
   const isScreenMode = sttAudioMode === 'screen';
   const isCombinedActive = isScreenMode && isRecording;
@@ -425,7 +523,8 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
           <Button
             onClick={() => {
               // Whisper STT: AudioWorklet rekam → Whisper transkrip (akurat)
-              whisperSTT.toggleRecording();
+              // HYBRID: Web Speech API (real-time) + Whisper (akurasi)
+              toggleRecording();
             }}
             disabled={isProcessing}
             size="lg"
@@ -439,7 +538,7 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
             )}
           >
             {whisperSTT.status === 'loading-model' ? <Loader2 className="h-5 w-5 animate-spin" /> : isProcessing ? <RefreshCw className="h-5 w-5 animate-spin" /> : isRecording ? <MicOff className="h-5 w-5 text-red-400" /> : <Mic className="h-5 w-5" />}
-            {whisperSTT.status === 'loading-model' ? 'Memuat Model...' : isProcessing ? 'Memproses...' : isRecording ? 'Stop Recording' : isScreenMode ? 'Start Screen Capture' : 'Start Recording'}
+            {isWhisperProcessing ? 'Whisper memproses...' : whisperSTT.status === 'loading-model' ? 'Memuat Model...' : isProcessing ? 'Memproses...' : isRecording ? 'Stop Recording' : 'Start Recording'}
           </Button>
           {transcript && (
                 <Button onClick={clearTranscript} disabled={isRecording || isProcessing} variant="outline" size="lg" className="gap-2 rounded-lg border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06]">
