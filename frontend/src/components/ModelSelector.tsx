@@ -329,15 +329,15 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
                 <CheckCircle2 className="h-4 w-4 mr-2" />
                 Gunakan Model Ini
               </>
-            ) : isCached ? (
+            ) : selectedModel?.runtime === 'client' ? (
               <>
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                Gunakan Model (Server)
+                <Download className="h-4 w-4 mr-2" />
+                {isCached ? 'Muat dari Cache (Offline)' : 'Download & Gunakan (Offline)'}
               </>
             ) : (
               <>
-                <Download className="h-4 w-4 mr-2" />
-                Gunakan Model (Server)
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Gunakan Model (Online)
               </>
             )}
           </Button>
