@@ -1,41 +1,41 @@
 /**
  * use-whisper-stt.ts — Hook untuk client-side Whisper STT
  *
- * Replaces use-speech-recognition.ts (yang pakai Web Speech API).
- *
- * Flow:
+ * Hybrid architecture:
  *   1. toggleRecording() → cek apakah model sudah di-load
  *      - Belum: open ModelSelector popup
  *      - Sudah: start recording
- *   2. Recording: MediaRecorder captures audio in 5s chunks
- *   3. Each chunk → decode to Float32Array → worker transcribe
- *   4. Hasil transkripsi langsung append ke transcript
- *   5. Stop recording → flush pending chunks → selesai
+ *   2. Recording: MediaRecorder captures audio
+ *   3. Stop recording → decode to Float32Array → whisper transcribe
+ *   4. Result appended to transcript
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { loadModel as fgLoadModel, transcribe as fgTranscribe, freeModel as fgFreeModel, isModelLoaded as fgIsModelLoaded, getSavedModelId as fgGetSavedModelId, getModel as fgGetModel } from '@/lib/whisper-fugood';
+import {
+  loadModel as fgLoadModel,
+  transcribe as fgTranscribe,
+  freeModel as fgFreeModel,
+  isModelLoaded as fgIsModelLoaded,
+  getCurrentModel as fgGetCurrentModel,
+  getSavedModelId as fgGetSavedModelId,
+  getModel as fgGetModel,
+  isModelCached as fgIsModelCached,
+} from '@/lib/whisper-fugood';
 
-// Direct imports from whisper-client (transformers.js)
-
-
-
-
-
-
-
-import { getModel, getSavedModelId, WHISPER_MODELS } from '@/lib/whisper-models';
-
-const CHUNK_DURATION_MS = 5000; // 5 detik per chunk
 const SAMPLE_RATE = 16000;
 
-export type WhisperSTTStatus = 'idle' | 'loading-model' | 'recording' | 'processing' | 'error';
+export type WhisperSTTStatus =
+  | 'idle'
+  | 'loading-model'
+  | 'recording'
+  | 'processing'
+  | 'error';
 
 export interface UseWhisperSTTOptions {
   onTranscript?: (text: string, isFinal: boolean) => void;
   onInterim?: (text: string) => void;
   onError?: (error: string) => void;
-  onModelRequired?: () => void;  // Trigger popup model selector
+  onModelRequired?: () => void; // Trigger popup model selector
 }
 
 export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
@@ -44,41 +44,30 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
   const [error, setError] = useState<string | null>(null);
   const [loadProgress, setLoadProgress] = useState(0);
   const [modelId, setModelId] = useState<string | null>(null);
+  const [isAutoLoading, setIsAutoLoading] = useState(false);
+  const [storagePersistent, setStoragePersistent] = useState(false);
 
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const isRecordingRef = useRef(false);
-  const pendingChunksRef = useRef<Float32Array[]>([]);
-  const isProcessingRef = useRef(false);
-  const sessionBufferRef = useRef<Float32Array>(new Float32Array(0));
   const ramCleanupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastFinalTextRef = useRef<string>('');
 
-  // Callbacks not needed for whisper.cpp (uses Web Worker messages)
-  // useEffect intentionally empty
-
-
   // ===== AUTO-LOAD SAVED MODEL + PERSISTENT STORAGE =====
-  // Saat hook pertama kali jalan, coba auto-load model yang sudah tersaved
-  // Silent: ga ubah UI kecuali model bener2 berhasil di-load
-  // Timeout 15 detik: kalau lebih, anggap gagal (user bisa manual load via popup)
-  const [isAutoLoading, setIsAutoLoading] = useState(false);
-  const [storagePersistent, setStoragePersistent] = useState(false);
-
   useEffect(() => {
     let cancelled = false;
 
     const initStorage = async () => {
       // 1. Request persistent storage (background, ga blocking)
       try {
-      const persisted = false; // requestPersistentStorage removed
-        if (!cancelled) setStoragePersistent(persisted);
-        console.log('[Whisper] Persistent storage:', persisted ? 'ACTIVE' : 'NOT GRANTED');
-
-        if (!persisted) {
-          const alreadyPersisted = false;
-          if (!cancelled) setStoragePersistent(alreadyPersisted);
+        if (typeof navigator !== 'undefined' && navigator.storage?.persist) {
+          const persisted = await navigator.storage.persist();
+          if (!cancelled) setStoragePersistent(persisted);
+          console.log(
+            '[Whisper] Persistent storage:',
+            persisted ? 'ACTIVE' : 'NOT GRANTED'
+          );
         }
       } catch (err) {
         console.warn('[Whisper] Persistent storage request failed:', err);
@@ -98,37 +87,47 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
       }
 
       // 3. Cek apakah model masih ada di cache (quick check, ga download)
-      // Pakai Promise.race dengan timeout 5 detik untuk isModelCached
-      // Kalau cache check lambat, skip auto-load (jangan block UI)
       console.log('[Whisper] Checking cache for model:', savedId);
+      try {
+        const cached = await fgIsModelCached(savedId);
+        if (!cached) {
+          console.log('[Whisper] Model not in cache - skip auto-load');
+          return;
+        }
+      } catch {
+        // Cache check failed — skip auto-load, user can manually load
+        return;
+      }
 
-      // 4. Auto-load dengan timeout 15 detik total
+      // 4. Auto-load dengan timeout 60 detik
       // Silent: ga set isAutoLoading true (jangan show Loading di UI)
-      // Kalau timeout, user bisa manual load via popup
-      const loadPromise = false;
+      console.log('[Whisper] Auto-loading model from cache:', savedId);
+      setIsAutoLoading(true);
+
+      const loadPromise = fgLoadModel(savedId).then(() => true);
       const timeoutPromise = new Promise<boolean>((resolve) => {
-        setTimeout(() => resolve(false), 15000);
+        setTimeout(() => resolve(false), 60000);
       });
 
       try {
         const loaded = await Promise.race([loadPromise, timeoutPromise]);
-
         if (cancelled) return;
 
         if (loaded) {
-          const hfId = null;
-          const model = WHISPER_MODELS.find(m => m.hfId === hfId);
-          if (model) {
-            setModelId(model.id);
-            console.log('[Whisper] Auto-loaded model from cache:', model.id);
+          const current = fgGetCurrentModel();
+          if (current) {
+            setModelId(current);
+            console.log('[Whisper] Auto-loaded model from cache:', current);
           }
         } else {
-          console.log('[Whisper] Auto-load skipped or timed out - user can manually load');
+          console.log('[Whisper] Auto-load timed out - user can manually load');
         }
       } catch (err) {
         if (!cancelled) {
           console.warn('[Whisper] Auto-load failed:', err);
         }
+      } finally {
+        if (!cancelled) setIsAutoLoading(false);
       }
     };
 
@@ -139,27 +138,27 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
     };
   }, []);
 
-  // Check current model on mount
+  // Check current model on mount + periodically (untuk sync state dengan module-level)
   useEffect(() => {
     const checkModel = () => {
       if (fgIsModelLoaded()) {
-        const hfId = null;
-        const model = WHISPER_MODELS.find(m => m.hfId === hfId);
-        if (model) setModelId(model.id);
+        const current = fgGetCurrentModel();
+        if (current && current !== modelId) {
+          setModelId(current);
+        }
       }
     };
     checkModel();
     const interval = setInterval(checkModel, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [modelId]);
 
   /**
    * Pastikan model sudah di-load sebelum recording.
    *
    * Flow:
    *   1. Kalau model sudah di RAM → return true (instant)
-   *   2. Kalau ada saved model di localStorage → auto-load dari disk (instant, ga popup)
-   *      - Ini yang membuat user "tinggal pakai" setelah download sekali
+   *   2. Kalau ada saved model di localStorage & di cache → auto-load dari disk
    *   3. Kalau belum pernah download → buka popup (first time only)
    */
   const ensureModelLoaded = useCallback(async (): Promise<boolean> => {
@@ -177,15 +176,32 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
     if (savedId) {
       const model = fgGetModel(savedId);
       if (model) {
+        // Cek cache dulu — kalau ga ada, jangan auto-download (user harus konfirmasi)
+        try {
+          const cached = await fgIsModelCached(savedId);
+          if (!cached) {
+            console.log(
+              '[Whisper] Saved model not in cache - opening popup for re-download'
+            );
+            options.onModelRequired?.();
+            return false;
+          }
+        } catch {
+          // Cache check failed — proceed anyway
+        }
+
         // Auto-load dari disk dengan timeout 60 detik
         try {
           setStatus('loading-model');
           setLoadProgress(0);
           console.log('[Whisper] Loading model from disk:', savedId);
 
-          const loadPromise = fgLoadModel(savedId);
+          const loadPromise = fgLoadModel(savedId, (p) => setLoadProgress(p));
           const timeoutPromise = new Promise<never>((_, reject) => {
-            setTimeout(() => reject(new Error('Timeout loading model (60s)')), 60000);
+            setTimeout(
+              () => reject(new Error('Timeout loading model (60s)')),
+              60000
+            );
           });
 
           await Promise.race([loadPromise, timeoutPromise]);
@@ -200,7 +216,9 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
           setError(`Gagal memuat model: ${errMsg}`);
           options.onError?.(`Gagal memuat model: ${errMsg}`);
           // Hapus saved model kalau corrupt
-          try { localStorage.removeItem('whisper-fugood-model'); } catch {}
+          try {
+            localStorage.removeItem('whisper-fugood-model');
+          } catch {}
           options.onModelRequired?.();
           return false;
         }
@@ -214,43 +232,18 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
   }, [options]);
 
   /**
-   * Start recording from microphone.
-   */
-  /**
    * Start recording — full audio capture (bukan chunk-by-chunk)
    *
    * Flow:
    *   1. Pastikan model loaded
    *   2. Start MediaRecorder (capture full audio ke 1 blob)
    *   3. Saat stop → decode full blob → transcribe → tampilkan
-   *
-   * Kenapa bukan chunk real-time?
-   *   - WebM/Opus chunks tiap 5s tidak punya valid WebM header
-   *   - AudioContext.decodeAudioData gagal → EncodingError
-   *   - Full blob punya valid header → decode sukses
    */
-  /**
-   * Start recording — pakai AudioWorklet (PCM direct, tanpa MediaRecorder)
-   *
-   * Kenapa AudioWorklet bukan MediaRecorder?
-   *   - MediaRecorder capture WebM/Opus → AudioContext.decodeAudioData GAGAL (EncodingError)
-   *   - AudioWorklet capture PCM Float32 langsung → ga perlu decode!
-   *   - Bonus: 16kHz mono langsung (tanpa resample)
-   *
-   * Flow:
-   *   1. Pastikan model loaded
-   *   2. getUserMedia → AudioContext → AudioWorklet
-   *   3. Capture PCM samples real-time (di worklet thread)
-   *   4. Saat stop → combine samples → transcribe → tampilkan
-   */
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const audioWorkletNodeRef = useRef<AudioWorkletNode | null>(null);
-  const recordedSamplesRef = useRef<Float32Array | null>(null);
-
   const startRecording = useCallback(async () => {
     setError(null);
     console.log('[Whisper] Start recording clicked');
 
+    // Cancel pending RAM cleanup
     if (ramCleanupTimerRef.current) {
       clearTimeout(ramCleanupTimerRef.current);
       ramCleanupTimerRef.current = null;
@@ -272,30 +265,35 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1,
+        },
       });
       mediaStreamRef.current = stream;
       console.log('[Whisper] Microphone stream acquired');
 
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : 'audio/webm';
       const recorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = recorder;
       chunksRef.current = [];
       isRecordingRef.current = true;
 
       recorder.ondataavailable = (e) => {
-        console.log('[Whisper] dataavailable:', e.data.size, 'bytes');
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
 
       recorder.onstop = async () => {
-        console.log('[Whisper] onstop fired! chunks:', chunksRef.current.length);
         console.log('[Whisper] Recorder stopped, processing...');
         isRecordingRef.current = false;
         setStatus('processing');
 
         if (mediaStreamRef.current) {
-          mediaStreamRef.current.getTracks().forEach(t => t.stop());
+          mediaStreamRef.current.getTracks().forEach((t) => t.stop());
           mediaStreamRef.current = null;
         }
 
@@ -320,15 +318,23 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
             audioData = new Float32Array(decoded.length);
             for (let i = 0; i < decoded.length; i++) {
               let sum = 0;
-              for (let ch = 0; ch < decoded.numberOfChannels; ch++) sum += decoded.getChannelData(ch)[i];
+              for (let ch = 0; ch < decoded.numberOfChannels; ch++) {
+                sum += decoded.getChannelData(ch)[i];
+              }
               audioData[i] = sum / decoded.numberOfChannels;
             }
           } else {
             audioData = decoded.getChannelData(0);
           }
 
+          // Resample jika perlu
           if (decoded.sampleRate !== SAMPLE_RATE) {
-            console.log('[Whisper] Resampling from', decoded.sampleRate, 'to', SAMPLE_RATE);
+            console.log(
+              '[Whisper] Resampling from',
+              decoded.sampleRate,
+              'to',
+              SAMPLE_RATE
+            );
             const ratio = decoded.sampleRate / SAMPLE_RATE;
             const newLen = Math.floor(audioData.length / ratio);
             const resampled = new Float32Array(newLen);
@@ -342,13 +348,19 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
             audioData = resampled;
           }
 
+          // Clamp NaN/Infinity
           for (let i = 0; i < audioData.length; i++) {
             if (!isFinite(audioData[i])) audioData[i] = 0;
             if (audioData[i] > 1) audioData[i] = 1;
             if (audioData[i] < -1) audioData[i] = -1;
           }
 
-          console.log('[Whisper] Final audio:', audioData.length, 'samples', (audioData.length / SAMPLE_RATE).toFixed(1) + 's');
+          console.log(
+            '[Whisper] Final audio:',
+            audioData.length,
+            'samples',
+            (audioData.length / SAMPLE_RATE).toFixed(1) + 's'
+          );
 
           if (audioData.length < SAMPLE_RATE * 0.5) {
             options.onError?.('Audio terlalu pendek');
@@ -372,12 +384,13 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
           options.onError?.('Gagal: ' + errMsg);
         } finally {
           setStatus('idle');
+          // Auto-free model setelah 5 menit idle (hemat RAM)
           if (ramCleanupTimerRef.current) clearTimeout(ramCleanupTimerRef.current);
           ramCleanupTimerRef.current = setTimeout(() => {
-            console.log('[Whisper] 30s idle - freeing RAM');
+            console.log('[Whisper] 5min idle - freeing RAM');
             fgFreeModel();
             setModelId(null);
-          }, 30000);
+          }, 5 * 60 * 1000);
         }
       };
 
@@ -385,7 +398,6 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
       recorder.start(1000);
       console.log('[Whisper] MediaRecorder started, state:', recorder.state);
       setStatus('recording');
-      console.log('[Whisper] Recording started (MediaRecorder)');
     } catch (err) {
       setStatus('error');
       const msg = err instanceof Error ? err.message : String(err);
@@ -397,19 +409,22 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
   const stopRecording = useCallback(() => {
     console.log('[Whisper] Stop recording clicked');
     isRecordingRef.current = false;
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state !== 'inactive'
+    ) {
       mediaRecorderRef.current.requestData(); // Force dataavailable sebelum stop
       setTimeout(() => {
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        if (
+          mediaRecorderRef.current &&
+          mediaRecorderRef.current.state !== 'inactive'
+        ) {
           mediaRecorderRef.current.stop();
         }
       }, 200);
     }
   }, []);
 
-  /**
-   * Toggle recording (start/stop).
-   */
   const toggleRecording = useCallback(() => {
     if (isRecordingRef.current) {
       stopRecording();
@@ -419,104 +434,84 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
   }, [startRecording, stopRecording]);
 
   /**
-   * Process a single audio chunk (Blob → Float32 → transcribe).
-   * Deprecated: sekarang pakai full-blob approach di onstop handler.
-   * Tetap ada untuk backward compatibility (kalau dipanggil dari kode lain).
-   */
-  const processChunk = useCallback(async (blob: Blob) => {
-    // No-op: full audio diproses di onstop handler
-    console.log('[Whisper] processChunk called (no-op, full blob processed at stop)');
-  }, []);
-
-  /**
-   * Process pending chunks sequentially.
-   * Deprecated: sekarang pakai full-blob approach.
-   */
-  const processQueue = useCallback(async () => {
-    // No-op: full audio diproses di onstop handler
-  }, []);
-
-  /**
-   * Flush remaining chunks after stop.
-   */
-  const flushPendingChunks = useCallback(() => {
-    if (pendingChunksRef.current.length > 0) {
-      processQueue();
-    } else if (status === 'processing') {
-      setStatus('idle');
-    }
-  }, [processQueue, status]);
-
-  /**
    * Transcribe a full File (upload mode).
    */
-  const transcribeFile = useCallback(async (file: File): Promise<string> => {
-    let ready = true;
-    try {
-      if (!fgIsModelLoaded()) {
-        const savedId = fgGetSavedModelId();
-        console.log("[Whisper] Auto-loading from cache:", savedId);
-        await fgLoadModel(savedId);
-      }
-      ready = fgIsModelLoaded();
-    } catch (err) {
-      console.warn("[Whisper] Auto-load failed:", err);
-      ready = false;
-    }
-    if (!ready) throw new Error('Model not loaded');
-
-    setStatus('processing');
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const audioContext = new AudioContext({ sampleRate: SAMPLE_RATE });
-      const decoded = await audioContext.decodeAudioData(arrayBuffer);
-      audioContext.close();
-
-      // Mix down to mono
-      let channelData: Float32Array;
-      if (decoded.numberOfChannels > 1) {
-        channelData = new Float32Array(decoded.length);
-        for (let i = 0; i < decoded.length; i++) {
-          let sum = 0;
-          for (let c = 0; c < decoded.numberOfChannels; c++) {
-            sum += decoded.getChannelData(c)[i];
-          }
-          channelData[i] = sum / decoded.numberOfChannels;
+  const transcribeFile = useCallback(
+    async (file: File): Promise<string> => {
+      let ready = true;
+      try {
+        if (!fgIsModelLoaded()) {
+          const savedId = fgGetSavedModelId();
+          console.log('[Whisper] Auto-loading from cache:', savedId);
+          await fgLoadModel(savedId);
         }
-      } else {
-        channelData = decoded.getChannelData(0);
+        ready = fgIsModelLoaded();
+      } catch (err) {
+        console.warn('[Whisper] Auto-load failed:', err);
+        ready = false;
       }
+      if (!ready) throw new Error('Model not loaded');
 
-      const result = await fgTranscribe(channelData, 'indonesian');
-      setStatus('idle');
-      return result.text.trim();
-    } catch (err) {
-      setStatus('error');
-      const msg = err instanceof Error ? err.message : String(err);
-      setError(msg);
-      throw err;
-    }
-  }, [ensureModelLoaded]);
+      setStatus('processing');
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const audioContext = new AudioContext({ sampleRate: SAMPLE_RATE });
+        const decoded = await audioContext.decodeAudioData(arrayBuffer);
+        audioContext.close();
+
+        // Mix down to mono
+        let channelData: Float32Array;
+        if (decoded.numberOfChannels > 1) {
+          channelData = new Float32Array(decoded.length);
+          for (let i = 0; i < decoded.length; i++) {
+            let sum = 0;
+            for (let c = 0; c < decoded.numberOfChannels; c++) {
+              sum += decoded.getChannelData(c)[i];
+            }
+            channelData[i] = sum / decoded.numberOfChannels;
+          }
+        } else {
+          channelData = decoded.getChannelData(0);
+        }
+
+        const result = await fgTranscribe(channelData, 'id');
+        setStatus('idle');
+        return result.text.trim();
+      } catch (err) {
+        setStatus('error');
+        const msg = err instanceof Error ? err.message : String(err);
+        setError(msg);
+        throw err;
+      }
+    },
+    [ensureModelLoaded]
+  );
 
   /**
    * Switch model (free current, load new).
    */
-  const switchModel = useCallback(async (newModelId: string) => {
-    setStatus('loading-model');
-    setLoadProgress(0);
-    try {
-      // Free current model first
-      if (fgIsModelLoaded()) {
-        fgFreeModel();
+  const switchModel = useCallback(
+    async (newModelId: string, onProgress?: (p: number) => void) => {
+      setStatus('loading-model');
+      setLoadProgress(0);
+      try {
+        // Free current model first
+        if (fgIsModelLoaded()) {
+          await fgFreeModel();
+        }
+        // Load new model
+        await fgLoadModel(newModelId, onProgress);
+        setModelId(newModelId);
+        setStatus('idle');
+        console.log('[Whisper] Switched to model:', newModelId);
+      } catch (err) {
+        setStatus('error');
+        setError(err instanceof Error ? err.message : String(err));
+        console.error('[Whisper] Switch model failed:', err);
       }
-      // server-side: no loadModel needed
-      setModelId(newModelId);
-      setStatus('idle');
-    } catch (err) {
-      setStatus('error');
-      setError(err instanceof Error ? err.message : String(err));
-    }
-  }, []);
+    },
+    []
+  );
 
   /**
    * Reset state.

@@ -2,10 +2,10 @@
  * ModelSelector.tsx — Popup pilih model Whisper untuk STT
  *
  * Fitur:
- *   - List 6 model (2 unquantized + 4 quantized)
- *   - Download dengan progress bar
- *   - CANCEL download (langsung stop, tidak lanjut)
- *   - UNINSTALL model (hapus dari IndexedDB untuk hemat storage)
+ *   - List 5 model (2 unquantized + 3 quantized)
+ *   - Download dengan REAL progress bar (pre-fetch ke Cache Storage)
+ *   - CANCEL download (langsung stop via AbortController)
+ *   - UNINSTALL model (hapus dari Cache Storage untuk hemat storage)
  *   - Status indicator: cached / loaded / downloading
  */
 
@@ -38,15 +38,13 @@ import {
   getModel,
   getSavedModelId,
   saveModelId,
-  type FugoodModel,
-} from '@/lib/whisper-fugood';
-import {
   loadModel,
   getCurrentModel,
   cancelLoad,
   deleteModel,
   isModelCached,
   isModelLoaded,
+  type FugoodModel,
 } from '@/lib/whisper-fugood';
 
 interface ModelSelectorProps {
@@ -60,7 +58,6 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
   const [selectedId, setSelectedId] = useState<string>(getSavedModelId());
   const [loading, setLoading] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
-  const [loadFile, setLoadFile] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loadedModelId, setLoadedModelId] = useState<string | null>(null);
   const [cachedModels, setCachedModels] = useState<Set<string>>(new Set());
@@ -70,8 +67,11 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
   const refreshCachedModels = useCallback(async () => {
     const cached = new Set<string>();
     for (const model of FUGOOD_MODELS) {
-      const isCached = await Promise.resolve(false);
-      if (isCached) cached.add(model.id);
+      try {
+        if (await isModelCached(model.id)) {
+          cached.add(model.id);
+        }
+      } catch {}
     }
     setCachedModels(cached);
   }, []);
@@ -80,14 +80,19 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
     if (open) {
       setError(null);
       setLoadProgress(0);
-      setLoadFile('');
       refreshCachedModels();
-      const current = null;
+      // Sinkronkan dengan state global whisper-fugood
+      const current = getCurrentModel();
       if (current && !forceShow) {
-        const model = FUGOOD_MODELS.find(m => m.hfId === current);
-        if (model) {
-          setLoadedModelId(model.id);
-          setSelectedId(model.id);
+        setLoadedModelId(current);
+        setSelectedId(current);
+      } else {
+        // Cek apakah model sudah di-load (e.g. dari session sebelumnya)
+        if (isModelLoaded() && current) {
+          setLoadedModelId(current);
+          setSelectedId(current);
+        } else {
+          setLoadedModelId(null);
         }
       }
     }
@@ -103,28 +108,35 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
     setLoading(true);
     setError(null);
     setLoadProgress(0);
-    setLoadFile('');
 
     try {
       const model = getModel(selectedId);
       if (!model) throw new Error('Model tidak dikenal');
 
-      await loadModel(selectedId, (progress) => { setLoadProgress(progress); });
+      await loadModel(selectedId, (progress) => {
+        setLoadProgress(progress);
+      });
       saveModelId(selectedId);
       setLoadedModelId(selectedId);
+      // Tambah ke cached set
+      setCachedModels((prev) => new Set(prev).add(selectedId));
       setLoading(false);
-      
+
+      // Beri jeda 600ms agar user lihat 100% progress
       setTimeout(() => {
         onModelReady(selectedId);
         onClose();
-      }, 800);
+      }, 600);
     } catch (err) {
       setLoading(false);
       const msg = err instanceof Error ? err.message : String(err);
-      if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('cancel')) {
+      if (
+        msg.toLowerCase().includes('abort') ||
+        msg.toLowerCase().includes('cancel') ||
+        msg.toLowerCase().includes('signal')
+      ) {
         // User cancel — ga usah tampilin error
         setLoadProgress(0);
-        setLoadFile('');
       } else {
         setError(msg);
       }
@@ -132,21 +144,22 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
   };
 
   const handleCancel = () => {
-    ;
+    cancelLoad();
     setLoading(false);
     setLoadProgress(0);
-    setLoadFile('');
   };
 
   const handleUninstall = async (modelId: string) => {
     setUninstalling(modelId);
     try {
-      const deleted = await Promise.resolve(false);
+      const deleted = await deleteModel(modelId);
       if (deleted) {
         // Update cached list
-        const newCached = new Set(cachedModels);
-        newCached.delete(modelId);
-        setCachedModels(newCached);
+        setCachedModels((prev) => {
+          const next = new Set(prev);
+          next.delete(modelId);
+          return next;
+        });
         // Kalau yang di-uninstall adalah model yang sekarang di-memory, reset
         if (loadedModelId === modelId) {
           setLoadedModelId(null);
@@ -170,6 +183,10 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
   const isAlreadyLoaded = loadedModelId === selectedId;
   const isCached = cachedModels.has(selectedId);
 
+  // Kalau model sudah loaded, tombol utama = "Gunakan Model Ini"
+  // Kalau cached tapi belum loaded, tombol = "Gunakan Model (Cache)" — akan load dari cache
+  // Kalau belum cached, tombol = "Download & Gunakan"
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && !loading && onClose()}>
       <DialogContent className="max-w-2xl bg-zinc-950/95 border-white/10 text-white">
@@ -179,7 +196,8 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
             Pilih Model Speech-to-Text
           </DialogTitle>
           <DialogDescription className="text-zinc-400">
-            Model dijalankan langsung di browser Anda. Download sekali, tersimpan di cache browser untuk penggunaan berikutnya.
+            Model dijalankan langsung di browser Anda. Download sekali, tersimpan
+            di cache browser untuk penggunaan berikutnya.
           </DialogDescription>
         </DialogHeader>
 
@@ -193,19 +211,21 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
               </h3>
             </div>
             <div className="space-y-2">
-              {FUGOOD_MODELS.filter(m => m.category === 'unquantized').map((model) => (
-                <ModelOption
-                  key={model.id}
-                  model={model}
-                  selected={selectedId === model.id}
-                  loaded={loadedModelId === model.id}
-                  cached={cachedModels.has(model.id)}
-                  uninstalling={uninstalling === model.id}
-                  disabled={loading}
-                  onSelect={() => handleSelect(model.id)}
-                  onUninstall={() => handleUninstall(model.id)}
-                />
-              ))}
+              {FUGOOD_MODELS.filter((m) => m.category === 'unquantized').map(
+                (model) => (
+                  <ModelOption
+                    key={model.id}
+                    model={model}
+                    selected={selectedId === model.id}
+                    loaded={loadedModelId === model.id}
+                    cached={cachedModels.has(model.id)}
+                    uninstalling={uninstalling === model.id}
+                    disabled={loading}
+                    onSelect={() => handleSelect(model.id)}
+                    onUninstall={() => handleUninstall(model.id)}
+                  />
+                )
+              )}
             </div>
           </div>
 
@@ -214,23 +234,25 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
             <div className="flex items-center gap-2 mb-2">
               <Cpu className="h-4 w-4 text-[#8B5CF6]" />
               <h3 className="text-sm font-medium text-[#8B5CF6]">
-                Kuantisasi (Q5/Q8 — Lebih Kecil, Akurasi Hampir Sama)
+                Kuantisasi (Q5 — Lebih Kecil, Akurasi Hampir Sama)
               </h3>
             </div>
             <div className="space-y-2">
-              {FUGOOD_MODELS.filter(m => m.category === 'quantized').map((model) => (
-                <ModelOption
-                  key={model.id}
-                  model={model}
-                  selected={selectedId === model.id}
-                  loaded={loadedModelId === model.id}
-                  cached={cachedModels.has(model.id)}
-                  uninstalling={uninstalling === model.id}
-                  disabled={loading}
-                  onSelect={() => handleSelect(model.id)}
-                  onUninstall={() => handleUninstall(model.id)}
-                />
-              ))}
+              {FUGOOD_MODELS.filter((m) => m.category === 'quantized').map(
+                (model) => (
+                  <ModelOption
+                    key={model.id}
+                    model={model}
+                    selected={selectedId === model.id}
+                    loaded={loadedModelId === model.id}
+                    cached={cachedModels.has(model.id)}
+                    uninstalling={uninstalling === model.id}
+                    disabled={loading}
+                    onSelect={() => handleSelect(model.id)}
+                    onUninstall={() => handleUninstall(model.id)}
+                  />
+                )
+              )}
             </div>
           </div>
         </div>
@@ -240,27 +262,26 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
             <div className="flex items-center justify-between text-sm">
               <span className="flex items-center gap-2 text-[#8B5CF6]">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Mengunduh {selectedModel?.name}...
+                {loadProgress < 100
+                  ? `Mengunduh ${selectedModel?.name}...`
+                  : `Menginisialisasi ${selectedModel?.name}...`}
               </span>
               <span className="text-zinc-400">{loadProgress.toFixed(1)}%</span>
             </div>
             <Progress value={loadProgress} className="h-2" />
-            {loadFile && (
-              <p className="text-xs text-zinc-500 truncate">
-                File: {loadFile}
-              </p>
-            )}
             <p className="text-xs text-zinc-500">
-              Model di-cache di IndexedDB. Klik Record berikutnya tidak perlu download ulang.
+              Model di-cache di browser. Klik Record berikutnya tidak perlu
+              download ulang.
             </p>
             <Button
               onClick={handleCancel}
               variant="outline"
               size="sm"
               className="w-full border-red-500/30 text-red-400 hover:bg-red-500/10"
+              disabled={loadProgress >= 100}
             >
               <X className="h-3 w-3 mr-2" />
-              Cancel Download
+              {loadProgress >= 100 ? 'Sedang inisialisasi...' : 'Cancel Download'}
             </Button>
           </div>
         )}
@@ -285,14 +306,15 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
             Batal
           </Button>
           <Button
-            onClick={handleDownload}
+            onClick={isAlreadyLoaded ? handleUseExisting : handleDownload}
             disabled={loading || !selectedModel}
             className="bg-[#8B5CF6] hover:bg-[#7C3AED]"
           >
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {isCached ? 'Memuat dari cache...' : 'Mengunduh...'} {loadProgress.toFixed(0)}%
+                {isCached ? 'Memuat dari cache...' : 'Mengunduh...'}{' '}
+                {loadProgress.toFixed(0)}%
               </>
             ) : isAlreadyLoaded ? (
               <>
@@ -307,7 +329,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
             ) : (
               <>
                 <Download className="h-4 w-4 mr-2" />
-                Download & Gunakan
+                Download &amp; Gunakan
               </>
             )}
           </Button>
@@ -338,15 +360,18 @@ function ModelOption({
   onSelect,
   onUninstall,
 }: ModelOptionProps) {
+  const isRecommended = model.id === 'large-v3-turbo-q5_0';
   return (
     <div
       onClick={disabled ? undefined : onSelect}
       className={`
         relative rounded-lg border p-3 transition-all
         ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}
-        ${selected
-          ? 'border-[#8B5CF6]/50 bg-[#8B5CF6]/[0.08]'
-          : 'border-white/[0.06] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.04]'}
+        ${
+          selected
+            ? 'border-[#8B5CF6]/50 bg-[#8B5CF6]/[0.08]'
+            : 'border-white/[0.06] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.04]'
+        }
       `}
     >
       <div className="flex items-start gap-3">
@@ -361,29 +386,43 @@ function ModelOption({
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="font-medium text-white text-sm">{model.name}</span>
             {loaded && (
-              <Badge variant="outline" className="bg-green-500/10 text-green-400 border-green-500/30 text-[10px]">
+              <Badge
+                variant="outline"
+                className="bg-green-500/10 text-green-400 border-green-500/30 text-[10px]"
+              >
                 <CheckCircle2 className="h-3 w-3 mr-1" />
                 Di Memory
               </Badge>
             )}
             {cached && !loaded && (
-              <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30 text-[10px]">
+              <Badge
+                variant="outline"
+                className="bg-blue-500/10 text-blue-400 border-blue-500/30 text-[10px]"
+              >
                 <Download className="h-3 w-3 mr-1" />
                 Tersimpan
               </Badge>
             )}
-            {model.id === 'large-turbo' && (
-              <Badge variant="outline" className="bg-[#8B5CF6]/10 text-[#8B5CF6] border-[#8B5CF6]/30 text-[10px]">
+            {isRecommended && (
+              <Badge
+                variant="outline"
+                className="bg-[#8B5CF6]/10 text-[#8B5CF6] border-[#8B5CF6]/30 text-[10px]"
+              >
                 RECOMMENDED
               </Badge>
             )}
             {model.category === 'unquantized' && (
-              <Badge variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/30 text-[10px]">
+              <Badge
+                variant="outline"
+                className="bg-amber-500/10 text-amber-400 border-amber-500/30 text-[10px]"
+              >
                 FP16
               </Badge>
             )}
           </div>
-          <p className="text-[11px] text-zinc-400 mb-1.5 leading-relaxed">{model.description}</p>
+          <p className="text-[11px] text-zinc-400 mb-1.5 leading-relaxed">
+            {model.description}
+          </p>
           <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px] text-zinc-500">
             <div className="flex items-center gap-1">
               <HardDrive className="h-3 w-3" />
