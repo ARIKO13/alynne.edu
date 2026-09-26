@@ -228,8 +228,8 @@ export function AgentLanding({ onEnter }: { onEnter: (agentId: string) => void }
       {/* Footer */}
       <footer className="border-t border-white/[0.04] py-6 px-6">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <span className="text-[11px] text-zinc-700">Povycon Technology</span>
-          <span className="text-[11px] text-zinc-700">{new Date().getFullYear()}</span>
+          <span className="text-[11px] text-zinc-500">Povycon Technology</span>
+          <span className="text-[11px] text-zinc-500">{new Date().getFullYear()}</span>
         </div>
       </footer>
     </div>
