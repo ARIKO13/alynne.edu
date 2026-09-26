@@ -1,5 +1,5 @@
 /**
- * ModelSelector.tsx — Popup pilih model Whisper untuk STT
+ * ModelSelector.tsx - Popup pilih model Whisper untuk STT
  *
  * Fitur:
  *   - List 5 model (2 unquantized + 3 quantized)
@@ -138,7 +138,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
         msg.toLowerCase().includes('cancel') ||
         msg.toLowerCase().includes('signal')
       ) {
-        // User cancel — ga usah tampilin error
+        // User cancel - ga usah tampilin error
         setLoadProgress(0);
       } else {
         setError(msg);
@@ -187,7 +187,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
   const isCached = cachedModels.has(selectedId);
 
   // Kalau model sudah loaded, tombol utama = "Gunakan Model Ini"
-  // Kalau cached tapi belum loaded, tombol = "Gunakan Model (Cache)" — akan load dari cache
+  // Kalau cached tapi belum loaded, tombol = "Gunakan Model (Cache)" - akan load dari cache
   // Kalau belum cached, tombol = "Download & Gunakan"
 
   return (
@@ -210,7 +210,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
             <div className="flex items-center gap-2 mb-2">
               <Zap className="h-4 w-4 text-green-400" />
               <h3 className="text-sm font-medium text-green-400">
-                Mode Offline (Client-side) — Jalan di Browser, Bisa Tanpa Internet
+                Mode Offline (Client-side) - Jalan di Browser, Bisa Tanpa Internet
               </h3>
             </div>
             <p className="text-[11px] text-zinc-500 mb-2">
@@ -241,7 +241,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
             <div className="flex items-center gap-2 mb-2">
               <Cpu className="h-4 w-4 text-blue-400" />
               <h3 className="text-sm font-medium text-blue-400">
-                Mode Online (Server-side) — Akurasi Tinggi, Butuh Internet
+                Mode Online (Server-side) - Akurasi Tinggi, Butuh Internet
               </h3>
             </div>
             <p className="text-[11px] text-zinc-500 mb-2">
@@ -468,7 +468,7 @@ function ModelOption({
             </div>
           </div>
         </div>
-        {/* Uninstall button — only show if cached or loaded */}
+        {/* Uninstall button - only show if cached or loaded */}
         {(cached || loaded) && !uninstalling && !disabled && (
           <button
             onClick={(e) => {

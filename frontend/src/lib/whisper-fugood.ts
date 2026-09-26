@@ -1,5 +1,5 @@
 /**
- * whisper-fugood.ts — Hybrid Whisper dispatcher
+ * whisper-fugood.ts - Hybrid Whisper dispatcher
  *
  * - Tiny & Small: client-side via Web Worker (transformers.js ONNX q8)
  * - Large Turbo & Large v3: server-side proxy (faster-whisper backend)
@@ -35,14 +35,14 @@ export const FUGOOD_MODELS: FugoodModel[] = [
     ramMB: 200,
     speedX: '5-10x realtime',
     accuracyRange: '65-75%',
-    recommendedFor: 'HP jadul, RAM 1GB+ — Mode Offline',
+    recommendedFor: 'HP jadul, RAM 1GB+ - Mode Offline',
     url: '',
     sizeMB: 40,
     runtime: 'client',
   },
   {
     id: 'small',
-    name: 'Small (Client Q8) — RECOMMENDED',
+    name: 'Small (Client Q8) - RECOMMENDED',
     category: 'quantized',
     type: 'q8',
     description:
@@ -50,7 +50,7 @@ export const FUGOOD_MODELS: FugoodModel[] = [
     ramMB: 500,
     speedX: '1.5-2x realtime',
     accuracyRange: '82-88%',
-    recommendedFor: 'HP modern, RAM 2GB+ — Mode Offline RECOMMENDED',
+    recommendedFor: 'HP modern, RAM 2GB+ - Mode Offline RECOMMENDED',
     url: '',
     sizeMB: 150,
     runtime: 'client',
@@ -65,7 +65,7 @@ export const FUGOOD_MODELS: FugoodModel[] = [
     ramMB: 0,
     speedX: '1-2x realtime',
     accuracyRange: '88-96%',
-    recommendedFor: 'Butuh akurasi tinggi — Mode Online',
+    recommendedFor: 'Butuh akurasi tinggi - Mode Online',
     url: '/models/ggml-large-v3-turbo-q5_0.bin',
     sizeMB: 548,
     runtime: 'server',
@@ -80,7 +80,7 @@ export const FUGOOD_MODELS: FugoodModel[] = [
     ramMB: 0,
     speedX: '0.3-0.5x realtime',
     accuracyRange: '90-97%',
-    recommendedFor: 'Akurasi maksimal — Mode Online (lambat)',
+    recommendedFor: 'Akurasi maksimal - Mode Online (lambat)',
     url: '/models/ggml-large-v3-q5_0.bin',
     sizeMB: 1100,
     runtime: 'server',
@@ -256,7 +256,7 @@ async function loadServerModel(
   _modelId: string,
   onProgress?: (p: number) => void
 ): Promise<void> {
-  // Server models are always ready — just record selection
+  // Server models are always ready - just record selection
   onProgress?.(50);
   await new Promise((r) => setTimeout(r, 200));
   onProgress?.(100);

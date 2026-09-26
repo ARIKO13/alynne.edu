@@ -1,8 +1,8 @@
 /**
- * whisper-client-worker.ts — Web Worker untuk client-side Whisper
+ * whisper-client-worker.ts - Web Worker untuk client-side Whisper
  *
  * Runs transformers.js v4 ONNX in isolated Web Worker thread.
- * Main thread never crashes — only this worker can crash.
+ * Main thread never crashes - only this worker can crash.
  *
  * Messages from main thread:
  *   { type: 'load', modelId: 'tiny' | 'small' }
