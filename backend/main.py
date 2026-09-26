@@ -29,9 +29,6 @@ from fastapi.responses import StreamingResponse, JSONResponse
 import uvicorn
 
 # ===== Config =====
-# Default changed from large-v3-turbo -> tiny (2026-09-14 per user request).
-# tiny is ~75MB vs ~1.5GB for large-v3-turbo, loads in ~3s, perfect for
-# short voice commands. Main STT now uses Groq Whisper API (cloud) instead.
 MODEL_SIZE = os.environ.get("WHISPER_MODEL", "tiny")
 DEVICE = os.environ.get("WHISPER_DEVICE", "cpu")
 COMPUTE_TYPE = os.environ.get("WHISPER_COMPUTE", "int8")
