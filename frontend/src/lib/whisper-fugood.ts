@@ -19,17 +19,22 @@ import {
 
 // ===== WASM CONFIG + NATIVE LOGGING =====
 // Configure once at module load (browser only)
+//
+// WASM_VERSION: bump this when replacing WASM files to bust browser cache.
+// The browser caches WASM files aggressively (even with max-age=0, Web Workers
+// may reuse cached versions). Appending ?v=N forces a fresh fetch.
+const WASM_VERSION = 'v113';
 if (typeof window !== 'undefined') {
   const isCrossOriginIsolated =
     typeof window.crossOriginIsolated === 'boolean' && window.crossOriginIsolated;
   configureWasm({
     worker: true,
     threads: isCrossOriginIsolated && typeof SharedArrayBuffer !== 'undefined',
-    jsPath: '/whisper-fugood/whisper-node.js',
-    wasmPath: '/whisper-fugood/whisper-node.wasm',
-    threadsJsPath: '/whisper-fugood/whisper-node.threads.js',
-    threadsWasmPath: '/whisper-fugood/whisper-node.threads.wasm',
-    workerPath: '/whisper-fugood/worker.js',
+    jsPath: `/whisper-fugood/whisper-node.js?${WASM_VERSION}`,
+    wasmPath: `/whisper-fugood/whisper-node.wasm?${WASM_VERSION}`,
+    threadsJsPath: `/whisper-fugood/whisper-node.threads.js?${WASM_VERSION}`,
+    threadsWasmPath: `/whisper-fugood/whisper-node.threads.wasm?${WASM_VERSION}`,
+    workerPath: `/whisper-fugood/worker.js?${WASM_VERSION}`,
   });
 
   // Enable native log forwarding (worker → main thread → console)
@@ -286,7 +291,12 @@ async function prefetchModel(
   console.log('[Whisper-Fugood] Downloading model:', url);
   abortController = new AbortController();
 
-  const response = await fetch(url, { signal: abortController.signal });
+  // Use cache: 'no-cache' to always revalidate with server (avoids stale
+  // cached model from previous deployments)
+  const response = await fetch(url, {
+    signal: abortController.signal,
+    cache: 'no-cache',
+  });
   if (!response.ok) {
     throw new Error(`HTTP ${response.status} — ${response.statusText}`);
   }
