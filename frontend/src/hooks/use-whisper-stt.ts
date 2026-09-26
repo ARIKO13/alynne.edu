@@ -455,24 +455,10 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
   const stopRecording = useCallback(() => {
     console.log('[Whisper] Stop recording clicked');
     isRecordingRef.current = false;
-
-    // Signal worklet to stop + send result
-    if (audioWorkletNodeRef.current) {
-      audioWorkletNodeRef.current.port.postMessage({ type: 'stop' });
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
     }
-
-    // Disconnect + close audio context
-    setTimeout(() => {
-      if (audioWorkletNodeRef.current) {
-        audioWorkletNodeRef.current.disconnect();
-        audioWorkletNodeRef.current = null;
-      }
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-        audioContextRef.current = null;
-      }
-      if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach(t => t.stop());
+  }, []);
         mediaStreamRef.current = null;
       }
     }, 100);  // small delay to let worklet send result
