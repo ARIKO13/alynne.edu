@@ -199,15 +199,12 @@ export async function loadModel(
     (env as any).backends.onnx ??= {};
     (env as any).backends.onnx.wasm = {
       wasmPaths: '/onnx/',
-      // Use single thread if not cross-origin isolated (no SharedArrayBuffer)
-      numThreads:
-        typeof window !== 'undefined' &&
-        typeof SharedArrayBuffer !== 'undefined' &&
-        window.crossOriginIsolated === true
-          ? 4
-          : 1,
-      // Don't use SIMD if not supported (older browsers)
+      // Single thread for maximum compatibility (no SharedArrayBuffer needed)
+      numThreads: 1,
+      // Enable SIMD (most browsers support it)
       simd: true,
+      // Run ONNX in a Web Worker — isolates crashes from main thread
+      proxy: true,
     };
 
     console.log(
@@ -219,6 +216,7 @@ export async function loadModel(
 
     // Create ASR pipeline with q8 quantization (smaller memory)
     // device: 'wasm' for CPU (more compatible than webgpu)
+    console.log('[Whisper-Transformers] Creating pipeline...');
     transcriber = await pipeline(
       'automatic-speech-recognition',
       model.hfId,
