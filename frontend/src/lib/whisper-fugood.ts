@@ -1,126 +1,101 @@
 /**
- * whisper-fugood.ts — Server-side Whisper proxy
+ * whisper-fugood.ts — Client-side Whisper via transformers.js v4 (ONNX)
  *
- * Client-side WASM (@fugood/whisper.node) was aborting with
- * "Aborted(). Build with -sASSERTIONS" in both v1.1.3 and v1.2.0-rc.0,
- * on both Web Worker and main thread. The WASM binary is incompatible
- * with the browser environment.
+ * Uses @huggingface/transformers v4 with ONNX Runtime Web.
+ * Models: Xenova/whisper-{tiny,base,small} with q8 quantization.
  *
- * This module now proxies to the server-side faster-whisper backend
- * (running on port 8000 via PM2). The server has more CPU power, no
- * browser constraints, and already has models loaded.
+ * Hybrid architecture:
+ *   - Web Speech API: real-time transcription (instant feedback)
+ *   - This module: post-processing with Whisper for better accuracy
  *
- * API is kept compatible with the previous client-side implementation
- * so ModelSelector and use-whisper-stt don't need major changes.
+ * All processing happens in browser. No server CPU usage.
+ * Models cached in browser Cache Storage after first download.
  */
 
-// ===== MODEL DEFINITIONS (informational only — server picks the model) =====
+// ===== MODEL DEFINITIONS =====
 export interface FugoodModel {
   id: string;
   name: string;
-  url: string;
+  /** HuggingFace model ID */
+  hfId: string;
   sizeMB: number;
   category: 'unquantized' | 'quantized';
-  type: 'unquantized' | 'q5_0' | 'q5_1';
+  type: 'unquantized' | 'q8';
   description: string;
   ramMB: number;
   speedX: string;
   accuracyRange: string;
   recommendedFor: string;
+  url: string; // kept for API compat (unused)
 }
 
 export const FUGOOD_MODELS: FugoodModel[] = [
   {
     id: 'tiny',
-    name: 'Tiny (Server)',
-    category: 'unquantized',
-    type: 'unquantized',
+    name: 'Tiny (Q8)',
+    hfId: 'Xenova/whisper-tiny',
+    category: 'quantized',
+    type: 'q8',
     description:
-      'Model paling ringan, dijalankan di server. Cepat, akurasi dasar untuk Bahasa Indonesia.',
-    ramMB: 0,
+      'Model paling ringan, quantized Q8. Cepat, akurasi dasar untuk Bahasa Indonesia. Client-side ONNX.',
+    ramMB: 200,
     speedX: '5-10x realtime',
     accuracyRange: '65-75%',
-    recommendedFor: 'Default — cepat, hemat battery HP',
-    url: '/models/ggml-tiny.bin',
-    sizeMB: 75,
+    recommendedFor: 'HP jadul, RAM minimal 1GB',
+    url: '',
+    sizeMB: 40,
   },
   {
     id: 'base',
-    name: 'Base (Server)',
-    category: 'unquantized',
-    type: 'unquantized',
+    name: 'Base (Q8)',
+    hfId: 'Xenova/whisper-base',
+    category: 'quantized',
+    type: 'q8',
     description:
-      'Model Base dijalankan di server. Akurasi menengah untuk Bahasa Indonesia.',
-    ramMB: 0,
+      'Model Base quantized Q8. Akurasi menengah untuk Bahasa Indonesia. Client-side ONNX.',
+    ramMB: 300,
     speedX: '3-5x realtime',
     accuracyRange: '72-82%',
-    recommendedFor: 'Akurasi lebih baik, masih cepat',
-    url: '/models/ggml-base.bin',
-    sizeMB: 142,
+    recommendedFor: 'HP entry-level, RAM 1.5GB+',
+    url: '',
+    sizeMB: 75,
   },
   {
-    id: 'small-q5_1',
-    name: 'Small (Server)',
+    id: 'small',
+    name: 'Small (Q8) — RECOMMENDED',
+    hfId: 'Xenova/whisper-small',
     category: 'quantized',
-    type: 'q5_1',
+    type: 'q8',
     description:
-      'Model Small dijalankan di server. Balance akurasi dan kecepatan. Cocok untuk Bahasa Indonesia.',
-    ramMB: 0,
+      'Model Small quantized Q8. Balance akurasi dan ukuran. Cocok untuk Bahasa Indonesia. Client-side ONNX.',
+    ramMB: 500,
     speedX: '1.5-2x realtime',
     accuracyRange: '82-88%',
-    recommendedFor: 'RECOMMENDED — akurasi baik untuk Indonesia',
-    url: '/models/ggml-small-q5_1.bin',
-    sizeMB: 182,
-  },
-  {
-    id: 'large-v3-turbo-q5_0',
-    name: 'Large v3 Turbo (Server)',
-    category: 'quantized',
-    type: 'q5_0',
-    description:
-      'Model terbaik untuk Bahasa Indonesia. Cepat (turbo) dan akurat. Diproses di server.',
-    ramMB: 0,
-    speedX: '1-2x realtime',
-    accuracyRange: '88-96%',
-    recommendedFor: 'PC/laptop dengan koneksi internet cepat',
-    url: '/models/ggml-large-v3-turbo-q5_0.bin',
-    sizeMB: 548,
-  },
-  {
-    id: 'large-v3-q5_0',
-    name: 'Large v3 (Server)',
-    category: 'quantized',
-    type: 'q5_0',
-    description:
-      'Model terbesar dan paling akurat. Untuk akurasi maksimal. Diproses di server.',
-    ramMB: 0,
-    speedX: '0.3-0.5x realtime',
-    accuracyRange: '90-97%',
-    recommendedFor: 'Akurasi maksimal (lambat)',
-    url: '/models/ggml-large-v3-q5_0.bin',
-    sizeMB: 1100,
+    recommendedFor: 'HP modern, RAM 2GB+ — RECOMMENDED',
+    url: '',
+    sizeMB: 150,
   },
 ];
 
 // ===== STATE =====
 const STORAGE_KEY = 'whisper-fugood-model';
+const CACHE_NAME = 'transformers-models';
+
+let transcriber: any = null;
 let currentModelId: string | null = null;
+let isLoading = false;
 
 // ===== HELPERS =====
 export function getModel(id: string): FugoodModel | undefined {
   return FUGOOD_MODELS.find((m) => m.id === id);
 }
 
-/**
- * "Load" model — for server-side, this is a no-op.
- * The model is already loaded on the server. We just record the selection.
- */
 export function isModelLoaded(): boolean {
-  return true; // always "loaded" — server handles it
+  return transcriber !== null;
 }
 
 export function getCurrentModel(): string | null {
-  return currentModelId || getSavedModelId();
+  return currentModelId;
 }
 
 export function getSavedModelId(): string {
@@ -133,158 +108,174 @@ export function saveModelId(id: string): void {
   localStorage.setItem(STORAGE_KEY, id);
 }
 
-// Cache management — no-op for server-side (server handles caching)
-export async function isModelCached(_modelId: string): Promise<boolean> {
-  return true; // always "cached" — it's on the server
+// Cache management (transformers.js handles its own cache, these are stubs)
+export async function isModelCached(modelId: string): Promise<boolean> {
+  const model = getModel(modelId);
+  if (!model) return false;
+  // transformers.js caches in browser Cache Storage under transformers.js namespace
+  // We just check if cache API is available
+  if (typeof caches === 'undefined') return false;
+  try {
+    const cacheNames = await caches.keys();
+    return cacheNames.some((name) => name.includes('transformers') || name.includes(model.hfId));
+  } catch {
+    return false;
+  }
 }
 
-export async function deleteModel(_modelId: string): Promise<boolean> {
-  return true; // no-op — can't delete server model from client
+export async function deleteModel(modelId: string): Promise<boolean> {
+  // transformers.js manages its own cache; we can try to clear it
+  if (typeof caches === 'undefined') return false;
+  try {
+    const cacheNames = await caches.keys();
+    for (const name of cacheNames) {
+      if (name.includes('transformers')) {
+        await caches.delete(name);
+      }
+    }
+    if (currentModelId === modelId && transcriber) {
+      transcriber = null;
+      currentModelId = null;
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function cancelLoad(): void {
-  // no-op — nothing to cancel
+  // transformers.js doesn't support cancel natively
+  // We just reset the loading flag
+  isLoading = false;
 }
 
 export function forceResetLoading(): void {
-  // no-op — no loading state to reset
+  isLoading = false;
+  console.log('[Whisper-Transformers] Loading state forcibly reset');
 }
 
-// ===== LOAD MODEL (no-op for server-side) =====
+// ===== LOAD MODEL =====
+
 export async function loadModel(
   modelId: string,
-  _onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void
 ): Promise<void> {
   const model = getModel(modelId);
   if (!model) throw new Error('Unknown model: ' + modelId);
 
-  // Just record the selection — server already has models loaded
-  currentModelId = modelId;
-  saveModelId(modelId);
-  console.log('[Whisper-Server] Model selected:', model.name);
+  if (currentModelId === modelId && transcriber) {
+    return; // already loaded
+  }
 
-  // Simulate brief loading for UI feedback
-  _onProgress?.(50);
-  await new Promise((r) => setTimeout(r, 200));
-  _onProgress?.(100);
-}
+  if (isLoading) {
+    throw new Error('Another model is loading');
+  }
 
-// ===== TRANSCRIBE (server-side) =====
-
-/**
- * Transcribe audio using the server-side faster-whisper backend.
- *
- * Flow:
- *   1. Convert Float32Array → WAV Blob
- *   2. POST to /api/whisper/transcribe/sync (proxied to localhost:8000)
- *   3. Parse JSON response → return text
- */
-export async function transcribe(
-  audio: Float32Array,
-  language: string = 'id'
-): Promise<{ text: string }> {
-  console.log('[Whisper-Server] Transcribing:', audio.length, 'samples');
+  isLoading = true;
 
   try {
-    const wavBlob = float32ToWavBlob(audio);
-    console.log('[Whisper-Server] WAV blob:', wavBlob.size, 'bytes');
-
-    const formData = new FormData();
-    formData.append('audio', wavBlob, 'recording.wav');
-    formData.append('language', language);
-    // Use the selected model (server may or may not honor this)
-    const modelId = getCurrentModel();
-    if (modelId) {
-      formData.append('model', modelId);
+    // Release previous model
+    if (transcriber) {
+      try {
+        await transcriber.dispose();
+      } catch {}
+      transcriber = null;
+      currentModelId = null;
     }
 
-    console.log('[Whisper-Server] Sending to /api/whisper/transcribe/sync...');
+    console.log('[Whisper-Transformers] Loading model:', model.name, '(', model.hfId, ')');
 
-    const controller = new AbortController();
-    const timeout = setTimeout(
-      () => controller.abort(),
-      5 * 60 * 1000
-    ); // 5 min timeout
+    // Dynamic import — only load transformers.js in browser
+    const { pipeline, env } = await import('@huggingface/transformers');
 
-    try {
-      const response = await fetch('/api/whisper/transcribe/sync', {
-        method: 'POST',
-        body: formData,
-        signal: controller.signal,
-      });
+    // Configure env for browser
+    env.allowLocalModels = false;
+    env.useBrowserCache = true;
 
-      if (!response.ok) {
-        const errText = await response.text().catch(() => '');
-        throw new Error(
-          `Server error ${response.status}: ${errText.substring(0, 200)}`
-        );
+    onProgress?.(10);
+
+    // Create ASR pipeline with q8 quantization (smaller memory)
+    // device: 'wasm' for CPU, 'webgpu' if available
+    const hasWebGPU = typeof navigator !== 'undefined' && !!(navigator as any).gpu;
+    console.log('[Whisper-Transformers] WebGPU available:', hasWebGPU);
+
+    onProgress?.(30);
+
+    transcriber = await pipeline(
+      'automatic-speech-recognition',
+      model.hfId,
+      {
+        dtype: {
+          encoder_model: 'q8',
+          decoder_model_merged: 'q8',
+        },
+        device: hasWebGPU ? 'webgpu' : 'wasm',
+        progress_callback: (data: any) => {
+          console.log('[Whisper-Transformers] Progress:', data);
+          if (data.status === 'progress' && data.progress) {
+            // data.progress is 0-100
+            onProgress?.(30 + (data.progress / 100) * 60);
+          } else if (data.status === 'done') {
+            onProgress?.(90);
+          }
+        },
       }
+    );
 
-      const result = await response.json();
-      console.log(
-        '[Whisper-Server] Result:',
-        JSON.stringify(result).substring(0, 300)
-      );
-
-      const text = result?.text?.trim() || result?.result?.trim() || '';
-      console.log('[Whisper-Server] Final text:', text.substring(0, 200));
-      return { text };
-    } finally {
-      clearTimeout(timeout);
-    }
+    onProgress?.(100);
+    currentModelId = modelId;
+    saveModelId(modelId);
+    isLoading = false;
+    console.log('[Whisper-Transformers] Model loaded:', model.name);
   } catch (err) {
-    console.error('[Whisper-Server] Transcribe error:', err);
+    isLoading = false;
+    console.error('[Whisper-Transformers] Load error:', err);
     throw err;
   }
 }
 
-// ===== FREE (no-op for server-side) =====
-export async function freeModel(): Promise<void> {
-  // no-op — server manages model lifecycle
-  console.log('[Whisper-Server] freeModel (no-op)');
-}
+// ===== TRANSCRIBE =====
 
-// ===== WAV CONVERSION (16kHz mono 16-bit) =====
-
-const SAMPLE_RATE = 16000;
-
-function float32ToWavBlob(samples: Float32Array): Blob {
-  const numChannels = 1;
-  const bitsPerSample = 16;
-  const bytesPerSample = bitsPerSample / 8;
-  const blockAlign = numChannels * bytesPerSample;
-  const dataSize = samples.length * bytesPerSample;
-  const bufferSize = 44 + dataSize;
-
-  const buffer = new ArrayBuffer(bufferSize);
-  const view = new DataView(buffer);
-
-  const writeString = (offset: number, str: string) => {
-    for (let i = 0; i < str.length; i++) {
-      view.setUint8(offset + i, str.charCodeAt(i));
-    }
-  };
-
-  writeString(0, 'RIFF');
-  view.setUint32(4, 36 + dataSize, true);
-  writeString(8, 'WAVE');
-  writeString(12, 'fmt ');
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true); // PCM
-  view.setUint16(22, numChannels, true);
-  view.setUint32(24, SAMPLE_RATE, true);
-  view.setUint32(28, SAMPLE_RATE * blockAlign, true);
-  view.setUint16(32, blockAlign, true);
-  view.setUint16(34, bitsPerSample, true);
-  writeString(36, 'data');
-  view.setUint32(40, dataSize, true);
-
-  let offset = 44;
-  for (let i = 0; i < samples.length; i++) {
-    const s = Math.max(-1, Math.min(1, samples[i]));
-    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
-    offset += 2;
+export async function transcribe(
+  audio: Float32Array,
+  language: string = 'id'
+): Promise<{ text: string }> {
+  if (!transcriber) {
+    throw new Error('Model not loaded');
   }
 
-  return new Blob([buffer], { type: 'audio/wav' });
+  console.log('[Whisper-Transformers] Transcribing:', audio.length, 'samples');
+
+  try {
+    // transformers.js expects Float32Array at 16kHz
+    const result = await transcriber(audio, {
+      language: language,
+      task: 'transcribe',
+      chunk_length_s: 30,
+      stride_length_s: 5,
+      return_timestamps: false,
+    });
+
+    console.log('[Whisper-Transformers] Result:', JSON.stringify(result).substring(0, 300));
+
+    const text = result?.text?.trim() || '';
+    console.log('[Whisper-Transformers] Final text:', text.substring(0, 200));
+    return { text };
+  } catch (err) {
+    console.error('[Whisper-Transformers] Transcribe error:', err);
+    throw err;
+  }
+}
+
+// ===== FREE =====
+
+export async function freeModel(): Promise<void> {
+  if (transcriber) {
+    try {
+      await transcriber.dispose();
+    } catch {}
+    transcriber = null;
+    currentModelId = null;
+    console.log('[Whisper-Transformers] Model freed');
+  }
 }
