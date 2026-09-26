@@ -1,4 +1,4 @@
-// cache-buster: 20260925155306
+// cache-buster: 20260926024617
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -133,7 +133,7 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
   const [personalDictCount, setPersonalDictCount] = useState(0);
   const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
   const [whisperModelReady, setWhisperModelReady] = useState(false);
-  const isRecording = whisperSTT.status === 'recording' || sttStatus === 'recording';
+  const isRecording = whisperSTT.status === 'recording' || whisperSTT.isRecording || sttStatus === 'recording';
   const isProcessing = whisperSTT.status === 'processing' || sttStatus === 'processing';
   const transcriptScrollRef = useRef<HTMLDivElement>(null);
   const isScreenMode = sttAudioMode === 'screen';
@@ -287,7 +287,7 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
         )}
 
         {/* Audio Visualizer */}
-        {isRecording && <AudioVisualizer audioLevels={audioLevels} isListening={sttSource === 'webspeech'} />}
+        {isRecording && <AudioVisualizer audioLevels={audioLevels} isListening={true} />}
 
         {/* Combined Methods Indicator — shown when Entire Screen capture is active */}
         {isCombinedActive && (
@@ -375,7 +375,7 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
                   faster-whisper presisi...
                 </span>
               )}
-              {isRecording && <span className="text-xs font-medium text-red-400">REC</span>}
+              {isRecording && <span className="text-xs font-medium text-red-400 animate-pulse">● REC</span>}
               {sttSource === 'webspeech' && isRecording && !isEnhancing && (
                 <span className="text-[10px] text-zinc-600">AI auto-correct aktif</span>
               )}
@@ -438,7 +438,7 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
                 : 'bg-[#8B5CF6] hover:bg-[#d14e1c] text-white'
             )}
           >
-            {whisperSTT.status === 'loading-model' ? <Loader2 className="h-5 w-5 animate-spin" /> : isProcessing ? <RefreshCw className="h-5 w-5 animate-spin" /> : isRecording ? <MicOff className="h-5 w-5" /> : isScreenMode ? <MonitorUp className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+            {whisperSTT.status === 'loading-model' ? <Loader2 className="h-5 w-5 animate-spin" /> : isProcessing ? <RefreshCw className="h-5 w-5 animate-spin" /> : isRecording ? <MicOff className="h-5 w-5 text-red-400" /> : <Mic className="h-5 w-5" />}
             {whisperSTT.status === 'loading-model' ? 'Memuat Model...' : isProcessing ? 'Memproses...' : isRecording ? 'Stop Recording' : isScreenMode ? 'Start Screen Capture' : 'Start Recording'}
           </Button>
           {transcript && (
