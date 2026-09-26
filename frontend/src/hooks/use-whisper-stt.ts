@@ -87,47 +87,20 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
       }
 
       // 3. Cek apakah model masih ada di cache (quick check, ga download)
-      console.log('[Whisper] Checking cache for model:', savedId);
+      // CATATAN: Kami TIDAK auto-load di sini lagi. Auto-load di background
+      // conflict dengan user-initiated download di ModelSelector (race condition
+      // pada `isLoading` flag). Model akan di-load on-demand saat user klik
+      // Record (lihat ensureModelLoaded).
+      console.log('[Whisper] Saved model:', savedId, '- will load on-demand');
       try {
         const cached = await fgIsModelCached(savedId);
-        if (!cached) {
-          console.log('[Whisper] Model not in cache - skip auto-load');
-          return;
+        if (cached) {
+          console.log('[Whisper] Model is cached, will load when user records');
+        } else {
+          console.log('[Whisper] Model not in cache - user needs to re-download');
         }
       } catch {
-        // Cache check failed — skip auto-load, user can manually load
-        return;
-      }
-
-      // 4. Auto-load dengan timeout 60 detik
-      // Silent: ga set isAutoLoading true (jangan show Loading di UI)
-      console.log('[Whisper] Auto-loading model from cache:', savedId);
-      setIsAutoLoading(true);
-
-      const loadPromise = fgLoadModel(savedId).then(() => true);
-      const timeoutPromise = new Promise<boolean>((resolve) => {
-        setTimeout(() => resolve(false), 60000);
-      });
-
-      try {
-        const loaded = await Promise.race([loadPromise, timeoutPromise]);
-        if (cancelled) return;
-
-        if (loaded) {
-          const current = fgGetCurrentModel();
-          if (current) {
-            setModelId(current);
-            console.log('[Whisper] Auto-loaded model from cache:', current);
-          }
-        } else {
-          console.log('[Whisper] Auto-load timed out - user can manually load');
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.warn('[Whisper] Auto-load failed:', err);
-        }
-      } finally {
-        if (!cancelled) setIsAutoLoading(false);
+        // Cache check failed — ignore, user can manually load
       }
     };
 

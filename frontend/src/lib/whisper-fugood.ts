@@ -10,9 +10,14 @@
  * - Cancel download via AbortController
  */
 
-import { configureWasm, initWhisper } from '@fugood/whisper.node';
+import {
+  configureWasm,
+  initWhisper,
+  toggleNativeLog,
+  addNativeLogListener,
+} from '@fugood/whisper.node';
 
-// ===== WASM CONFIG =====
+// ===== WASM CONFIG + NATIVE LOGGING =====
 // Configure once at module load (browser only)
 if (typeof window !== 'undefined') {
   const isCrossOriginIsolated =
@@ -26,6 +31,26 @@ if (typeof window !== 'undefined') {
     threadsWasmPath: '/whisper-fugood/whisper-node.threads.wasm',
     workerPath: '/whisper-fugood/worker.js',
   });
+
+  // Enable native log forwarding (worker → main thread → console)
+  // This captures whisper.cpp internal logs (WHISPER_LOG_INFO/ERROR/etc)
+  // which are critical for debugging model load failures.
+  try {
+    toggleNativeLog(true);
+    addNativeLogListener((level: string, text: string) => {
+      const tag = `[Whisper-Native ${level.toUpperCase()}]`;
+      if (level === 'error') {
+        console.error(tag, text);
+      } else if (level === 'warn') {
+        console.warn(tag, text);
+      } else {
+        console.log(tag, text);
+      }
+    });
+    console.log('[Whisper-Fugood] Native log forwarding enabled');
+  } catch (err) {
+    console.warn('[Whisper-Fugood] Failed to enable native log forwarding:', err);
+  }
 }
 
 // ===== MODEL DEFINITIONS =====
@@ -129,6 +154,27 @@ let abortController: AbortController | null = null;
 // ===== HELPERS =====
 export function getModel(id: string): FugoodModel | undefined {
   return FUGOOD_MODELS.find((m) => m.id === id);
+}
+
+/**
+ * Forcibly reset the loading flag. Use this before starting a new user-initiated
+ * load, in case a previous auto-load or failed load left `isLoading` stuck.
+ *
+ * This does NOT cancel an in-flight initWhisper call (which can't really be
+ * cancelled) — it just unblocks the next loadModel call so the user can retry.
+ *
+ * If an in-flight loadModel eventually completes, its result will be silently
+ * applied to whisperInstance, which is acceptable (user can always re-load).
+ */
+export function forceResetLoading(): void {
+  if (abortController) {
+    try {
+      abortController.abort();
+    } catch {}
+    abortController = null;
+  }
+  isLoading = false;
+  console.log('[Whisper-Fugood] Loading state forcibly reset');
 }
 
 export function isModelLoaded(): boolean {
@@ -353,7 +399,31 @@ export async function loadModel(
     // 3. Init whisper — akan ambil model dari cache (instant)
     //    Pakai absolute URL agar cache key konsisten
     const modelUrl = getModelCacheKey(model);
-    console.log('[Whisper-Fugood] Initializing WASM with cached model...');
+    console.log('[Whisper-Fugood] Initializing WASM with model URL:', modelUrl);
+
+    // Verify cache contents before init
+    if (typeof caches !== 'undefined') {
+      try {
+        const cache = await caches.open(CACHE_NAME);
+        const cachedResp = await cache.match(modelUrl);
+        if (cachedResp) {
+          const cachedSize = Number(cachedResp.headers.get('content-length') || 0);
+          const actualSize = (await cachedResp.clone().arrayBuffer()).byteLength;
+          console.log(
+            '[Whisper-Fugood] Cache verify: key=' + modelUrl,
+            'declared=' + cachedSize,
+            'actual=' + actualSize,
+            'expected~=' + (model.sizeMB * 1024 * 1024)
+          );
+        } else {
+          console.error('[Whisper-Fugood] Model NOT in cache after prefetch!');
+        }
+      } catch (e) {
+        console.warn('[Whisper-Fugood] Cache verify failed:', e);
+      }
+    }
+
+    console.log('[Whisper-Fugood] Calling initWhisper... (watch native logs above/below)');
 
     try {
       whisperInstance = await initWhisper({
@@ -362,12 +432,11 @@ export async function loadModel(
         maxModelBytes: 2 * 1024 * 1024 * 1024, // 2GB limit (aman untuk large-v3 1.1GB)
         cacheModel: true,
       });
+      console.log('[Whisper-Fugood] initWhisper returned successfully');
     } catch (initErr) {
+      console.error('[Whisper-Fugood] initWhisper FAILED:', initErr);
       // Kalau init gagal, mungkin cache korup. Hapus cache & retry sekali.
-      console.warn(
-        '[Whisper-Fugood] initWhisper failed, clearing cache and retrying:',
-        initErr
-      );
+      console.warn('[Whisper-Fugood] Clearing cache and retrying once...');
       try {
         const cache = await caches.open(CACHE_NAME);
         await cache.delete(modelUrl);

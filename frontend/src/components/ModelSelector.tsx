@@ -44,6 +44,7 @@ import {
   deleteModel,
   isModelCached,
   isModelLoaded,
+  forceResetLoading,
   type FugoodModel,
 } from '@/lib/whisper-fugood';
 
@@ -108,6 +109,11 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
     setLoading(true);
     setError(null);
     setLoadProgress(0);
+
+    // Forcibly reset any stuck loading state from previous auto-load attempts.
+    // This prevents "Another model is loading" error when the background
+    // auto-load hung on initWhisper.
+    forceResetLoading();
 
     try {
       const model = getModel(selectedId);
