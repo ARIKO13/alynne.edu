@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { structureContent, generatePdf } from '@/lib/pdf-generator';
 import { fetchLearnedWords } from '@/lib/personal-dict';
 import { ModelSelector } from '@/components/ModelSelector';
+import { StudyPipeline } from '@/components/StudyPipeline';
 import { FileUploadChunked } from '@/components/FileUploadChunked';
 import { useWhisperSTT } from '@/hooks/use-whisper-stt';
 import { isModelLoaded as fgIsModelLoadedCheck } from '@/lib/whisper-fugood';
@@ -91,6 +92,13 @@ function ModeSelector({ disabled }: { disabled: boolean }) {
               <Icon
                 className={cn('h-4 w-4 transition-colors', isActive ? 'text-[#8B5CF6]' : 'text-zinc-500')}
               />
+
+        {/* Mode Belajar Pipeline */}
+        <StudyPipeline
+          open={studyPipelineOpen}
+          onClose={() => setStudyPipelineOpen(false)}
+          transcript={transcript}
+        />
             </div>
             <div className="min-w-0">
               <p className={cn('text-xs font-medium transition-colors', isActive ? 'text-white' : 'text-zinc-400')}>
@@ -231,6 +239,7 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
   }, [sttStatus]);
   const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
   const [whisperModelReady, setWhisperModelReady] = useState(false);
+  const [studyPipelineOpen, setStudyPipelineOpen] = useState(false);
   const isRecording = sttStatus === 'recording' || whisperSTT.status === 'recording';
   const isProcessing = whisperSTT.status === 'processing' || sttStatus === 'processing' || hybridProcessing;
   const transcriptScrollRef = useRef<HTMLDivElement>(null);
@@ -354,6 +363,13 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
           }}
         />
 
+        {/* Mode Belajar Pipeline */}
+        <StudyPipeline
+          open={studyPipelineOpen}
+          onClose={() => setStudyPipelineOpen(false)}
+          transcript={transcript}
+        />
+
         {/* Screen mode hint */}
         {isScreenMode && !isRecording && (
           <div className="flex items-start gap-2.5 rounded-lg border border-sky-500/15 bg-sky-500/[0.03] p-3">
@@ -403,6 +419,13 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
                 color="green"
                 detail={webspeechSupported ? 'mic live' : 'unsupported'}
               />
+
+        {/* Mode Belajar Pipeline */}
+        <StudyPipeline
+          open={studyPipelineOpen}
+          onClose={() => setStudyPipelineOpen(false)}
+          transcript={transcript}
+        />
               <MethodBadge
                 label="Web Audio API"
                 active={isRecording}
@@ -410,6 +433,13 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
                 color="green"
                 detail="mix + visualize"
               />
+
+        {/* Mode Belajar Pipeline */}
+        <StudyPipeline
+          open={studyPipelineOpen}
+          onClose={() => setStudyPipelineOpen(false)}
+          transcript={transcript}
+        />
               <MethodBadge
                 label="OCR (tesseract.js)"
                 active={!screenCv.isModelLoading && isRecording}
@@ -423,6 +453,13 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
                     : `${screenCv.ocrChunkCount} chunks`
                 }
               />
+
+        {/* Mode Belajar Pipeline */}
+        <StudyPipeline
+          open={studyPipelineOpen}
+          onClose={() => setStudyPipelineOpen(false)}
+          transcript={transcript}
+        />
               <MethodBadge
                 label="CV Frame Diff"
                 active={isRecording}
@@ -430,6 +467,13 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
                 color="amber"
                 detail={`${screenCv.slideChangeCount} slide changes`}
               />
+
+        {/* Mode Belajar Pipeline */}
+        <StudyPipeline
+          open={studyPipelineOpen}
+          onClose={() => setStudyPipelineOpen(false)}
+          transcript={transcript}
+        />
             </div>
             {screenCv.error && (
               <p className="mt-2 text-[10px] text-rose-400">⚠ {screenCv.error}</p>
@@ -598,6 +642,20 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
                   <p className="text-[10px] text-[#8B5CF6]/60">STT + PDF sekaligus</p>
                 </div>
               </button>
+
+              {/* Card: Mode Belajar */}
+              <button
+                onClick={() => setStudyPipelineOpen(true)}
+                className="flex items-center gap-3 rounded-lg border border-green-500/20 bg-green-500/[0.06] p-3.5 text-left transition-all hover:border-green-500/40 hover:bg-green-500/10"
+              >
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-green-500/15">
+                  <Sparkles className="h-4.5 w-4.5 text-green-400" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-green-300">Mode Belajar</p>
+                  <p className="text-[10px] text-green-400/60">Bab + Kuis + Focus Timer</p>
+                </div>
+              </button>
             </div>
           </div>
         )}
@@ -644,6 +702,13 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
             setWhisperModelReady(true);
             toast.success('Model siap! Klik Start Recording untuk mulai');
           }}
+        />
+
+        {/* Mode Belajar Pipeline */}
+        <StudyPipeline
+          open={studyPipelineOpen}
+          onClose={() => setStudyPipelineOpen(false)}
+          transcript={transcript}
         />
 
     </div>
