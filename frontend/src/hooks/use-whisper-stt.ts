@@ -459,6 +459,8 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
       mediaRecorderRef.current.stop();
     }
   }, []);
+
+  /**
    * Toggle recording (start/stop).
    */
   const toggleRecording = useCallback(() => {
