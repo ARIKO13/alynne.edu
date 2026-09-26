@@ -98,25 +98,6 @@ function ModeSelector({ disabled }: { disabled: boolean }) {
               <Icon
                 className={cn('h-4 w-4 transition-colors', isActive ? 'text-[#8B5CF6]' : 'text-zinc-500')}
               />
-
-        {/* Mode Belajar Pipeline */}
-        <StudyPipeline
-          open={studyPipelineOpen}
-          onClose={() => setStudyPipelineOpen(false)}
-          transcript={transcript}
-        />
-
-        {/* Analytics */}
-        <WeeklyAnalytics
-          open={analyticsOpen}
-          onClose={() => setAnalyticsOpen(false)}
-        />
-
-        {/* Referral */}
-        <ReferralPanel
-          open={referralOpen}
-          onClose={() => setReferralOpen(false)}
-        />
             </div>
             <div className="min-w-0">
               <p className={cn('text-xs font-medium transition-colors', isActive ? 'text-white' : 'text-zinc-400')}>
@@ -383,25 +364,6 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
           }}
         />
 
-        {/* Mode Belajar Pipeline */}
-        <StudyPipeline
-          open={studyPipelineOpen}
-          onClose={() => setStudyPipelineOpen(false)}
-          transcript={transcript}
-        />
-
-        {/* Analytics */}
-        <WeeklyAnalytics
-          open={analyticsOpen}
-          onClose={() => setAnalyticsOpen(false)}
-        />
-
-        {/* Referral */}
-        <ReferralPanel
-          open={referralOpen}
-          onClose={() => setReferralOpen(false)}
-        />
-
         {/* Screen mode hint */}
         {isScreenMode && !isRecording && (
           <div className="flex items-start gap-2.5 rounded-lg border border-sky-500/15 bg-sky-500/[0.03] p-3">
@@ -451,25 +413,6 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
                 color="green"
                 detail={webspeechSupported ? 'mic live' : 'unsupported'}
               />
-
-        {/* Mode Belajar Pipeline */}
-        <StudyPipeline
-          open={studyPipelineOpen}
-          onClose={() => setStudyPipelineOpen(false)}
-          transcript={transcript}
-        />
-
-        {/* Analytics */}
-        <WeeklyAnalytics
-          open={analyticsOpen}
-          onClose={() => setAnalyticsOpen(false)}
-        />
-
-        {/* Referral */}
-        <ReferralPanel
-          open={referralOpen}
-          onClose={() => setReferralOpen(false)}
-        />
               <MethodBadge
                 label="Web Audio API"
                 active={isRecording}
@@ -477,25 +420,6 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
                 color="green"
                 detail="mix + visualize"
               />
-
-        {/* Mode Belajar Pipeline */}
-        <StudyPipeline
-          open={studyPipelineOpen}
-          onClose={() => setStudyPipelineOpen(false)}
-          transcript={transcript}
-        />
-
-        {/* Analytics */}
-        <WeeklyAnalytics
-          open={analyticsOpen}
-          onClose={() => setAnalyticsOpen(false)}
-        />
-
-        {/* Referral */}
-        <ReferralPanel
-          open={referralOpen}
-          onClose={() => setReferralOpen(false)}
-        />
               <MethodBadge
                 label="OCR (tesseract.js)"
                 active={!screenCv.isModelLoading && isRecording}
@@ -509,25 +433,6 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
                     : `${screenCv.ocrChunkCount} chunks`
                 }
               />
-
-        {/* Mode Belajar Pipeline */}
-        <StudyPipeline
-          open={studyPipelineOpen}
-          onClose={() => setStudyPipelineOpen(false)}
-          transcript={transcript}
-        />
-
-        {/* Analytics */}
-        <WeeklyAnalytics
-          open={analyticsOpen}
-          onClose={() => setAnalyticsOpen(false)}
-        />
-
-        {/* Referral */}
-        <ReferralPanel
-          open={referralOpen}
-          onClose={() => setReferralOpen(false)}
-        />
               <MethodBadge
                 label="CV Frame Diff"
                 active={isRecording}
@@ -535,25 +440,6 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
                 color="amber"
                 detail={`${screenCv.slideChangeCount} slide changes`}
               />
-
-        {/* Mode Belajar Pipeline */}
-        <StudyPipeline
-          open={studyPipelineOpen}
-          onClose={() => setStudyPipelineOpen(false)}
-          transcript={transcript}
-        />
-
-        {/* Analytics */}
-        <WeeklyAnalytics
-          open={analyticsOpen}
-          onClose={() => setAnalyticsOpen(false)}
-        />
-
-        {/* Referral */}
-        <ReferralPanel
-          open={referralOpen}
-          onClose={() => setReferralOpen(false)}
-        />
             </div>
             {screenCv.error && (
               <p className="mt-2 text-[10px] text-rose-400">⚠ {screenCv.error}</p>
