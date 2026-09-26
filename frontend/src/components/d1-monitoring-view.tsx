@@ -257,8 +257,8 @@ export function D1MonitoringView() {
       <div className="rounded-lg border border-sky-500/15 bg-sky-500/[0.03] p-3">
         <p className="text-[11px] text-sky-300 mb-1">ℹ️ D1 vs SQLite</p>
         <p className="text-[10px] text-zinc-400 leading-relaxed">
-          D1 (Cloudflare) menyimpan data user account: Users, Certificates, Subscriptions, DailyProgress,
-          MindMaps, Bookmarks, STTFailure. Diakses via HTTP API (50-200ms per query).
+          D1 (Cloudflare) menyimpan data user account: User (uid, username, gmail,
+          activeSubscription, packetSubscription). Diakses via HTTP API (50-200ms per query).
           SQLite di VPS SSD menyimpan STT dictionary (learned_words, cooccurrence, corrections) -
           synchronous, {'<'}1ms per query.
         </p>

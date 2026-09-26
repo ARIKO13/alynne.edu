@@ -483,7 +483,7 @@ export const GET: APIRoute = async ({ request, url }) => {
         d1: {
           tables: d1Stats,
           recentUsers,
-          recentFailures,
+
           accountId: '949a2a6e1039019782c46a8c7ddb19fe',
           databaseId: '2e9133ea-dad7-4227-ac92-03c0fbe48c45',
           region: 'APAC (HKG)',
