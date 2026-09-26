@@ -124,11 +124,12 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
       setCachedModels((prev) => new Set(prev).add(selectedId));
       setLoading(false);
 
-      // Beri jeda 400ms agar user lihat 100% progress
+      // Client: longer delay to show 100%; Server: short
+      const delay = model.runtime === 'client' ? 800 : 400;
       setTimeout(() => {
         onModelReady(selectedId);
         onClose();
-      }, 400);
+      }, delay);
     } catch (err) {
       setLoading(false);
       const msg = err instanceof Error ? err.message : String(err);
@@ -204,16 +205,16 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
         </DialogHeader>
 
         <div className="space-y-4 max-h-[450px] overflow-y-auto pr-2">
-          {/* Group: Unquantized */}
+          {/* Group: Client-side (browser) */}
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Zap className="h-4 w-4 text-amber-400" />
-              <h3 className="text-sm font-medium text-amber-400">
-                Tanpa Kuantisasi (FP16 — Ukuran Asli)
+              <Zap className="h-4 w-4 text-green-400" />
+              <h3 className="text-sm font-medium text-green-400">
+                Client-side (Jalan di Browser) — Hemat Server CPU
               </h3>
             </div>
             <div className="space-y-2">
-              {FUGOOD_MODELS.filter((m) => m.category === 'unquantized').map(
+              {FUGOOD_MODELS.filter((m) => m.runtime === 'client').map(
                 (model) => (
                   <ModelOption
                     key={model.id}
@@ -231,16 +232,16 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
             </div>
           </div>
 
-          {/* Group: Quantized */}
+          {/* Group: Server-side */}
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Cpu className="h-4 w-4 text-[#8B5CF6]" />
-              <h3 className="text-sm font-medium text-[#8B5CF6]">
-                Kuantisasi (Q5 — Lebih Kecil, Akurasi Hampir Sama)
+              <Cpu className="h-4 w-4 text-blue-400" />
+              <h3 className="text-sm font-medium text-blue-400">
+                Server-side (Diproses di VPS) — Akurasi Tinggi
               </h3>
             </div>
             <div className="space-y-2">
-              {FUGOOD_MODELS.filter((m) => m.category === 'quantized').map(
+              {FUGOOD_MODELS.filter((m) => m.runtime === 'server').map(
                 (model) => (
                   <ModelOption
                     key={model.id}
@@ -361,7 +362,7 @@ function ModelOption({
   onSelect,
   onUninstall,
 }: ModelOptionProps) {
-  const isRecommended = model.id === 'large-v3-turbo-q5_0';
+  const isRecommended = model.id === 'small';
   return (
     <div
       onClick={disabled ? undefined : onSelect}
@@ -410,6 +411,23 @@ function ModelOption({
                 className="bg-[#8B5CF6]/10 text-[#8B5CF6] border-[#8B5CF6]/30 text-[10px]"
               >
                 RECOMMENDED
+              </Badge>
+            )}
+            {model.runtime === 'client' ? (
+              <Badge
+                variant="outline"
+                className="bg-green-500/10 text-green-400 border-green-500/30 text-[10px]"
+              >
+                <Zap className="h-3 w-3 mr-1" />
+                CLIENT
+              </Badge>
+            ) : (
+              <Badge
+                variant="outline"
+                className="bg-blue-500/10 text-blue-400 border-blue-500/30 text-[10px]"
+              >
+                <Cpu className="h-3 w-3 mr-1" />
+                SERVER
               </Badge>
             )}
             {model.category === 'unquantized' && (
