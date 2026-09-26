@@ -110,9 +110,6 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
     setError(null);
     setLoadProgress(0);
 
-    // Forcibly reset any stuck loading state from previous auto-load attempts.
-    // This prevents "Another model is loading" error when the background
-    // auto-load hung on initWhisper.
     forceResetLoading();
 
     try {
@@ -124,15 +121,14 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
       });
       saveModelId(selectedId);
       setLoadedModelId(selectedId);
-      // Tambah ke cached set
       setCachedModels((prev) => new Set(prev).add(selectedId));
       setLoading(false);
 
-      // Beri jeda 600ms agar user lihat 100% progress
+      // Beri jeda 400ms agar user lihat 100% progress
       setTimeout(() => {
         onModelReady(selectedId);
         onClose();
-      }, 600);
+      }, 400);
     } catch (err) {
       setLoading(false);
       const msg = err instanceof Error ? err.message : String(err);
@@ -319,8 +315,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {isCached ? 'Memuat dari cache...' : 'Mengunduh...'}{' '}
-                {loadProgress.toFixed(0)}%
+                Mengaktifkan... {loadProgress.toFixed(0)}%
               </>
             ) : isAlreadyLoaded ? (
               <>
@@ -330,12 +325,12 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
             ) : isCached ? (
               <>
                 <CheckCircle2 className="h-4 w-4 mr-2" />
-                Gunakan Model (Cache)
+                Gunakan Model (Server)
               </>
             ) : (
               <>
                 <Download className="h-4 w-4 mr-2" />
-                Download &amp; Gunakan
+                Gunakan Model (Server)
               </>
             )}
           </Button>
