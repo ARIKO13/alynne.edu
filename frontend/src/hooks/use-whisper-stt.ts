@@ -459,12 +459,6 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
       mediaRecorderRef.current.stop();
     }
   }, []);
-        mediaStreamRef.current = null;
-      }
-    }, 100);  // small delay to let worklet send result
-  }, []);
-
-  /**
    * Toggle recording (start/stop).
    */
   const toggleRecording = useCallback(() => {
