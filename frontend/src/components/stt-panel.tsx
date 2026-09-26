@@ -1,4 +1,4 @@
-// cache-buster: 20260926025058
+// cache-buster: 20260926025318
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -132,7 +132,7 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
   const { setActiveTab } = useAppStore();
   const [personalDictOpen, setPersonalDictOpen] = useState(false);
   const [personalDictCount, setPersonalDictCount] = useState(0);
-  const [isWhisperProcessing, setIsWhisperProcessing] = useState(false);
+  const [hybridProcessing, setHybridProcessing] = useState(false);
   const hybridRecorderRef = useRef<MediaRecorder | null>(null);
   const hybridChunksRef = useRef<Blob[]>([]);
   const hybridStreamRef = useRef<MediaStream | null>(null);
@@ -155,7 +155,7 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
             if (hybridChunksRef.current.length === 0) return;
             const blob = new Blob(hybridChunksRef.current, { type: mimeType });
             console.log('[Hybrid] Audio:', blob.size, 'bytes');
-            setIsWhisperProcessing(true);
+            setHybridProcessing(true);
             try {
               // Decode + resample
               const arrayBuffer = await blob.arrayBuffer();
@@ -203,7 +203,7 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
               console.error('[Hybrid] Whisper error:', err);
               toast.error('Whisper gagal, tetap pakai Web Speech API result');
             } finally {
-              setIsWhisperProcessing(false);
+              setHybridProcessing(false);
               if (hybridStreamRef.current) {
                 hybridStreamRef.current.getTracks().forEach(t => t.stop());
                 hybridStreamRef.current = null;
@@ -232,7 +232,7 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
   const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
   const [whisperModelReady, setWhisperModelReady] = useState(false);
   const isRecording = sttStatus === 'recording' || whisperSTT.status === 'recording';
-  const isProcessing = whisperSTT.status === 'processing' || sttStatus === 'processing' || isWhisperProcessing;
+  const isProcessing = whisperSTT.status === 'processing' || sttStatus === 'processing' || hybridProcessing;
   const transcriptScrollRef = useRef<HTMLDivElement>(null);
   const isScreenMode = sttAudioMode === 'screen';
   const isCombinedActive = isScreenMode && isRecording;
@@ -538,7 +538,7 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
             )}
           >
             {whisperSTT.status === 'loading-model' ? <Loader2 className="h-5 w-5 animate-spin" /> : isProcessing ? <RefreshCw className="h-5 w-5 animate-spin" /> : isRecording ? <MicOff className="h-5 w-5 text-red-400" /> : <Mic className="h-5 w-5" />}
-            {isWhisperProcessing ? 'Whisper memproses...' : whisperSTT.status === 'loading-model' ? 'Memuat Model...' : isProcessing ? 'Memproses...' : isRecording ? 'Stop Recording' : 'Start Recording'}
+            {hybridProcessing ? 'Whisper memproses...' : whisperSTT.status === 'loading-model' ? 'Memuat Model...' : isProcessing ? 'Memproses...' : isRecording ? 'Stop Recording' : 'Start Recording'}
           </Button>
           {transcript && (
                 <Button onClick={clearTranscript} disabled={isRecording || isProcessing} variant="outline" size="lg" className="gap-2 rounded-lg border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06]">
