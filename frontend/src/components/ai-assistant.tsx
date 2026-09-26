@@ -14,6 +14,7 @@ import { Send, Trash2, Loader2, Bot, User, Sparkles, Globe, Timer, AlertTriangle
 import { cn } from '@/lib/utils';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { indexTranscript, getRAGContext } from '@/lib/rag';
 
 const PROVIDER_COLORS: Record<string, string> = {
   claude: 'border-violet-500/30 text-violet-400',
@@ -47,6 +48,13 @@ export function AIAssistant() {
   const [cooldownUntil, setCooldownUntil] = useState(0);
   const [quotaInfo, setQuotaInfo] = useState<{dayRemaining: number; dayLimit: number; dayReset: number} | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Index transcript for RAG whenever it changes
+  useEffect(() => {
+    if (transcript && transcript.length > 20) {
+      indexTranscript(transcript);
+    }
+  }, [transcript]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lastSendTime = useRef(0);
   const loadingStartRef = useRef(0);
@@ -143,6 +151,13 @@ export function AIAssistant() {
       let systemPrompt: string | undefined;
       if (hasScrapeResults && scrapedContext) {
         systemPrompt = `Kamu adalah asisten AI LINA.LEARNING. Berikut konten web yang relevan dengan pertanyaan user:\n\n${scrapedContext}\n\n---\n\nPETUNJUK:\n- Jawab berdasarkan konten web di atas UTAMANYA\n- Jelaskan dengan bahasa Indonesia yang jelas, terstruktur, dan mudah dipahami\n- Kalau konten web kurang lengkap, kamu boleh tambahkan pengetahuan umum\n- Sertakan sumber jika memungkinkan`;
+      }
+
+      // RAG: Add transcript/material context if available
+      const ragContext = getRAGContext(input);
+      if (ragContext) {
+        systemPrompt = (systemPrompt ? systemPrompt + '\n\n' : '') +
+          `Kamu adalah asisten AI ALYNNE.EDU. Berikut konteks dari transkrip/materi user yang relevan dengan pertanyaan:\n\n${ragContext}\n\n---\n\nPETUNJUK:\n- Jawab berdasarkan konteks di atas UTAMANYA\n- Kalau konteks tidak cukup, gunakan pengetahuan umum\n- Jelaskan dengan bahasa Indonesia yang jelas`;
       }
 
       // === CLIENT-SIDE AI (WebLLM) - browser-first, fallback to server ===

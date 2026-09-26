@@ -12,8 +12,11 @@ import {
   Contrast,
   Zap,
   Github,
+  ScanText,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
+import { SmartOcrSolver } from '@/components/SmartOcrSolver';
 
 /**
  * ImageSharpener - CV-based image sharpening tool
@@ -29,6 +32,8 @@ import { toast } from 'sonner';
  */
 
 type Method = 'sharpen' | 'strong-sharpen' | 'edge-enhance' | 'unsharp';
+
+type Tab = 'sharpen' | 'ocr-solver';
 
 const METHODS: { id: Method; label: string; description: string; icon: typeof Zap }[] = [
   { id: 'sharpen',         label: 'Sharpen',         description: 'Kernel 3×3 ringan, ideal buat foto',          icon: Zap },
@@ -252,6 +257,7 @@ function interpretBlurScore(score: number): { label: string; level: 'sharp' | 'm
 }
 
 export function ImageSharpener() {
+  const [activeTab, setActiveTab] = useState<Tab>('sharpen');
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [imageName, setImageName] = useState<string>('');
   const [method, setMethod] = useState<Method>('sharpen');
@@ -630,6 +636,17 @@ export function ImageSharpener() {
           </div>
         </div>
       )}
+
+      {/* Smart OCR + Math Solver */}
+      <div className="mt-6 rounded-xl border border-[#8B5CF6]/20 bg-[#8B5CF6]/[0.03] p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <ScanText className="h-4 w-4 text-[#8B5CF6]" />
+          <h3 className="text-sm font-medium text-zinc-200">Smart OCR + Math Solver</h3>
+          <Badge variant="outline" className="text-[10px] ml-auto border-[#8B5CF6]/30 text-[#8B5CF6]">NEW</Badge>
+        </div>
+        <p className="text-[11px] text-zinc-500">Upload foto soal, AI baca teks + selesaikan matematika otomatis.</p>
+        <SmartOcrSolver />
+      </div>
     </div>
   );
 }

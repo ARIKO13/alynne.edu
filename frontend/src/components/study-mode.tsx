@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
 import { Play, Pause, RotateCcw, Eye, Activity, Flame, AlertTriangle } from 'lucide-react';
+import { LofiBackground } from '@/components/LofiBackground';
 
 // ── Focus Day (persisted) ──
 interface FocusDay { date: string; totalMinutes: number; sessions: number; }
@@ -374,6 +375,9 @@ export function StudyMode() {
 
       {/* Simple Bottom Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-[55]">
+        {/* Lo-Fi animated background */}
+        <LofiBackground theme="sunset" intensity={0.4} />
+
         <div className="bg-[#111]/90 backdrop-blur-xl border-t border-white/[0.06]">
           <div className="max-w-2xl mx-auto flex items-center gap-2 px-3 py-2">
             {/* Timer display */}
