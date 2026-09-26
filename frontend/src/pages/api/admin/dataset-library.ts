@@ -424,14 +424,8 @@ export const GET: APIRoute = async ({ request, url }) => {
 
       const queries = [
         { name: 'User', sql: "SELECT COUNT(*) as c FROM User" },
-        { name: 'Certificate', sql: "SELECT COUNT(*) as c FROM Certificate" },
-        { name: 'Subscription', sql: "SELECT COUNT(*) as c FROM Subscription" },
-        { name: 'STTFailure', sql: "SELECT COUNT(*) as c FROM STTFailure" },
-        { name: 'DailyProgress', sql: "SELECT COUNT(*) as c FROM DailyProgress" },
-        { name: 'MindMap', sql: "SELECT COUNT(*) as c FROM MindMap" },
-        { name: 'MonthlyRecap', sql: "SELECT COUNT(*) as c FROM MonthlyRecap" },
-        { name: 'YearlyRecord', sql: "SELECT COUNT(*) as c FROM YearlyRecord" },
-        { name: 'LearnedWord (old)', sql: "SELECT COUNT(*) as c FROM LearnedWord" },
+        { name: 'User (active subscription)', sql: "SELECT COUNT(*) as c FROM User WHERE activeSubscription = 'active'" },
+        { name: 'User (trial)', sql: "SELECT COUNT(*) as c FROM User WHERE activeSubscription = 'trial'" },
       ];
 
       const d1Stats: Array<{ name: string; count: number; error?: string }> = [];
@@ -466,7 +460,7 @@ export const GET: APIRoute = async ({ request, url }) => {
       let recentUsers: Array<{ id: string; name: string; email: string; createdAt: string }> = [];
       try {
         const payload = JSON.stringify({
-          sql: "SELECT id, name, email, createdAt FROM User ORDER BY createdAt DESC LIMIT 5"
+          sql: "SELECT uid as id, username as name, gmail as email, createdAt FROM User ORDER BY createdAt DESC LIMIT 5"
         });
         const res = await fetch(D1_API_URL, {
           method: 'POST',
@@ -484,27 +478,6 @@ export const GET: APIRoute = async ({ request, url }) => {
         // ignore
       }
 
-      // Get recent STT failures (last 5)
-      let recentFailures: Array<{ id: string; source: string; createdAt: string; unknownCount: number }> = [];
-      try {
-        const payload = JSON.stringify({
-          sql: "SELECT id, source, createdAt, unknownCount FROM STTFailure ORDER BY createdAt DESC LIMIT 5"
-        });
-        const res = await fetch(D1_API_URL, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${CF_API_TOKEN}`,
-            'Content-Type': 'application/json',
-          },
-          body: payload,
-        });
-        if (res.ok) {
-          const data = await res.json();
-          recentFailures = data?.result?.[0]?.results || [];
-        }
-      } catch (e) {
-        // ignore
-      }
 
       return Response.json({
         d1: {
