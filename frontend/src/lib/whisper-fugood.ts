@@ -23,12 +23,18 @@ import {
 // WASM_VERSION: bump this when replacing WASM files to bust browser cache.
 // The browser caches WASM files aggressively (even with max-age=0, Web Workers
 // may reuse cached versions). Appending ?v=N forces a fresh fetch.
+//
+// worker: false — run WASM on main thread (not in Web Worker).
+// The Web Worker was causing WASM aborts ("Aborted(). Build with -sASSERTIONS")
+// likely due to module loading or memory constraints in the worker context.
+// Running on main thread is less ideal (blocks UI during load/transcribe) but
+// avoids worker-related issues entirely.
 const WASM_VERSION = 'v113';
 if (typeof window !== 'undefined') {
   const isCrossOriginIsolated =
     typeof window.crossOriginIsolated === 'boolean' && window.crossOriginIsolated;
   configureWasm({
-    worker: true,
+    worker: false,
     threads: isCrossOriginIsolated && typeof SharedArrayBuffer !== 'undefined',
     jsPath: `/whisper-fugood/whisper-node.js?${WASM_VERSION}`,
     wasmPath: `/whisper-fugood/whisper-node.wasm?${WASM_VERSION}`,
@@ -148,7 +154,9 @@ export const FUGOOD_MODELS: FugoodModel[] = [
 ];
 
 // ===== STATE =====
-const CACHE_NAME = 'whisper.node.wasm.models';
+// CACHE_VERSION: bump when changing models or cache format to invalidate
+// any stale cached entries from previous attempts.
+const CACHE_NAME = 'whisper.node.wasm.models.v2';
 const STORAGE_KEY = 'whisper-fugood-model';
 
 let whisperInstance: any = null;
@@ -441,6 +449,7 @@ export async function loadModel(
         useGpu: false,
         maxModelBytes: 2 * 1024 * 1024 * 1024, // 2GB limit (aman untuk large-v3 1.1GB)
         cacheModel: true,
+        modelCacheName: CACHE_NAME, // use our v2 cache namespace
       });
       console.log('[Whisper-Fugood] initWhisper returned successfully');
     } catch (initErr) {
@@ -458,6 +467,7 @@ export async function loadModel(
         useGpu: false,
         maxModelBytes: 2 * 1024 * 1024 * 1024,
         cacheModel: true,
+        modelCacheName: CACHE_NAME,
       });
     }
 
