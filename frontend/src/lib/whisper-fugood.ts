@@ -28,18 +28,39 @@ export interface FugoodModel {
   name: string;
   url: string;
   sizeMB: number;
+  category: 'unquantized' | 'quantized';
+  type: 'unquantized' | 'q5_0' | 'q5_1';
+  description: string;
+  ramMB: number;
+  speedX: string;
+  accuracyRange: string;
+  recommendedFor: string;
 }
 
 export const FUGOOD_MODELS: FugoodModel[] = [
   {
     id: 'tiny',
-    name: 'Tiny (75MB)',
+    name: 'Tiny',
+    category: 'unquantized',
+    type: 'unquantized',
+    description: 'Model paling ringkan TANPA kuantisasi. Cepat, akurasi dasar untuk Bahasa Indonesia.',
+    ramMB: 350,
+    speedX: '5-10x realtime',
+    accuracyRange: '65-75%',
+    recommendedFor: 'HP jadul, RAM minimal 1GB',
     url: 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin',
     sizeMB: 75,
   },
   {
     id: 'base',
-    name: 'Base (142MB)',
+    name: 'Base',
+    category: 'unquantized',
+    type: 'unquantized',
+    description: 'Model Base TANPA kuantisasi. Akurasi dasar untuk Bahasa Indonesia.',
+    ramMB: 500,
+    speedX: '3-5x realtime',
+    accuracyRange: '72-82%',
+    recommendedFor: 'HP entry-level, RAM 1.5GB+',
     url: 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin',
     sizeMB: 142,
   },
@@ -50,20 +71,40 @@ export const FUGOOD_MODELS: FugoodModel[] = [
     sizeMB: 466,
   },
   {
-    id: 'small-q5_0',
-    name: 'Small Q5_0 (181MB)',
-    url: 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small-q5_1.bin',
+    id: 'small-q5_1',
+    name: 'Small (Q5_1)',
+    category: 'quantized',
+    type: 'q5_1',
+    description: 'Model Small dengan kuantisasi Q5_1. Balance akurasi dan ukuran. Cocok untuk HP modern.',
+    ramMB: 800,
+    speedX: '1.5-2x realtime',
+    accuracyRange: '82-88%',
+    recommendedFor: 'HP modern, RAM 2GB+',
     sizeMB: 181,
   },
   {
     id: 'large-v3-turbo-q5_0',
-    name: 'Large v3 Turbo Q5_0 (580MB)',
+    name: 'Large v3 Turbo (Q5_0)',
+    category: 'quantized',
+    type: 'q5_0',
+    description: 'Model terbaik untuk Bahasa Indonesia. Cepat (turbo) dan akurat.',
+    ramMB: 900,
+    speedX: '1-2x realtime',
+    accuracyRange: '88-96%',
+    recommendedFor: 'PC/laptop modern (RAM 4GB+) - RECOMMENDED',
     url: 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin',
     sizeMB: 580,
   },
   {
     id: 'large-v3-q5_0',
-    name: 'Large v3 Q5_0 (1.1GB)',
+    name: 'Large v3 (Q5_0)',
+    category: 'quantized',
+    type: 'q5_0',
+    description: 'Model terbesar dan paling akurat. Untuk akurasi maksimal.',
+    ramMB: 2500,
+    speedX: '0.3-0.5x realtime',
+    accuracyRange: '90-97%',
+    recommendedFor: 'PC high-end (RAM 8GB+)',
     url: 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-q5_0.bin',
     sizeMB: 1100,
   },
