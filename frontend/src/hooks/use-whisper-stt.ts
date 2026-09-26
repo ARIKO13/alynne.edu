@@ -291,6 +291,8 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
       // 2. Create AudioContext + load AudioWorklet
       const audioContext = new AudioContext({ sampleRate: SAMPLE_RATE });
       audioContextRef.current = audioContext;
+      if (audioContext.state === "suspended") { await audioContext.resume(); }
+      console.log("[Whisper] AudioContext:", audioContext.state);
 
       // Load worklet processor
       await audioContext.audioWorklet.addModule('/audio-recorder-worklet.js');
