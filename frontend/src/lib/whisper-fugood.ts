@@ -10,15 +10,18 @@
 
 import { configureWasm, initWhisper } from '@fugood/whisper.node';
 
-configureWasm({
-  worker: true,
-  threads: typeof SharedArrayBuffer !== 'undefined',
-  jsPath: '/whisper-fugood/whisper-node.js',
-  wasmPath: '/whisper-fugood/whisper-node.wasm',
-  threadsJsPath: '/whisper-fugood/whisper-node.threads.js',
-  threadsWasmPath: '/whisper-fugood/whisper-node.threads.wasm',
-  workerPath: '/whisper-fugood/worker.js',
-});
+// Only configure in browser (not SSR)
+if (typeof window !== 'undefined') {
+  configureWasm({
+    worker: true,
+    threads: typeof SharedArrayBuffer !== 'undefined',
+    jsPath: '/whisper-fugood/whisper-node.js',
+    wasmPath: '/whisper-fugood/whisper-node.wasm',
+    threadsJsPath: '/whisper-fugood/whisper-node.threads.js',
+    threadsWasmPath: '/whisper-fugood/whisper-node.threads.wasm',
+    workerPath: '/whisper-fugood/worker.js',
+  });
+}
 
 export interface FugoodModel {
   id: string;
