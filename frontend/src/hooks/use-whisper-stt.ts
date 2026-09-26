@@ -398,14 +398,6 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
     }
   }, []);
 
-  const stopRecording = useCallback(() => {
-    console.log('[Whisper] Stop recording clicked');
-    isRecordingRef.current = false;
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
-    }
-  }, []);
-
   /**
    * Toggle recording (start/stop).
    */
