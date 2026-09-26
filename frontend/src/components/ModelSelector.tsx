@@ -205,18 +205,17 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
         </DialogHeader>
 
         <div className="space-y-4 max-h-[450px] overflow-y-auto pr-2">
-          {/* Group: Client-side (Offline mode) */}
+          {/* Group: Mode Offline */}
           <div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-1">
               <Zap className="h-4 w-4 text-green-400" />
-              <h3 className="text-sm font-medium text-green-400">
-                Mode Offline (Client-side): Jalan di Browser, Bisa Tanpa Internet
-              </h3>
+              <h3 className="text-sm font-medium text-green-400">Mode Offline</h3>
             </div>
-            <p className="text-[11px] text-zinc-500 mb-2">
-              Model di-download sekali, lalu tersimpan di browser. Bisa transcribe
-              file/audio tanpa internet. Hemat server CPU.
-            </p>
+            <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-zinc-500 mb-2 pl-6">
+              <span>Respon Cepat</span>
+              <span>Tanpa Internet</span>
+              <span>Hemat Server</span>
+            </div>
             <div className="space-y-2">
               {FUGOOD_MODELS.filter((m) => m.runtime === 'client').map(
                 (model) => (
@@ -236,18 +235,17 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
             </div>
           </div>
 
-          {/* Group: Server-side (Online mode) */}
+          {/* Group: Mode Online */}
           <div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-1">
               <Cpu className="h-4 w-4 text-blue-400" />
-              <h3 className="text-sm font-medium text-blue-400">
-                Mode Online (Server-side): Akurasi Tinggi, Butuh Internet
-              </h3>
+              <h3 className="text-sm font-medium text-blue-400">Mode Online</h3>
             </div>
-            <p className="text-[11px] text-zinc-500 mb-2">
-              Audio dikirim ke server untuk diproses. Bisa pakai model besar
-              (large-v3) yang ga muat di browser. Butuh koneksi internet.
-            </p>
+            <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-zinc-500 mb-2 pl-6">
+              <span>Akurasi Tinggi</span>
+              <span>Model Besar</span>
+              <span>Butuh Internet</span>
+            </div>
             <div className="space-y-2">
               {FUGOOD_MODELS.filter((m) => m.runtime === 'server').map(
                 (model) => (
