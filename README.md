@@ -1,6 +1,6 @@
 # ALYNNE.EDU - AI Education Platform
 
-Platform AI edukasi all-in-one untuk pelajar, mahasiswa, guru, dan institusi. Speech-to-Text, Modul PDF, Mind Map, AI Assistant, dan Mode Belajar dengan focus detector, semua dalam satu alur kerja terintegrasi.
+Platform AI edukasi all-in-one untuk pelajar, mahasiswa, guru, dan institusi. Speech-to-Text, Modul PDF, Mind Map, AI Assistant, Mode Belajar dengan focus detector, ambient sounds, analytics, dan referral system, semua dalam satu alur kerja terintegrasi.
 
 ## Fitur Utama
 
@@ -26,14 +26,14 @@ Pipeline otomatis dari hasil STT ke sesi belajar interaktif:
 ```
 STT Result
   -> Auto-split ke bab-bab (chapter splitter)
-  -> Mindmap animasi (nested tree view)
+  -> Mindmap visual (SVG radial graph, bukan text tree)
   -> Kuis interaktif per bab (multiple choice, fill-in-blank)
   -> Mulai Sesi Belajar:
      - Pomodoro timer (25/5)
      - Webcam focus detector (face + gaze tracking)
      - Smart warnings (Level 1: lembut, Level 2: istirahat)
      - Focus score + analytics
-  -> Download Modul (TXT, semua bab + kuis)
+  -> Download Modul PDF (proper PDF via jsPDF, bukan TXT)
 ```
 
 **Focus Detector:**
@@ -42,27 +42,73 @@ STT Result
 - 100% client-side, video tidak dikirim ke server
 - Toggle on/off, sensitivitas bisa diatur
 
-### 3. Modul PDF Generator
+### 3. AI Memory (Long-term Personalization)
 
-- Upload PDF/DOCX/PPTX/TXT
-- AI struktur konten jadi modul belajar
-- Tier 1: LLM cloud (Groq/Qwen)
-- Tier 2: LLM fallback
-- Tier 3: Local structure (offline)
+AI mengingat user untuk pengalaman "rumah kedua":
+- Greeting personal ("Selamat pagi, [nama]! Streak 7 hari!")
+- Learning style preference (casual, formal, concise, detailed)
+- Pomodoro preference (default 25/5, bisa custom)
+- Focus sensitivity preference
+- Recent activity (last 10 actions)
+- Pending tasks (AI suggest on next visit)
+- Quiz stats (total taken, accuracy)
+- Streak tracking (current + longest)
+- All stored in browser localStorage
 
-### 4. Mind Map
+### 4. Ambient Themes (Study Atmosphere)
 
-- Generate dari transkrip STT
-- Generate dari materi upload
-- Interactive node expansion
+Pilihan suara ambient untuk belajar yang nyaman:
+- Lo-Fi (synthesized chord progression + vinyl crackle)
+- White Noise
+- Rain (filtered noise)
+- Forest (filtered noise + bird chirps)
+- Off
+- Volume control
+- 100% client-side via Web Audio API (no audio files)
 
-### 5. AI Assistant
+### 5. Weekly Analytics Dashboard
+
+Statistik belajar 7 hari terakhir:
+- Total minutes studied
+- Total sessions
+- Streak (current + longest)
+- Quiz accuracy
+- Daily bar chart (visual)
+- Best day highlight
+- Achievements/badges (First Step, Consistent, Monthly Master, 10 Jam, Quiz Master)
+- Total stats (all-time)
+
+### 6. Referral System
+
+Ajak teman, dapat bonus:
+- Unique referral code (ALYNNE-XXXXXX)
+- Share link (copy / Web Share API / WhatsApp)
+- Track: teman bergabung, bulan gratis didapat
+- "Give 1 month, Get 1 month" model
+
+### 7. Modul PDF Generator (Proper PDF)
+
+- Micro PDF per bab (jsPDF, dengan header, content, quiz, footer)
+- Master PDF (cover page + table of contents + all chapters + all quizzes)
+- Proper formatting: margins, page numbers, colored headers
+- Tier 1/2/3 LLM structuring (Groq/Qwen fallback)
+
+### 8. Mind Map
+
+- Visual SVG radial graph (MindmapGraph component)
+- Center node: root title
+- Outer nodes: chapters (clickable)
+- Active chapter highlighted with glow effect
+- Connection lines (dashed = inactive, solid = active)
+- Interactive: click node to select chapter
+
+### 9. AI Assistant
 
 - Chat dengan AI (Groq/Qwen backend)
 - Context dari transkrip dan materi
 - Multi-turn conversation
 
-### 6. Image Sharpener
+### 10. Image Sharpener
 
 - Upscale gambar low-res
 - AI enhancement
@@ -76,6 +122,8 @@ STT Result
 - shadcn/ui components
 - Zustand (state management, persisted to localStorage)
 - transformers.js v4 (ONNX Runtime Web untuk client-side Whisper)
+- jsPDF (proper PDF generation)
+- Web Audio API (ambient sounds synthesis)
 
 **Backend:**
 - Node.js (Astro SSR) on port 3000
@@ -97,13 +145,14 @@ CREATE TABLE User (
   uid TEXT PRIMARY KEY,
   username TEXT NOT NULL,
   gmail TEXT NOT NULL UNIQUE,
-  activeSubscription TEXT NOT NULL DEFAULT 'trial',
-  packetSubscription TEXT NOT NULL DEFAULT 'none',
-  createdAt TEXT NOT NULL DEFAULT (datetime('now'))
+  activeSubscription TEXT NOT NULL DEFAULT "trial",
+  packetSubscription TEXT NOT NULL DEFAULT "none",
+  createdAt TEXT NOT NULL DEFAULT (datetime("now"))
 );
 ```
 
-STT history dan personal dictionary disimpan di browser localStorage (hemat D1 quota).
+STT history, AI memory, personal dictionary, focus stats, referral data
+semua disimpan di browser localStorage (hemat D1 quota).
 
 ## Deployment
 
@@ -136,16 +185,21 @@ User
   -> (Mode Offline: client Web Worker | Mode Online: server)
   -> Transcript
   -> User chooses:
-     - Buat Modul PDF -> AI structures content
+     - Buat Modul PDF -> AI structures content -> jsPDF download
      - Generate Langsung -> STT + PDF in one click
-     - Mode Belajar -> Chapters + Mindmap + Quiz + Focus Timer
+     - Mode Belajar -> Chapters + Visual Mindmap + Quiz + Focus Timer
+       + Ambient Sounds + Analytics tracking
+  -> AI Memory records activity, updates streak, suggests pending tasks
 ```
 
 ## Privacy
 
 - STT transcript: localStorage (browser, tidak dikirim ke server)
 - Webcam video: 100% client-side, tidak direkam/dikirim
+- AI Memory: localStorage (preferences, stats, activity history)
+- Ambient audio: synthesized in-browser, no audio files
 - User account: Cloudflare D1 (uid, username, gmail, subscription status)
+- Referral: code stored in localStorage, no PII shared
 - Tidak ada tracking third-party
 
 ## Development

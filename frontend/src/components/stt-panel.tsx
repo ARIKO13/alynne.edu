@@ -7,7 +7,7 @@ import { AudioVisualizer } from '@/components/audio-visualizer';
 import { PersonalDictPanel } from '@/components/personal-dict-panel';
 import {
   Mic, MicOff, Wifi, WifiOff, RefreshCw, Trash2, CheckCircle2, Radio,
-  FileText, Loader2, Rocket, Sparkles, Upload, Monitor, MonitorUp, Brain, Cpu, HardDrive,
+  FileText, Loader2, Rocket, Sparkles, Upload, Monitor, MonitorUp, Brain, Cpu, HardDrive, TrendingUp, Gift,
 } from 'lucide-react';
 import { MaterialUpload } from '@/components/material-upload';
 import { YouTubeTranscript } from '@/components/youtube-transcript';
@@ -18,6 +18,12 @@ import { structureContent, generatePdf } from '@/lib/pdf-generator';
 import { fetchLearnedWords } from '@/lib/personal-dict';
 import { ModelSelector } from '@/components/ModelSelector';
 import { StudyPipeline } from '@/components/StudyPipeline';
+import { WeeklyAnalytics } from '@/components/WeeklyAnalytics';
+import { ReferralPanel } from '@/components/ReferralPanel';
+import { MindmapGraph } from '@/components/MindmapGraph';
+import { AmbientThemes } from '@/components/AmbientThemes';
+import { generateMicroPDF, generateMasterPDF } from '@/lib/pdf-export';
+import { recordActivity, recordQuizResult, generateGreeting } from '@/lib/ai-memory';
 import { FileUploadChunked } from '@/components/FileUploadChunked';
 import { useWhisperSTT } from '@/hooks/use-whisper-stt';
 import { isModelLoaded as fgIsModelLoadedCheck } from '@/lib/whisper-fugood';
@@ -98,6 +104,18 @@ function ModeSelector({ disabled }: { disabled: boolean }) {
           open={studyPipelineOpen}
           onClose={() => setStudyPipelineOpen(false)}
           transcript={transcript}
+        />
+
+        {/* Analytics */}
+        <WeeklyAnalytics
+          open={analyticsOpen}
+          onClose={() => setAnalyticsOpen(false)}
+        />
+
+        {/* Referral */}
+        <ReferralPanel
+          open={referralOpen}
+          onClose={() => setReferralOpen(false)}
         />
             </div>
             <div className="min-w-0">
@@ -240,6 +258,8 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
   const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
   const [whisperModelReady, setWhisperModelReady] = useState(false);
   const [studyPipelineOpen, setStudyPipelineOpen] = useState(false);
+  const [analyticsOpen, setAnalyticsOpen] = useState(false);
+  const [referralOpen, setReferralOpen] = useState(false);
   const isRecording = sttStatus === 'recording' || whisperSTT.status === 'recording';
   const isProcessing = whisperSTT.status === 'processing' || sttStatus === 'processing' || hybridProcessing;
   const transcriptScrollRef = useRef<HTMLDivElement>(null);
@@ -370,6 +390,18 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
           transcript={transcript}
         />
 
+        {/* Analytics */}
+        <WeeklyAnalytics
+          open={analyticsOpen}
+          onClose={() => setAnalyticsOpen(false)}
+        />
+
+        {/* Referral */}
+        <ReferralPanel
+          open={referralOpen}
+          onClose={() => setReferralOpen(false)}
+        />
+
         {/* Screen mode hint */}
         {isScreenMode && !isRecording && (
           <div className="flex items-start gap-2.5 rounded-lg border border-sky-500/15 bg-sky-500/[0.03] p-3">
@@ -426,6 +458,18 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
           onClose={() => setStudyPipelineOpen(false)}
           transcript={transcript}
         />
+
+        {/* Analytics */}
+        <WeeklyAnalytics
+          open={analyticsOpen}
+          onClose={() => setAnalyticsOpen(false)}
+        />
+
+        {/* Referral */}
+        <ReferralPanel
+          open={referralOpen}
+          onClose={() => setReferralOpen(false)}
+        />
               <MethodBadge
                 label="Web Audio API"
                 active={isRecording}
@@ -439,6 +483,18 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
           open={studyPipelineOpen}
           onClose={() => setStudyPipelineOpen(false)}
           transcript={transcript}
+        />
+
+        {/* Analytics */}
+        <WeeklyAnalytics
+          open={analyticsOpen}
+          onClose={() => setAnalyticsOpen(false)}
+        />
+
+        {/* Referral */}
+        <ReferralPanel
+          open={referralOpen}
+          onClose={() => setReferralOpen(false)}
         />
               <MethodBadge
                 label="OCR (tesseract.js)"
@@ -460,6 +516,18 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
           onClose={() => setStudyPipelineOpen(false)}
           transcript={transcript}
         />
+
+        {/* Analytics */}
+        <WeeklyAnalytics
+          open={analyticsOpen}
+          onClose={() => setAnalyticsOpen(false)}
+        />
+
+        {/* Referral */}
+        <ReferralPanel
+          open={referralOpen}
+          onClose={() => setReferralOpen(false)}
+        />
               <MethodBadge
                 label="CV Frame Diff"
                 active={isRecording}
@@ -473,6 +541,18 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
           open={studyPipelineOpen}
           onClose={() => setStudyPipelineOpen(false)}
           transcript={transcript}
+        />
+
+        {/* Analytics */}
+        <WeeklyAnalytics
+          open={analyticsOpen}
+          onClose={() => setAnalyticsOpen(false)}
+        />
+
+        {/* Referral */}
+        <ReferralPanel
+          open={referralOpen}
+          onClose={() => setReferralOpen(false)}
         />
             </div>
             {screenCv.error && (
@@ -709,6 +789,18 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
           open={studyPipelineOpen}
           onClose={() => setStudyPipelineOpen(false)}
           transcript={transcript}
+        />
+
+        {/* Analytics */}
+        <WeeklyAnalytics
+          open={analyticsOpen}
+          onClose={() => setAnalyticsOpen(false)}
+        />
+
+        {/* Referral */}
+        <ReferralPanel
+          open={referralOpen}
+          onClose={() => setReferralOpen(false)}
         />
 
     </div>
