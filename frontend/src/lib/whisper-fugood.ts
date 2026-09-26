@@ -192,15 +192,33 @@ export async function loadModel(
     env.allowLocalModels = false;
     env.useBrowserCache = true;
 
+    // CRITICAL: Set ONNX WASM paths to our public/onnx/ directory
+    // Without this, ONNX Runtime Web tries to load WASM from CDN or
+    // wrong path, causing crashes.
+    (env as any).backends ??= {};
+    (env as any).backends.onnx ??= {};
+    (env as any).backends.onnx.wasm = {
+      wasmPaths: '/onnx/',
+      // Use single thread if not cross-origin isolated (no SharedArrayBuffer)
+      numThreads:
+        typeof window !== 'undefined' &&
+        typeof SharedArrayBuffer !== 'undefined' &&
+        window.crossOriginIsolated === true
+          ? 4
+          : 1,
+      // Don't use SIMD if not supported (older browsers)
+      simd: true,
+    };
+
+    console.log(
+      '[Whisper-Transformers] ONNX config:',
+      JSON.stringify((env as any).backends.onnx.wasm)
+    );
+
     onProgress?.(10);
 
     // Create ASR pipeline with q8 quantization (smaller memory)
-    // device: 'wasm' for CPU, 'webgpu' if available
-    const hasWebGPU = typeof navigator !== 'undefined' && !!(navigator as any).gpu;
-    console.log('[Whisper-Transformers] WebGPU available:', hasWebGPU);
-
-    onProgress?.(30);
-
+    // device: 'wasm' for CPU (more compatible than webgpu)
     transcriber = await pipeline(
       'automatic-speech-recognition',
       model.hfId,
@@ -209,7 +227,7 @@ export async function loadModel(
           encoder_model: 'q8',
           decoder_model_merged: 'q8',
         },
-        device: hasWebGPU ? 'webgpu' : 'wasm',
+        device: 'wasm', // force WASM — webgpu can be unstable
         progress_callback: (data: any) => {
           console.log('[Whisper-Transformers] Progress:', data);
           if (data.status === 'progress' && data.progress) {
