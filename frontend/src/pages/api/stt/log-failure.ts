@@ -51,32 +51,15 @@ export const POST: APIRoute = async ({ request }) => {
     const unknownWords = (body.unknownWords || []).join(',');
     const unknownCount = (body.unknownWords || []).length;
 
-    // Create table if not exists (idempotent)
-    await d1.execute(`
-      CREATE TABLE IF NOT EXISTS STTFailure (
-        id TEXT PRIMARY KEY,
-        rawText TEXT NOT NULL,
-        correctedText TEXT,
-        source TEXT,
-        unknownWords TEXT,
-        unknownCount INTEGER DEFAULT 0,
-        userId TEXT,
-        createdAt TEXT NOT NULL
-      )
-    `).catch(() => {}); // table might already exist
-
-    // Insert failure record
-    await d1.execute(
-      `INSERT INTO STTFailure (id, rawText, correctedText, source, unknownWords, unknownCount, userId, createdAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, rawText, body.correctedText || null, body.source || 'unknown',
-       unknownWords, unknownCount, userId, now]
-    );
+    // DISABLED: STT failures no longer stored in D1 (was filling up database quota).
+    // Now logged to client browser localStorage via /api/stt/log-failure client hook.
+    // Server returns success but does nothing.
+    console.log('[stt/log-failure] Skipped D1 insert (disabled). rawText:', rawText.substring(0, 80));
 
     return Response.json({
       success: true,
       id,
-      message: 'Failure logged',
+      message: 'Failure logged (client-side only, D1 disabled)',
     });
   } catch (error) {
     console.error('[stt/log-failure] error:', error);

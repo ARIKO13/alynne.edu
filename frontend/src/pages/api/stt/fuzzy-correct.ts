@@ -122,27 +122,11 @@ export const POST: APIRoute = async ({ request }) => {
         const unknownStr = unknownWords.slice(0, 20).join(',');
         const unknownCount = unknownWords.length;
 
-        await d1.execute(`
-          CREATE TABLE IF NOT EXISTS STTFailure (
-            id TEXT PRIMARY KEY,
-            rawText TEXT NOT NULL,
-            correctedText TEXT,
-            source TEXT,
-            unknownWords TEXT,
-            unknownCount INTEGER DEFAULT 0,
-            userId TEXT,
-            createdAt TEXT NOT NULL
-          )
-        `).catch(() => {});
-
-        await d1.execute(
-          `INSERT INTO STTFailure (id, rawText, correctedText, source, unknownWords, unknownCount, userId, createdAt)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [id, rawText, textAfterLayer1, body.source || 'unknown',
-           unknownStr, unknownCount, userId, now]
-        );
+        // DISABLED: STT failure logging to D1 (was filling up database quota).
+        // Failures now logged to client localStorage only.
+        console.log('[fuzzy-correct] Skipped D1 insert (disabled). unknownCount:', unknownCount);
       } catch (logErr) {
-        console.warn('[fuzzy-correct] Failed to log failure:', logErr);
+        console.warn('[fuzzy-correct] Log block skipped:', logErr);
       }
     }
 
