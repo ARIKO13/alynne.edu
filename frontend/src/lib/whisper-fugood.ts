@@ -355,12 +355,32 @@ export async function loadModel(
     const modelUrl = getModelCacheKey(model);
     console.log('[Whisper-Fugood] Initializing WASM with cached model...');
 
-    whisperInstance = await initWhisper({
-      filePath: modelUrl,
-      useGpu: false,
-      maxModelBytes: 2 * 1024 * 1024 * 1024, // 2GB limit (aman untuk large-v3 1.1GB)
-      cacheModel: true,
-    });
+    try {
+      whisperInstance = await initWhisper({
+        filePath: modelUrl,
+        useGpu: false,
+        maxModelBytes: 2 * 1024 * 1024 * 1024, // 2GB limit (aman untuk large-v3 1.1GB)
+        cacheModel: true,
+      });
+    } catch (initErr) {
+      // Kalau init gagal, mungkin cache korup. Hapus cache & retry sekali.
+      console.warn(
+        '[Whisper-Fugood] initWhisper failed, clearing cache and retrying:',
+        initErr
+      );
+      try {
+        const cache = await caches.open(CACHE_NAME);
+        await cache.delete(modelUrl);
+      } catch {}
+      // Re-fetch + re-init
+      await prefetchModel(model, onProgress);
+      whisperInstance = await initWhisper({
+        filePath: modelUrl,
+        useGpu: false,
+        maxModelBytes: 2 * 1024 * 1024 * 1024,
+        cacheModel: true,
+      });
+    }
 
     currentModelId = modelId;
     saveModelId(modelId);
