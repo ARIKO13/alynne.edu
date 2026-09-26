@@ -205,14 +205,18 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
         </DialogHeader>
 
         <div className="space-y-4 max-h-[450px] overflow-y-auto pr-2">
-          {/* Group: Client-side (browser) */}
+          {/* Group: Client-side (Offline mode) */}
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Zap className="h-4 w-4 text-green-400" />
               <h3 className="text-sm font-medium text-green-400">
-                Client-side (Jalan di Browser) — Hemat Server CPU
+                Mode Offline (Client-side) — Jalan di Browser, Bisa Tanpa Internet
               </h3>
             </div>
+            <p className="text-[11px] text-zinc-500 mb-2">
+              Model di-download sekali, lalu tersimpan di browser. Bisa transcribe
+              file/audio tanpa internet. Hemat server CPU.
+            </p>
             <div className="space-y-2">
               {FUGOOD_MODELS.filter((m) => m.runtime === 'client').map(
                 (model) => (
@@ -232,14 +236,18 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
             </div>
           </div>
 
-          {/* Group: Server-side */}
+          {/* Group: Server-side (Online mode) */}
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Cpu className="h-4 w-4 text-blue-400" />
               <h3 className="text-sm font-medium text-blue-400">
-                Server-side (Diproses di VPS) — Akurasi Tinggi
+                Mode Online (Server-side) — Akurasi Tinggi, Butuh Internet
               </h3>
             </div>
+            <p className="text-[11px] text-zinc-500 mb-2">
+              Audio dikirim ke server untuk diproses. Bisa pakai model besar
+              (large-v3) yang ga muat di browser. Butuh koneksi internet.
+            </p>
             <div className="space-y-2">
               {FUGOOD_MODELS.filter((m) => m.runtime === 'server').map(
                 (model) => (
@@ -419,7 +427,7 @@ function ModelOption({
                 className="bg-green-500/10 text-green-400 border-green-500/30 text-[10px]"
               >
                 <Zap className="h-3 w-3 mr-1" />
-                CLIENT
+                OFFLINE
               </Badge>
             ) : (
               <Badge
@@ -427,7 +435,7 @@ function ModelOption({
                 className="bg-blue-500/10 text-blue-400 border-blue-500/30 text-[10px]"
               >
                 <Cpu className="h-3 w-3 mr-1" />
-                SERVER
+                ONLINE
               </Badge>
             )}
             {model.category === 'unquantized' && (
