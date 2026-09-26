@@ -52,7 +52,7 @@ export const FUGOOD_MODELS: FugoodModel[] = [
   {
     id: 'small-q5_0',
     name: 'Small Q5_0 (181MB)',
-    url: 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small-q5_0.bin',
+    url: 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small-q5_1.bin',
     sizeMB: 181,
   },
   {
