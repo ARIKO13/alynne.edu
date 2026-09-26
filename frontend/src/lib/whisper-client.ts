@@ -1,5 +1,5 @@
 /**
- * whisper-client.ts — Main-thread Whisper (no Web Worker)
+ * whisper-client.ts - Main-thread Whisper (no Web Worker)
  * Uses @huggingface/transformers v4 with WebGPU support
  */
 

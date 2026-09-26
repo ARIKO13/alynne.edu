@@ -56,7 +56,7 @@ export interface PdfModuleData {
   branding: string;
 }
 
-// ── Color System (Catatan / Notes — 3 Warna) ──
+// ── Color System (Catatan / Notes - 3 Warna) ──
 const C = {
   // Warna 1: Teks utama (gelap)
   text: '#1B2A4A',
@@ -68,7 +68,7 @@ const C = {
   highlightText: '#5D4037',
   highlightBg: '#FFF8E1',
 
-  // Warna 3: Aksen tunggal (cokelat tua) — dipakai konsisten untuk heading, garis, bullet, divider
+  // Warna 3: Aksen tunggal (cokelat tua) - dipakai konsisten untuk heading, garis, bullet, divider
   heading: '#4E342E',
   headingLight: '#6D4C41',
 
@@ -155,8 +155,8 @@ SUMBER INPUT bisa berisi dua jenis konten yang ditandai label:
 
 ━━━ ATURAN PENGGABUNGAN SUMBER (PALING PENTING) ━━━
 1. Gunakan MATERI SLIDE sebagai KERANGKA STRUKTUR (urutan topik, judul heading, tabel) karena sudah rapi.
-2. Gunakan TRANSCRIPT AUDIO sebagai PELENGKAP konteks/penjelasan tambahan pada section yang relevan — BUKAN sebagai section terpisah yang mengulang topik sama.
-3. JANGAN membuat dua section/kegiatan berbeda untuk topik yang sama dari dua sumber — GABUNG jadi satu section. Contoh: kalau slide membahas "Definisi UI" dan transcript juga menjelaskan UI, jadikan SATU section "Definisi UI" yang menggabungkan keduanya.
+2. Gunakan TRANSCRIPT AUDIO sebagai PELENGKAP konteks/penjelasan tambahan pada section yang relevan - BUKAN sebagai section terpisah yang mengulang topik sama.
+3. JANGAN membuat dua section/kegiatan berbeda untuk topik yang sama dari dua sumber - GABUNG jadi satu section. Contoh: kalau slide membahas "Definisi UI" dan transcript juga menjelaskan UI, jadikan SATU section "Definisi UI" yang menggabungkan keduanya.
 4. Jika slide punya tabel (rubrik, bobot nilai, jadwal) dan transcript menjelaskan isi tabel tersebut, masukkan tabel lalu tambahkan penjelasan dari transcript sebagai paragraf setelah tabel.
 
 ━━━ ATURAN CLEANUP TRANSCRIPT ━━━
@@ -166,7 +166,7 @@ SUMBER INPUT bisa berisi dua jenis konten yang ditandai label:
 8. Jika bagian transcript terlalu rusak/tidak jelas maknanya, ringkas jadi satu kalimat umum daripada memaksakan detail yang salah.
 
 ━━━ ATURAN TABEL ━━━
-9. Data tabular (bobot nilai, rubrik penilaian, kriteria, jadwal per minggu, perbandingan) WAJIB dijadikan field "tables" dengan headers dan rows — JANGAN ditulis sebagai paragraf panjang.
+9. Data tabular (bobot nilai, rubrik penilaian, kriteria, jadwal per minggu, perbandingan) WAJIB dijadikan field "tables" dengan headers dan rows - JANGAN ditulis sebagai paragraf panjang.
    Contoh input: "Aktivitas 25% Hasil Proyek 35% Tugas 20% UTS 20%"
    Contoh output: "tables": [{"headers": ["Komponen", "Bobot"], "rows": [["Aktivitas", "25%"], ["Hasil Proyek", "35%"], ["Tugas", "20%"], ["UTS", "20%"]]}]
 10. Jika slide punya tabel yang jelas, preservasi strukturnya ke field "tables".
@@ -181,12 +181,12 @@ SUMBER INPUT bisa berisi dua jenis konten yang ditandai label:
 15. TIDAK ADA section asesmen/soal.
 16. "steps" HANYA jika ada prosedur eksplisit. "reviewNotes" HANYA jika ada koreksi teknis.
 17. Jika tidak ada steps/review, set null (bukan array kosong).
-18. Isi "entitasPenting" dengan: tools, namaOrang, angkaAturan, istilahTeknis, kodeRumus — semua yang disebutkan dalam konten.
+18. Isi "entitasPenting" dengan: tools, namaOrang, angkaAturan, istilahTeknis, kodeRumus - semua yang disebutkan dalam konten.
 19. "identitas.mataPelajaran" dan "kelas": tebak dari konten.
 20. JANGAN menambah informasi yang tidak ada di sumber. JAGA istilah teknis asli (bahasa Inggris/singkatan) apa adanya.
 
 ━━━ VALIDASI AKHIR ━━━
-- Setiap entitas dari "entitasPenting" harus muncul di salah satu "materi" — jika ada yang hilang, tambahkan.
+- Setiap entitas dari "entitasPenting" harus muncul di salah satu "materi" - jika ada yang hilang, tambahkan.
 - Cek duplikasi: topik yang sama tidak boleh muncul di >1 kegiatan.
 - Judul tidak boleh terpotong di tengah kata.
 - Tidak ada kalimat yang masih terdengar seperti transkrip lisan mentah.
@@ -281,7 +281,7 @@ async function tryGatewayFallback(
           signal: AbortSignal.timeout(180_000),
         });
         if (!r2.ok) {
-          console.error(`❌ [gateway] ${altModel} also failed with HTTP ${r2.status} — returning null`);
+          console.error(`❌ [gateway] ${altModel} also failed with HTTP ${r2.status} - returning null`);
           return null;
         }
         const d2 = await r2.json();
@@ -313,7 +313,7 @@ async function tryGatewayFallback(
     }
 
     if (!r.ok) {
-      console.error(`❌ [gateway] ${model} HTTP ${r.status} — returning null`);
+      console.error(`❌ [gateway] ${model} HTTP ${r.status} - returning null`);
       return null;
     }
 
@@ -414,11 +414,11 @@ export async function structureContent(
         body: JSON.stringify({ transcript: cleanTranscript(transcript), materialTexts }),
       });
       if (!res.ok) {
-        console.error(`❌ [structureContent] Tier 1 HTTP ${res.status} — skipping to Tier 2`);
+        console.error(`❌ [structureContent] Tier 1 HTTP ${res.status} - skipping to Tier 2`);
       } else {
         const data = await res.json();
         if (data.error === 'fallback') {
-          console.error('❌ [structureContent] Tier 1 returned { error: "fallback" } — server-side LLM failed, skipping to Tier 2');
+          console.error('❌ [structureContent] Tier 1 returned { error: "fallback" } - server-side LLM failed, skipping to Tier 2');
         } else if (data.title && Array.isArray(data.kegiatanPembelajaran) && data.kegiatanPembelajaran.length > 0) {
           console.log(`✅ [structureContent] Tier 1 success (${data.kegiatanPembelajaran.length} kegiatan)`);
 
@@ -427,7 +427,7 @@ export async function structureContent(
           const coverageRatio = materiTotal / totalChars;
           console.log(`[DEBUG] Coverage: ${data.kegiatanPembelajaran.length} kegiatan, ${materiTotal} chars materi vs ${totalChars} chars input (ratio: ${coverageRatio.toFixed(2)})`);
           if (coverageRatio < 0.15) {
-            console.warn(`⚠️ [structureContent] Kemungkinan ada topik yang terlewat. Coverage ratio: ${coverageRatio.toFixed(2)} — materi hasil rewrite terlalu pendek dibanding transkrip asli.`);
+            console.warn(`⚠️ [structureContent] Kemungkinan ada topik yang terlewat. Coverage ratio: ${coverageRatio.toFixed(2)} - materi hasil rewrite terlalu pendek dibanding transkrip asli.`);
           }
 
           // Entity coverage validation
@@ -448,11 +448,11 @@ export async function structureContent(
           console.log('[structureContent] Tier 1 result:', JSON.stringify(result.kegiatanPembelajaran.map(k => ({ title: k.title, materiLen: k.materi?.length, firstMateri: k.materi?.[0]?.slice(0, 80) })), null, 2));
           return result;
         } else {
-          console.error('❌ [structureContent] Tier 1 response missing title/kegiatanPembelajaran — skipping to Tier 2');
+          console.error('❌ [structureContent] Tier 1 response missing title/kegiatanPembelajaran - skipping to Tier 2');
         }
       }
     } catch (err) {
-      console.error('❌ [structureContent] Tier 1 exception:', err, '— skipping to Tier 2');
+      console.error('❌ [structureContent] Tier 1 exception:', err, '- skipping to Tier 2');
     }
 
     // ── Tier 2: Server-side fallback API (same-origin, no CORS issue) ──
@@ -483,9 +483,9 @@ export async function structureContent(
           return result;
         }
       }
-      console.error('❌ [structureContent] Tier 2 failed — both LLM tiers exhausted');
+      console.error('❌ [structureContent] Tier 2 failed - both LLM tiers exhausted');
     } catch (err) {
-      console.error('❌ [structureContent] Tier 2 exception:', err, '— both LLM tiers exhausted');
+      console.error('❌ [structureContent] Tier 2 exception:', err, '- both LLM tiers exhausted');
     }
   } else {
     console.warn('[structureContent] Transcript too short (<100 chars), cannot use LLM');
@@ -648,7 +648,7 @@ function extractThemes(text: string): string[] {
   }
 
   if (themes.length === 0) {
-    // Fallback: frequency-based — kata benda yang paling sering muncul
+    // Fallback: frequency-based - kata benda yang paling sering muncul
     const words = text.split(/\s+/).filter(w => w.length > 4 && !FILLER_WORDS_SET.has(w.toLowerCase()));
     const freq = new Map<string, number>();
     for (const w of words) {
@@ -663,7 +663,7 @@ function extractThemes(text: string): string[] {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ── TOPIC SEGMENTATION (poin 5 — deteksi pergantian topik) ──
+// ── TOPIC SEGMENTATION (poin 5 - deteksi pergantian topik) ──
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 /**
@@ -686,7 +686,7 @@ interface TopicSegment {
 }
 
 /**
- * Validasi hasil capture topik — buang kalau kualitasnya jelek.
+ * Validasi hasil capture topik - buang kalau kualitasnya jelek.
  * Regex boleh nangkep sembarangan, tapi HANYA yang lolos validasi ini
  * yang boleh dipakai jadi judul/topik.
  */
@@ -1085,7 +1085,7 @@ export async function generatePdf(rawData: PdfModuleData): Promise<void> {
   drawDashedLine(doc, margin, y, pageW - margin, y, [189, 189, 189]);
   y += 14;
 
-  // Identitas card — simple, clean
+  // Identitas card - simple, clean
   let identitasY = y;
   const identitasRows = [
     ['Mata Pelajaran', data.identitas.mataPelajaran],
@@ -1192,7 +1192,7 @@ export async function generatePdf(rawData: PdfModuleData): Promise<void> {
   y = drawBabHeader(doc, margin, y, 'BAB 1', 'PENDAHULUAN', contentW);
   y += 6;
 
-  // Pendahuluan text — clean paragraph style (Principle 3: whitespace cukup)
+  // Pendahuluan text - clean paragraph style (Principle 3: whitespace cukup)
   if (data.pendahuluan) {
     const pendLines = doc.splitTextToSize(data.pendahuluan, contentW - 8);
     doc.setFontSize(10.5);
@@ -1206,7 +1206,7 @@ export async function generatePdf(rawData: PdfModuleData): Promise<void> {
     y += 12;
   }
 
-  // Scope info box — dipakai JARANG, fungsional saja (Principle 2)
+  // Scope info box - dipakai JARANG, fungsional saja (Principle 2)
   checkPage(35);
   y += 4;
   const scopeLines = [
@@ -1254,7 +1254,7 @@ export async function generatePdf(rawData: PdfModuleData): Promise<void> {
   }
   y += 10;
 
-  // Objectives — with creative bullets (small squares)
+  // Objectives - with creative bullets (small squares)
   if (data.tujuanPembelajaran.length > 0) {
     for (let oi = 0; oi < data.tujuanPembelajaran.length; oi++) {
       checkPage(14);
@@ -1514,7 +1514,7 @@ function addFooter(doc: any, pageW: number, pageH: number, num: number, mg: numb
   doc.text(`Halaman ${num}`, pageW - mg, pageH - 9, { align: 'right' });
 }
 
-/** Dashed line — used for dividers between sections and Cornell vertical line */
+/** Dashed line - used for dividers between sections and Cornell vertical line */
 function drawDashedLine(doc: any, x1: number, y1: number, x2: number, y2: number, color: number[], dashLen: number = 3, gapLen: number = 2) {
   doc.setDrawColor(color[0], color[1], color[2]);
   doc.setLineWidth(0.3);
@@ -1537,7 +1537,7 @@ function drawDashedLine(doc: any, x1: number, y1: number, x2: number, y2: number
   }
 }
 
-/** Info box — thin border for definitions, warnings, instructions */
+/** Info box - thin border for definitions, warnings, instructions */
 function drawInfoBox(doc: any, x: number, y: number, w: number, h: number) {
   doc.setFillColor(255, 255, 255);
   doc.roundedRect(x, y, w, h, 2, 2, 'F');
@@ -1550,7 +1550,7 @@ function drawInfoBox(doc: any, x: number, y: number, w: number, h: number) {
   doc.line(x, y + 2, x, y + h - 2);
 }
 
-/** Keyword highlight — yellow pastel background behind term */
+/** Keyword highlight - yellow pastel background behind term */
 function drawKeywordHighlight(doc: any, x: number, y: number, text: string, maxW: number) {
   doc.setFontSize(8);
   const tw = Math.min(doc.getTextWidth(text), maxW);
@@ -1564,7 +1564,7 @@ function drawKeywordHighlight(doc: any, x: number, y: number, text: string, maxW
   doc.text(lines[0], x + 2, y + 3);
 }
 
-/** Small square bullet — replaces standard dash */
+/** Small square bullet - replaces standard dash */
 function drawSquareBullet(doc: any, x: number, y: number, color: number[], size: number = 1.5) {
   doc.setFillColor(color[0], color[1], color[2]);
   doc.rect(x - size, y - size, size * 2, size * 2, 'F');
@@ -1577,7 +1577,7 @@ function drawCircleBullet(doc: any, x: number, y: number, color: number[], radiu
   doc.circle(x, y, radius, 'S');
 }
 
-/** Arrow bullet — small arrow pointing right */
+/** Arrow bullet - small arrow pointing right */
 function drawArrowBullet(doc: any, x: number, y: number, color: number[]) {
   doc.setDrawColor(color[0], color[1], color[2]);
   doc.setLineWidth(0.4);
@@ -1588,7 +1588,7 @@ function drawArrowBullet(doc: any, x: number, y: number, color: number[]) {
   doc.line(x + 2, y + 1, x + 3.5, y);
 }
 
-/** Numbered square — small square with number inside */
+/** Numbered square - small square with number inside */
 function drawNumberedSquare(doc: any, x: number, y: number, num: number, color: number[]) {
   doc.setFillColor(color[0], color[1], color[2]);
   doc.rect(x - 2, y - 2, 4, 4, 'F');
@@ -1598,7 +1598,7 @@ function drawNumberedSquare(doc: any, x: number, y: number, num: number, color: 
   doc.text(`${num}`, x, y + 1, { align: 'center' });
 }
 
-/** Bab/Chapter header — big bold title with brown underline */
+/** Bab/Chapter header - big bold title with brown underline */
 function drawBabHeader(doc: any, x: number, y: number, babLabel: string, title: string, maxW: number): number {
   // Bab label (small)
   doc.setFontSize(8);
@@ -1626,7 +1626,7 @@ function drawBabHeader(doc: any, x: number, y: number, babLabel: string, title: 
   return y;
 }
 
-/** Sub-heading — Level 3 (review notes, steps sections, etc). Hierarki konsisten: selalu 11.5pt bold cokelat + garis cokelat */
+/** Sub-heading - Level 3 (review notes, steps sections, etc). Hierarki konsisten: selalu 11.5pt bold cokelat + garis cokelat */
 function drawSubHeading(doc: any, x: number, y: number, text: string): number {
   y += 10;
   doc.setFontSize(11.5);

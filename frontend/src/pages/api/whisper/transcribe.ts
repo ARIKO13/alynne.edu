@@ -4,7 +4,7 @@ const WHISPER_INTERNAL = 'http://localhost:8000/transcribe';
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    // Get raw body as blob — DON'T parse FormData (Astro 5 has issue with multi-level encoding)
+    // Get raw body as blob - DON'T parse FormData (Astro 5 has issue with multi-level encoding)
     const contentType = request.headers.get('content-type') || '';
     const contentLength = request.headers.get('content-length') || '0';
 
@@ -32,7 +32,7 @@ export const POST: APIRoute = async ({ request }) => {
 
       if (!res.ok) {
         const errText = await res.text().catch(() => '');
-        console.error(`[whisper-proxy] Error: ${res.status} — ${errText.slice(0, 200)}`);
+        console.error(`[whisper-proxy] Error: ${res.status} - ${errText.slice(0, 200)}`);
         return Response.json(
           { error: `Whisper error: ${res.status}`, detail: errText.slice(0, 500) },
           { status: res.status }

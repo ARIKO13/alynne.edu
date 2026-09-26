@@ -155,7 +155,7 @@ export const useAppStore = create<AppState>()(
         const newTranscript = newEntries.map(e => e.text).join(' ');
         return { transcript: newTranscript, transcriptEntries: newEntries };
       }),
-      // NEW: Batch append — accept array of strings, atomic update (no race condition)
+      // NEW: Batch append - accept array of strings, atomic update (no race condition)
       appendTranscriptBatch: (texts: string[]) => set((s) => {
         const time = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         const newEntries = texts

@@ -32,7 +32,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     console.log(`[youtube] Fetching transcript for video: ${videoId}`);
 
-    // Fetch transcript from YouTube (no LLM, no whisper — just YouTube captions)
+    // Fetch transcript from YouTube (no LLM, no whisper - just YouTube captions)
     const transcript = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'id' });
 
     if (!transcript || transcript.length === 0) {

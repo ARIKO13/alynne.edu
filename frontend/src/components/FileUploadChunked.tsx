@@ -1,5 +1,5 @@
 /**
- * FileUploadChunked.tsx — Upload file audio dengan chunking
+ * FileUploadChunked.tsx - Upload file audio dengan chunking
  *
  * - Split file jadi chunks 1MB
  * - Upload paralel (3 chunks concurrent)

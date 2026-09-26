@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 
 const WHISPER_INTERNAL = 'http://localhost:8000/jobs';
 
-// GET /api/whisper/jobs/{id} — poll job status
+// GET /api/whisper/jobs/{id} - poll job status
 export const GET: APIRoute = async ({ params }) => {
   const jobId = params.id;
   if (!jobId) {
@@ -37,7 +37,7 @@ export const GET: APIRoute = async ({ params }) => {
   }
 };
 
-// DELETE /api/whisper/jobs/{id} — cancel job
+// DELETE /api/whisper/jobs/{id} - cancel job
 export const DELETE: APIRoute = async ({ params }) => {
   const jobId = params.id;
   if (!jobId) {

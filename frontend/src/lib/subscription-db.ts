@@ -1,5 +1,5 @@
 /**
- * Subscription DB layer — D1 via HTTP API
+ * Subscription DB layer - D1 via HTTP API
  */
 
 import { d1 } from './d1-client';
@@ -99,7 +99,7 @@ export const subscriptionDb = {
   },
 
   /**
-   * Get effective status — checks expiry and returns current state
+   * Get effective status - checks expiry and returns current state
    */
   async getEffectiveStatus(userId: string): Promise<{
     status: 'trial' | 'active' | 'expired' | 'none';

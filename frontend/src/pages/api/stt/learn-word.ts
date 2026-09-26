@@ -12,7 +12,7 @@ import { learnWord } from '@/lib/learned-word';
  *   contextAfter?: string[],    // up to 3 words after (closest → farthest)
  * }
  *
- * Server-side auto-learning system (v2 — SQLite):
+ * Server-side auto-learning system (v2 - SQLite):
  *   - Validate word (length, gibberish, particle check)
  *   - Insert/update ke SQLite learned_words table
  *   - Track unique userIds (vote_count = berapa user berbeda)

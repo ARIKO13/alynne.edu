@@ -224,7 +224,7 @@ export function parseManualInput(rawText: string): ModulOutput {
   let codeLang = '';
 
   // Check if previous line was a table header to mark this line as table-header
-  // (we need a lookahead — but let's do a simple 2-pass approach for tables)
+  // (we need a lookahead - but let's do a simple 2-pass approach for tables)
   // Actually, we'll just treat the first table-row as header if followed by separator.
   // Simpler: any table-row before a separator-row is a header.
 

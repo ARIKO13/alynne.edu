@@ -1,16 +1,16 @@
 /**
- * storage-manager.ts — Manager untuk persistent storage di browser
+ * storage-manager.ts - Manager untuk persistent storage di browser
  *
  * Implementasi:
- *   1. Origin Private File System (OPFS) — folder "ALYNNE AI" di disk
+ *   1. Origin Private File System (OPFS) - folder "ALYNNE AI" di disk
  *      - Model Whisper disimpan di sini (persistent, ga hilang walau browser ditutup)
  *      - Lokasi fisik: browser profile directory (user ga bisa akses langsung lewat file explorer)
  *      - Tapi user bisa hapus via Settings page atau browser settings
  *
- *   2. CacheStorage + IndexedDB — fallback kalau OPFS tidak support
+ *   2. CacheStorage + IndexedDB - fallback kalau OPFS tidak support
  *      - transformers.js default pakai ini
  *
- *   3. Persistent Storage API — request agar browser tidak auto-evict
+ *   3. Persistent Storage API - request agar browser tidak auto-evict
  *      - navigator.storage.persist()
  *
  *   4. Settings UI controls:
@@ -48,7 +48,7 @@ export function isOPFSSupported(): boolean {
 }
 
 /**
- * Request persistent storage — browser tidak akan auto-evict.
+ * Request persistent storage - browser tidak akan auto-evict.
  */
 export async function requestPersistentStorage(): Promise<boolean> {
   if (typeof navigator === 'undefined' || !navigator.storage || !navigator.storage.persist) {
@@ -239,10 +239,10 @@ async function getModelSizeOPFS(modelId: string): Promise<number> {
  * Dapatkan info lengkap storage: usage, quota, persistent, list models.
  *
  * Combine info dari:
- *   - navigator.storage.estimate() — total usage
- *   - OPFS listing — model files
- *   - CacheStorage listing — fallback cache
- *   - localStorage — saved model ID
+ *   - navigator.storage.estimate() - total usage
+ *   - OPFS listing - model files
+ *   - CacheStorage listing - fallback cache
+ *   - localStorage - saved model ID
  */
 export async function getFullStorageInfo(): Promise<StorageInfo> {
   const [estimate, persistent] = await Promise.all([
@@ -466,10 +466,10 @@ export async function clearAllAlynneAIData(): Promise<{
     localStorageCleared: false,
   };
 
-  // 1. OPFS — hapus folder ALYNNE-AI
+  // 1. OPFS - hapus folder ALYNNE-AI
   result.opfsCleared = await clearAllAlynneData();
 
-  // 2. CacheStorage — hapus semua cache transformers/onnx
+  // 2. CacheStorage - hapus semua cache transformers/onnx
   if (typeof caches !== 'undefined') {
     try {
       const cacheNames = await caches.keys();
@@ -482,7 +482,7 @@ export async function clearAllAlynneAIData(): Promise<{
     } catch {}
   }
 
-  // 3. IndexedDB — hapus DB transformers-cache
+  // 3. IndexedDB - hapus DB transformers-cache
   try {
     const dbReq = indexedDB.deleteDatabase('transformers-cache');
     await new Promise<void>((resolve) => {
@@ -492,7 +492,7 @@ export async function clearAllAlynneAIData(): Promise<{
     });
   } catch {}
 
-  // 4. localStorage — hapus key whisper-*
+  // 4. localStorage - hapus key whisper-*
   try {
     const keys = Object.keys(localStorage).filter(k => k.startsWith('whisper-'));
     for (const k of keys) {

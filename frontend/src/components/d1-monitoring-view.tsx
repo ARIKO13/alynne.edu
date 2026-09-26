@@ -82,7 +82,7 @@ export function D1MonitoringView() {
         <div>
           <h3 className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
             <Database className="h-4 w-4 text-sky-400" />
-            Cloudflare D1 — User Account Database
+            Cloudflare D1 - User Account Database
           </h3>
           {timestamp && (
             <p className="text-[11px] text-zinc-500 mt-0.5">
@@ -186,7 +186,7 @@ export function D1MonitoringView() {
         </p>
         {d1?.tables?.length === 0 ? (
           <p className="text-xs text-zinc-500 italic py-4 text-center">
-            No tables found. Mungkin D1 API error — cek server logs.
+            No tables found. Mungkin D1 API error - cek server logs.
           </p>
         ) : (
           <div className="space-y-1.5">
@@ -222,7 +222,7 @@ export function D1MonitoringView() {
           <div className="space-y-1">
             {d1.recentUsers.map((u, i) => (
               <div key={i} className="flex items-center gap-2 text-[11px] py-0.5">
-                <span className="font-mono text-zinc-300">{u.name || '—'}</span>
+                <span className="font-mono text-zinc-300">{u.name || '-'}</span>
                 <span className="text-zinc-600">{u.email}</span>
                 <span className="text-zinc-600 ml-auto text-[10px]">
                   {new Date(u.createdAt).toLocaleDateString('id-ID', { dateStyle: 'short' })}
@@ -259,7 +259,7 @@ export function D1MonitoringView() {
         <p className="text-[10px] text-zinc-400 leading-relaxed">
           D1 (Cloudflare) menyimpan data user account: Users, Certificates, Subscriptions, DailyProgress,
           MindMaps, Bookmarks, STTFailure. Diakses via HTTP API (50-200ms per query).
-          SQLite di VPS SSD menyimpan STT dictionary (learned_words, cooccurrence, corrections) —
+          SQLite di VPS SSD menyimpan STT dictionary (learned_words, cooccurrence, corrections) -
           synchronous, {'<'}1ms per query.
         </p>
       </div>

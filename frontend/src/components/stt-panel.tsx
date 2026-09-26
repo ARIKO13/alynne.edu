@@ -25,7 +25,7 @@ function ModeSelector({ disabled }: { disabled: boolean }) {
   const { sttAudioMode, setSttAudioMode } = useAppStore();
 
   // Mobile detection: no screen share + limited Web Speech API
-  // On mobile, we hide mic/screen modes entirely — only upload + YouTube shown
+  // On mobile, we hide mic/screen modes entirely - only upload + YouTube shown
   const isMobile = typeof navigator !== 'undefined' &&
     (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
      (navigator.maxTouchPoints > 1 && window.innerWidth < 1024));
@@ -121,7 +121,7 @@ export function STTPanel() {
   
 const { transcriptEntries, sttAudioMode } = useAppStore();
 
-  // Whisper STT hook — client-side, jalan di browser via Web Worker
+  // Whisper STT hook - client-side, jalan di browser via Web Worker
   const whisperSTT = useWhisperSTT({
     onModelRequired: () => setModelSelectorOpen(true),
     onTranscript: (text, isFinal) => { if (isFinal && text) { useAppStore.getState().appendTranscript(text); } },
@@ -284,7 +284,7 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
         <div className="flex items-center gap-2 text-[11px] text-emerald-400/80">
           <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
           <span>
-            <strong>STT siap pakai</strong> — server-side Whisper (akurat, no download).
+            <strong>STT siap pakai</strong> - server-side Whisper (akurat, no download).
             Audio direkam di browser → diproses server Whisper (reliable, no crash).
           </span>
         </div>
@@ -387,7 +387,7 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
         {/* Audio Visualizer */}
         {isRecording && <AudioVisualizer audioLevels={audioLevels} isListening={true} />}
 
-        {/* Combined Methods Indicator — shown when Entire Screen capture is active */}
+        {/* Combined Methods Indicator - shown when Entire Screen capture is active */}
         {isCombinedActive && (
           <div className="rounded-lg border border-sky-500/20 bg-sky-500/[0.04] p-3">
             <div className="flex items-center gap-2 mb-2">
@@ -437,7 +437,7 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
           </div>
         )}
 
-        {/* Transcript Area — Timestamped */}
+        {/* Transcript Area - Timestamped */}
         <div className="relative rounded-lg border border-white/[0.06] bg-[#0c0c0e] overflow-hidden">
           <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.04] bg-white/[0.02]">
             <div className="flex items-center gap-2">
@@ -449,7 +449,7 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
               )}
               <span className="text-[11px] font-medium text-zinc-400">
                 {isRecording
-                  ? isWhisperProcessing ? 'Memperbaiki teks dengan faster-whisper...' : isGroqProcessing ? 'Mentranskripsi...' : sttSource === 'webspeech' ? 'Web Speech API — coba bicara...' : sttSource === 'screen-capture' ? 'Merekam layar + audio...' : 'Mendengarkan...'
+                  ? isWhisperProcessing ? 'Memperbaiki teks dengan faster-whisper...' : isGroqProcessing ? 'Mentranskripsi...' : sttSource === 'webspeech' ? 'Web Speech API: coba bicara...' : sttSource === 'screen-capture' ? 'Merekam layar + audio...' : 'Mendengarkan...'
                   : transcriptEntries.length > 0 ? `${transcriptEntries.length} entri` : 'Transkrip'}
               </span>
             </div>
@@ -496,7 +496,7 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
                 </p>
               </div>
             )}
-            {/* Interim preview DISABLED — user request: "tampilin apa adanya aja"
+            {/* Interim preview DISABLED - user request: "tampilin apa adanya aja"
                 Interim text berubah-ubah saat Web Speech API update, bikin user
                 bingung ("kalimat 1 dh ada di preview tapi ilang, muncul kalimat 2").
                 Final text tetap masuk transcriptEntries (di atas), tidak hilang.
@@ -548,7 +548,7 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
           )}
         </div>
 
-        {/* Material Upload — always visible */}
+        {/* Material Upload - always visible */}
         <div className="rounded-xl border border-sky-500/10 bg-sky-500/[0.02] overflow-hidden">
           <div className="flex items-center gap-2 px-5 py-3 border-b border-white/[0.04]">
             <Upload className="h-4 w-4 text-sky-400" />
@@ -616,11 +616,11 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
             {sttSource === 'groq' && isRecording && !isReconnecting && (
               <span className="text-amber-500">Auto-reconnect aktif</span>
             )}
-            {/* Personal Dict button — auto-learned words */}
+            {/* Personal Dict button - auto-learned words */}
             <button
               onClick={() => setPersonalDictOpen(true)}
               className="flex items-center gap-1 px-2 py-0.5 rounded border border-[#8B5CF6]/15 bg-[#8B5CF6]/[0.03] hover:bg-[#8B5CF6]/10 text-zinc-400 hover:text-[#8B5CF6] transition-colors text-[11px]"
-              title="Personal Dictionary — kata yang dipelajari otomatis dari STT"
+              title="Personal Dictionary, kata yang dipelajari otomatis dari STT"
             >
               <Brain className="h-3 w-3" />
               <span>Personal Dict</span>
@@ -633,7 +633,7 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
           </div>
         </div>
       </div>
-      {/* Personal Dict Panel — auto-learned words management */}
+      {/* Personal Dict Panel - auto-learned words management */}
       <PersonalDictPanel open={personalDictOpen} onOpenChange={setPersonalDictOpen} />
 
         {/* ModelSelector Popup */}

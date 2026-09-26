@@ -1,11 +1,11 @@
 /**
- * stt-context-corrector.ts — context-aware STT correction.
+ * stt-context-corrector.ts - context-aware STT correction.
  *
  * PROBLEM:
  *   STT (Whisper / WebSpeech / OCR) frequently confuses sound-alike pairs
  *   like Indonesian "produksi" ↔ "solusi", "kandelistik" ↔ "candlestick",
  *   "goceh" ↔ "goseh". Pure phonetic / Levenshtein matching returns BOTH
- *   candidates with similar scores — we can't pick the right one without
+ *   candidates with similar scores - we can't pick the right one without
  *   looking at the surrounding words.
  *
  * APPROACH (Bayesian-ish, with smoothing):
@@ -159,7 +159,7 @@ function levenshtein(a: string, b: string, maxDist: number = 3): number {
   return dp[lb];
 }
 
-/** Phonetic similarity in [0,1] — 1 = identical code, 0 = no overlap. */
+/** Phonetic similarity in [0,1] - 1 = identical code, 0 = no overlap. */
 function phoneticSim(token: string, candidate: string): number {
   const t = getPhoneticCodes(token);
   const c = getPhoneticCodes(candidate);
@@ -209,7 +209,7 @@ function getCandidates(token: string): Candidate[] {
   }
 
   // 3. learned_words whose phonetic_variations JSON contains this token
-  //    (uses json_each() — fast with proper index, but small N here so fine)
+  //    (uses json_each() - fast with proper index, but small N here so fine)
   try {
     const rows = sttDb.getAll<Pick<LearnedWordRow, 'word'>>(
       `SELECT DISTINCT word FROM learned_words
@@ -228,7 +228,7 @@ function getCandidates(token: string): Candidate[] {
 // ── Context scoring (the meat) ──────────────────────────────────────────────
 
 /**
- * contextScore(k, C_before, C_after) — estimates P(C | k), the probability
+ * contextScore(k, C_before, C_after) - estimates P(C | k), the probability
  * of observing context C given that the word is k.
  *
  * Strategy:
@@ -240,7 +240,7 @@ function getCandidates(token: string): Candidate[] {
  *   contextScore = Σ weighted / Σ (1/d)
  *
  * α = SMOOTHING_ALPHA, V = effective vocab size (we use 10000 as a constant
- * prior — true vocab is unknown and this is just smoothing).
+ * prior - true vocab is unknown and this is just smoothing).
  */
 function computeContextScore(
   candidate: string,
@@ -300,7 +300,7 @@ function computeContextScore(
 // ── Vote scoring (from correction_summary) ────────────────────────────────
 
 /**
- * voteScore(original, candidate) — fraction of weighted votes that went to
+ * voteScore(original, candidate) - fraction of weighted votes that went to
  * this candidate among all votes for original_word. Returns 0 if no votes.
  *
  * Looks up `correction_summary` (maintained by recordCorrection()).
@@ -394,7 +394,7 @@ function recordObservations(
  * in the same transaction.
  *
  * userWeight defaults to 1.0; pass a higher value for trusted users
- * (e.g., admins, high-XP users — formula TBD by caller).
+ * (e.g., admins, high-XP users - formula TBD by caller).
  */
 export function recordCorrection(args: {
   originalWord: string;
@@ -458,7 +458,7 @@ export function recordCorrection(args: {
 // ── Main entry point ─────────────────────────────────────────────────────────
 
 /**
- * contextAwareCorrect — main correction pipeline.
+ * contextAwareCorrect - main correction pipeline.
  *
  * Returns corrected text + per-token decisions + observation count.
  * Reassembly preserves original whitespace/punctuation by using token
@@ -612,7 +612,7 @@ export function promoteConfirmed(minVotes: number = 3, minCount: number = 2): nu
 /**
  * Demote a word to 'rejected' (e.g., admin flagged it as a false positive).
  * Optionally remove its phonetic variations from future matching by setting
- * status — but keep the row for audit.
+ * status - but keep the row for audit.
  */
 export function rejectWord(word: string): boolean {
   const r = sttDb.run(

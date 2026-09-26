@@ -13,7 +13,7 @@ function generateSyllables(word: string): string {
 
 
 /**
- * Server-side auto-learning system untuk STT (v2 — SQLite based).
+ * Server-side auto-learning system untuk STT (v2 - SQLite based).
  *
  * Perubahan dari v1 (D1) → v2 (SQLite):
  *   - Storage: SQLite di SSD VPS (better-sqlite3, synchronous, no network latency)
@@ -96,11 +96,11 @@ export function validateWord(word: string): { valid: boolean; reason?: string } 
   if (/[aeiou]{4,}/i.test(w)) {
     return { valid: false, reason: 'gibberish (4+ vowels)' };
   }
-  // Same char repeated 4+ times (e.g. "aaaaah" — likely STT glitch)
+  // Same char repeated 4+ times (e.g. "aaaaah" - likely STT glitch)
   if (/(.)\1{3,}/.test(w)) {
     return { valid: false, reason: 'repeated char (likely glitch)' };
   }
-  // Common particles — don't auto-learn these (already in dict)
+  // Common particles - don't auto-learn these (already in dict)
   const particles = new Set(['yang', 'dan', 'atau', 'untuk', 'dengan', 'dari', 'karena', 'kalau', 'jika']);
   if (particles.has(w)) return { valid: false, reason: 'common particle' };
 
@@ -109,7 +109,7 @@ export function validateWord(word: string): { valid: boolean; reason?: string } 
 
 /**
  * Generate phonetic variations for an Indonesian word.
- * Same as v1 — produces 5-15 variations per word.
+ * Same as v1 - produces 5-15 variations per word.
  */
 export function expandPhoneticVariations(word: string): string[] {
   const w = word.toLowerCase().trim();
@@ -216,7 +216,7 @@ export function trackCooccurrence(
 }
 
 /**
- * Learn a new word — insert/update ke SQLite + expand fonetik + merge phonetic-map.json.
+ * Learn a new word - insert/update ke SQLite + expand fonetik + merge phonetic-map.json.
  *
  * v2 improvements:
  *   - Validate word (length, gibberish, particles)
@@ -347,7 +347,7 @@ export async function learnWord(
 
 /**
  * Merge a word's phonetic variations into phonetic-map.json.
- * Idempotent — only for confirmed words.
+ * Idempotent - only for confirmed words.
  */
 async function mergeIntoPhoneticMap(word: string): Promise<number> {
   const w = word.toLowerCase().trim();
@@ -499,7 +499,7 @@ export async function deleteLearnedWord(id: number): Promise<{ deleted: boolean;
 }
 
 /**
- * Get count of learned words — for stats display.
+ * Get count of learned words - for stats display.
  */
 export async function getLearnedWordsStats(): Promise<{
   total: number;
@@ -520,7 +520,7 @@ export async function getLearnedWordsStats(): Promise<{
 }
 
 /**
- * Get DB stats — for admin panel.
+ * Get DB stats - for admin panel.
  */
 export async function getDbStats(): Promise<{
   learnedWords: { total: number; confirmed: number; candidates: number; rejected: number };
@@ -555,7 +555,7 @@ export async function getDbStats(): Promise<{
 
 /**
  * Record user correction (when user manually edits transcript word).
- * Used for feedback loop — high-quality corrections that override fuzzy-match.
+ * Used for feedback loop - high-quality corrections that override fuzzy-match.
  */
 export async function recordUserCorrection(
   originalWord: string,

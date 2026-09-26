@@ -97,7 +97,7 @@ export function PersonalDictPanel({ open, onOpenChange }: PersonalDictPanelProps
               <Globe className="h-3.5 w-3.5 text-emerald-400 ml-1" aria-label="Shared across all users" />
             </div>
             <DialogDescription className="text-zinc-500">
-              Kata yang dipelajari otomatis dari STT — dipake semua user. Setiap kata
+              Kata yang dipelajari otomatis dari STT - dipake semua user. Setiap kata
               di-expand ke variasi fonetik (misal "goceh" → "go ceh", "goseh", "gokeh") supaya
               phoneticMatch bisa kenalan.
             </DialogDescription>
@@ -190,7 +190,7 @@ export function PersonalDictPanel({ open, onOpenChange }: PersonalDictPanelProps
                       Confirmed ({confirmedWords.length})
                     </p>
                     <span className="text-[10px] text-zinc-600">
-                      — muncul {LEARNED_WORD_CONSTANTS.PROMOTION_THRESHOLD}+ kali
+                      - muncul {LEARNED_WORD_CONSTANTS.PROMOTION_THRESHOLD}+ kali
                     </span>
                   </div>
                   <div className="space-y-1">
@@ -215,7 +215,7 @@ export function PersonalDictPanel({ open, onOpenChange }: PersonalDictPanelProps
                       Candidates ({candidateWords.length})
                     </p>
                     <span className="text-[10px] text-zinc-600">
-                      — perlu {LEARNED_WORD_CONSTANTS.PROMOTION_THRESHOLD}+ kemunculan untuk confirm
+                      - perlu {LEARNED_WORD_CONSTANTS.PROMOTION_THRESHOLD}+ kemunculan untuk confirm
                     </span>
                   </div>
                   <div className="space-y-1">

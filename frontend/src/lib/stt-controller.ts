@@ -1,5 +1,5 @@
 /**
- * STT Controller — module-level singleton.
+ * STT Controller - module-level singleton.
  *
  * Why: The `useSpeechRecognition` hook lives inside <STTPanel/>. We want to
  * keep STTPanel mounted across tab switches (so recording survives), but we
@@ -27,7 +27,7 @@ export function unregisterSttStop(): void {
 
 /**
  * Stop the active STT recording, if any.
- * Safe to call from anywhere — returns early if no recording is active.
+ * Safe to call from anywhere - returns early if no recording is active.
  */
 export function stopSttRecording(): void {
   if (stopFn) {

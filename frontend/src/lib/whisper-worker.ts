@@ -1,5 +1,5 @@
 /**
- * whisper-worker.ts — Web Worker untuk Whisper STT (client-side)
+ * whisper-worker.ts - Web Worker untuk Whisper STT (client-side)
  *
  * Supported models:
  *   UNQUANTIZED (FP16, ukuran asli):
@@ -55,7 +55,7 @@ self.addEventListener('message', async (e: MessageEvent) => {
       return;
     }
 
-    // Same model already loading — ignore (don't start another)
+    // Same model already loading - ignore (don't start another)
     if (loadingModel === model) {
       return;
     }
@@ -75,7 +75,7 @@ self.addEventListener('message', async (e: MessageEvent) => {
     let timeoutHandle: any = null;
     const loadTimeout = new Promise<never>((_, reject) => {
       timeoutHandle = setTimeout(() => {
-        reject(new Error('Download timeout (10 min) - model terlalu besar atau koneksi lambat — coba refresh page'));
+        reject(new Error('Download timeout (10 min), model terlalu besar atau koneksi lambat, coba refresh page'));
       }, 10 * 60 * 1000);
     });
 
@@ -198,12 +198,12 @@ self.addEventListener('message', async (e: MessageEvent) => {
         return;
       }
 
-      // No padding needed — chunking handles short audio internally
+      // No padding needed - chunking handles short audio internally
       // chunk_length_s: 30 will split audio into 30s chunks
       // Short audio (< 30s) will be processed as single chunk
       const audioCopy = new Float32Array(audio);
 
-      // ===== Chunking ACTIVE — hemat RAM (proses 30s chunk, bukan full audio) =====
+      // ===== Chunking ACTIVE - hemat RAM (proses 30s chunk, bukan full audio) =====
       // chunk_length_s: proses audio dalam chunk 30 detik
       // stride_length_s: overlap 5 detik antar chunk (avoid missing words di boundary)
       // return_timestamps: true untuk proper chunk handling

@@ -272,7 +272,7 @@ export function DatasetLibraryPanel() {
               className="pl-8 border-white/[0.08] bg-[#0c0c0e] text-zinc-200 text-xs placeholder:text-zinc-600 h-8"
             />
           </div>
-          {/* Source filter — pilih: All / KBBI / Slang / Auto-learned */}
+          {/* Source filter - pilih: All / KBBI / Slang / Auto-learned */}
           <div className="flex gap-1 flex-wrap">
             <SourcePill
               active={sourceFilter === ''}
@@ -329,7 +329,7 @@ export function DatasetLibraryPanel() {
             <StatCard label="Pending Review" value={stats.userCorrections.pending} icon="⏸️" color="amber" />
           </div>
 
-          {/* Source breakdown — tampilin distribusi KBBI/slang/auto-learned */}
+          {/* Source breakdown - tampilin distribusi KBBI/slang/auto-learned */}
           {sourceBreakdown.length > 0 && (
             <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
               <p className="text-[11px] text-zinc-400 mb-2">📊 Breakdown by Source</p>
@@ -398,7 +398,7 @@ export function DatasetLibraryPanel() {
                     >
                       {w.status}
                     </Badge>
-                    {/* Source badge — KBBI / Slang / Auto-learned */}
+                    {/* Source badge - KBBI / Slang / Auto-learned */}
                     <Badge
                       variant="outline"
                       className={cn(
@@ -411,7 +411,7 @@ export function DatasetLibraryPanel() {
                     >
                       {w.source === 'kbbi' ? '📖 KBBI' : w.source === 'slang' ? '💬 Slang' : w.source === 'webspeech' ? '🎙️ Auto' : w.source}
                     </Badge>
-                    {/* Dataset origin badge — Seeded (lama) vs User-learned (baru dari STT) */}
+                    {/* Dataset origin badge - Seeded (lama) vs User-learned (baru dari STT) */}
                     {w.dataset_origin && (
                       <Badge
                         variant="outline"
@@ -574,22 +574,22 @@ export function DatasetLibraryPanel() {
         </div>
       )}
 
-      {/* Storage section — disk usage, DB file size, table sizes */}
+      {/* Storage section - disk usage, DB file size, table sizes */}
       {section === 'storage' && (
         <StorageView info={storageInfo} />
       )}
 
-      {/* Schema section — ERD-style visualisasi arsitektur DB */}
+      {/* Schema section - ERD-style visualisasi arsitektur DB */}
       {section === 'schema' && (
         <SchemaView info={schemaInfo} />
       )}
 
-      {/* Monitoring section — real-time VPS + PM2 + SQLite stats */}
+      {/* Monitoring section - real-time VPS + PM2 + SQLite stats */}
       {section === 'monitoring' && (
         <MonitoringView info={monitoringInfo} autoRefresh={autoRefresh} onToggleAutoRefresh={() => setAutoRefresh(!autoRefresh)} onRefresh={() => fetchData('monitoring')} loading={loading} />
       )}
 
-      {/* Architecture section — Mermaid diagrams: ERD + data flow */}
+      {/* Architecture section - Mermaid diagrams: ERD + data flow */}
       {section === 'architecture' && (
         <ArchitectureView schemaInfo={schemaInfo} />
       )}
@@ -884,7 +884,7 @@ function StorageView({ info }: { info: any }) {
         </div>
         {parseFloat(sqlite.fragmentationPct) > 20 && (
           <p className="text-[10px] text-amber-400 mt-2">
-            💡 Fragmentation {sqlite.fragmentationPct}% — recommend: VACUUM untuk reclaim space
+            💡 Fragmentation {sqlite.fragmentationPct}% - recommend: VACUUM untuk reclaim space
           </p>
         )}
       </div>
@@ -1133,7 +1133,7 @@ function D1MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefresh, l
       <div className="flex items-center justify-between">
         <p className="text-[11px] text-zinc-500 flex items-center gap-1.5">
           <Database className="h-3 w-3" />
-          Cloudflare D1 — User Account Database
+          Cloudflare D1 - User Account Database
           {timestamp && (
             <span className="text-zinc-600 ml-2">
               Updated: {new Date(timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
@@ -1222,7 +1222,7 @@ function D1MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefresh, l
           <div className="space-y-1">
             {d1.recentUsers.map((u: any, i: number) => (
               <div key={i} className="flex items-center gap-2 text-[11px] py-0.5">
-                <span className="font-mono text-zinc-300">{u.name || '—'}</span>
+                <span className="font-mono text-zinc-300">{u.name || '-'}</span>
                 <span className="text-zinc-600">{u.email}</span>
                 <span className="text-zinc-600 ml-auto text-[10px]">
                   {new Date(u.createdAt).toLocaleDateString('id-ID', { dateStyle: 'short' })}
@@ -1259,7 +1259,7 @@ function D1MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefresh, l
         <p className="text-[10px] text-zinc-400 leading-relaxed">
           D1 (Cloudflare) menyimpan data user account: Users, Certificates, Subscriptions, DailyProgress,
           MindMaps, Bookmarks, STTFailure. Diakses via HTTP API (50-200ms per query).
-          SQLite di VPS SSD menyimpan STT dictionary (learned_words, cooccurrence, corrections) —
+          SQLite di VPS SSD menyimpan STT dictionary (learned_words, cooccurrence, corrections) -
           synchronous, {'<'}1ms per query.
         </p>
       </div>

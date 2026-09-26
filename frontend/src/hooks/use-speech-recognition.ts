@@ -144,7 +144,7 @@ export function useSpeechRecognition() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number>(0);
-  // System audio rolling recorder (for Zoom/Meet/Discord — Web Speech API can't capture system audio)
+  // System audio rolling recorder (for Zoom/Meet/Discord - Web Speech API can't capture system audio)
   const systemAudioRecorderRef = useRef<MediaRecorder | null>(null);
   const systemAudioChunksRef = useRef<Blob[]>([]);
   const systemAudioIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -190,7 +190,7 @@ export function useSpeechRecognition() {
   //      personal dict candidates. After 2+ occurrences, they're confirmed
   //      and sent in subsequent fuzzy-correct requests so isKnown() returns true.
   //
-  // Fire-and-forget is intentional — we don't block the onresult callback,
+  // Fire-and-forget is intentional - we don't block the onresult callback,
   // and the actual transcript correction still happens later via enhanceNewEntries.
   const logWebspeechFailures = useCallback((rawText: string, confidence: number = 0.9) => {
     const text = (rawText || '').trim();
@@ -202,7 +202,7 @@ export function useSpeechRecognition() {
     // Confidence comes from Web Speech API result.confidence (0.0-1.0)
     try {
       const promoted = recordHeardSentence(text, confidence, (w) => {
-        // Simple client-side check — for things like tech terms + stock tickers
+        // Simple client-side check - for things like tech terms + stock tickers
         // Full KBBI check happens server-side. This is just a fast pre-filter.
         const wl = w.toLowerCase();
         if (wl.length <= 2) return true;
@@ -226,7 +226,7 @@ export function useSpeechRecognition() {
         addLog('success', `Kata baru dipelajari: ${promoted.join(', ')}`);
       }
     } catch (e) {
-      // Silent fail — don't disrupt STT for personal dict errors
+      // Silent fail - don't disrupt STT for personal dict errors
     }
 
     // ── Fire-and-forget fuzzy-correct call ──
@@ -252,11 +252,11 @@ export function useSpeechRecognition() {
         }
       })
       .catch(() => {
-        // Silent fail — don't disrupt recording for logging failures
+        // Silent fail - don't disrupt recording for logging failures
       });
   }, [addLog]);
 
-  // ── Audio Visualizer (Web Audio API) — uses an EXISTING stream, never calls getUserMedia ──
+  // ── Audio Visualizer (Web Audio API) - uses an EXISTING stream, never calls getUserMedia ──
   const startVisualizer = useCallback((stream: MediaStream) => {
     try {
       // Skip if already visualizing this stream
@@ -270,11 +270,11 @@ export function useSpeechRecognition() {
       analyser.fftSize = 128;
       analyser.smoothingTimeConstant = 0.8;
       source.connect(analyser);
-      // Do NOT connect to destination — we only analyze, don't play
+      // Do NOT connect to destination - we only analyze, don't play
 
       audioContextRef.current = ctx;
       analyserRef.current = analyser;
-      // We do NOT own this stream — don't store it, don't stop it
+      // We do NOT own this stream - don't store it, don't stop it
 
       const bufLen = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufLen);
@@ -304,7 +304,7 @@ export function useSpeechRecognition() {
 
   const stopVisualizer = useCallback(() => {
     cancelAnimationFrame(animFrameRef.current);
-    // Do NOT stop stream tracks — we don't own the stream
+    // Do NOT stop stream tracks - we don't own the stream
     if (audioContextRef.current) {
       audioContextRef.current.close().catch(() => {});
       audioContextRef.current = null;
@@ -348,7 +348,7 @@ export function useSpeechRecognition() {
           }
         }
       } catch (e) {
-        // Silent fail — fall back to original text
+        // Silent fail - fall back to original text
         console.warn('[OCR] fuzzy-correct failed:', e);
       }
       addLog('success', `OCR: "${corrected.slice(0, 80)}${corrected.length > 80 ? '...' : ''}" (${confidence.toFixed(0)}%)`);
@@ -356,11 +356,11 @@ export function useSpeechRecognition() {
     },
     onSlideChange: (diffPct) => {
       addLog('info', `🖼️ Slide berubah (${(diffPct * 100).toFixed(0)}% pixel changed)`);
-      appendTranscript(`[🔄 Slide berubah — ${(diffPct * 100).toFixed(0)}% pixel berubah]`);
+      appendTranscript(`[🔄 Slide berubah - ${(diffPct * 100).toFixed(0)}% pixel berubah]`);
     },
   });
 
-  // ── Incremental AI correction — only fixes NEW entries since last correction ──
+  // ── Incremental AI correction - only fixes NEW entries since last correction ──
   // This minimizes bias: LLM sees small fresh chunks, not accumulated errors
   const enhanceNewEntries = useCallback(async (): Promise<boolean> => {
     if (isEnhancingRef.current) return false;
@@ -602,7 +602,7 @@ export function useSpeechRecognition() {
       });
       if (!res.ok) {
         const err = await res.text();
-        addLog('error', `Groq error: ${res.status} — ${err.slice(0, 80)}`);
+        addLog('error', `Groq error: ${res.status} - ${err.slice(0, 80)}`);
         throw new Error(err);
       }
       const data = await res.json();
@@ -657,7 +657,7 @@ export function useSpeechRecognition() {
     }
   }, [addLog]);
 
-  // ── System Audio Rolling Recorder (for Zoom/Meet/Discord — Web Speech API can't capture system audio) ──
+  // ── System Audio Rolling Recorder (for Zoom/Meet/Discord - Web Speech API can't capture system audio) ──
   // Strategy: Every 30s, stop recorder → get FULL valid webm blob → send to whisper-backend → start new recorder.
   // This produces valid webm files (not fragments) that whisper/ffmpeg can process.
   const startSystemAudioRollingRecorder = useCallback((stream: MediaStream) => {
@@ -725,7 +725,7 @@ export function useSpeechRecognition() {
             }
           }
 
-          // Start new segment (rolling) — unless user stopped
+          // Start new segment (rolling) - unless user stopped
           if (isRecordingRef.current && !manualStopRef.current) {
             setTimeout(() => startNewSegment(), 100);
           }
@@ -815,7 +815,7 @@ export function useSpeechRecognition() {
     };
 
     mediaRecorder.onerror = (e) => {
-      addLog('error', `MediaRecorder error: ${e.error?.name || 'unknown'} — ${e.error?.message || ''}`);
+      addLog('error', `MediaRecorder error: ${e.error?.name || 'unknown'}, ${e.error?.message || ''}`);
     };
 
     mediaRecorder.start(GROQ_CHUNK_INTERVAL);
@@ -826,7 +826,7 @@ export function useSpeechRecognition() {
     addLog('info', 'VAD aktif: hanya mengirim audio saat ada suara (hemat quota).');
     addLog('success', 'Audio aktif! Teks akan muncul otomatis saat ada suara terdeteksi.');
 
-    // Send each chunk — 3-tier fallback: Groq → Whisper local
+    // Send each chunk - 3-tier fallback: Groq → Whisper local
     let groqRateLimited = false; // once Groq hits rate limit, switch to whisper permanently
     groqTimerRef.current = setInterval(async () => {
       if (audioChunksRef.current.length === 0) return;
@@ -855,7 +855,7 @@ export function useSpeechRecognition() {
       if (text && text.trim()) {
         appendTranscript(text.trim());
       }
-      // No log for empty results — VAD handles silent detection
+      // No log for empty results - VAD handles silent detection
     }, GROQ_CHUNK_INTERVAL);
   }, [sendAudioToGroq, sendAudioToWhisperLocal, setSttSource, appendTranscript, setSttWarning, addLog, startVisualizer]);
 
@@ -948,7 +948,7 @@ export function useSpeechRecognition() {
               processedFinalIdxRef.current.add(i);
               // Extract confidence for auto-learning threshold
               // Web Speech API: event.results[i][bestIdx].confidence (0.0-1.0)
-              // Not all browsers populate this — default to 0.9 if undefined
+              // Not all browsers populate this - default to 0.9 if undefined
               const conf = (event.results[i] as any)?.[0]?.confidence;
               if (typeof conf === 'number' && conf > 0) {
                 finalConfidence += conf;
@@ -1130,7 +1130,7 @@ export function useSpeechRecognition() {
 
         whisperRecorder.onstart = () => {
           console.log('[STT-Hybrid] Whisper recorder started');
-          addLog('info', 'Whisper recorder aktif — akan kirim audio ke faster-whisper saat stop.');
+          addLog('info', 'Whisper recorder aktif, akan kirim audio ke faster-whisper saat stop.');
         };
 
         whisperRecorder.onstop = () => {
@@ -1184,19 +1184,19 @@ export function useSpeechRecognition() {
         }, 5000);
 
         // ── Deep audio pipeline logging ──
-        recognition.onaudiostart = () => { addLog('info', '[pipeline] onaudiostart — mic mulai mengirim audio ke browser'); };
-        recognition.onsoundstart = () => { addLog('info', '[pipeline] onsoundstart — suara terdeteksi di mic'); };
-        recognition.onspeechstart = () => { addLog('info', '[pipeline] onspeechstart — speech-like suara terdeteksi'); };
+        recognition.onaudiostart = () => { addLog('info', '[pipeline] onaudiostart, mic mulai mengirim audio ke browser'); };
+        recognition.onsoundstart = () => { addLog('info', '[pipeline] onsoundstart, suara terdeteksi di mic'); };
+        recognition.onspeechstart = () => { addLog('info', '[pipeline] onspeechstart, speech-like suara terdeteksi'); };
         recognition.onspeechend = () => { addLog('info', '[pipeline] onspeechend'); };
         recognition.onsoundend = () => { addLog('info', '[pipeline] onsoundend'); };
-        recognition.onaudioend = () => { addLog('info', '[pipeline] onaudioend — mic audio berhenti'); };
+        recognition.onaudioend = () => { addLog('info', '[pipeline] onaudioend, mic audio berhenti'); };
 
         recognition.onstart = () => {
           clearTimeout(timeout);
           // New recognition instance → fresh result array. Clear the processed-final
           // tracker so result indexes from this new session can be appended normally.
           processedFinalIdxRef.current.clear();
-          addLog('success', 'Web Speech API ONSTART — engine aktif');
+          addLog('success', 'Web Speech API ONSTART, engine aktif');
           if (!resolved) {
             resolved = true;
             recognitionRef.current = recognition;
@@ -1267,7 +1267,7 @@ export function useSpeechRecognition() {
         };
 
         recognition.onend = () => {
-          addLog('info', '[pipeline] ONEND — recognition berhenti');
+          addLog('info', '[pipeline] ONEND, recognition berhenti');
           clearTimeout(timeout);
           if (isRecordingRef.current && !manualStopRef.current && !isStoppingRef.current && !skipWebspeechReconnectRef.current) {
             restartWebSpeech();
@@ -1291,7 +1291,7 @@ export function useSpeechRecognition() {
     [webspeechSupported, setSttSource, appendTranscript, setInterimTranscript, setSttError, setSttStatus, restartWebSpeech, addLog, logWebspeechFailures]
   );
 
-  // ── Start no-result timer — auto-switch to Groq if Web Speech produces nothing ──
+  // ── Start no-result timer - auto-switch to Groq if Web Speech produces nothing ──
   const startNoResultTimer = useCallback(() => {
     if (noResultTimerRef.current) clearTimeout(noResultTimerRef.current);
     noResultTimerRef.current = setTimeout(() => {
@@ -1350,7 +1350,7 @@ export function useSpeechRecognition() {
     };
 
     // Step 1: If screen mode, get display media (system audio)
-    // Note: getDisplayMedia NOT available on mobile browsers — only desktop
+    // Note: getDisplayMedia NOT available on mobile browsers - only desktop
     if (sttAudioMode === 'screen' && typeof navigator.mediaDevices.getDisplayMedia === 'function') {
       addLog('info', 'Mode: Entire Screen (System Audio + Mic hybrid)');
       addLog('info', 'Pilih "Entire Screen" + centang "Share system audio" di picker.');
@@ -1391,7 +1391,7 @@ export function useSpeechRecognition() {
     //   - echoCancellation: removes echo from speakers
     //   - noiseSuppression: filters background noise (fans, AC, traffic)
     //   - autoGainControl: normalizes volume (whispers → audible, shouts → not clipped)
-    //   - channelCount: 1 (mono — speech recognition works better with mono)
+    //   - channelCount: 1 (mono - speech recognition works better with mono)
     // Feature-detect: Safari iOS rejects unknown constraints, so we fall back
     // to `audio: true` if any constraint is unsupported.
     try {
@@ -1408,7 +1408,7 @@ export function useSpeechRecognition() {
           audio: enhancedConstraints,
         });
       } catch (constraintErr) {
-        // Safari iOS / older browsers reject unknown constraints — fall back
+        // Safari iOS / older browsers reject unknown constraints - fall back
         console.warn('[STT] Enhanced audio constraints rejected, falling back to default:', constraintErr);
         micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       }
@@ -1433,7 +1433,7 @@ export function useSpeechRecognition() {
         startNoResultTimer();
         webspeechStarted = true;
 
-        // Mobile safety: set 5s timeout — if Web Speech doesn't produce results, auto-fallback to Groq
+        // Mobile safety: set 5s timeout - if Web Speech doesn't produce results, auto-fallback to Groq
         // This catches: Safari iOS (Web Speech "starts" but onresult never fires)
         setTimeout(() => {
           if (isRecordingRef.current && !manualStopRef.current && !hasReceivedResultRef.current && !skipWebspeechReconnectRef.current) {
@@ -1452,7 +1452,7 @@ export function useSpeechRecognition() {
       addLog('info', 'Browser tidak support Web Speech API. Menggunakan Groq API untuk live transcription.');
     }
 
-    // Step 3b: FALLBACK — if Web Speech API not available, use Groq/whisper live transcription
+    // Step 3b: FALLBACK - if Web Speech API not available, use Groq/whisper live transcription
     if (!webspeechStarted) {
       addLog('info', 'Memulai live transcription via Groq API...');
       skipWebspeechReconnectRef.current = true;
@@ -1526,7 +1526,7 @@ export function useSpeechRecognition() {
     }
 
     // Step 5: For screen mode, ALSO start system audio rolling recorder
-    // Web Speech API can't capture system audio (Zoom/Meet/Discord) — only mic.
+    // Web Speech API can't capture system audio (Zoom/Meet/Discord) - only mic.
     // So we record system audio separately and transcribe via whisper-backend every 30s.
     if (sttAudioMode === 'screen' && displayStream) {
       const sysTracks = displayStream.getAudioTracks();
@@ -1611,7 +1611,7 @@ export function useSpeechRecognition() {
   // ── Register stop function to global STT controller ──
   // Allows the app header (or any other component) to stop recording without
   // being inside <STTPanel/>. Used by the global "Stop" button in the header
-  // so the user can stop recording from any tab — not just the STT tab.
+  // so the user can stop recording from any tab - not just the STT tab.
   useEffect(() => {
     registerSttStop(stopRecordingFn);
     return () => unregisterSttStop();

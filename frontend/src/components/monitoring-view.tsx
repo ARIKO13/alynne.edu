@@ -36,7 +36,7 @@ export function MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefre
   };
 
   const formatUptime = (seconds: number): string => {
-    if (!seconds) return '—';
+    if (!seconds) return '-';
     const days = Math.floor(seconds / 86400);
     const hours = Math.floor((seconds % 86400) / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
@@ -184,7 +184,7 @@ export function MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefre
             </div>
             <div>
               <p className="text-zinc-500">PID</p>
-              <p className="text-zinc-300 font-mono">{pm2.pid || '—'}</p>
+              <p className="text-zinc-300 font-mono">{pm2.pid || '-'}</p>
             </div>
             <div>
               <p className="text-zinc-500">Uptime</p>

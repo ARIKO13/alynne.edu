@@ -145,7 +145,7 @@ export function AIAssistant() {
         systemPrompt = `Kamu adalah asisten AI LINA.LEARNING. Berikut konten web yang relevan dengan pertanyaan user:\n\n${scrapedContext}\n\n---\n\nPETUNJUK:\n- Jawab berdasarkan konten web di atas UTAMANYA\n- Jelaskan dengan bahasa Indonesia yang jelas, terstruktur, dan mudah dipahami\n- Kalau konten web kurang lengkap, kamu boleh tambahkan pengetahuan umum\n- Sertakan sumber jika memungkinkan`;
       }
 
-      // === CLIENT-SIDE AI (WebLLM) — browser-first, fallback to server ===
+      // === CLIENT-SIDE AI (WebLLM) - browser-first, fallback to server ===
       // WebLLM runs in browser via WebGPU (no server cost, unlimited scale)
       // Falls back to /api/ai/chat (Groq → Qwen local) if WebGPU not available
       const fullMessages = [
@@ -171,7 +171,7 @@ export function AIAssistant() {
         if (provider === 'webllm') {
           modelLabel = 'WebLLM (browser, free)';
         } else {
-          // Server fallback was used — fetch the actual content
+          // Server fallback was used - fetch the actual content
           const res = await fetch('/api/ai/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -326,7 +326,7 @@ export function AIAssistant() {
             <span>
               Kuota hari ini: {quotaInfo.dayRemaining}/{quotaInfo.dayLimit}
               {quotaInfo.dayRemaining === 0 && quotaInfo.dayReset > 0 && (
-                <> — reset jam {formatDayReset(quotaInfo.dayReset)} WIB</>
+                <> - reset jam {formatDayReset(quotaInfo.dayReset)} WIB</>
               )}
             </span>
           </div>
@@ -368,7 +368,7 @@ export function AIAssistant() {
                       )}
                     </div>
                   )}
-                  {/* Sources — per message */}
+                  {/* Sources - per message */}
                   {messageHasScrape[msg.id] && messageSources[msg.id] && (
                     <div className="mt-2 border-t border-white/[0.06] pt-2">
                       <p className="text-[10px] font-medium text-zinc-500 mb-1">Sumber web:</p>

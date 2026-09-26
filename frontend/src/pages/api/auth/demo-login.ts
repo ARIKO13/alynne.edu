@@ -11,7 +11,7 @@ import { subscriptionDb } from '@/lib/subscription-db';
  * and sets the `lina-session` JWT cookie (same as Google OAuth callback).
  *
  * Previously this endpoint returned JSON without setting the cookie, which
- * meant the frontend's session check would fail immediately — the user
+ * meant the frontend's session check would fail immediately - the user
  * appeared logged-in but the next /api/auth/session call returned null.
  */
 export const POST: APIRoute = async ({ request }) => {

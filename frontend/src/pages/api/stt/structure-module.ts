@@ -210,7 +210,7 @@ async function gatewayPipeline(transcript: string, materialTexts: string[]): Pro
     materi: (bab.subbab || []).map((sb: any) => {
       const parts = [sb.nama_subbab];
       if (sb.poin?.length) parts.push(sb.poin.join('; '));
-      return parts.join(' — ');
+      return parts.join(', ');
     }),
     tables: null, steps: null, reviewNotes: null,
   }));

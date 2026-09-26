@@ -1,9 +1,9 @@
 /**
- * whisper-models.ts — Konfigurasi model Whisper untuk client-side STT
+ * whisper-models.ts - Konfigurasi model Whisper untuk client-side STT
  *
  * 6 model tersedia:
  *
- * TANPA KUANTISASI (full precision FP16 — akurasi maksimal, ukuran asli):
+ * TANPA KUANTISASI (full precision FP16 - akurasi maksimal, ukuran asli):
  *   1. Tiny      (75 MB)    - paling ringan, akurasi minimal Indonesia
  *   2. Base      (145 MB)   - ringan, akurasi dasar Indonesia
  *
@@ -97,7 +97,7 @@ export const WHISPER_MODELS: WhisperModel[] = [
     speedX: '1-2x realtime',
     werRange: '4-12%',
     accuracyRange: '88-96%',
-    recommendedFor: 'PC/laptop modern (RAM ≥ 4GB) — RECOMMENDED',
+    recommendedFor: 'PC/laptop modern (RAM ≥ 4GB) RECOMMENDED',
     description: 'Model terbaik untuk Bahasa Indonesia. Cepat (turbo) dan akurat. Sweet spot untuk STT Indonesia. Bisa handle audio bising dan multiple speaker dengan baik.',
     quantized: true,
     category: 'quantized',
@@ -111,7 +111,7 @@ export const WHISPER_MODELS: WhisperModel[] = [
     speedX: '0.3-0.5x realtime',
     werRange: '3-10%',
     accuracyRange: '90-97%',
-    recommendedFor: 'PC high-end (RAM ≥ 8GB) — maksimal akurasi',
+    recommendedFor: 'PC high-end (RAM ≥ 8GB), maksimal akurasi',
     description: 'Model terbesar dan paling akurat. Untuk pengguna yang butuh akurasi maksimal dan tidak keberatan download 1.1 GB. Lebih lambat dari Turbo tapi akurasi lebih tinggi di audio bising.',
     quantized: true,
     category: 'quantized',

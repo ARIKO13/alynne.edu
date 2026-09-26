@@ -1,5 +1,5 @@
 /**
- * Client-side file text extraction — NO API calls, everything runs in browser.
+ * Client-side file text extraction - NO API calls, everything runs in browser.
  * Supports: TXT (native), PDF (pdf.js from CDN).
  */
 
@@ -103,7 +103,7 @@ async function extractDocxText(file: File): Promise<string> {
   return result.value;
 }
 
-/** Extract text from PPTX — basic XML text extraction via JSZip */
+/** Extract text from PPTX - basic XML text extraction via JSZip */
 async function extractPptxText(file: File): Promise<string> {
   // Load JSZip from CDN
   if (!(window as any).JSZip) {
@@ -143,7 +143,7 @@ async function extractPptxText(file: File): Promise<string> {
 }
 
 /**
- * Main extraction function — detects file type and extracts text.
+ * Main extraction function - detects file type and extracts text.
  * Returns extracted text string.
  */
 export async function extractTextFromFile(file: File): Promise<string> {

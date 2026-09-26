@@ -1,6 +1,6 @@
 /**
  * Simple JWT-based Google OAuth (replaces NextAuth)
- * Much lighter weight — no NextAuth dependency needed.
+ * Much lighter weight - no NextAuth dependency needed.
  */
 import { SignJWT, jwtVerify } from 'jose';
 

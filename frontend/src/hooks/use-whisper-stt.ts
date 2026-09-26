@@ -82,7 +82,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
       }
 
       if (!savedId) {
-        console.log('[Whisper] No saved model in localStorage - skip auto-load');
+        console.log('[Whisper] No saved model in localStorage, skip auto-load');
         return;
       }
 
@@ -97,7 +97,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
         if (cached) {
           console.log('[Whisper] Model is cached, will load when user records');
         } else {
-          console.log('[Whisper] Model not in cache - user needs to re-download');
+          console.log('[Whisper] Model not in cache, user needs to re-download');
         }
       } catch {
         // Cache check failed — ignore, user can manually load
@@ -154,7 +154,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
           const cached = await fgIsModelCached(savedId);
           if (!cached) {
             console.log(
-              '[Whisper] Saved model not in cache - opening popup for re-download'
+              '[Whisper] Saved model not in cache, opening popup for re-download'
             );
             options.onModelRequired?.();
             return false;
@@ -360,7 +360,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
           // Auto-free model setelah 5 menit idle (hemat RAM)
           if (ramCleanupTimerRef.current) clearTimeout(ramCleanupTimerRef.current);
           ramCleanupTimerRef.current = setTimeout(() => {
-            console.log('[Whisper] 5min idle - freeing RAM');
+            console.log('[Whisper] 5min idle, freeing RAM');
             fgFreeModel();
             setModelId(null);
           }, 5 * 60 * 1000);

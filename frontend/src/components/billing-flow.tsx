@@ -26,7 +26,7 @@ import {
 type Step = 1 | 2 | 3 | 4;
 
 /**
- * Tailwind accent classes per tier/model — kept in the component (not the
+ * Tailwind accent classes per tier/model - kept in the component (not the
  * data file) so the data stays framework-agnostic.
  */
 const ACCENT: Record<
@@ -170,7 +170,7 @@ export function BillingFlow() {
       <StepperHeader currentStep={step} />
 
       <AnimatePresence mode="wait" initial={false}>
-        {/* STEP 1 — MODEL PICKER */}
+        {/* STEP 1 - MODEL PICKER */}
         {step === 1 && (
           <motion.div
             key="step1"
@@ -182,7 +182,7 @@ export function BillingFlow() {
           >
             <p className="text-xs text-zinc-500">
               Pilih AI model yang ingin kamu langganan. Untuk sekarang ALYNNE.EDU sudah
-              tersedia — model lain akan menyusul.
+              tersedia - model lain akan menyusul.
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
               {AI_MODELS.map((m) => {
@@ -247,7 +247,7 @@ export function BillingFlow() {
           </motion.div>
         )}
 
-        {/* STEP 2 — TIER (PAKET) PICKER for selected model */}
+        {/* STEP 2 - TIER (PAKET) PICKER for selected model */}
         {step === 2 && (
           <motion.div
             key="step2"
@@ -331,7 +331,7 @@ export function BillingFlow() {
           </motion.div>
         )}
 
-        {/* STEP 3 — PAYMENT METHOD */}
+        {/* STEP 3 - PAYMENT METHOD */}
         {step === 3 && (
           <motion.div
             key="step3"
@@ -386,7 +386,7 @@ export function BillingFlow() {
           </motion.div>
         )}
 
-        {/* STEP 4 — CHECKOUT SUMMARY */}
+        {/* STEP 4 - CHECKOUT SUMMARY */}
         {step === 4 && (
           <motion.div
             key="step4"

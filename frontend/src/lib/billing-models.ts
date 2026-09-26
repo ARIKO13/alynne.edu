@@ -2,9 +2,9 @@
  * Billing models + payment methods for the ALYNNE.AI billing page.
  *
  * Two-stage selection:
- *   1. User picks an AI MODEL (e.g., ALYNNE.EDU) — only ALYNNE.EDU is
+ *   1. User picks an AI MODEL (e.g., ALYNNE.EDU) - only ALYNNE.EDU is
  *      available for now, but the structure supports adding more later.
- *   2. User picks a TIER (Lite/Plus/Pro/Ultra) within that model —
+ *   2. User picks a TIER (Lite/Plus/Pro/Ultra) within that model -
  *      each tier has its own price + features.
  *
  * Pricing tiers for ALYNNE.EDU start at Rp 50.000 and include a
@@ -23,7 +23,7 @@ export interface AIModel {
   accent: 'emerald' | 'violet' | 'amber' | 'rose' | 'sky';
   /** Whether this is the default-selected model in the picker */
   default?: boolean;
-  /** Mark "coming soon" models — disables the card */
+  /** Mark "coming soon" models - disables the card */
   comingSoon?: boolean;
 }
 
@@ -41,12 +41,12 @@ export const AI_MODELS: AIModel[] = [
     tagline: 'Belajar Cerdas, Raih Sertifikat',
     description:
       'Asisten AI edukasi untuk pelajar, mahasiswa, guru, dan institusi. ' +
-      'Speech-to-Text, Modul PDF, Mind Map, AI Assistant — semua dalam satu.',
+      'Speech-to-Text, Modul PDF, Mind Map, AI Assistant, semua dalam satu.',
     badge: '🎓',
     accent: 'violet',
     default: true,
   },
-  // Reserved for future — uncomment when ready
+  // Reserved for future - uncomment when ready
   // {
   //   id: 'alynne-pro',
   //   name: 'ALYNNE.PRO',
@@ -81,7 +81,7 @@ export interface BillingTier {
  *
  * Prices (per user request, 2026-09-13):
  *   - Lite   : Rp  50.000  (starting price)
- *   - Plus   : Rp 100.000  (the mentioned 100k tier — also the popular one)
+ *   - Plus   : Rp 100.000  (the mentioned 100k tier - also the popular one)
  *   - Pro    : Rp 200.000
  *   - Ultra  : Rp 350.000
  */

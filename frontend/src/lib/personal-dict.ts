@@ -1,5 +1,5 @@
 /**
- * Personal Dictionary — auto-learning system untuk STT (server-side version).
+ * Personal Dictionary - auto-learning system untuk STT (server-side version).
  *
  * WHY:
  *   Web Speech API kadang dengar kata yang belum ada di KBBI/dict (e.g. nama
@@ -11,7 +11,7 @@
  *   otomatis masuk ke global dictionary (D1 + phonetic-map.json). Next time
  *   kata itu muncul, isKnown() return true → tidak di-fuzzy-match.
  *
- * ARCHITECTURE (v2 — server-side):
+ * ARCHITECTURE (v2 - server-side):
  *   Client (use-speech-recognition.ts):
  *     1. Saat STT dapat final text dengan confidence > threshold,
  *        extract each word
@@ -25,8 +25,8 @@
  *     4. resetDictionaryCache() supaya isKnown() pick up kata baru di request berikutnya
  *
  *   Server (/api/stt/learned-words):
- *     1. GET — list all learned words (untuk UI panel)
- *     2. DELETE — hapus word (juga clean phonetic-map.json)
+ *     1. GET - list all learned words (untuk UI panel)
+ *     2. DELETE - hapus word (juga clean phonetic-map.json)
  *
  * STORAGE:
  *   - D1 table LearnedWord (audit trail + count + userId + source)
@@ -39,7 +39,7 @@
  *   - Server increment count kalau kata sudah ada, insert kalau baru
  *
  * PRIVACY:
- *   - Tidak menyimpan raw transcripts — hanya word yang sudah di-extract
+ *   - Tidak menyimpan raw transcripts - hanya word yang sudah di-extract
  *   - userId optional (untuk audit trail siapa yang pertama bilang kata X)
  *   - Semua user dapat benefit dari kata yang dipelajari user lain (global dict)
  */
@@ -191,7 +191,7 @@ export async function recordHeardWord(
 }
 
 /**
- * Process a full sentence — extract words and record each.
+ * Process a full sentence - extract words and record each.
  * v2: also pass context (3 words before + 3 after) for each word.
  *
  * Returns array of words that got promoted to server (for toast notification).

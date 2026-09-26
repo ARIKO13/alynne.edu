@@ -18,7 +18,7 @@ import { recordUserCorrection } from '@/lib/learned-word';
  *   - When 2+ users vote for same correction → high confidence
  *   - Used by context-aware corrector untuk improve accuracy
  *
- * Auth: optional — anonymous votes allowed (userId=null)
+ * Auth: optional - anonymous votes allowed (userId=null)
  *       tapi anonymous votes bobotnya 1.0, logged-in users bisa dapet bump
  */
 export const POST: APIRoute = async ({ request }) => {

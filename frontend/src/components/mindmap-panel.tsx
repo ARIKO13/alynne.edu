@@ -465,7 +465,7 @@ export function MindMapPanel() {
                 placeholder={"Paste materi pendukung di sini...\n\nContoh:\n- Catatan kuliah\n- Ringkasan bab dari textbook\n- Point-point slide perkuliahan"}
                 className="w-full h-40 bg-white/[0.03] border border-white/[0.08] rounded-xl p-4 text-sm text-zinc-300 placeholder:text-zinc-600 resize-none focus:outline-none focus:border-[#B794F6]/40 focus:ring-1 focus:ring-[#B794F6]/20 transition-all" />
               <div className="flex items-center justify-between mt-1.5">
-                <span className="text-[10px] text-zinc-600">{manualText.trim().length < 30 ? 'Minimal 30 karakter' : `${manualText.length} chars — siap`}</span>
+                <span className="text-[10px] text-zinc-600">{manualText.trim().length < 30 ? 'Minimal 30 karakter' : `${manualText.length} chars - siap`}</span>
                 {manualText && <button onClick={() => setManualText('')} className="text-[10px] text-zinc-600 hover:text-red-400">Hapus</button>}
               </div>
             </div>

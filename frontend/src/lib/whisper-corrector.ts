@@ -1,5 +1,5 @@
 /**
- * whisper-corrector.ts — Whisper sebagai post-processor koreksi
+ * whisper-corrector.ts - Whisper sebagai post-processor koreksi
  *
  * Flow:
  *   1. Web Speech API capture audio + transkrip real-time (text kasar)

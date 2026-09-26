@@ -16,16 +16,16 @@ import {
 import { toast } from 'sonner';
 
 /**
- * ImageSharpener — CV-based image sharpening tool
+ * ImageSharpener - CV-based image sharpening tool
  *
  * Computer vision techniques implemented:
- *   1. Laplacian variance — auto-detect blur score (standard CV technique)
- *   2. Convolution kernels — 3x3 sharpen, strong sharpen, edge enhance
- *   3. Unsharp masking — blur → subtract → add (professional CG technique)
- *   4. Sobel edge detection — used in CV pre-processing
+ *   1. Laplacian variance - auto-detect blur score (standard CV technique)
+ *   2. Convolution kernels - 3x3 sharpen, strong sharpen, edge enhance
+ *   3. Unsharp masking - blur → subtract → add (professional CG technique)
+ *   4. Sobel edge detection - used in CV pre-processing
  *
  * All processing runs client-side via Canvas + getImageData. No server
- * round-trip — instant feedback.
+ * round-trip - instant feedback.
  */
 
 type Method = 'sharpen' | 'strong-sharpen' | 'edge-enhance' | 'unsharp';
@@ -57,7 +57,7 @@ function getKernel(method: Method, intensity: number): Kernel {
         bias: 0,
       };
     case 'strong-sharpen':
-      // Aggressive 3x3 — center = 1 + 8k, all 8 neighbors = -k
+      // Aggressive 3x3 - center = 1 + 8k, all 8 neighbors = -k
       return {
         size: 3,
         matrix: [-k, -k, -k, -k, 1 + 8 * k, -k, -k, -k, -k],
@@ -65,7 +65,7 @@ function getKernel(method: Method, intensity: number): Kernel {
         bias: 0,
       };
     case 'edge-enhance':
-      // 3x3 edge enhance — emphasizes edges without darkening flat areas
+      // 3x3 edge enhance - emphasizes edges without darkening flat areas
       return {
         size: 3,
         matrix: [1, -2 * k, 1, -2 * k, 1 + 4 * k, -2 * k, 1, -2 * k, 1],
@@ -73,8 +73,8 @@ function getKernel(method: Method, intensity: number): Kernel {
         bias: 0,
       };
     case 'unsharp':
-      // Unsharp mask — done as separate pass (blur then subtract), not via kernel.
-      // Returned kernel is identity — actual unsharp handled in applyUnsharpMask().
+      // Unsharp mask - done as separate pass (blur then subtract), not via kernel.
+      // Returned kernel is identity - actual unsharp handled in applyUnsharpMask().
       return {
         size: 3,
         matrix: [0, 0, 0, 0, 1, 0, 0, 0, 0],
@@ -124,7 +124,7 @@ function applyConvolution(src: ImageData, kernel: Kernel): ImageData {
 }
 
 /**
- * Box blur — fast separable blur used as basis for unsharp mask.
+ * Box blur - fast separable blur used as basis for unsharp mask.
  */
 function boxBlur(src: ImageData, radius: number): ImageData {
   if (radius < 1) return src;
@@ -177,7 +177,7 @@ function boxBlur(src: ImageData, radius: number): ImageData {
 }
 
 /**
- * Unsharp masking — classic CG technique:
+ * Unsharp masking - classic CG technique:
  *   sharpened = original + amount * (original - blurred)
  * where blurred = box-blurred version of original.
  */
@@ -199,7 +199,7 @@ function applyUnsharpMask(src: ImageData, radius: number, amount: number): Image
 }
 
 /**
- * Laplacian variance — standard CV technique to estimate image blur.
+ * Laplacian variance - standard CV technique to estimate image blur.
  * Higher variance = sharper image. Low variance = blurry.
  *
  * Uses Laplacian kernel:
@@ -429,7 +429,7 @@ export function ImageSharpener() {
             </div>
             <div>
               <p className="text-base font-medium text-white">Drop gambar di sini atau klik untuk upload</p>
-              <p className="text-xs text-zinc-500 mt-1">PNG, JPG, WebP — maksimal 10MB</p>
+              <p className="text-xs text-zinc-500 mt-1">PNG, JPG, WebP - maksimal 10MB</p>
             </div>
             <div className="mt-2 flex items-center gap-2">
               <button
@@ -462,7 +462,7 @@ export function ImageSharpener() {
               <div className="flex-1">
                 <p className="text-xs font-medium text-zinc-300">Analisis CV (Laplacian Variance)</p>
                 <p className="text-[10px] text-zinc-500">
-                  Deteksi blur otomatis pakai <code className="text-zinc-400">∇²I variance</code> — score {blurScore?.toFixed(0)}
+                  Deteksi blur otomatis pakai <code className="text-zinc-400">∇²I variance</code> - score {blurScore?.toFixed(0)}
                 </p>
               </div>
               <div className="text-right">
@@ -623,7 +623,7 @@ export function ImageSharpener() {
                 Tool ini pake <strong>computer vision</strong> beneran:
                 Laplacian variance buat auto-detect seberapa buram gambarmu,
                 lalu 4 metode penajaman (convolution kernel, unsharp masking,
-                edge enhance). Semua diproses di browser kamu — gambar ga
+                edge enhance). Semua diproses di browser kamu - gambar ga
                 pernah ke-upload ke server.
               </p>
             </div>

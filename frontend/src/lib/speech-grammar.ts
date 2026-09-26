@@ -20,7 +20,7 @@
  *   these terms are likely in this context.
  *
  * To extend: just add terms to the TERMS array below. JSGF weight=1 means
- * "highest priority" — the engine will prefer these over its default
+ * "highest priority" - the engine will prefer these over its default
  * vocabulary when there's ambiguity.
  */
 
@@ -80,7 +80,7 @@ export function setupRecognitionGrammar(recognition: any): boolean {
       (window as any).webkitSpeechGrammarList;
 
     if (!GrammarListCtor) {
-      // Safari/Firefox — silently skip. Web Speech API still works without grammar.
+      // Safari/Firefox - silently skip. Web Speech API still works without grammar.
       return false;
     }
 

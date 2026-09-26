@@ -1,5 +1,5 @@
 /**
- * STT Auto-Correction Dictionary v3 — with Fuzzy Matching
+ * STT Auto-Correction Dictionary v3 - with Fuzzy Matching
  *
  * Hybrid approach (extends v2 with Levenshtein fuzzy matching):
  *   1. Local dictionary correction (KBBI 192K + English 125K + slang)
@@ -105,7 +105,7 @@ function loadDict() {
   // RAM is just a transient cache built on-demand.
   let sqliteLoaded = false;
   try {
-    // Use the statically imported sttDb instance (no require() — ESM compatible)
+    // Use the statically imported sttDb instance (no require() - ESM compatible)
     const sttDb = sttDbInstance;
     // Query all confirmed words (KBBI + confirmed auto-learned)
     const rows = sttDb.getAll<{ word: string; source: string; phonetic_variations: string }>(
@@ -264,7 +264,7 @@ function loadDict() {
       _phraseMap = null;
       console.log(`[STT-Dict] Phonetic map loaded: tickers=${Object.keys(_phoneticTickers).length}, companies=${Object.keys(_companyNames).length}, actions=${Object.keys(_actionPhrases).length}`);
     } else {
-      console.warn('[STT-Dict] phonetic-map.json not found — using hardcoded fallback only');
+      console.warn('[STT-Dict] phonetic-map.json not found, using hardcoded fallback only');
     }
   } catch (err) {
     console.error('[STT-Dict] Phonetic map load failed:', err);
@@ -388,7 +388,7 @@ const fbSlang: Record<string, string> = {
 };
 
 const fbFixes: Record<string, string> = {
-  // Existing — spelling normalization
+  // Existing - spelling normalization
   'sistim': 'sistem', 'metoda': 'metode',
   'strateji': 'strategi', 'difinisi': 'definisi',
   'annalisa': 'analisis', 'analisa': 'analisis',
@@ -396,7 +396,7 @@ const fbFixes: Record<string, string> = {
   'algoritm': 'algoritma', 'ngapain': 'mengapa',
 
   // ── Common Indonesian STT mishearings (curated) ──
-  // These are NOT slang — they're cases where Web Speech API / Whisper
+  // These are NOT slang - they're cases where Web Speech API / Whisper
   // mishears a similar-sounding word and outputs the wrong one.
   // Each entry: misheard_word → correct_word
 
@@ -495,7 +495,7 @@ const fbFixes: Record<string, string> = {
   'hipotesa': 'hipotesis',
 };
 
-const fbRemove = new Set<string>();  // DISABLED — particles like "dong", "sih", "deh" are natural Indonesian conversation, removing them truncates output
+const fbRemove = new Set<string>();  // DISABLED - particles like "dong", "sih", "deh" are natural Indonesian conversation, removing them truncates output
 
 const techTerms = new Set([
   'ai', 'api', 'app', 'software', 'hardware', 'database', 'server',
@@ -861,7 +861,7 @@ function levenshtein(a: string, b: string, maxDist: number): number {
 // ── NEW: Fuzzy correct a single word via Levenshtein ──
 function fuzzyCorrectWord(word: string): { corrected: string; distance: number } | null {
   const w = word.toLowerCase();
-  if (w.length < 3) return null; // too short — too many false positives
+  if (w.length < 3) return null; // too short - too many false positives
   if (isKnown(w)) return null;   // already a valid word
 
   // Check cache
@@ -929,7 +929,7 @@ function applyPhraseMap(text: string): { text: string; fixed: number } {
 /**
  * Reset all in-memory caches so the next localCorrect() call reloads
  * everything from the JSON files. Called by /api/admin/stt-fix after
- * adding a new mapping to phonetic-map.json — enables hot-reload
+ * adding a new mapping to phonetic-map.json - enables hot-reload
  * without PM2 restart.
  */
 export function resetDictionaryCache() {
@@ -946,7 +946,7 @@ export function resetDictionaryCache() {
   _actionPhrases = null;
   _lengthIndex = null;
   _fuzzyCache.clear();
-  console.log('[STT-Dict] Cache reset — will reload on next request');
+  console.log('[STT-Dict] Cache reset, will reload on next request');
 }
 
 export function localCorrect(rawText: string): CorrectionResult {
@@ -981,7 +981,7 @@ export function localCorrect(rawText: string): CorrectionResult {
     const lower = raw.toLowerCase();
     stats.totalWords++;
 
-    // 1. Remove filler particles — DISABLED (was truncating valid conversation particles like "dong", "sih")
+    // 1. Remove filler particles - DISABLED (was truncating valid conversation particles like "dong", "sih")
     // if (fbRemove.has(lower) || _remove?.has(lower)) {
     //   stats.removedParticles++;
     //   wordIdx++;
@@ -1000,7 +1000,7 @@ export function localCorrect(rawText: string): CorrectionResult {
     // 3. Slang to formal (with 2-pass for chained slang: bgt → banget → sangat)
     let slangTarget = _indoSlang?.[lower]?.f || fbSlang[lower];
     if (slangTarget !== undefined) {
-      // NOTE: previously, empty string '' meant "remove this word" — DISABLED.
+      // NOTE: previously, empty string '' meant "remove this word" - DISABLED.
       // Particle removal (dong, sih, deh, etc.) is NOT done here anymore.
       // All conversation particles are retained in output.
       // 2nd pass: if the corrected word is ALSO slang, apply again
@@ -1024,8 +1024,8 @@ export function localCorrect(rawText: string): CorrectionResult {
       continue;
     }
 
-    // 5. NEW: Phonetic matching (Indonesian Double Metaphone) — Layer 2
-    // Run BEFORE fuzzy Levenshtein — phonetic catches sound-alike stock terms
+    // 5. NEW: Phonetic matching (Indonesian Double Metaphone) - Layer 2
+    // Run BEFORE fuzzy Levenshtein - phonetic catches sound-alike stock terms
     // that Levenshtein would miss (or worse, false-positive match to wrong word).
     // Context-aware: only match if surrounding words suggest stock/finance context.
     if (!isKnown(raw)) {
@@ -1043,7 +1043,7 @@ export function localCorrect(rawText: string): CorrectionResult {
         }
       }
 
-      // 5b. Fuzzy matching via Levenshtein (typo correction) — Layer 3
+      // 5b. Fuzzy matching via Levenshtein (typo correction) - Layer 3
       // Only run if phonetic didn't match AND word is not in skip list.
       // Skip list prevents false-positives like "grafiknya" → "grafika".
       if (!shouldSkipFuzzy(raw)) {
@@ -1071,7 +1071,7 @@ export function localCorrect(rawText: string): CorrectionResult {
   const ratio = stats.totalWords > 0 ? stats.unknownWords / stats.totalWords : 0;
   const needsLLM = stats.totalWords >= 4 && ratio > 0.3;
 
-  // Reset personal dict after each call — prevents leaking across requests
+  // Reset personal dict after each call - prevents leaking across requests
   // (server is single-threaded per request, but module state is shared)
   _personalDict = null;
 

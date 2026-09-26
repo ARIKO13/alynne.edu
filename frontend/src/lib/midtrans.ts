@@ -1,6 +1,6 @@
 /**
  * Midtrans API Helper
- * Server-side only — never expose Server Key to client.
+ * Server-side only - never expose Server Key to client.
  */
 import crypto from 'crypto';
 
@@ -34,7 +34,7 @@ export interface MidtransSnapResponse {
 }
 
 /**
- * Create a Snap transaction — returns snap_token + redirect_url.
+ * Create a Snap transaction - returns snap_token + redirect_url.
  */
 export async function createSnapTransaction(params: CreateTransactionParams): Promise<MidtransSnapResponse> {
   const authString = Buffer.from(MIDTRANS_SERVER_KEY + ':').toString('base64');
@@ -49,7 +49,7 @@ export async function createSnapTransaction(params: CreateTransactionParams): Pr
         id: params.itemId || 'SUB-1M',
         price: params.amount,
         quantity: 1,
-        name: params.itemName || 'ALYNNE.EDU - Berlangganan 30 Hari',
+        name: params.itemName || 'ALYNNE.EDU: Berlangganan 30 Hari',
         category: 'Digital Service',
         merchant_name: 'ALYNNE.EDU',
       },
@@ -99,7 +99,7 @@ export async function createSnapTransaction(params: CreateTransactionParams): Pr
 }
 
 /**
- * Verify webhook signature — Midtrans sends this with every notification.
+ * Verify webhook signature - Midtrans sends this with every notification.
  */
 export function verifyWebhookSignature(
   orderId: string,

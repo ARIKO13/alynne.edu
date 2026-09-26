@@ -3,15 +3,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
- * useScreenCv — Combined OCR + Computer Vision for screen capture.
+ * useScreenCv - Combined OCR + Computer Vision for screen capture.
  *
  * When the user enables "Entire Screen" STT mode, this hook samples frames
  * from the display stream and runs two pipelines in parallel:
  *
- *   1. OCR (tesseract.js) — extracts text from screen frames every 5s
+ *   1. OCR (tesseract.js) - extracts text from screen frames every 5s
  *      (e.g., text on slides, code editors, documents).
  *
- *   2. Frame diff (Computer Vision) — samples every 1s, computes pixel
+ *   2. Frame diff (Computer Vision) - samples every 1s, computes pixel
  *      difference with previous frame, detects slide changes.
  *
  * Both pipelines downscale frames for performance (max 1280px wide for OCR,
@@ -32,7 +32,7 @@ interface UseScreenCvOptions {
   ocrIntervalMs?: number;
   /** Frame diff sampling interval (default 1000ms) */
   diffIntervalMs?: number;
-  /** Slide change threshold — fraction of pixels that must change (default 0.15 = 15%) */
+  /** Slide change threshold - fraction of pixels that must change (default 0.15 = 15%) */
   diffThreshold?: number;
   /** Language codes for tesseract (default Indonesian + English) */
   ocrLanguages?: string[];
@@ -121,7 +121,7 @@ export function useScreenCv(options: UseScreenCvOptions = {}): UseScreenCvReturn
       // Get video track
       const videoTracks = stream.getVideoTracks();
       if (videoTracks.length === 0) {
-        setError('No video track in stream — OCR/CV unavailable');
+        setError('No video track in stream, OCR/CV unavailable');
         return;
       }
 
@@ -155,7 +155,7 @@ export function useScreenCv(options: UseScreenCvOptions = {}): UseScreenCvReturn
         setIsModelLoading(false);
         setModelProgress(1);
 
-        // === OCR pipeline — every N ms, capture frame + recognize text ===
+        // === OCR pipeline - every N ms, capture frame + recognize text ===
         ocrIntervalRef.current = setInterval(async () => {
           const canvas = ocrCanvasRef.current;
           const vid = videoRef.current;
@@ -196,14 +196,14 @@ export function useScreenCv(options: UseScreenCvOptions = {}): UseScreenCvReturn
           }
         }, ocrIntervalMs);
 
-        // === Frame diff (CV) pipeline — every 1s, detect slide changes ===
+        // === Frame diff (CV) pipeline - every 1s, detect slide changes ===
         diffIntervalRef.current = setInterval(() => {
           const canvas = diffCanvasRef.current;
           const vid = videoRef.current;
           if (!canvas || !vid) return;
           if (vid.videoWidth === 0 || vid.videoHeight === 0) return;
 
-          // Use small frame for diff (320x180 = 57k pixels — fast)
+          // Use small frame for diff (320x180 = 57k pixels - fast)
           const diffW = 320;
           const diffH = 180;
           canvas.width = diffW;
@@ -225,7 +225,7 @@ export function useScreenCv(options: UseScreenCvOptions = {}): UseScreenCvReturn
           const prev = lastFrameDataRef.current;
           lastFrameDataRef.current = gray;
 
-          if (!prev) return; // first frame — no diff
+          if (!prev) return; // first frame - no diff
 
           // Compute pixel-wise absolute difference
           let changedPixels = 0;
@@ -235,7 +235,7 @@ export function useScreenCv(options: UseScreenCvOptions = {}): UseScreenCvReturn
           }
           const diffPercent = changedPixels / gray.length;
 
-          // Detect slide change — above threshold
+          // Detect slide change - above threshold
           if (diffPercent > diffThreshold) {
             setLastSlideChangeAt(Date.now());
             setSlideChangeCount((n) => n + 1);

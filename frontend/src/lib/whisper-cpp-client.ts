@@ -1,5 +1,5 @@
 /**
- * whisper-cpp-client.ts — Client manager untuk whisper.cpp WASM
+ * whisper-cpp-client.ts - Client manager untuk whisper.cpp WASM
  *
  * Manages Web Worker lifecycle:
  *   - Create worker

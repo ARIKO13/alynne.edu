@@ -223,7 +223,7 @@ export function AdminPanel() {
           <Database className="h-3.5 w-3.5" />
           D1 Monitor
         </button>
-        {/* STT Failures tab removed — privacy concern: storing raw user speech
+        {/* STT Failures tab removed - privacy concern: storing raw user speech
             transcripts in D1 is not appropriate. API endpoints remain for
             debugging but the admin UI no longer exposes them. */}
       </div>

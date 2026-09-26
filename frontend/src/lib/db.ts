@@ -1,5 +1,5 @@
 /**
- * Database layer — Cloudflare D1 via HTTP API
+ * Database layer - Cloudflare D1 via HTTP API
  * 
  * Replaces Prisma. Every function maps 1:1 to the Prisma calls
  * used in the original API routes.

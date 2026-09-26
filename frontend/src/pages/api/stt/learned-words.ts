@@ -27,8 +27,8 @@ import {
  *   Delete a learned word by id. Also cleans phonetic-map.json + cooccurrence.
  *
  * Auth:
- *   - GET: open (anyone can see global dict — privacy-safe because no raw transcripts)
- *   - DELETE: open too (no admin gate for now — TODO: add admin check if needed)
+ *   - GET: open (anyone can see global dict - privacy-safe because no raw transcripts)
+ *   - DELETE: open too (no admin gate for now - TODO: add admin check if needed)
  */
 export const GET: APIRoute = async ({ request, url }) => {
   try {

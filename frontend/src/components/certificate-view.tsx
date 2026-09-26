@@ -49,7 +49,7 @@ export function CertificateView() {
       <DialogContent className="max-w-lg p-0 overflow-hidden border-white/[0.06] bg-[#18181b]">
         {cert && user && (
           <div className="relative">
-            {/* Certificate Design — Dark theme */}
+            {/* Certificate Design - Dark theme */}
             <div className="relative bg-gradient-to-br from-[#0c0c0e] via-[#18181b] to-[#0c0c0e] p-8 text-center">
               <div className="absolute inset-2 rounded-xl border border-[#8B5CF6]/20" />
 

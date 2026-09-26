@@ -43,7 +43,7 @@ export const POST: APIRoute = async ({ request }) => {
           id: 'SUB-1M',
           price: PRICE_RP,
           quantity: 1,
-          name: 'ALYNNE.EDU - Berlangganan 30 Hari',
+          name: 'ALYNNE.EDU: Berlangganan 30 Hari',
           category: 'Digital Service',
           merchant_name: 'ALYNNE.EDU',
         },

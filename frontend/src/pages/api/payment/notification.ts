@@ -39,7 +39,7 @@ export const POST: APIRoute = async ({ request }) => {
     } else if (transaction_status === 'pending') {
       console.log('[webhook] payment pending for order:', order_id);
     } else if (transaction_status === 'deny' || transaction_status === 'expire' || transaction_status === 'cancel') {
-      // Payment failed/expired — don't change status, user can retry
+      // Payment failed/expired - don't change status, user can retry
       console.log('[webhook] payment failed/expired:', transaction_status, 'order:', order_id);
     }
 

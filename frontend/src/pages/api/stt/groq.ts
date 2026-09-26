@@ -60,7 +60,7 @@ export const POST: APIRoute = async ({ request }) => {
     if (!response.ok) {
       const err = await response.text();
       console.error('Groq STT error:', err);
-      return Response.json({ error: `Groq API error: ${response.status} — ${err}` }, { status: response.status });
+      return Response.json({ error: `Groq API error: ${response.status} - ${err}` }, { status: response.status });
     }
 
     // Handle response based on response_format

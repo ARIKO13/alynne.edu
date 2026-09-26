@@ -1,5 +1,5 @@
 /**
- * stt-db.ts — better-sqlite3 singleton for Astro server-side (Node adapter).
+ * stt-db.ts - better-sqlite3 singleton for Astro server-side (Node adapter).
  *
  * Purpose:
  *   • Fast local SQLite for high-frequency STT correction writes.
@@ -20,11 +20,11 @@
  *   const row = sttDb.getOne('SELECT * FROM learned_words WHERE word = ?', [w]);
  *
  * CAVEATS:
- *   • better-sqlite3 is a native module — install with `npm i better-sqlite3`
+ *   • better-sqlite3 is a native module - install with `npm i better-sqlite3`
  *     AND `npm i -D @types/better-sqlite3`. Requires build tools on the VPS:
  *       apt-get install -y python3 make g++ libsqlite3-dev
- *     (Or use prebuilt binaries via prebuild-install — usually automatic.)
- *   • NOT for Cloudflare Workers / Vercel Edge — Node adapter only.
+ *     (Or use prebuilt binaries via prebuild-install - usually automatic.)
+ *   • NOT for Cloudflare Workers / Vercel Edge - Node adapter only.
  *   • DB file path: configurable via env STT_DB_PATH (default ./data/stt.db).
  */
 
@@ -127,7 +127,7 @@ INSERT OR IGNORE INTO _schema_migrations (name) VALUES ('v2_dataset_origin');
 `;
 
 // Migration SQL: add dataset_origin column to existing learned_words table
-// (for DBs created before v2). Idempotent — fails silently if column exists.
+// (for DBs created before v2). Idempotent - fails silently if column exists.
 const MIGRATION_V2_SQL = `
 -- SQLite doesn't have IF NOT EXISTS for ADD COLUMN, so we wrap in a
 -- conditional via PRAGMA table_info. Better-sqlite3 will throw if column
@@ -250,7 +250,7 @@ export class SttDb {
 
   /**
    * Transaction wrapper. Uses better-sqlite3's db.transaction() which:
-   *   • Begins IMMEDIATE (default) — acquires write lock up-front, avoids upgrade deadlock.
+   *   • Begins IMMEDIATE (default) - acquires write lock up-front, avoids upgrade deadlock.
    *   • Auto-commits if function returns, auto-ROLLBACKs if it throws.
    *   • Re-throws the original error after rollback.
    *
@@ -266,7 +266,7 @@ export class SttDb {
   }
 
   /**
-   * Manual checkpoint — call on a cron / graceful shutdown to fold WAL
+   * Manual checkpoint - call on a cron / graceful shutdown to fold WAL
    * pages back into the main DB. Pass 'TRUNCATE' to also zero the WAL file.
    *
    * Under steady load, SQLite auto-checkpoints every 1000 pages (~4 MB).
@@ -277,7 +277,7 @@ export class SttDb {
     this.db.pragma(`wal_checkpoint(${mode})`);
   }
 
-  /** Graceful shutdown — call from a process SIGTERM handler. */
+  /** Graceful shutdown - call from a process SIGTERM handler. */
   close(): void {
     try { this.checkpoint('TRUNCATE'); } catch { /* ignore */ }
     this.db.close();

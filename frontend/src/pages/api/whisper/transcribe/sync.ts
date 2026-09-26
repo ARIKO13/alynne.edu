@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 
 /**
- * Sync transcribe proxy — Astro route to Python backend `/transcribe/sync`.
+ * Sync transcribe proxy - Astro route to Python backend `/transcribe/sync`.
  *
  * This route is the missing piece that caused the "Entire Screen stuck" bug.
  * The frontend hook (`use-speech-recognition.ts`) calls this path for the
@@ -47,7 +47,7 @@ export const POST: APIRoute = async ({ request }) => {
       if (!res.ok) {
         const errText = await res.text().catch(() => '');
         console.error(
-          `[whisper-sync-proxy] Error: ${res.status} — ${errText.slice(0, 200)}`
+          `[whisper-sync-proxy] Error: ${res.status} - ${errText.slice(0, 200)}`
         );
         return Response.json(
           {

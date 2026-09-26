@@ -39,7 +39,7 @@ export const POST: APIRoute = async ({ request }) => {
       return Response.json({ error: 'rawText required' }, { status: 400 });
     }
 
-    // Get user ID if logged in (optional — failures can be anonymous)
+    // Get user ID if logged in (optional - failures can be anonymous)
     let userId: string | null = null;
     const session = await getSession(request);
     if (session?.user?.id) {

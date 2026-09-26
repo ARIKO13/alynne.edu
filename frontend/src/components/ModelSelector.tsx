@@ -210,7 +210,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
             <div className="flex items-center gap-2 mb-2">
               <Zap className="h-4 w-4 text-green-400" />
               <h3 className="text-sm font-medium text-green-400">
-                Mode Offline (Client-side) - Jalan di Browser, Bisa Tanpa Internet
+                Mode Offline (Client-side): Jalan di Browser, Bisa Tanpa Internet
               </h3>
             </div>
             <p className="text-[11px] text-zinc-500 mb-2">
@@ -241,7 +241,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
             <div className="flex items-center gap-2 mb-2">
               <Cpu className="h-4 w-4 text-blue-400" />
               <h3 className="text-sm font-medium text-blue-400">
-                Mode Online (Server-side) - Akurasi Tinggi, Butuh Internet
+                Mode Online (Server-side): Akurasi Tinggi, Butuh Internet
               </h3>
             </div>
             <p className="text-[11px] text-zinc-500 mb-2">

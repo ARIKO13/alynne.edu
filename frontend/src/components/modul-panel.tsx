@@ -197,7 +197,7 @@ export function ModulPanel() {
                 <p className="text-[10px] text-zinc-600 uppercase tracking-wider mb-1">Judul Modul</p>
                 <p className="text-sm font-semibold text-zinc-200">{moduleData.title}</p>
                 <p className="text-xs text-zinc-500 mt-1">
-                  {moduleData.identitas.mataPelajaran} {moduleData.identitas.kelas !== '-' ? `— ${moduleData.identitas.kelas}` : ''} — {moduleData.date}
+                  {moduleData.identitas.mataPelajaran} {moduleData.identitas.kelas !== '-' ? `- ${moduleData.identitas.kelas}` : ''} - {moduleData.date}
                 </p>
               </div>
 

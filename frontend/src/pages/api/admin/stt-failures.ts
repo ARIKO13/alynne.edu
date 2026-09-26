@@ -22,7 +22,7 @@ import { d1 } from '@/lib/d1-client';
  *   Delete a single failure record by id.
  *
  * DELETE /api/admin/stt-failures
- *   Delete ALL failure records. Use with caution — irreversible.
+ *   Delete ALL failure records. Use with caution - irreversible.
  *
  * DELETE /api/admin/stt-failures?source=<source>
  *   Delete all failures matching the given source (e.g., 'webspeech').
@@ -112,7 +112,7 @@ export const GET: APIRoute = async ({ request, url }) => {
  *   Delete a single failure record by id.
  *
  * DELETE /api/admin/stt-failures
- *   Delete ALL failure records. Use with caution — irreversible.
+ *   Delete ALL failure records. Use with caution - irreversible.
  *
  * DELETE /api/admin/stt-failures?source=<source>
  *   Delete all failures matching the given source (e.g., 'webspeech').

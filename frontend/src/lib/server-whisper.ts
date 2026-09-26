@@ -1,5 +1,5 @@
 /**
- * server-whisper.ts — Transkripsi via server-side Whisper (VPS faster-whisper)
+ * server-whisper.ts - Transkripsi via server-side Whisper (VPS faster-whisper)
  *
  * Flow:
  *   1. Convert Float32Array PCM → WAV Blob (16kHz mono)

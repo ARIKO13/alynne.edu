@@ -17,7 +17,7 @@ import { getSession } from '@/lib/auth';
  *     text: string,
  *     source?: 'webspeech' | 'whisper' | 'ocr' | 'cv' | 'manual',
  *     personalDict?: string[],          // user-confirmed words (skip correction)
- *     recordObservations?: boolean,     // default true — feed back into cooccurrence table
+ *     recordObservations?: boolean,     // default true - feed back into cooccurrence table
  *     weights?: { phonetic?, context?, vote?, freq? }  // tuning overrides
  *   }
  *
@@ -30,7 +30,7 @@ import { getSession } from '@/lib/auth';
  *     stats: {...}                      // global DB stats (for debugging)
  *   }
  *
- * POST /api/stt/context-correct?action=vote  — record an explicit user vote
+ * POST /api/stt/context-correct?action=vote  - record an explicit user vote
  *   { originalWord, correctedWord, contextBefore?, contextAfter?, fullSentence? }
  */
 export const POST: APIRoute = async ({ request }) => {
@@ -60,7 +60,7 @@ export const POST: APIRoute = async ({ request }) => {
       }
       const session = await getSession(request);
       const userId = session?.user?.id ?? null;
-      // Optional: derive user weight from subscription tier / XP — left as 1.0 for now.
+      // Optional: derive user weight from subscription tier / XP - left as 1.0 for now.
       const userWeight = 1.0;
       const { voteId, totalVotes } = recordCorrection({
         originalWord: body.originalWord,

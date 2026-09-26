@@ -1,6 +1,6 @@
 /**
- * YouTubeTranscript — Input YouTube URL → get transcript instantly
- * No whisper, no LLM — just YouTube captions API
+ * YouTubeTranscript - Input YouTube URL → get transcript instantly
+ * No whisper, no LLM - just YouTube captions API
  */
 import { useState } from "react";
 import { Button } from "@/components/ui/button";

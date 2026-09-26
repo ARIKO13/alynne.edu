@@ -1,5 +1,5 @@
 /**
- * Pemenggalan suku kata Bahasa Indonesia — porting dari Python.
+ * Pemenggalan suku kata Bahasa Indonesia - porting dari Python.
  *
  * Algoritma PUEBI-based dengan handling kata serapan (loanwords).
  *
@@ -104,7 +104,7 @@ export function syllabifyWord(word: string): string {
     }
     // Now should be at vowel (or end)
     if (i >= n) {
-      // Trailing consonants — attach to last syllable
+      // Trailing consonants - attach to last syllable
       if (syllables.length > 0) {
         syllables[syllables.length - 1] += onset.join('');
       } else if (onset.length > 0) {
@@ -124,7 +124,7 @@ export function syllabifyWord(word: string): string {
     }
     const coda: string[] = [];
     if (j >= n) {
-      // No more vowels — all remaining consonants are coda
+      // No more vowels - all remaining consonants are coda
       coda.push(...consAhead);
       i = j;
     } else {

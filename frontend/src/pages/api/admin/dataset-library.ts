@@ -8,7 +8,7 @@ import { sttDb } from '@/lib/stt-db';
  * GET /api/admin/dataset-library?section=words|cooccurrence|corrections|stats&limit=100&offset=0&search=...
  *
  * Browse the STT dataset stored in SQLite on the VPS SSD.
- * Admin-only — this is the dataset library viewer for the admin panel.
+ * Admin-only - this is the dataset library viewer for the admin panel.
  *
  * Sections:
  *   - stats          : Overall counts (learned_words total/confirmed/candidates,
@@ -236,7 +236,7 @@ export const GET: APIRoute = async ({ request, url }) => {
       });
     }
 
-    // ── Section: storage-info — disk usage, table sizes, free space ──
+    // ── Section: storage-info - disk usage, table sizes, free space ──
     if (section === 'storage-info') {
       const dbPath = process.env.STT_DB_PATH || '/root/lina-learning/data/stt.db';
 
@@ -271,7 +271,7 @@ export const GET: APIRoute = async ({ request, url }) => {
       const freePages = sttDb.getOne<{ freelist_count: number }>(`PRAGMA freelist_count`)?.freelist_count ?? 0;
       const freePagesSize = freePages * pageSize;
 
-      // Get table sizes (rows + size in bytes — approximate via dbstat if available)
+      // Get table sizes (rows + size in bytes - approximate via dbstat if available)
       const tables = sttDb.getAll<{ name: string }>(
         `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_%' ORDER BY name`
       );
@@ -294,7 +294,7 @@ export const GET: APIRoute = async ({ request, url }) => {
             }
           }
         } catch {
-          // dbstat not available — use rough estimate
+          // dbstat not available - use rough estimate
           tableSize = rows * 100; // ~100 bytes per row average
         }
 
@@ -353,7 +353,7 @@ export const GET: APIRoute = async ({ request, url }) => {
       });
     }
 
-    // ── Section: schema-info — visualisasi ERD-style (tables + relations + columns) ──
+    // ── Section: schema-info - visualisasi ERD-style (tables + relations + columns) ──
     if (section === 'schema-info') {
       const tables = sttDb.getAll<{
         name: string; sql: string;
@@ -417,7 +417,7 @@ export const GET: APIRoute = async ({ request, url }) => {
       });
     }
 
-    // ── Section: d1-monitoring — Cloudflare D1 (user account DB) monitoring ──
+    // ── Section: d1-monitoring - Cloudflare D1 (user account DB) monitoring ──
     if (section === 'd1-monitoring') {
       const D1_API_URL = `https://api.cloudflare.com/client/v4/accounts/949a2a6e1039019782c46a8c7ddb19fe/d1/database/2e9133ea-dad7-4227-ac92-03c0fbe48c45/query`;
       const CF_API_TOKEN = process.env.CF_API_TOKEN || 'cfut_bLNtQhqVmPfkc8jLKydN2QCm52Vw4MmA9cdefw3M5cceff97';
@@ -435,7 +435,7 @@ export const GET: APIRoute = async ({ request, url }) => {
       ];
 
       const d1Stats: Array<{ name: string; count: number; error?: string }> = [];
-      let d1DbSize = 0; // bytes — captured from D1 meta.size_after
+      let d1DbSize = 0; // bytes - captured from D1 meta.size_after
       for (const q of queries) {
         try {
           const payload = JSON.stringify({ sql: q.sql });
@@ -531,7 +531,7 @@ export const GET: APIRoute = async ({ request, url }) => {
       });
     }
 
-    // ── Section: monitoring-info — real-time VPS + PM2 + SQLite stats ──
+    // ── Section: monitoring-info - real-time VPS + PM2 + SQLite stats ──
     if (section === 'monitoring-info') {
       const dbPath = process.env.STT_DB_PATH || '/root/lina-learning/data/stt.db';
 

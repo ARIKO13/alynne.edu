@@ -1,5 +1,5 @@
 /**
- * Indonesian Phonetic Engine — Simplified Double Metaphone for Bahasa Indonesia
+ * Indonesian Phonetic Engine - Simplified Double Metaphone for Bahasa Indonesia
  *
  * Per user request (2026-09-14): implement phonetic matching layer buat
  * catch sound-alike words yang belum ada di dataset.
@@ -9,7 +9,7 @@
  *   2. C → K (ce -> ke, se -> ke)
  *   3. SH → S (she -> se)
  *   4. Z → S (zet -> set)
- *   5. V → F (ve -> fe) — Indonesian V is often pronounced as F
+ *   5. V → F (ve -> fe) - Indonesian V is often pronounced as F
  *   6. X → KS (eks -> kes)
  *   7. Q → K (ki -> ke)
  *   8. PH → F (photo -> foto)
@@ -25,7 +25,7 @@
  */
 
 /**
- * Get phonetic code for a word — Indonesian Double Metaphone simplified.
+ * Get phonetic code for a word - Indonesian Double Metaphone simplified.
  *
  * Refinements (2026-09-14):
  *   - EA → E (breakout → brekaut → brekaut; bearish → berish)

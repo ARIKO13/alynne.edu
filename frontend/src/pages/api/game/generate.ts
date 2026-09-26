@@ -49,18 +49,18 @@ function buildSystemPrompt(isProgramming: boolean): string {
     return `Kamu adalah pembuat soal kuis pemrograman tingkat KOMPETISI. Tugasmu membuat soal yang bikin programmer berpikir "ooh, gini toh..." dan benar-benar menguji pemahaman mereka.
 
 JENIS SOAL YANG HARUS ADA:
-1. **Code Reading** — Beri potongan kode, tanya output/hasilnya. User HARUS trace manual, bukan sekadar hafal.
-2. **Bug Hunting** — Beri kode yang ada bug, tanya mana yang salah dan kenapa. Distractor harus error yang plausible.
-3. **Konsep Logic** — Tanyakan konsep dengan contoh konkret. Bukan definisi, tapi "mengapa" dan "bagaimana".
-4. **Studi Kasus** — Beri skenario nyata (misal: "Seorang developer membuat API, tapi..."), tanya solusi terbaik.
-5. **Edge Case** — Soal yang mengejutkan tentang corner case bahasa pemrograman.
+1. **Code Reading** - Beri potongan kode, tanya output/hasilnya. User HARUS trace manual, bukan sekadar hafal.
+2. **Bug Hunting** - Beri kode yang ada bug, tanya mana yang salah dan kenapa. Distractor harus error yang plausible.
+3. **Konsep Logic** - Tanyakan konsep dengan contoh konkret. Bukan definisi, tapi "mengapa" dan "bagaimana".
+4. **Studi Kasus** - Beri skenario nyata (misal: "Seorang developer membuat API, tapi..."), tanya solusi terbaik.
+5. **Edge Case** - Soal yang mengejutkan tentang corner case bahasa pemrograman.
 
 ATURAN KETAT:
 - context WAJIB berisi kode/skenario yang relevan dan sesuai materi transkrip
 - contextType = "code" jika konten berisi kode, "scenario" jika skenario cerita
-- Jangan buat soal definisi membosankan ("Apa itu function?") — buat soal AKSI ("Function X dipanggil dengan Y, outputnya?")
-- Distractor HARUS plausible — salah satu distractor harus jawaban yang "hampir benar" tapi ada satu hal kecil yang salah
-- explanation HARUS mengajarkan sesuatu — jelaskan MENGAPAI jawaban itu benar dan MENGAPA distractor lain salah
+- Jangan buat soal definisi membosankan ("Apa itu function?") - buat soal AKSI ("Function X dipanggil dengan Y, outputnya?")
+- Distractor HARUS plausible - salah satu distractor harus jawaban yang "hampir benar" tapi ada satu hal kecil yang salah
+- explanation HARUS mengajarkan sesuatu - jelaskan MENGAPAI jawaban itu benar dan MENGAPA distractor lain salah
 - Kode harus valid dan runnable (jangan pseudo-code asal-asalan)
 - Soal HARUS dari materi transkrip, jangan asal bikin soal umum
 - Koreksi semua typo STT dalam konten soal
@@ -76,18 +76,18 @@ Kembalikan JSON SAJA tanpa markdown code block:`;
   return `Kamu adalah pembuat soal kuis tingkat KOMPETISI. Tugasmu membuat soal yang bikin user berpikir "ooh, gini toh..." dan benar-benar menguji pemahaman mendalam mereka.
 
 JENIS SOAL YANG HARUS ADA:
-1. **Studi Kasus** — Beri skenario nyata dari materi, tanya apa yang sebaiknya dilakukan dan MENGAPA. Scenario harus detail dan realistis.
-2. **Analisis Kausal** — "Jika X terjadi, maka Y karena..." — uji pemahaman sebab-akibat.
-3. **Aplikasi Konsep** — "Dalam situasi Z, konsep A akan menghasilkan..." — uji transfer knowledge.
-4. **Bandingkan & Kontraskan** — Tanyakan perbedaan dua konsep yang mirip tapi berbeda.
-5. **Tebak Hasil** — Beri data/situasi, tanya hasil yang paling logis berdasarkan materi.
+1. **Studi Kasus** - Beri skenario nyata dari materi, tanya apa yang sebaiknya dilakukan dan MENGAPA. Scenario harus detail dan realistis.
+2. **Analisis Kausal** - "Jika X terjadi, maka Y karena..." - uji pemahaman sebab-akibat.
+3. **Aplikasi Konsep** - "Dalam situasi Z, konsep A akan menghasilkan..." - uji transfer knowledge.
+4. **Bandingkan & Kontraskan** - Tanyakan perbedaan dua konsep yang mirip tapi berbeda.
+5. **Tebak Hasil** - Beri data/situasi, tanya hasil yang paling logis berdasarkan materi.
 
 ATURAN KETAT:
 - context WAJIB berisi skenario/case study yang relevan dan menarik
 - contextType = "scenario" hampir selalu (kecuali ada data/fakta spesifik)
 - Soal harus membuat user BERPIKIR, bukan sekadar menghafal
-- Distractor HARUS plausible — setiap opsi harus terasa "bisa jadi benar" bagi yang tidak paham
-- explanation HARUS mendalam — jelaskan konsep di balik jawaban, bukan sekadar "jawaban yang benar adalah A"
+- Distractor HARUS plausible - setiap opsi harus terasa "bisa jadi benar" bagi yang tidak paham
+- explanation HARUS mendalam - jelaskan konsep di balik jawaban, bukan sekadar "jawaban yang benar adalah A"
 - Gunakan bahasa formal yang bersih (koreksi typo dari transkrip STT)
 - Soal HARUS dari materi transkrip, jangan asal bikin soal umum
 - Untuk soal studi kasus, buat skenario yang relevan dengan kehidupan nyata

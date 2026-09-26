@@ -9,7 +9,7 @@ export const GET: APIRoute = async ({ request }) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Fetch user from D1 — this has the saved username
+    // Fetch user from D1 - this has the saved username
     let user = await db.user.findUnique({ where: { id: session.user.id } });
 
     // Auto-create if missing (first login after account system migration)

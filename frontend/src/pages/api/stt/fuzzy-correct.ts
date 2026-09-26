@@ -23,7 +23,7 @@ import { getSession } from '@/lib/auth';
  *      - Phonetic matching (Double Metaphone for stock terms)
  *      - Fuzzy matching (Levenshtein for typos)
  *
- *   2. contextAwareCorrect (NEW — Layer 3)
+ *   2. contextAwareCorrect (NEW - Layer 3)
  *      - For remaining unknown tokens, look at co-occurrence stats
  *      - Disambiguate pairs like "produksi" vs "solusi" based on context
  *      - Track 3 words before + 3 after as observations
@@ -74,7 +74,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // ─── LAYER 2: contextAwareCorrect (NEW) ───
     // Run after localCorrect to handle remaining ambiguities
-    // e.g. "produksi" vs "solusi" — localCorrect's ctxHomophones rule only
+    // e.g. "produksi" vs "solusi" - localCorrect's ctxHomophones rule only
     // catches specific known pairs. contextAwareCorrect uses co-occurrence
     // stats to pick the right one based on actual user behavior.
     const enableContext = body.enableContextCorrect !== false; // default true
