@@ -7,7 +7,7 @@ import { AudioVisualizer } from '@/components/audio-visualizer';
 import { PersonalDictPanel } from '@/components/personal-dict-panel';
 import {
   Mic, MicOff, Wifi, WifiOff, RefreshCw, Trash2, CheckCircle2, Radio,
-  FileText, Loader2, Rocket, Sparkles, Upload, Monitor, MonitorUp, Brain, Cpu, HardDrive, TrendingUp, Gift,
+  FileText, Loader2, Rocket, Sparkles, Upload, Monitor, MonitorUp, Brain, Cpu, HardDrive, TrendingUp, Gift, FolderOpen, StickyNote, Zap,
 } from 'lucide-react';
 import { MaterialUpload } from '@/components/material-upload';
 import { YouTubeTranscript } from '@/components/youtube-transcript';
@@ -20,6 +20,11 @@ import { ModelSelector } from '@/components/ModelSelector';
 import { StudyPipeline } from '@/components/StudyPipeline';
 import { WeeklyAnalytics } from '@/components/WeeklyAnalytics';
 import { ReferralPanel } from '@/components/ReferralPanel';
+import { KnowledgeHub } from '@/components/KnowledgeHub';
+import { Scratchpad } from '@/components/Scratchpad';
+import { SmartContinuity } from '@/components/SmartContinuity';
+import { QuizBattle } from '@/components/QuizBattle';
+import { quickSaveSTT } from '@/lib/knowledge-hub';
 import { MindmapGraph } from '@/components/MindmapGraph';
 import { AmbientThemes } from '@/components/AmbientThemes';
 import { generateMicroPDF, generateMasterPDF } from '@/lib/pdf-export';
@@ -241,6 +246,10 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
   const [studyPipelineOpen, setStudyPipelineOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [referralOpen, setReferralOpen] = useState(false);
+  const [knowledgeHubOpen, setKnowledgeHubOpen] = useState(false);
+  const [scratchpadOpen, setScratchpadOpen] = useState(false);
+  const [continuityOpen, setContinuityOpen] = useState(false);
+  const [quizBattleOpen, setQuizBattleOpen] = useState(false);
   const isRecording = sttStatus === 'recording' || whisperSTT.status === 'recording';
   const isProcessing = whisperSTT.status === 'processing' || sttStatus === 'processing' || hybridProcessing;
   const transcriptScrollRef = useRef<HTMLDivElement>(null);
@@ -622,6 +631,20 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
                   <p className="text-[10px] text-green-400/60">Bab + Kuis + Focus Timer</p>
                 </div>
               </button>
+
+              {/* Card: Smart Continuity */}
+              <button
+                onClick={() => setContinuityOpen(true)}
+                className="flex items-center gap-3 rounded-lg border border-amber-500/20 bg-amber-500/[0.06] p-3.5 text-left transition-all hover:border-amber-500/40 hover:bg-amber-500/10"
+              >
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/15">
+                  <Zap className="h-4.5 w-4.5 text-amber-400" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-amber-300">Smart Continuity</p>
+                  <p className="text-[10px] text-amber-400/60">STT + PDF + Mindmap + Kuis auto</p>
+                </div>
+              </button>
             </div>
           </div>
         )}
@@ -687,6 +710,32 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
         <ReferralPanel
           open={referralOpen}
           onClose={() => setReferralOpen(false)}
+        />
+
+        {/* Knowledge Hub */}
+        <KnowledgeHub
+          open={knowledgeHubOpen}
+          onClose={() => setKnowledgeHubOpen(false)}
+        />
+
+        {/* Scratchpad */}
+        <Scratchpad
+          open={scratchpadOpen}
+          onClose={() => setScratchpadOpen(false)}
+        />
+
+        {/* Smart Continuity */}
+        <SmartContinuity
+          open={continuityOpen}
+          onClose={() => setContinuityOpen(false)}
+          transcript={transcript}
+        />
+
+        {/* Quiz Battle */}
+        <QuizBattle
+          open={quizBattleOpen}
+          onClose={() => setQuizBattleOpen(false)}
+          questions={[]}
         />
 
     </div>
