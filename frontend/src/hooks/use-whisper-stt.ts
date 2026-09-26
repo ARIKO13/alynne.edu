@@ -284,10 +284,12 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
       isRecordingRef.current = true;
 
       recorder.ondataavailable = (e) => {
+        console.log('[Whisper] dataavailable:', e.data.size, 'bytes');
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
 
       recorder.onstop = async () => {
+        console.log('[Whisper] onstop fired! chunks:', chunksRef.current.length);
         console.log('[Whisper] Recorder stopped, processing...');
         isRecordingRef.current = false;
         setStatus('processing');
@@ -379,7 +381,9 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
         }
       };
 
-      recorder.start(1000);
+      console.log('[Whisper] MediaRecorder state:', recorder.state);
+      recorder.start();
+      console.log('[Whisper] MediaRecorder started, state:', recorder.state);
       setStatus('recording');
       console.log('[Whisper] Recording started (MediaRecorder)');
     } catch (err) {
