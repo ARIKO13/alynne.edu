@@ -12,8 +12,10 @@ class AudioRecorderProcessor extends AudioWorkletProcessor {
       if (e.data.type === 'start') {
         this._buffers = [];
         this._isRecording = true;
+        console.log('[Worklet] Recording started, waiting for audio...');
       } else if (e.data.type === 'stop') {
         this._isRecording = false;
+        console.log('[Worklet] Stop received. Buffers:', this._buffers.length, 'total samples:', this._buffers.reduce((acc, b) => acc + b.length, 0));
         // Combine all buffers
         const totalLength = this._buffers.reduce((acc, b) => acc + b.length, 0);
         const result = new Float32Array(totalLength);
@@ -32,7 +34,15 @@ class AudioRecorderProcessor extends AudioWorkletProcessor {
     if (!this._isRecording) return true;
 
     const input = inputs[0];
-    if (!input || input.length === 0) return true;
+    if (!input || input.length === 0) {
+      console.log('[Worklet] No input!');
+      return true;
+    }
+    
+    // Debug: log pertama kali receive audio
+    if (this._buffers.length === 0) {
+      console.log('[Worklet] First audio received! channels:', input.length, 'samples:', input[0].length);
+    }
 
     // Mix down to mono (kalau stereo)
     const channelCount = input.length;
