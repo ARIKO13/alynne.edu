@@ -251,207 +251,153 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
     setError(null);
     console.log('[Whisper] Start recording clicked');
 
-    // Cancel pending RAM cleanup (user mau record lagi)
     if (ramCleanupTimerRef.current) {
       clearTimeout(ramCleanupTimerRef.current);
       ramCleanupTimerRef.current = null;
-      console.log('[Whisper] Cancelled RAM cleanup — user starting recording again');
     }
 
-    // Pastikan model loaded (kalau belum, auto-load dari disk)
-    // Pastikan model loaded (kalau belum, auto-load dari disk)
     let ready: boolean;
     try {
       ready = await ensureModelLoaded();
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
       console.error('[Whisper] ensureModelLoaded error:', errMsg);
-      options.onError?.(`Error: ${errMsg}`);
+      options.onError?.('Error: ' + errMsg);
       return;
     }
-    if (!ready) { // always true for server-side
-      console.log('[Whisper] Model not ready — popup should be open');
+    if (!ready) {
+      console.log('[Whisper] Model not ready');
       return;
     }
 
     try {
-      // 1. getUserMedia
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          channelCount: 1,
-          sampleRate: SAMPLE_RATE,
-        },
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 },
       });
       mediaStreamRef.current = stream;
       console.log('[Whisper] Microphone stream acquired');
 
-      // 2. Create AudioContext + load AudioWorklet
-      const audioContext = new AudioContext({ sampleRate: SAMPLE_RATE });
-      audioContextRef.current = audioContext;
-      if (audioContext.state === "suspended") { await audioContext.resume(); }
-      console.log("[Whisper] AudioContext:", audioContext.state);
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+      const recorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = recorder;
+      chunksRef.current = [];
+      isRecordingRef.current = true;
 
-      // Load worklet processor
-      await audioContext.audioWorklet.addModule('/audio-recorder-worklet.js');
-      console.log('[Whisper] AudioWorklet module loaded');
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
 
-      // 3. Connect stream → AudioWorklet
-      const source = audioContext.createMediaStreamSource(stream);
-      const workletNode = new AudioWorkletNode(audioContext, 'audio-recorder-processor');
-      audioWorkletNodeRef.current = workletNode;
+      recorder.onstop = async () => {
+        console.log('[Whisper] Recorder stopped, processing...');
+        isRecordingRef.current = false;
+        setStatus('processing');
 
-      // Listen for result saat stop
-      workletNode.port.onmessage = async (e) => {
-        if (e.data.type === 'result') {
-          console.log('[Whisper] Got recorded samples:', e.data.data?.length || 0);
+        if (mediaStreamRef.current) {
+          mediaStreamRef.current.getTracks().forEach(t => t.stop());
+          mediaStreamRef.current = null;
+        }
 
-          // Process: transcribe
-          setStatus('processing');
-          try {
-            let audioData = e.data.data as Float32Array;
+        if (chunksRef.current.length === 0) {
+          console.warn('[Whisper] No audio chunks!');
+          options.onError?.('Audio kosong');
+          setStatus('idle');
+          return;
+        }
 
-            // ===== STEP 1: Validate basic =====
-            if (!audioData || audioData.length === 0) {
-              options.onError?.('Audio kosong — cek mikrofon');
-              setStatus('idle');
-              return;
+        const fullBlob = new Blob(chunksRef.current, { type: mimeType });
+        console.log('[Whisper] Full audio:', fullBlob.size, 'bytes');
+
+        try {
+          const arrayBuffer = await fullBlob.arrayBuffer();
+          const audioContext = new AudioContext({ sampleRate: SAMPLE_RATE });
+          const decoded = await audioContext.decodeAudioData(arrayBuffer);
+          audioContext.close();
+
+          let audioData: Float32Array;
+          if (decoded.numberOfChannels > 1) {
+            audioData = new Float32Array(decoded.length);
+            for (let i = 0; i < decoded.length; i++) {
+              let sum = 0;
+              for (let ch = 0; ch < decoded.numberOfChannels; ch++) sum += decoded.getChannelData(ch)[i];
+              audioData[i] = sum / decoded.numberOfChannels;
             }
-
-            // ===== STEP 2: Remove NaN/Infinity (causes OrtRun crash) =====
-            let hasBadValues = false;
-            for (let i = 0; i < audioData.length; i++) {
-              if (!isFinite(audioData[i]) || isNaN(audioData[i])) {
-                audioData[i] = 0;
-                hasBadValues = true;
-              }
-            }
-            if (hasBadValues) {
-              console.warn('[Whisper] Audio had NaN/Infinity values — replaced with 0');
-            }
-
-            // ===== STEP 3: Get actual sample rate from AudioContext =====
-            const actualSampleRate = audioContextRef.current?.sampleRate || SAMPLE_RATE;
-            console.log(`[Whisper] Audio: ${audioData.length} samples @ ${actualSampleRate}Hz`);
-
-            // ===== STEP 4: Resample ke 16kHz kalau perlu =====
-            if (actualSampleRate !== SAMPLE_RATE) {
-              console.log(`[Whisper] Resampling from ${actualSampleRate}Hz to ${SAMPLE_RATE}Hz`);
-              const ratio = actualSampleRate / SAMPLE_RATE;
-              const newLength = Math.floor(audioData.length / ratio);
-              const resampled = new Float32Array(newLength);
-              for (let i = 0; i < newLength; i++) {
-                const srcIdx = i * ratio;
-                const srcIdxFloor = Math.floor(srcIdx);
-                const srcIdxCeil = Math.min(srcIdxFloor + 1, audioData.length - 1);
-                const frac = srcIdx - srcIdxFloor;
-                // Linear interpolation
-                resampled[i] = audioData[srcIdxFloor] * (1 - frac) + audioData[srcIdxCeil] * frac;
-              }
-              audioData = resampled;
-              console.log(`[Whisper] Resampled: ${audioData.length} samples @ ${SAMPLE_RATE}Hz`);
-            }
-
-            // ===== STEP 5: Validate length (min 0.5s = 8000 samples) =====
-            if (audioData.length < SAMPLE_RATE * 0.5) {
-              console.warn(`[Whisper] Audio too short: ${audioData.length} samples`);
-              options.onError?.('Audio terlalu pendek (min 0.5 detik) — coba bicara lebih lama');
-              setStatus('idle');
-              return;
-            }
-
-            // ===== STEP 6: Check amplitude =====
-            let maxAmp = 0;
-            for (let i = 0; i < audioData.length; i++) {
-              const abs = Math.abs(audioData[i]);
-              if (abs > maxAmp) maxAmp = abs;
-            }
-            console.log(`[Whisper] Max amplitude: ${maxAmp}`);
-
-            if (maxAmp === 0) {
-              options.onError?.('Audio kosong (tidak ada suara) — cek mikrofon');
-              setStatus('idle');
-              return;
-            }
-
-            // Normalize kalau amplitude terlalu kecil (< 0.1)
-            if (maxAmp < 0.1) {
-              const scale = 1 / maxAmp;
-              const normalized = new Float32Array(audioData.length);
-              for (let i = 0; i < audioData.length; i++) {
-                normalized[i] = Math.max(-1, Math.min(1, audioData[i] * scale));
-              }
-              audioData = normalized;
-              console.log('[Whisper] Audio normalized (amplitude was too low)');
-            }
-
-            // ===== STEP 7: Clamp values to [-1, 1] (Whisper requirement) =====
-            for (let i = 0; i < audioData.length; i++) {
-              if (audioData[i] > 1) audioData[i] = 1;
-              if (audioData[i] < -1) audioData[i] = -1;
-            }
-
-            console.log(`[Whisper] Final audio: ${audioData.length} samples (${(audioData.length / SAMPLE_RATE).toFixed(1)}s)`);
-
-            // ===== STEP 8: Transcribe =====
-            // Copy audio karena transcribe akan transfer buffer ke worker
-            // Copy audio karena transcribe akan transfer buffer ke worker
-            const audioCopy = new Float32Array(audioData);
-            const result = await fgTranscribe(audioData, "id"); const text = result.text;
-            // text already set by transcribeViaServer
-            console.log(`[Whisper] Transcription: "${text.substring(0, 100)}..."`);
-
-            if (text) {
-              options.onTranscript?.(text, true);
-            } else {
-              options.onError?.('Transkripsi kosong — coba bicara lebih jelas');
-            }
-          } catch (err) {
-            const errMsg = err instanceof Error ? err.message : String(err);
-            console.error('[Whisper] Transcribe error:', errMsg);
-            if (errMsg.includes('OrtRun') || errMsg.includes('error code = 1') || errMsg.includes('offset')) {
-              options.onError?.('Model error — coba pakai model Small atau download ulang');
-            } else {
-              options.onError?.(`Gagal transkripsi: ${errMsg}`);
-            }
-          } finally {
-            setStatus('idle');
-            if (ramCleanupTimerRef.current) clearTimeout(ramCleanupTimerRef.current);
-            ramCleanupTimerRef.current = setTimeout(() => {
-              console.log('[Whisper] 30s idle — freeing RAM');
-              fgFreeModel();
-              setModelId(null);
-            }, 30000);
+          } else {
+            audioData = decoded.getChannelData(0);
           }
+
+          if (decoded.sampleRate !== SAMPLE_RATE) {
+            console.log('[Whisper] Resampling from', decoded.sampleRate, 'to', SAMPLE_RATE);
+            const ratio = decoded.sampleRate / SAMPLE_RATE;
+            const newLen = Math.floor(audioData.length / ratio);
+            const resampled = new Float32Array(newLen);
+            for (let i = 0; i < newLen; i++) {
+              const srcIdx = i * ratio;
+              const f = Math.floor(srcIdx);
+              const cl = Math.min(f + 1, audioData.length - 1);
+              const frac = srcIdx - f;
+              resampled[i] = audioData[f] * (1 - frac) + audioData[cl] * frac;
+            }
+            audioData = resampled;
+          }
+
+          for (let i = 0; i < audioData.length; i++) {
+            if (!isFinite(audioData[i])) audioData[i] = 0;
+            if (audioData[i] > 1) audioData[i] = 1;
+            if (audioData[i] < -1) audioData[i] = -1;
+          }
+
+          console.log('[Whisper] Final audio:', audioData.length, 'samples', (audioData.length / SAMPLE_RATE).toFixed(1) + 's');
+
+          if (audioData.length < SAMPLE_RATE * 0.5) {
+            options.onError?.('Audio terlalu pendek');
+            setStatus('idle');
+            return;
+          }
+
+          console.log('[Whisper] Sending to Whisper...');
+          const result = await fgTranscribe(audioData, 'id');
+          const text = result.text.trim();
+          console.log('[Whisper] Transcription:', text.substring(0, 100));
+
+          if (text) {
+            options.onTranscript?.(text, true);
+          } else {
+            options.onError?.('Transkripsi kosong');
+          }
+        } catch (err) {
+          const errMsg = err instanceof Error ? err.message : String(err);
+          console.error('[Whisper] Process error:', errMsg);
+          options.onError?.('Gagal: ' + errMsg);
+        } finally {
+          setStatus('idle');
+          if (ramCleanupTimerRef.current) clearTimeout(ramCleanupTimerRef.current);
+          ramCleanupTimerRef.current = setTimeout(() => {
+            console.log('[Whisper] 30s idle - freeing RAM');
+            fgFreeModel();
+            setModelId(null);
+          }, 30000);
         }
       };
 
-      // 4. Start recording
-      workletNode.port.postMessage({ type: 'start' });
-      source.connect(workletNode);
-      const silentGain = audioContext.createGain();
-      silentGain.gain.value = 0;
-      workletNode.connect(silentGain);
-      silentGain.connect(audioContext.destination);
-
-      isRecordingRef.current = true;
+      recorder.start(1000);
       setStatus('recording');
-      console.log('[Whisper] Recording started (AudioWorklet PCM)');
+      console.log('[Whisper] Recording started (MediaRecorder)');
     } catch (err) {
       setStatus('error');
       const msg = err instanceof Error ? err.message : String(err);
-      console.error('[Whisper] Start recording error:', msg);
-      setError(`Recording failed: ${msg}`);
-      options.onError?.(`Recording failed: ${msg}`);
+      console.error('[Whisper] Start error:', msg);
+      options.onError?.('Recording failed: ' + msg);
     }
   }, [ensureModelLoaded, options]);
 
-  /**
-   * Stop recording.
-   * Setelah stop, full audio akan di-transcribe (di onstop handler).
-   */
+  const stopRecording = useCallback(() => {
+    console.log('[Whisper] Stop recording clicked');
+    isRecordingRef.current = false;
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+  }, []);
+
   const stopRecording = useCallback(() => {
     console.log('[Whisper] Stop recording clicked');
     isRecordingRef.current = false;
