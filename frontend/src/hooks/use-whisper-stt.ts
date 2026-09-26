@@ -429,7 +429,10 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
       // 4. Start recording
       workletNode.port.postMessage({ type: 'start' });
       source.connect(workletNode);
-      // Note: tidak connect ke destination (no echo/playback)
+      const silentGain = audioContext.createGain();
+      silentGain.gain.value = 0;
+      workletNode.connect(silentGain);
+      silentGain.connect(audioContext.destination);
 
       isRecordingRef.current = true;
       setStatus('recording');
