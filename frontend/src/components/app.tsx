@@ -6,7 +6,6 @@ import { MindMapPanel } from '@/components/mindmap-panel';
 import { ImageSharpener } from '@/components/image-sharpener';
 import { SettingsDialog } from '@/components/settings-dialog';
 import { LoginScreen } from '@/components/login-screen';
-import { CertificateView } from '@/components/certificate-view';
 import { AdminPanel } from '@/components/admin-panel';
 import { Badge } from '@/components/ui/badge';
 import { stopSttRecording } from '@/lib/stt-controller';
@@ -292,7 +291,7 @@ export default function App({ onBackToLanding }: AppProps) {
       </div>
 
       <SettingsDialog />
-      <CertificateView />
+      
     </div>
   );
 }

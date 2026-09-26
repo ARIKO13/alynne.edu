@@ -215,12 +215,6 @@ export const useAppStore = create<AppState>()(
       setStudyModeOpen: (v) => set({ studyModeOpen: v }),
 
       // Study Mode Config
-      studyDefaultMinutes: 25,
-      setStudyDefaultMinutes: (v) => set({ studyDefaultMinutes: v }),
-      studyFocusTracker: false,
-      setStudyFocusTracker: (v) => set({ studyFocusTracker: v }),
-      studyFocusSensitivity: 35,
-      setStudyFocusSensitivity: (v) => set({ studyFocusSensitivity: v }),
     }),
     {
       name: 'lina-learning-v2',
@@ -237,10 +231,6 @@ export const useAppStore = create<AppState>()(
           name: String(state.user.name || 'Player'),
           image: typeof state.user.image === 'string' ? state.user.image : null,
         } : null,
-        studyDefaultMinutes: state.studyDefaultMinutes,
-        studyFocusTracker: state.studyFocusTracker,
-        studyFocusSensitivity: state.studyFocusSensitivity,
-        studyModeEnabled: state.studyModeEnabled,
       }),
     }
   )

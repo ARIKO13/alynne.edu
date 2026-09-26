@@ -8,7 +8,6 @@ import {
   Loader2, TrendingUp, Activity, FileText, Database,
 } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
-import { TIERS } from '@/lib/tiers';
 import { cn } from '@/lib/utils';
 import { DatasetLibraryPanel } from '@/components/dataset-library-panel';
 import { D1MonitoringView } from '@/components/d1-monitoring-view';
@@ -23,11 +22,7 @@ interface AdminStats {
     id: string;
     name: string;
     email: string;
-    xp: number;
-    level: number;
-    streak: number;
     image: string | null;
-    currentSeason: number;
     createdAt: string;
   }[];
 }
@@ -36,21 +31,9 @@ interface AdminUser {
   id: string;
   name: string;
   email: string;
-  xp: number;
-  level: number;
-  streak: number;
   image: string | null;
-  currentSeason: number;
   lastActiveAt: string | null;
   createdAt: string;
-  _count: { dailyProgress: number; certificates: number };
-}
-
-function getTierName(xp: number): { name: string; emoji: string } {
-  for (let i = TIERS.length - 1; i >= 0; i--) {
-    if (xp >= TIERS[i].xpRequired) return { name: TIERS[i].name, emoji: TIERS[i].emoji };
-  }
-  return { name: TIERS[0].name, emoji: TIERS[0].emoji };
 }
 
 function StatCard({ icon: Icon, label, value, color, sub }: {
@@ -281,7 +264,6 @@ export function AdminPanel() {
             </div>
             <div className="divide-y divide-white/[0.04]">
               {(stats.topUsers || []).map((u, idx) => {
-                const tier = getTierName(u.xp);
                 return (
                   <div key={u.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.02] transition-colors">
                     <span className={cn(
@@ -299,7 +281,6 @@ export function AdminPanel() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm text-zinc-200 truncate">{u.name}</span>
-                        <span className="text-xs">{tier.emoji}</span>
                         {isAdmin(u.email) && (
                           <Badge className="bg-[#8B5CF6]/20 text-[#8B5CF6] border-[#8B5CF6]/30 text-[8px] px-1 py-0">Admin</Badge>
                         )}
@@ -307,8 +288,8 @@ export function AdminPanel() {
                       <p className="text-[10px] text-zinc-600 truncate">{u.email}</p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-sm font-semibold text-white">{u.xp.toLocaleString()} XP</p>
-                      <p className="text-[10px] text-zinc-600">{tier.name} &middot; Streak {u.streak}</p>
+                      <p className="text-sm font-semibold text-white">"-"</p>
+                      <p className="text-[10px] text-zinc-600">"-"</p>
                     </div>
                   </div>
                 );
@@ -344,15 +325,13 @@ export function AdminPanel() {
             {/* Desktop header */}
             <div className="hidden md:grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-white/[0.06] text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
               <div className="col-span-4">User</div>
-              <div className="col-span-2 text-center">XP / Level</div>
-              <div className="col-span-2 text-center">Streak</div>
-              <div className="col-span-2 text-center">Modul</div>
+              <div className="col-span-3 text-center">Status</div>
+              <div className="col-span-3 text-center">Modul</div>
               <div className="col-span-2 text-center">Joined</div>
             </div>
 
             <div className="divide-y divide-white/[0.04]">
               {(users || []).map((u) => {
-                const tier = getTierName(u.xp);
                 return (
                   <div key={u.id} className="px-4 py-3 hover:bg-white/[0.02] transition-colors">
                     {/* Desktop row */}
@@ -364,7 +343,6 @@ export function AdminPanel() {
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
                             <span className="text-sm text-zinc-200 truncate">{u.name}</span>
-                            <span className="text-xs">{tier.emoji}</span>
                             {isAdmin(u.email) && (
                               <Badge className="bg-[#8B5CF6]/20 text-[#8B5CF6] border-[#8B5CF6]/30 text-[8px] px-1 py-0">Admin</Badge>
                             )}
@@ -373,15 +351,15 @@ export function AdminPanel() {
                         </div>
                       </div>
                       <div className="col-span-2 text-center">
-                        <p className="text-sm font-semibold text-white">{u.xp.toLocaleString()}</p>
+                        <p className="text-sm font-semibold text-white">"-"</p>
                         <p className="text-[10px] text-zinc-600">{tier.name}</p>
                       </div>
                       <div className="col-span-2 text-center">
-                        <span className="text-sm text-amber-400 font-medium">{u.streak}</span>
+                        <span className="text-sm text-amber-400 font-medium">"-"</span>
                         <span className="text-[10px] text-zinc-600 ml-1">hari</span>
                       </div>
                       <div className="col-span-2 text-center">
-                        <span className="text-sm text-zinc-300">{u._count.dailyProgress}</span>
+                        <span className="text-sm text-zinc-300">0</span>
                         <span className="text-[10px] text-zinc-600 ml-1">modul</span>
                       </div>
                       <div className="col-span-2 text-center">
@@ -399,16 +377,15 @@ export function AdminPanel() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
                           <span className="text-sm text-zinc-200 truncate">{u.name}</span>
-                          <span className="text-xs">{tier.emoji}</span>
                           {isAdmin(u.email) && (
                             <Badge className="bg-[#8B5CF6]/20 text-[#8B5CF6] border-[#8B5CF6]/30 text-[8px] px-1 py-0">Admin</Badge>
                           )}
                         </div>
                         <p className="text-[10px] text-zinc-600 truncate">{u.email}</p>
                         <div className="flex items-center gap-3 mt-1 text-[10px]">
-                          <span className="text-white font-medium">{u.xp.toLocaleString()} XP</span>
-                          <span className="text-amber-400">{u.streak} streak</span>
-                          <span className="text-zinc-500">{u._count.dailyProgress || 0} modul</span>
+                          <span className="text-white font-medium">"-"</span>
+                          <span className="text-amber-400">"-" streak</span>
+                          <span className="text-zinc-500">0 modul</span>
                         </div>
                       </div>
                     </div>
