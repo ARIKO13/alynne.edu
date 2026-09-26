@@ -382,7 +382,7 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
       };
 
       console.log('[Whisper] MediaRecorder state:', recorder.state);
-      recorder.start();
+      recorder.start(1000);
       console.log('[Whisper] MediaRecorder started, state:', recorder.state);
       setStatus('recording');
       console.log('[Whisper] Recording started (MediaRecorder)');
@@ -398,7 +398,12 @@ export function useWhisperSTT(options: UseWhisperSTTOptions = {}) {
     console.log('[Whisper] Stop recording clicked');
     isRecordingRef.current = false;
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.requestData(); // Force dataavailable sebelum stop
+      setTimeout(() => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.stop();
+        }
+      }, 200);
     }
   }, []);
 
