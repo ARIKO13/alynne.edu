@@ -806,7 +806,7 @@ function TanyaAI({ chapter, transcript }: TanyaAIProps) {
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userMsg.content },
           ],
-          model: 'groq-llama-3.3-70b',
+          model: 'llama-3.3-70b-versatile',
         }),
       });
 
