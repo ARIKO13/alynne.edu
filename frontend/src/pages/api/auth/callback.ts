@@ -33,22 +33,20 @@ export const GET: APIRoute = async ({ url, request }) => {
 
   // Save user to D1
   try {
-    const existing = await db.user.findUnique({ where: { googleId: user.id } });
+    const existing = await db.user.findUnique({ where: { uid: user.id } });
     if (!existing) {
-      const byEmail = await db.user.findUnique({ where: { email: user.email || '' } });
+      const byEmail = await db.user.findUnique({ where: { gmail: user.email || '' } });
       if (byEmail) {
         await db.user.update({
-          where: { id: byEmail.id },
-          data: { googleId: user.id, image: user.image },
+          where: { id: byEmail.uid },
+          data: { username: user.name || byEmail.username },
         });
       } else {
         await db.user.create({
           data: {
-            id: user.id,
-            googleId: user.id,
-            email: user.email || '',
-            name: user.name || 'Player',
-            image: user.image,
+            uid: user.id,
+            gmail: user.email || '',
+            username: user.name || 'Player',
           },
         });
       }

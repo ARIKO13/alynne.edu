@@ -10,18 +10,12 @@ import { d1 } from './d1-client';
 // ─── Types ───────────────────────────────────────────────
 
 export interface User {
-  id: string;
-  googleId: string;
-  email: string;
-  name: string;
-  image: string | null;
-  xp: number;
-  level: number;
-  streak: number;
-  lastActiveAt: string | null;
-  currentSeason: number;
+  uid: string;
+  username: string;
+  gmail: string;
+  activeSubscription: string;
+  packetSubscription: string;
   createdAt: string;
-  updatedAt: string;
 }
 
 export interface DailyProgress {
@@ -83,314 +77,116 @@ export interface Certificate {
 export const db = {
   // --- User ---
   user: {
-    async findUnique(where: { where: { id?: string; email?: string; googleId?: string } }) {
+    async findUnique(where: { where: { uid?: string; gmail?: string; googleId?: string } }) {
       const w = where.where;
-      if (w.id) {
-        const rows = await d1.query<User>('SELECT * FROM User WHERE id = ?', [w.id]);
+      if (w.uid || w.googleId) {
+        const id = w.uid || w.googleId;
+        const rows = await d1.query<User>('SELECT uid, username, gmail, activeSubscription, packetSubscription, createdAt FROM User WHERE uid = ?', [id]);
         return rows[0] ?? null;
       }
-      if (w.email) {
-        const rows = await d1.query<User>('SELECT * FROM User WHERE email = ?', [w.email]);
-        return rows[0] ?? null;
-      }
-      if (w.googleId) {
-        const rows = await d1.query<User>('SELECT * FROM User WHERE googleId = ?', [w.googleId]);
+      if (w.gmail) {
+        const rows = await d1.query<User>('SELECT uid, username, gmail, activeSubscription, packetSubscription, createdAt FROM User WHERE gmail = ?', [w.gmail]);
         return rows[0] ?? null;
       }
       return null;
     },
 
     async create(data: {
-      data: Partial<Omit<User, 'createdAt' | 'updatedAt'>> & { id: string; googleId: string; email: string; name: string };
+      data: { uid: string; googleId?: string; email?: string; gmail?: string; name?: string; username?: string; image?: string | null };
     }) {
       const d = data.data;
       const now = new Date().toISOString();
+      const uid = d.uid || d.googleId || '';
+      const gmail = d.gmail || d.email || '';
+      const username = d.username || d.name || 'Player';
       await d1.execute(
-        `INSERT INTO User (id, googleId, email, name, image, xp, level, streak, lastActiveAt, currentSeason, createdAt, updatedAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [d.id, d.googleId, d.email, d.name, d.image ?? null, d.xp ?? 0, d.level ?? 1, d.streak ?? 0, d.lastActiveAt ?? null, d.currentSeason ?? 1, now, now]
+        `INSERT INTO User (uid, username, gmail, activeSubscription, packetSubscription, createdAt)
+         VALUES (?, ?, ?, 'trial', 'none', ?)`,
+        [uid, username, gmail, now]
       );
-      return d1.query<User>('SELECT * FROM User WHERE id = ?', [d.id]).then(r => r[0]);
+      return d1.query<User>('SELECT uid, username, gmail, activeSubscription, packetSubscription, createdAt FROM User WHERE uid = ?', [uid]).then(r => r[0]);
     },
 
     async upsert(args: {
       where: { id: string };
-      update: Partial<Omit<User, 'id' | 'createdAt'>>;
-      create: Partial<Omit<User, 'createdAt' | 'updatedAt'>> & { id: string; googleId: string; email: string; name: string };
+      update: Partial<User>;
+      create: { uid?: string; googleId?: string; email?: string; gmail?: string; name?: string; username?: string; image?: string | null };
     }) {
-      const existing = await d1.query<User>('SELECT id FROM User WHERE id = ?', [args.where.id]);
+      const uid = args.where.id;
+      const existing = await d1.query<User>('SELECT uid FROM User WHERE uid = ?', [uid]);
       const now = new Date().toISOString();
       if (existing.length > 0) {
-        const u = args.update;
-        const fields: string[] = [];
-        const values: unknown[] = [];
-        for (const [key, val] of Object.entries(u)) {
-          if (val !== undefined) {
-            fields.push(`${key} = ?`);
-            values.push(val);
-          }
+        // Update - only fields that exist in new schema
+        const u = args.update as any;
+        if (u.name || u.username) {
+          await d1.execute('UPDATE User SET username = ? WHERE uid = ?', [u.username || u.name, uid]);
         }
-        fields.push('updatedAt = ?');
-        values.push(now);
-        if (fields.length > 1) {
-          await d1.execute(`UPDATE User SET ${fields.join(', ')} WHERE id = ?`, [...values, args.where.id]);
+        if (u.image !== undefined) {
+          // image not in new schema, skip
         }
       } else {
         const c = args.create;
+        const gmail = c.gmail || c.email || '';
+        const username = c.username || c.name || 'Player';
         await d1.execute(
-          `INSERT INTO User (id, googleId, email, name, image, xp, level, streak, lastActiveAt, currentSeason, createdAt, updatedAt)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [c.id, c.googleId, c.email, c.name, c.image ?? null, c.xp ?? 0, c.level ?? 1, c.streak ?? 0, c.lastActiveAt ?? null, c.currentSeason ?? 1, now, now]
+          `INSERT INTO User (uid, username, gmail, activeSubscription, packetSubscription, createdAt)
+           VALUES (?, ?, ?, 'trial', 'none', ?)`,
+          [uid, username, gmail, now]
         );
       }
-      return d1.query<User>('SELECT * FROM User WHERE id = ?', [args.where.id]).then(r => r[0]);
+      return d1.query<User>('SELECT uid, username, gmail, activeSubscription, packetSubscription, createdAt FROM User WHERE uid = ?', [uid]).then(r => r[0]);
     },
 
     async update(args: {
       where: { id: string };
-      data: Partial<Omit<User, 'id' | 'createdAt'>>;
+      data: Partial<User>;
     }) {
-      const u = args.data;
+      const u = args.data as any;
       const fields: string[] = [];
       const values: unknown[] = [];
-      for (const [key, val] of Object.entries(u)) {
-        if (val !== undefined) {
-          fields.push(`${key} = ?`);
-          values.push(val);
-        }
-      }
-      fields.push('updatedAt = ?');
-      values.push(new Date().toISOString());
-      await d1.execute(`UPDATE User SET ${fields.join(', ')} WHERE id = ?`, [...values, args.where.id]);
-      return d1.query<User>('SELECT * FROM User WHERE id = ?', [args.where.id]).then(r => r[0]);
-    },
-  },
-
-  // --- DailyProgress ---
-  dailyProgress: {
-    async findUnique(where: { where: { userId_date: { userId: string; date: string } } }) {
-      const { userId, date } = where.where.userId_date;
-      const rows = await d1.query<DailyProgress>(
-        'SELECT * FROM DailyProgress WHERE userId = ? AND date = ?', [userId, date]
-      );
-      return rows[0] ?? null;
-    },
-
-    async findMany(args: { where: { userId?: string; date?: { startsWith: string } } }) {
-      const conditions: string[] = [];
-      const params: unknown[] = [];
-      if (args.where.userId) {
-        conditions.push('userId = ?');
-        params.push(args.where.userId);
-      }
-      if (args.where.date?.startsWith) {
-        conditions.push('date LIKE ?');
-        params.push(args.where.date.startsWith + '%');
-      }
-      const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
-      return d1.query<DailyProgress>(`SELECT * FROM DailyProgress ${where}`, params);
-    },
-
-    async upsert(args: {
-      where: { userId_date: { userId: string; date: string } };
-      update: Partial<Omit<DailyProgress, 'id' | 'userId' | 'date' | 'createdAt'>>;
-      create: Omit<DailyProgress, 'id' | 'createdAt'>;
-    }) {
-      const { userId, date } = args.where.userId_date;
-      const existing = await d1.query<DailyProgress>(
-        'SELECT id FROM DailyProgress WHERE userId = ? AND date = ?', [userId, date]
-      );
-      if (existing.length > 0) {
-        const u = args.update;
-        const fields: string[] = [];
-        const values: unknown[] = [];
-        for (const [key, val] of Object.entries(u)) {
-          if (val !== undefined) { fields.push(`${key} = ?`); values.push(val); }
-        }
-        if (fields.length > 0) {
-          await d1.execute(`UPDATE DailyProgress SET ${fields.join(', ')} WHERE userId = ? AND date = ?`, [...values, userId, date]);
-        }
-      } else {
-        const c = args.create;
-        await d1.execute(
-          `INSERT INTO DailyProgress (id, userId, date, topic, score, xpEarned, questionsCount, correctCount, timeSpentSeconds, createdAt)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [crypto.randomUUID(), c.userId, c.date, c.topic, c.score, c.xpEarned, c.questionsCount, c.correctCount, c.timeSpentSeconds, new Date().toISOString()]
-        );
-      }
-      return d1.query<DailyProgress>(
-        'SELECT * FROM DailyProgress WHERE userId = ? AND date = ?', [userId, date]
-      ).then(r => r[0]);
-    },
-
-    async count(args: { where: { userId?: string; date?: { startsWith: string } } }) {
-      const conditions: string[] = [];
-      const params: unknown[] = [];
-      if (args.where.userId) {
-        conditions.push('userId = ?');
-        params.push(args.where.userId);
-      }
-      if (args.where.date?.startsWith) {
-        conditions.push('date LIKE ?');
-        params.push(args.where.date.startsWith + '%');
-      }
-      const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
-      const result = await d1.query<{ count: number }>(`SELECT COUNT(*) as count FROM DailyProgress ${where}`, params);
-      return result[0]?.count ?? 0;
-    },
-
-    async deleteMany(args: { where: { userId?: string; date?: { startsWith: string } } }) {
-      const conditions: string[] = [];
-      const params: unknown[] = [];
-      if (args.where.userId) {
-        conditions.push('userId = ?');
-        params.push(args.where.userId);
-      }
-      if (args.where.date?.startsWith) {
-        conditions.push('date LIKE ?');
-        params.push(args.where.date.startsWith + '%');
-      }
-      const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
-      const result = await d1.execute(`DELETE FROM DailyProgress ${where}`, params);
-      return { count: result.changes };
-    },
-
-    /** Custom: find distinct userIds matching a date prefix */
-    async findDistinctUserIds(datePrefix: string) {
-      const rows = await d1.query<{ userId: string }>(
-        'SELECT DISTINCT userId FROM DailyProgress WHERE date LIKE ?', [datePrefix + '%']
-      );
-      return rows.map(r => r.userId);
-    },
-  },
-
-  // --- MonthlyRecap ---
-  monthlyRecap: {
-    async findMany(args: { where: { userId: string }; orderBy?: { yearMonth: string }; take?: number }) {
-      const order = args.orderBy?.yearMonth === 'desc' ? 'DESC' : 'ASC';
-      const limit = args.take || 100;
-      return d1.query<MonthlyRecap>(
-        `SELECT * FROM MonthlyRecap WHERE userId = ? ORDER BY yearMonth ${order} LIMIT ?`,
-        [args.where.userId, limit]
-      );
-    },
-
-    async upsert(args: {
-      where: { userId_yearMonth: { userId: string; yearMonth: string } };
-      update: Partial<Omit<MonthlyRecap, 'id' | 'userId' | 'yearMonth' | 'createdAt'>>;
-      create: Omit<MonthlyRecap, 'id' | 'createdAt'>;
-    }) {
-      const { userId, yearMonth } = args.where.userId_yearMonth;
-      const existing = await d1.query<MonthlyRecap>(
-        'SELECT id FROM MonthlyRecap WHERE userId = ? AND yearMonth = ?', [userId, yearMonth]
-      );
-      if (existing.length > 0) {
-        const u = args.update;
-        const fields: string[] = [];
-        const values: unknown[] = [];
-        for (const [key, val] of Object.entries(u)) {
-          if (val !== undefined) { fields.push(`${key} = ?`); values.push(val); }
-        }
-        if (fields.length > 0) {
-          await d1.execute(`UPDATE MonthlyRecap SET ${fields.join(', ')} WHERE userId = ? AND yearMonth = ?`, [...values, userId, yearMonth]);
-        }
-      } else {
-        const c = args.create;
-        await d1.execute(
-          `INSERT INTO MonthlyRecap (id, userId, yearMonth, totalXP, totalDays, avgScore, bestScore, topicsCovered, level, createdAt)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [crypto.randomUUID(), c.userId, c.yearMonth, c.totalXP, c.totalDays, c.avgScore, c.bestScore, c.topicsCovered, c.level, new Date().toISOString()]
-        );
-      }
-      return d1.query<MonthlyRecap>(
-        'SELECT * FROM MonthlyRecap WHERE userId = ? AND yearMonth = ?', [userId, yearMonth]
-      ).then(r => r[0]);
-    },
-  },
-
-  // --- YearlyRecord ---
-  yearlyRecord: {
-    async findFirst(args: { where: { userId: string; year: string } }) {
-      const rows = await d1.query<YearlyRecord>(
-        'SELECT * FROM YearlyRecord WHERE userId = ? AND year = ? LIMIT 1',
-        [args.where.userId, args.where.year]
-      );
-      return rows[0] ?? null;
-    },
-
-    async update(args: {
-      where: { id: string };
-      data: Partial<Omit<YearlyRecord, 'id' | 'userId' | 'createdAt'>>;
-    }) {
-      const u = args.data;
-      const fields: string[] = [];
-      const values: unknown[] = [];
-      for (const [key, val] of Object.entries(u)) {
-        if (val !== undefined) { fields.push(`${key} = ?`); values.push(val); }
-      }
+      if (u.username !== undefined) { fields.push('username = ?'); values.push(u.username); }
+      if (u.gmail !== undefined) { fields.push('gmail = ?'); values.push(u.gmail); }
+      if (u.activeSubscription !== undefined) { fields.push('activeSubscription = ?'); values.push(u.activeSubscription); }
+      if (u.packetSubscription !== undefined) { fields.push('packetSubscription = ?'); values.push(u.packetSubscription); }
       if (fields.length > 0) {
-        await d1.execute(`UPDATE YearlyRecord SET ${fields.join(', ')} WHERE id = ?`, [...values, args.where.id]);
+        await d1.execute(`UPDATE User SET ${fields.join(', ')} WHERE uid = ?`, [...values, args.where.id]);
       }
-      return d1.query<YearlyRecord>('SELECT * FROM YearlyRecord WHERE id = ?', [args.where.id]).then(r => r[0]);
-    },
-
-    async findMany(args: { where: { completed?: boolean } }) {
-      if (args.where.completed !== undefined) {
-        return d1.query<YearlyRecord>(
-          'SELECT * FROM YearlyRecord WHERE completed = ?', [args.where.completed ? 1 : 0]
-        );
-      }
-      return d1.query<YearlyRecord>('SELECT * FROM YearlyRecord');
+      return d1.query<User>('SELECT uid, username, gmail, activeSubscription, packetSubscription, createdAt FROM User WHERE uid = ?', [args.where.id]).then(r => r[0]);
     },
   },
 
-  // --- Certificate ---
+  // --- DailyProgress (DEPRECATED - table dropped) ---
+  dailyProgress: {
+    async findUnique() { return null; },
+    async findMany() { return []; },
+    async upsert() { return null; },
+    async count() { return 0; },
+    async deleteMany() { return { count: 0 }; },
+    async findDistinctUserIds() { return []; },
+  },
+
+  // --- MonthlyRecap (DEPRECATED) ---
+  monthlyRecap: {
+    async findMany() { return []; },
+    async upsert() { return null; },
+  },
+
+  // --- YearlyRecord (DEPRECATED) ---
+  yearlyRecord: {
+    async findFirst() { return null; },
+    async update() { return null; },
+    async findMany() { return []; },
+  },
+
+  // --- Certificate (DEPRECATED) ---
   certificate: {
-    async findUnique(where: { where: { shareCode: string } }) {
-      const rows = await d1.query<Certificate>(
-        'SELECT * FROM Certificate WHERE shareCode = ?', [where.where.shareCode]
-      );
-      return rows[0] ?? null;
-    },
-
-    async findFirst(args: { where: { userId: string; expiresAt: { gt: Date } }; orderBy?: { awardedAt: string } }) {
-      const order = args.orderBy?.awardedAt === 'desc' ? 'DESC' : 'ASC';
-      const rows = await d1.query<Certificate>(
-        `SELECT * FROM Certificate WHERE userId = ? AND expiresAt > ? ORDER BY awardedAt ${order} LIMIT 1`,
-        [args.where.userId, args.where.expiresAt.gt.toISOString()]
-      );
-      return rows[0] ?? null;
-    },
-
-    async findFirst2(args: { where: { userId: string; season: number; year: string } }) {
-      const rows = await d1.query<Certificate>(
-        'SELECT * FROM Certificate WHERE userId = ? AND season = ? AND year = ? LIMIT 1',
-        [args.where.userId, args.where.season, args.where.year]
-      );
-      return rows[0] ?? null;
-    },
-
-    async findMany(args: { where: { expiresAt: { lt: Date } } }) {
-      return d1.query<Certificate>(
-        'SELECT * FROM Certificate WHERE expiresAt < ?',
-        [args.where.expiresAt.lt.toISOString()]
-      );
-    },
-
-    async create(data: { data: { userId: string; season: number; year: string; totalXP: number; totalDays: number; maxLevel: number; maxStreak: number; awardedAt: Date | string; expiresAt: Date | string; shareCode: string } }) {
-      const c = data.data;
-      const id = crypto.randomUUID();
-      const toISO = (v: Date | string) => (typeof v === 'string' ? v : v.toISOString());
-      await d1.execute(
-        `INSERT INTO Certificate (id, userId, season, year, totalXP, totalDays, maxLevel, maxStreak, awardedAt, expiresAt, shareCode)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [id, c.userId, c.season, c.year, c.totalXP, c.totalDays, c.maxLevel, c.maxStreak, toISO(c.awardedAt), toISO(c.expiresAt), c.shareCode]
-      );
-      return d1.query<Certificate>('SELECT * FROM Certificate WHERE id = ?', [id]).then(r => r[0]);
-    },
-
-    async delete(where: { where: { id: string } }) {
-      await d1.execute('DELETE FROM Certificate WHERE id = ?', [where.where.id]);
-    },
+    async findUnique() { return null; },
+    async findFirst() { return null; },
+    async findFirst2() { return null; },
+    async findMany() { return []; },
+    async create() { return null; },
+    async delete() {},
   },
+
+  // --- HIDDEN (old implementations, not used) ---
 };
