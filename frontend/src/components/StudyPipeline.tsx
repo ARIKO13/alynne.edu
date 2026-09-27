@@ -798,8 +798,8 @@ interface LLMMindmapNode {
 
 async function generateLLMMindmap(chapters: Chapter[]): Promise<LLMMindmapNode> {
   const chaptersText = chapters
-    .map((ch) => `BAB ${ch.id}: ${ch.title}\n${ch.content.substring(0, 300)}`)
-    .join('\n\n');
+    .map((ch) => `BAB ${ch.id}: ${ch.title}\n${ch.content.substring(0, 200)}`)
+    .join('\n');
 
   const prompt = `Buat mindmap terstruktur dari materi berikut. Format WAJIB JSON saja.
 
@@ -823,7 +823,18 @@ Output JSON (tanpa markdown):
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      const content = data.content || data.choices?.[0]?.message?.content || '';
+
+      // Handle both Groq format (choices[0].message.content) and custom format (content)
+      let content = '';
+      if (data.choices?.[0]?.message?.content) {
+        content = data.choices[0].message.content;
+      } else if (data.content) {
+        content = data.content;
+      } else if (data.error) {
+        throw new Error(data.error);
+      } else {
+        throw new Error('No content in response');
+      }
       if (!content) throw new Error('Empty response');
 
       const jsonMatch = content.match(/\{[\s\S]*\}/);
@@ -862,7 +873,17 @@ JSON (tanpa markdown):
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      const content = data.content || data.choices?.[0]?.message?.content || '';
+
+      let content = '';
+      if (data.choices?.[0]?.message?.content) {
+        content = data.choices[0].message.content;
+      } else if (data.content) {
+        content = data.content;
+      } else if (data.error) {
+        throw new Error(data.error);
+      } else {
+        throw new Error('No content in response');
+      }
       if (!content) throw new Error('Empty response');
 
       const jsonMatch = content.match(/\[[\s\S]*\]/);
@@ -958,7 +979,16 @@ PETUNJUK:
       });
 
       const data = await res.json();
-      const reply = data.content || data.error || 'Maaf, saya tidak bisa menjawab sekarang.';
+      let reply = '';
+      if (data.choices?.[0]?.message?.content) {
+        reply = data.choices[0].message.content;
+      } else if (data.content) {
+        reply = data.content;
+      } else if (data.error) {
+        reply = 'Maaf: ' + data.error;
+      } else {
+        reply = 'Maaf, tidak ada respon dari AI.';
+      }
 
       setMessages((m) => [...m, { role: 'assistant', content: reply }]);
     } catch (err) {
