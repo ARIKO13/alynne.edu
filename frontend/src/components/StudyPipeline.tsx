@@ -38,6 +38,8 @@ import {
   Send,
   Bot,
   User,
+  Swords,
+  Presentation,
 } from 'lucide-react';
 import {
   splitTranscriptIntoChapters,
@@ -45,6 +47,8 @@ import {
   type Chapter,
   type QuizQuestion,
 } from '@/lib/stt-chapter-splitter';
+import { SlideExporter } from '@/components/SlideExporter';
+import { QuizBattle } from '@/components/QuizBattle';
 import { MindmapGraph } from '@/components/MindmapGraph';
 import { generateMicroPDF, generateMasterPDF } from '@/lib/pdf-export';
 import { recordQuizResult, updateStreak } from '@/lib/ai-memory';
@@ -71,6 +75,8 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set(['root']));
   const [mainTab, setMainTab] = useState<MainTab>('materi');
   const [llmMindmap, setLLMMindmap] = useState<LLMMindmapNode | null>(null);
+  const [quizBattleOpen, setQuizBattleOpen] = useState(false);
+  const [slideExporterOpen, setSlideExporterOpen] = useState(false);
 
   // ── Pomodoro + Focus state (inline, not separate component) ──
   const [timerTotal, setTimerTotal] = useState(25 * 60);
@@ -383,19 +389,57 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               <Play className="h-3 w-3 mr-1" />
               {mainTab === 'session' ? 'Lanjut Sesi' : 'Mulai Sesi Belajar'}
             </Button>
-            <div className="flex gap-1">
+            <div className="grid grid-cols-2 gap-1">
               <Button
                 onClick={handleDownloadMaster}
                 variant="outline"
                 size="sm"
-                className="flex-1 text-[10px] border-white/[0.08]"
+                className="text-[10px] border-white/[0.08]"
               >
                 <Download className="h-3 w-3 mr-1" />
-                PDF Master
+                PDF
+              </Button>
+              <Button
+                onClick={() => setSlideExporterOpen(true)}
+                variant="outline"
+                size="sm"
+                className="text-[10px] border-amber-500/20 text-amber-400 hover:bg-amber-500/10"
+              >
+                <Presentation className="h-3 w-3 mr-1" />
+                Slide
               </Button>
             </div>
+            <Button
+              onClick={() => {
+                const allQuiz = Object.values(quizzes).flat();
+                if (allQuiz.length > 0) setQuizBattleOpen(true);
+              }}
+              variant="outline"
+              size="sm"
+              className="w-full text-[10px] border-orange-500/20 text-orange-400 hover:bg-orange-500/10"
+              disabled={Object.values(quizzes).flat().length === 0}
+            >
+              <Swords className="h-3 w-3 mr-1" />
+              Quiz Battle ({Object.values(quizzes).flat().length} soal)
+            </Button>
           </div>
         )}
+
+        {/* Slide Exporter */}
+        <SlideExporter
+          open={slideExporterOpen}
+          onClose={() => setSlideExporterOpen(false)}
+          chapters={chapters}
+          quizzes={quizzes}
+        />
+
+        {/* Quiz Battle */}
+        <QuizBattle
+          open={quizBattleOpen}
+          onClose={() => setQuizBattleOpen(false)}
+          questions={Object.values(quizzes).flat()}
+          title={`Quiz Battle - ${chapters.length} Bab`}
+        />
       </div>
 
       {/* ── MAIN AREA ── */}
