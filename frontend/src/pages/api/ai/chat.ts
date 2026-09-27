@@ -13,7 +13,7 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
     const messages: ChatMessage[] = body.messages || [];
-    const model = body.model || 'llama-3.3-70b-versatile';
+    const model = body.model || 'qwen/qwen3.8-27b';
     const temperature = body.temperature ?? 0.7;
     const maxTokens = body.max_tokens || 2048;
 

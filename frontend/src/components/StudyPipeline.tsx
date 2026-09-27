@@ -817,7 +817,7 @@ Output HANYA JSON, tanpa markdown, tanpa penjelasan:
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       messages: [{ role: 'user', content: prompt }],
-      model: 'llama-3.3-70b-versatile',
+      model: 'qwen/qwen3.8-27b',
     }),
   });
 
@@ -855,7 +855,7 @@ Output HANYA JSON array, tanpa markdown:
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       messages: [{ role: 'user', content: prompt }],
-      model: 'llama-3.3-70b-versatile',
+      model: 'qwen/qwen3.8-27b',
     }),
   });
 
@@ -947,7 +947,7 @@ PETUNJUK:
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userMsg.content },
           ],
-          model: 'llama-3.3-70b-versatile',
+          model: 'qwen/qwen3.8-27b',
         }),
       });
 
