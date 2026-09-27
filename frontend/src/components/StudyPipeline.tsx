@@ -324,10 +324,10 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           </div>
         )}
 
-        {/* Mindmap (compact) */}
+        {/* Mindmap (compact, scrollable) */}
         {stage === 'complete' && chapters.length > 0 && (
-          <div className="p-3 border-b border-white/[0.04]">
-            <p className="text-[10px] text-zinc-500 uppercase mb-2 flex items-center gap-1">
+          <div className="p-3 border-b border-white/[0.04] max-h-48 overflow-y-auto">
+            <p className="text-[10px] text-zinc-500 uppercase mb-2 flex items-center gap-1 sticky top-0 bg-zinc-950/95">
               <Brain className="h-3 w-3" /> Mindmap
             </p>
             <div className="text-xs space-y-1">
