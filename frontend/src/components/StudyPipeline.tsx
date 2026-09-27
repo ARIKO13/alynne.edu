@@ -70,6 +70,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set(['root']));
   const [mainTab, setMainTab] = useState<MainTab>('materi');
+  const [llmMindmap, setLLMMindmap] = useState<LLMMindmapNode | null>(null);
 
   // ── Pomodoro + Focus state (inline, not separate component) ──
   const [timerTotal, setTimerTotal] = useState(25 * 60);
@@ -103,20 +104,31 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   const runPipeline = useCallback(async () => {
     setStage('splitting');
     setProgress(10);
-    await sleep(400);
+    await sleep(300);
     const split = splitTranscriptIntoChapters(transcript);
     setChapters(split);
-    setProgress(40);
+    setProgress(25);
 
+    // Generate LLM-powered structured mindmap
     setStage('mindmap');
-    await sleep(500);
-    setProgress(70);
+    try {
+      const mindmapData = await generateLLMMindmap(split);
+      setLLMMindmap(mindmapData);
+    } catch (err) {
+      console.warn('[Mindmap] LLM failed, using fallback:', err);
+    }
+    setProgress(50);
 
+    // Generate LLM-powered quizzes
     setStage('chapters');
     const quizMap: Record<number, QuizQuestion[]> = {};
     for (const ch of split) {
-      quizMap[ch.id] = generateQuizFromChapter(ch, 3);
-      await sleep(80);
+      try {
+        quizMap[ch.id] = await generateLLMQuiz(ch);
+      } catch {
+        quizMap[ch.id] = generateQuizFromChapter(ch, 3);
+      }
+      setProgress(50 + Math.round((split.indexOf(ch) + 1) / split.length * 40));
     }
     setQuizzes(quizMap);
     setProgress(100);
@@ -461,18 +473,22 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
             <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-6">
               <h2 className="text-sm font-medium text-zinc-300 mb-4 flex items-center gap-2">
                 <Brain className="h-4 w-4 text-[#8B5CF6]" />
-                Visual Mindmap
+                Mindmap
               </h2>
-              <MindmapGraph
-                chapters={chapters}
-                activeChapterId={activeChapterId}
-                onSelectChapter={(id) => {
-                  setActiveChapterId(id);
-                  setMainTab('materi');
-                }}
-              />
+              {llmMindmap ? (
+                <LLMMindmapView node={llmMindmap} />
+              ) : (
+                <MindmapGraph
+                  chapters={chapters}
+                  activeChapterId={activeChapterId}
+                  onSelectChapter={(id) => {
+                    setActiveChapterId(id);
+                    setMainTab('materi');
+                  }}
+                />
+              )}
               <p className="text-[11px] text-zinc-500 mt-4 text-center">
-                Klik node bab untuk lihat isi materinya
+                {llmMindmap ? 'Mindmap dibuat oleh AI (terstruktur)' : 'Klik node bab untuk lihat isi materinya'}
               </p>
             </div>
           </div>
@@ -768,6 +784,93 @@ function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+// ── LLM Types ──
+
+interface LLMMindmapNode {
+  label: string;
+  children?: LLMMindmapNode[];
+}
+
+// ── LLM Mindmap Generator ──
+
+async function generateLLMMindmap(chapters: Chapter[]): Promise<LLMMindmapNode> {
+  const chaptersText = chapters
+    .map((ch) => `BAB ${ch.id}: ${ch.title}\n${ch.content.substring(0, 500)}`)
+    .join('\n\n');
+
+  const prompt = `Kamu adalah asisten AI. Buat mindmap terstruktur dari materi berikut. Format WAJIB JSON.
+
+MATERI:
+${chaptersText}
+
+Instruksi:
+- Root node: judul utama materi (singkat, 2-4 kata)
+- Level 1: bab-bab utama
+- Level 2: poin-poin kunci per bab (2-3 poin)
+- Level 3: detail singkat per poin (opsional)
+
+Output HANYA JSON, tanpa markdown, tanpa penjelasan:
+{"label":"Judul Materi","children":[{"label":"Bab 1: Judul","children":[{"label":"Poin kunci 1"},{"label":"Poin kunci 2"}]}]}`;
+
+  const res = await fetch('/api/ai/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      messages: [{ role: 'user', content: prompt }],
+      model: 'llama-3.3-70b-versatile',
+    }),
+  });
+
+  const data = await res.json();
+  const content = data.content || '';
+
+  // Parse JSON from response (handle markdown code blocks)
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('No JSON in response');
+
+  const mindmap = JSON.parse(jsonMatch[0]);
+  return mindmap;
+}
+
+// ── LLM Quiz Generator ──
+
+async function generateLLMQuiz(chapter: Chapter): Promise<QuizQuestion[]> {
+  const prompt = `Kamu adalah asisten AI. Buat 3 soal kuis pilihan ganda dari materi berikut. Format WAJIB JSON array.
+
+MATERI BAB ${chapter.id}:
+${chapter.title}
+${chapter.content}
+
+Instruksi:
+- 3 soal pilihan ganda (4 opsi each)
+- Soal menguji pemahaman, bukan hafalan
+- Jawaban benar jelas
+- Bahasa Indonesia
+
+Output HANYA JSON array, tanpa markdown:
+[{"id":1,"type":"multiple-choice","question":"Soal...","options":["A","B","C","D"],"correctAnswer":"A","explanation":"Karena..."}]`;
+
+  const res = await fetch('/api/ai/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      messages: [{ role: 'user', content: prompt }],
+      model: 'llama-3.3-70b-versatile',
+    }),
+  });
+
+  const data = await res.json();
+  const content = data.content || '';
+
+  // Parse JSON array
+  const jsonMatch = content.match(/\[[\s\S]*\]/);
+  if (!jsonMatch) throw new Error('No JSON in response');
+
+  const quizzes = JSON.parse(jsonMatch[0]) as QuizQuestion[];
+  // Ensure ids are numbers
+  return quizzes.map((q, i) => ({ ...q, id: i + 1 }));
+}
+
 // ── TanyaAI: Chat dengan AI tentang bab yang sedang dibaca ──
 
 interface TanyaAIProps {
@@ -960,6 +1063,71 @@ PETUNJUK:
             >
               {q}
             </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── LLMMindmapView: Visual tree dari LLM-generated mindmap ──
+
+function LLMMindmapView({ node }: { node: LLMMindmapNode }) {
+  return (
+    <div className="space-y-1 font-mono">
+      <MindmapTreeNode node={node} level={0} isLast={true} />
+    </div>
+  );
+}
+
+function MindmapTreeNode({
+  node,
+  level,
+  isLast,
+  prefix = '',
+}: {
+  node: LLMMindmapNode;
+  level: number;
+  isLast: boolean;
+  prefix?: string;
+}) {
+  const hasChildren = node.children && node.children.length > 0;
+  const connector = level === 0 ? '' : isLast ? '└─ ' : '├─ ';
+  const childPrefix = level === 0 ? '' : prefix + (isLast ? '   ' : '│  ');
+
+  const colors = [
+    'text-[#8B5CF6] font-bold text-base',
+    'text-blue-400 font-medium text-sm',
+    'text-zinc-300 text-sm',
+    'text-zinc-500 text-xs',
+  ];
+  const colorClass = colors[Math.min(level, colors.length - 1)];
+
+  return (
+    <div>
+      <div className="flex items-start gap-1 hover:bg-white/[0.03] rounded px-1 py-0.5 transition-colors">
+        {level > 0 && (
+          <span className="text-zinc-700 font-mono text-xs whitespace-pre select-none">
+            {prefix}{connector}
+          </span>
+        )}
+        <span className={colorClass}>{node.label}</span>
+        {level === 0 && (
+          <Badge variant="outline" className="ml-2 text-[8px] border-[#8B5CF6]/30 text-[#8B5CF6]">
+            AI Generated
+          </Badge>
+        )}
+      </div>
+      {hasChildren && (
+        <div>
+          {node.children!.map((child, i) => (
+            <MindmapTreeNode
+              key={i}
+              node={child}
+              level={level + 1}
+              isLast={i === node.children!.length - 1}
+              prefix={childPrefix}
+            />
           ))}
         </div>
       )}
