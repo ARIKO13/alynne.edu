@@ -53,7 +53,7 @@ interface AppProps {
 }
 
 export default function App({ onBackToLanding }: AppProps) {
-  const { user, setUser, activeTab, setActiveTab, setSettingsOpen, sttSource, sttStatus } = useAppStore();
+  const { user, setUser, activeTab, setActiveTab, setSettingsOpen, sttSource, sttStatus, transcript } = useAppStore();
   const { data: session, status } = useClientSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isAlynne = isAlynneDomain();
