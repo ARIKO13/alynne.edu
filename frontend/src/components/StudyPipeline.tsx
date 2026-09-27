@@ -41,6 +41,7 @@ import {
   type Chapter,
   type QuizQuestion,
 } from '@/lib/stt-chapter-splitter';
+import { MindmapGraph } from '@/components/MindmapGraph';
 import { generateMicroPDF, generateMasterPDF } from '@/lib/pdf-export';
 import { recordQuizResult, updateStreak } from '@/lib/ai-memory';
 import { AmbientThemes } from '@/components/AmbientThemes';
@@ -54,7 +55,7 @@ interface StudyPipelineProps {
 }
 
 type PipelineStage = 'idle' | 'splitting' | 'mindmap' | 'chapters' | 'complete';
-type MainTab = 'materi' | 'session';
+type MainTab = 'materi' | 'mindmap' | 'session';
 
 export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps) {
   const [stage, setStage] = useState<PipelineStage>('idle');
@@ -324,34 +325,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           </div>
         )}
 
-        {/* Mindmap (compact, scrollable) */}
-        {stage === 'complete' && chapters.length > 0 && (
-          <div className="p-3 border-b border-white/[0.04] max-h-48 overflow-y-auto">
-            <p className="text-[10px] text-zinc-500 uppercase mb-2 flex items-center gap-1 sticky top-0 bg-zinc-950/95">
-              <Brain className="h-3 w-3" /> Mindmap
-            </p>
-            <div className="text-xs space-y-1">
-              <div className="text-[#8B5CF6] font-medium">
-                📚 {chapters[0]?.title.split(' ').slice(0, 4).join(' ')}...
-              </div>
-              {chapters.map((ch) => (
-                <div
-                  key={ch.id}
-                  className={cn(
-                    'pl-3 cursor-pointer transition-colors',
-                    activeChapterId === ch.id ? 'text-[#8B5CF6]' : 'text-zinc-500 hover:text-zinc-300'
-                  )}
-                  onClick={() => {
-                    setActiveChapterId(ch.id);
-                    setMainTab('materi');
-                  }}
-                >
-                  ├ Bab {ch.id}: {ch.title.substring(0, 25)}...
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+
 
         {/* Chapter list */}
         {stage === 'complete' && (
@@ -421,6 +395,16 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               Materi & Kuis
             </button>
             <button
+              onClick={() => setMainTab('mindmap')}
+              className={cn(
+                'px-3 py-1 rounded text-xs font-medium transition-colors',
+                mainTab === 'mindmap' ? 'bg-[#8B5CF6] text-white' : 'text-zinc-500 hover:text-zinc-300'
+              )}
+            >
+              <Brain className="h-3 w-3 inline mr-1" />
+              Mindmap
+            </button>
+            <button
               onClick={() => setMainTab('session')}
               className={cn(
                 'px-3 py-1 rounded text-xs font-medium transition-colors',
@@ -442,6 +426,29 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                 {stage === 'splitting' && 'Memecah transkrip jadi bab...'}
                 {stage === 'mindmap' && 'Membuat mindmap...'}
                 {stage === 'chapters' && 'Membuat kuis per bab...'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* MINDMAP TAB: visual SVG graph */}
+        {mainTab === 'mindmap' && stage === 'complete' && (
+          <div className="p-6">
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-6">
+              <h2 className="text-sm font-medium text-zinc-300 mb-4 flex items-center gap-2">
+                <Brain className="h-4 w-4 text-[#8B5CF6]" />
+                Visual Mindmap
+              </h2>
+              <MindmapGraph
+                chapters={chapters}
+                activeChapterId={activeChapterId}
+                onSelectChapter={(id) => {
+                  setActiveChapterId(id);
+                  setMainTab('materi');
+                }}
+              />
+              <p className="text-[11px] text-zinc-500 mt-4 text-center">
+                Klik node bab untuk lihat isi materinya
               </p>
             </div>
           </div>
