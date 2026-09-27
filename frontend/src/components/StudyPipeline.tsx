@@ -119,16 +119,19 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     }
     setProgress(50);
 
-    // Generate LLM-powered quizzes
+    // Generate LLM-powered quizzes (sequential with delay to avoid rate limit)
     setStage('chapters');
     const quizMap: Record<number, QuizQuestion[]> = {};
-    for (const ch of split) {
+    for (let i = 0; i < split.length; i++) {
+      const ch = split[i];
       try {
         quizMap[ch.id] = await generateLLMQuiz(ch);
       } catch {
         quizMap[ch.id] = generateQuizFromChapter(ch, 3);
       }
-      setProgress(50 + Math.round((split.indexOf(ch) + 1) / split.length * 40));
+      setProgress(50 + Math.round((i + 1) / split.length * 40));
+      // Delay between requests to avoid Groq rate limit
+      if (i < split.length - 1) await sleep(1000);
     }
     setQuizzes(quizMap);
     setProgress(100);
@@ -795,80 +798,83 @@ interface LLMMindmapNode {
 
 async function generateLLMMindmap(chapters: Chapter[]): Promise<LLMMindmapNode> {
   const chaptersText = chapters
-    .map((ch) => `BAB ${ch.id}: ${ch.title}\n${ch.content.substring(0, 500)}`)
+    .map((ch) => `BAB ${ch.id}: ${ch.title}\n${ch.content.substring(0, 300)}`)
     .join('\n\n');
 
-  const prompt = `Kamu adalah asisten AI. Buat mindmap terstruktur dari materi berikut. Format WAJIB JSON.
+  const prompt = `Buat mindmap terstruktur dari materi berikut. Format WAJIB JSON saja.
 
 MATERI:
 ${chaptersText}
 
-Instruksi:
-- Root node: judul utama materi (singkat, 2-4 kata)
-- Level 1: bab-bab utama
-- Level 2: poin-poin kunci per bab (2-3 poin)
-- Level 3: detail singkat per poin (opsional)
+Output JSON (tanpa markdown):
+{"label":"Judul","children":[{"label":"Bab 1","children":[{"label":"Poin 1"},{"label":"Poin 2"}]}]}`;
 
-Output HANYA JSON, tanpa markdown, tanpa penjelasan:
-{"label":"Judul Materi","children":[{"label":"Bab 1: Judul","children":[{"label":"Poin kunci 1"},{"label":"Poin kunci 2"}]}]}`;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: prompt }],
+          model: 'qwen/qwen3.8-27b',
+          max_tokens: 1500,
+        }),
+      });
 
-  const res = await fetch('/api/ai/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      messages: [{ role: 'user', content: prompt }],
-      model: 'qwen/qwen3.8-27b',
-    }),
-  });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const content = data.content || data.choices?.[0]?.message?.content || '';
+      if (!content) throw new Error('Empty response');
 
-  const data = await res.json();
-  const content = data.content || '';
-
-  // Parse JSON from response (handle markdown code blocks)
-  const jsonMatch = content.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('No JSON in response');
-
-  const mindmap = JSON.parse(jsonMatch[0]);
-  return mindmap;
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('No JSON');
+      return JSON.parse(jsonMatch[0]);
+    } catch (err) {
+      if (attempt === 1) throw err;
+      await sleep(2000);
+    }
+  }
+  throw new Error('Failed after retries');
 }
 
 // ── LLM Quiz Generator ──
 
 async function generateLLMQuiz(chapter: Chapter): Promise<QuizQuestion[]> {
-  const prompt = `Kamu adalah asisten AI. Buat 3 soal kuis pilihan ganda dari materi berikut. Format WAJIB JSON array.
+  const prompt = `Buat 3 soal kuis pilihan ganda dari materi berikut. Format JSON array saja.
 
-MATERI BAB ${chapter.id}:
-${chapter.title}
-${chapter.content}
+BAB ${chapter.id}: ${chapter.title}
+${chapter.content.substring(0, 800)}
 
-Instruksi:
-- 3 soal pilihan ganda (4 opsi each)
-- Soal menguji pemahaman, bukan hafalan
-- Jawaban benar jelas
-- Bahasa Indonesia
+JSON (tanpa markdown):
+[{"id":1,"type":"multiple-choice","question":"Soal?","options":["A","B","C","D"],"correctAnswer":"A","explanation":"Karena..."}]`;
 
-Output HANYA JSON array, tanpa markdown:
-[{"id":1,"type":"multiple-choice","question":"Soal...","options":["A","B","C","D"],"correctAnswer":"A","explanation":"Karena..."}]`;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: prompt }],
+          model: 'qwen/qwen3.8-27b',
+          max_tokens: 1000,
+        }),
+      });
 
-  const res = await fetch('/api/ai/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      messages: [{ role: 'user', content: prompt }],
-      model: 'qwen/qwen3.8-27b',
-    }),
-  });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const content = data.content || data.choices?.[0]?.message?.content || '';
+      if (!content) throw new Error('Empty response');
 
-  const data = await res.json();
-  const content = data.content || '';
-
-  // Parse JSON array
-  const jsonMatch = content.match(/\[[\s\S]*\]/);
-  if (!jsonMatch) throw new Error('No JSON in response');
-
-  const quizzes = JSON.parse(jsonMatch[0]) as QuizQuestion[];
-  // Ensure ids are numbers
-  return quizzes.map((q, i) => ({ ...q, id: i + 1 }));
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) throw new Error('No JSON');
+      const quizzes = JSON.parse(jsonMatch[0]) as QuizQuestion[];
+      return quizzes.map((q, i) => ({ ...q, id: i + 1 }));
+    } catch (err) {
+      if (attempt === 1) throw err;
+      await sleep(2000);
+    }
+  }
+  throw new Error('Failed after retries');
 }
 
 // ── TanyaAI: Chat dengan AI tentang bab yang sedang dibaca ──
