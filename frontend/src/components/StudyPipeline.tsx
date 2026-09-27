@@ -595,7 +595,12 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
 
         {/* TANYA AI TAB: chat with AI about current chapter */}
         {mainTab === 'tanya' && stage === 'complete' && activeChapter && (
-          <TanyaAI chapter={activeChapter} transcript={transcript} />
+          <TanyaAI
+            chapter={activeChapter}
+            transcript={transcript}
+            allChapters={chapters}
+            quizzes={quizzes}
+          />
         )}
 
         {/* SESSION TAB: Pomodoro + Focus + Ambient */}
@@ -768,9 +773,11 @@ function sleep(ms: number) {
 interface TanyaAIProps {
   chapter: Chapter;
   transcript: string;
+  allChapters: Chapter[];
+  quizzes: Record<number, QuizQuestion[]>;
 }
 
-function TanyaAI({ chapter, transcript }: TanyaAIProps) {
+function TanyaAI({ chapter, transcript, allChapters, quizzes }: TanyaAIProps) {
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
     {
       role: 'assistant',
@@ -796,7 +803,38 @@ function TanyaAI({ chapter, transcript }: TanyaAIProps) {
     setLoading(true);
 
     try {
-      const systemPrompt = `Kamu adalah asisten AI ALYNNE.EDU. User sedang belajar dari materi STT berikut. Jawab pertanyaan user berdasarkan konteks materi ini. Jelaskan dengan bahasa Indonesia yang jelas dan mudah dipahami.\n\nMATERI BAB ${chapter.id}: ${chapter.title}\n${chapter.content}\n\nTRANSCRIPT LENGKAP: ${transcript.substring(0, 2000)}`;
+      // Build full context: all chapters + quizzes + current bab highlight
+      const allChaptersText = allChapters
+        .map((ch) => `BAB ${ch.id}: ${ch.title}\n${ch.content}`)
+        .join('\n\n---\n\n');
+
+      const allQuizText = Object.entries(quizzes)
+        .map(([chId, qs]) => {
+          const quizStr = qs.map((q, i) => `${i + 1}. ${q.question} (Jawaban: ${q.correctAnswer})`).join('\n');
+          return `KUIS BAB ${chId}:\n${quizStr}`;
+        })
+        .join('\n\n');
+
+      const systemPrompt = `Kamu adalah asisten AI ALYNNE.EDU. User sedang belajar dari materi STT. User saat ini membaca Bab ${chapter.id}. Jawab pertanyaan user berdasarkan konteks materi di bawah. Jelaskan dengan bahasa Indonesia yang jelas dan mudah dipahami.
+
+MATERI BAB ${chapter.id} (SEDANG DIBACA):
+${chapter.title}
+${chapter.content}
+
+SEMUA BAB (${allChapters.length} total):
+${allChaptersText.substring(0, 3000)}
+
+KUIS:
+${allQuizText.substring(0, 1000)}
+
+TRANSCRIPT ASLI:
+${transcript.substring(0, 2000)}
+
+PETUNJUK:
+- Jawab berdasarkan materi di atas
+- Kalau user tanya tentang bab lain, tetap jawab dari konteks yang ada
+- Jelaskan dengan analogi sederhana kalau perlu
+- Jawab dengan bahasa Indonesia`;
 
       const res = await fetch('/api/ai/chat', {
         method: 'POST',
