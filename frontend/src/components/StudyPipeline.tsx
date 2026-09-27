@@ -454,92 +454,112 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           </div>
         )}
 
-        {/* MATERI TAB: chapter content + quiz */}
+        {/* MATERI TAB: chapter content + quiz (separated sections) */}
         {mainTab === 'materi' && stage === 'complete' && activeChapter && (
-          <div className="p-6 max-w-3xl mx-auto space-y-6">
-            {/* Chapter header */}
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-full bg-[#8B5CF6]/10 flex items-center justify-center text-sm font-bold text-[#8B5CF6]">
-                  {activeChapter.id}
-                </div>
-                <Badge variant="outline" className="text-[10px]">
-                  {activeChapter.wordCount} kata
+          <div className="p-6 max-w-3xl mx-auto space-y-8">
+            {/* ── Section: Materi ── */}
+            <section>
+              <div className="flex items-center gap-2 mb-3">
+                <BookOpen className="h-4 w-4 text-blue-400" />
+                <h3 className="text-sm font-semibold text-blue-400 uppercase tracking-wide">Materi</h3>
+                <div className="flex-1 h-px bg-blue-500/20" />
+                <Badge variant="outline" className="text-[10px] text-blue-400 border-blue-500/30">
+                  Bab {activeChapter.id}
                 </Badge>
               </div>
-              <h2 className="text-xl font-semibold text-white mb-3">{activeChapter.title}</h2>
-            </div>
 
-            {/* Content */}
-            <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
-              <p className="text-sm text-zinc-300 leading-relaxed">{activeChapter.content}</p>
-            </div>
-
-            {/* Quiz */}
-            {quizzes[activeChapter.id]?.length > 0 && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Calculator className="h-4 w-4 text-amber-400" />
-                  <h3 className="text-sm font-medium text-zinc-200">
-                    Kuis Bab {activeChapter.id} ({quizzes[activeChapter.id].length} soal)
-                  </h3>
+              {/* Chapter title */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-[#8B5CF6]/10 flex items-center justify-center text-base font-bold text-[#8B5CF6]">
+                  {activeChapter.id}
                 </div>
-                {quizzes[activeChapter.id].map((q, i) => {
-                  const key = `${activeChapter.id}-${q.id}`;
-                  const userAnswer = quizAnswers[key];
-                  const isCorrect = userAnswer === q.correctAnswer;
-                  const answered = !!userAnswer;
-
-                  return (
-                    <div key={q.id} className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3">
-                      <p className="text-sm text-zinc-200 mb-2">{i + 1}. {q.question}</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {q.options?.map((opt) => {
-                          const isSelected = userAnswer === opt;
-                          const showCorrect = answered && opt === q.correctAnswer;
-                          const showWrong = isSelected && !isCorrect;
-                          return (
-                            <button
-                              key={opt}
-                              disabled={answered}
-                              onClick={() => handleQuizAnswer(key, opt)}
-                              className={cn(
-                                'text-left px-3 py-2 rounded text-xs transition-colors border',
-                                showCorrect
-                                  ? 'border-green-500/50 bg-green-500/10 text-green-400'
-                                  : showWrong
-                                  ? 'border-red-500/50 bg-red-500/10 text-red-400'
-                                  : isSelected
-                                  ? 'border-[#8B5CF6]/50 bg-[#8B5CF6]/10 text-[#8B5CF6]'
-                                  : 'border-white/[0.06] text-zinc-400 hover:border-white/[0.15]'
-                              )}
-                            >
-                              {opt}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      {answered && (
-                        <p className={cn('text-[11px] mt-2', isCorrect ? 'text-green-400' : 'text-red-400')}>
-                          {isCorrect ? '✓ Benar!' : `✗ Jawaban: ${q.correctAnswer}`}
-                        </p>
-                      )}
-                    </div>
-                  );
-                })}
+                <div className="flex-1">
+                  <h2 className="text-lg font-semibold text-white">{activeChapter.title}</h2>
+                  <p className="text-[10px] text-zinc-500">{activeChapter.wordCount} kata</p>
+                </div>
               </div>
-            )}
 
-            {/* Download micro PDF */}
-            <Button
-              onClick={() => handleDownloadMicro(activeChapter)}
-              variant="outline"
-              size="sm"
-              className="border-white/[0.08] text-zinc-400"
-            >
-              <Download className="h-3 w-3 mr-1" />
-              Download PDF Bab Ini
-            </Button>
+              {/* Content */}
+              <div className="rounded-lg border border-blue-500/10 bg-blue-500/[0.02] p-5">
+                <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{activeChapter.content}</p>
+              </div>
+
+              {/* Download micro PDF */}
+              <div className="mt-3">
+                <Button
+                  onClick={() => handleDownloadMicro(activeChapter)}
+                  variant="outline"
+                  size="sm"
+                  className="border-blue-500/20 text-blue-400 hover:bg-blue-500/10"
+                >
+                  <Download className="h-3 w-3 mr-1" />
+                  Download PDF Bab Ini
+                </Button>
+              </div>
+            </section>
+
+            {/* ── Section: Kuis ── */}
+            {quizzes[activeChapter.id]?.length > 0 && (
+              <section>
+                <div className="flex items-center gap-2 mb-3">
+                  <Calculator className="h-4 w-4 text-amber-400" />
+                  <h3 className="text-sm font-semibold text-amber-400 uppercase tracking-wide">Kuis</h3>
+                  <div className="flex-1 h-px bg-amber-500/20" />
+                  <Badge variant="outline" className="text-[10px] text-amber-400 border-amber-500/30">
+                    {quizzes[activeChapter.id].length} soal
+                  </Badge>
+                </div>
+
+                <div className="space-y-3">
+                  {quizzes[activeChapter.id].map((q, i) => {
+                    const key = `${activeChapter.id}-${q.id}`;
+                    const userAnswer = quizAnswers[key];
+                    const isCorrect = userAnswer === q.correctAnswer;
+                    const answered = !!userAnswer;
+
+                    return (
+                      <div key={q.id} className="rounded-lg border border-amber-500/10 bg-amber-500/[0.02] p-4">
+                        <p className="text-sm text-zinc-200 mb-3">
+                          <span className="text-amber-400 font-bold mr-1">{i + 1}.</span>
+                          {q.question}
+                        </p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {q.options?.map((opt) => {
+                            const isSelected = userAnswer === opt;
+                            const showCorrect = answered && opt === q.correctAnswer;
+                            const showWrong = isSelected && !isCorrect;
+                            return (
+                              <button
+                                key={opt}
+                                disabled={answered}
+                                onClick={() => handleQuizAnswer(key, opt)}
+                                className={cn(
+                                  'text-left px-3 py-2 rounded text-xs transition-colors border',
+                                  showCorrect
+                                    ? 'border-green-500/50 bg-green-500/10 text-green-400'
+                                    : showWrong
+                                    ? 'border-red-500/50 bg-red-500/10 text-red-400'
+                                    : isSelected
+                                    ? 'border-[#8B5CF6]/50 bg-[#8B5CF6]/10 text-[#8B5CF6]'
+                                    : 'border-white/[0.06] text-zinc-400 hover:border-white/[0.15] hover:bg-white/[0.04]'
+                                )}
+                              >
+                                {opt}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {answered && (
+                          <p className={cn('text-[11px] mt-2 font-medium', isCorrect ? 'text-green-400' : 'text-red-400')}>
+                            {isCorrect ? '✓ Benar!' : `✗ Jawaban yang benar: ${q.correctAnswer}`}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
           </div>
         )}
 
