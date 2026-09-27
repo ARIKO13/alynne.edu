@@ -269,7 +269,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-zinc-950 flex">
+    <div className="fixed inset-0 z-50 bg-zinc-950 flex h-screen">
       {/* Lo-Fi Background (only in session mode) */}
       {mainTab === 'session' && isRunning && (
         <div className="absolute inset-0 pointer-events-none">
@@ -278,7 +278,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
       )}
 
       {/* ── LEFT SIDEBAR ── */}
-      <div className="w-80 border-r border-white/[0.06] bg-zinc-950/95 flex flex-col z-10">
+      <div className="w-80 h-full border-r border-white/[0.06] bg-zinc-950/95 flex flex-col z-10 min-h-0">
         {/* Header */}
         <div className="p-4 border-b border-white/[0.06] flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -355,7 +355,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
 
         {/* Chapter list */}
         {stage === 'complete' && (
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+          <div className="flex-1 overflow-y-auto p-2 space-y-1 min-h-0">
             {chapters.map((ch) => (
               <button
                 key={ch.id}
@@ -406,7 +406,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
       </div>
 
       {/* ── MAIN AREA ── */}
-      <div className="flex-1 overflow-y-auto relative z-10">
+      <div className="flex-1 overflow-y-auto relative z-10 h-full min-h-0">
         {/* Tab switcher */}
         {stage === 'complete' && (
           <div className="sticky top-0 z-20 bg-zinc-950/80 backdrop-blur border-b border-white/[0.04] px-6 py-2 flex gap-2">
