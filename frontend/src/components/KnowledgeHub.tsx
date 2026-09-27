@@ -35,6 +35,8 @@ import {
   X,
   Clock,
   ChevronRight,
+  Cloud,
+  RefreshCw,
 } from 'lucide-react';
 import {
   getProjects,
