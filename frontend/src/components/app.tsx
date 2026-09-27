@@ -1,9 +1,11 @@
 import { useAppStore } from '@/lib/store';
 import { STTPanel } from '@/components/stt-panel';
 import { AIAssistant } from '@/components/ai-assistant';
-import { ModulPanel } from '@/components/modul-panel';
-import { MindMapPanel } from '@/components/mindmap-panel';
-import { ImageSharpener } from '@/components/image-sharpener';
+import { StudyPipeline } from '@/components/StudyPipeline';
+import { KnowledgeHub } from '@/components/KnowledgeHub';
+import { Scratchpad } from '@/components/Scratchpad';
+import { WeeklyAnalytics } from '@/components/WeeklyAnalytics';
+import { ReferralPanel } from '@/components/ReferralPanel';
 import { SettingsDialog } from '@/components/settings-dialog';
 import { LoginScreen } from '@/components/login-screen';
 import { AdminPanel } from '@/components/admin-panel';
@@ -11,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { stopSttRecording } from '@/lib/stt-controller';
 import {
   Mic, Bot, Settings, Wifi, Radio, LogOut, MicOff,
-  Menu, X, Shield, FileText, Monitor, ArrowLeft, Network, Wand2,
+  Menu, X, Shield, Sparkles, FolderOpen, StickyNote, TrendingUp, Gift, FileText, Monitor, ArrowLeft, Network, Wand2,
 } from 'lucide-react';
 import { isAdmin } from '@/lib/admin';
 import { cn } from '@/lib/utils';
@@ -24,23 +26,25 @@ function isAlynneDomain(): boolean {
   return ALYNNE_DOMAINS.includes(window.location.hostname);
 }
 
-type TabId = 'stt' | 'mindmap' | 'assistant' | 'modul' | 'sharpen' | 'admin';
+type TabId = 'stt' | 'belajar' | 'hub' | 'notes' | 'stats' | 'refer' | 'admin';
 
 const TABS: { id: TabId; label: string; icon: typeof Mic; adminOnly?: boolean }[] = [
   { id: 'stt', label: 'Speech to Text', icon: Mic },
-  { id: 'mindmap', label: 'Mind Map', icon: Network },
-  { id: 'modul', label: 'Modul PDF', icon: FileText },
-  { id: 'assistant', label: 'AI Assistant', icon: Bot },
-  { id: 'sharpen', label: 'Penajam Gambar', icon: Wand2 },
+  { id: 'belajar', label: 'Mode Belajar', icon: Sparkles },
+  { id: 'hub', label: 'Knowledge Hub', icon: FolderOpen },
+  { id: 'notes', label: 'Scratchpad', icon: StickyNote },
+  { id: 'stats', label: 'Analitik', icon: TrendingUp },
+  { id: 'refer', label: 'Referral', icon: Gift },
   { id: 'admin', label: 'Admin Panel', icon: Shield, adminOnly: true },
 ];
 
 const TAB_TITLES: Record<TabId, string> = {
   stt: 'Speech to Text',
-  mindmap: 'Mind Map Generator',
-  modul: 'Modul PDF',
-  assistant: 'AI Assistant',
-  sharpen: 'Penajam Gambar (CV)',
+  belajar: 'Mode Belajar',
+  hub: 'Knowledge Hub',
+  notes: 'Scratchpad',
+  stats: 'Analitik Belajar',
+  refer: 'Referral',
   admin: 'Admin Panel',
 };
 
@@ -115,6 +119,14 @@ export default function App({ onBackToLanding }: AppProps) {
   };
 
   const handleTabClick = (id: TabId) => {
+    // Mode Belajar: redirect to STT if no transcript yet
+    if (id === 'belajar') {
+      const hasTranscript = useAppStore.getState().transcript?.trim()?.length > 20;
+      if (!hasTranscript) {
+        setActiveTab('stt');
+        return;
+      }
+    }
     setActiveTab(id);
     setSidebarOpen(false);
   };
@@ -278,13 +290,19 @@ export default function App({ onBackToLanding }: AppProps) {
             <div className={cn(activeTab !== 'stt' && 'hidden')}>
               <STTPanel />
             </div>
-            {activeTab === 'mindmap' && <MindMapPanel />}
-            {activeTab === 'modul' && <ModulPanel />}
-            {activeTab === 'sharpen' && <ImageSharpener />}
 
-            {activeTab === 'assistant' && (
-              <div className="h-[calc(100vh-8rem)]"><AIAssistant /></div>
+            {activeTab === 'belajar' && transcript && (
+              <StudyPipeline open={true} onClose={() => setActiveTab('stt')} transcript={transcript} />
             )}
+            {activeTab === 'belajar' && !transcript && (
+              <div className="flex items-center justify-center h-[calc(100vh-8rem)] text-zinc-500 text-sm">
+                Rekam audio dulu di Speech to Text, lalu buka Mode Belajar.
+              </div>
+            )}
+            {activeTab === 'hub' && <KnowledgeHub open={true} onClose={() => setActiveTab('stt')} />}
+            {activeTab === 'notes' && <Scratchpad open={true} onClose={() => setActiveTab('stt')} />}
+            {activeTab === 'stats' && <WeeklyAnalytics open={true} onClose={() => setActiveTab('stt')} />}
+            {activeTab === 'refer' && <ReferralPanel open={true} onClose={() => setActiveTab('stt')} />}
             {activeTab === 'admin' && userIsAdmin && <AdminPanel />}
           </div>
         </main>

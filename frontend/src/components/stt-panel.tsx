@@ -663,56 +663,7 @@ const { transcriptEntries, sttAudioMode } = useAppStore();
             {sttSource === 'groq' && isRecording && !isReconnecting && (
               <span className="text-amber-500">Auto-reconnect aktif</span>
             )}
-            {/* Personal Dict button */}
-            <button
-              onClick={() => setPersonalDictOpen(true)}
-              className="flex items-center gap-1 px-2 py-0.5 rounded border border-[#8B5CF6]/15 bg-[#8B5CF6]/[0.03] hover:bg-[#8B5CF6]/10 text-zinc-400 hover:text-[#8B5CF6] transition-colors text-[11px]"
-              title="Personal Dictionary"
-            >
-              <Brain className="h-3 w-3" />
-              <span>Dict</span>
-              {personalDictCount > 0 && (
-                <Badge className="bg-[#8B5CF6]/20 text-[#8B5CF6] border-[#8B5CF6]/30 text-[9px] px-1 py-0">
-                  {personalDictCount}
-                </Badge>
-              )}
-            </button>
-            {/* Knowledge Hub button */}
-            <button
-              onClick={() => setKnowledgeHubOpen(true)}
-              className="flex items-center gap-1 px-2 py-0.5 rounded border border-amber-500/15 bg-amber-500/[0.03] hover:bg-amber-500/10 text-zinc-400 hover:text-amber-400 transition-colors text-[11px]"
-              title="Knowledge Hub + Google Drive"
-            >
-              <FolderOpen className="h-3 w-3" />
-              <span>Hub</span>
-            </button>
-            {/* Scratchpad button */}
-            <button
-              onClick={() => setScratchpadOpen(true)}
-              className="flex items-center gap-1 px-2 py-0.5 rounded border border-pink-500/15 bg-pink-500/[0.03] hover:bg-pink-500/10 text-zinc-400 hover:text-pink-400 transition-colors text-[11px]"
-              title="Scratchpad"
-            >
-              <StickyNote className="h-3 w-3" />
-              <span>Notes</span>
-            </button>
-            {/* Analytics button */}
-            <button
-              onClick={() => setAnalyticsOpen(true)}
-              className="flex items-center gap-1 px-2 py-0.5 rounded border border-blue-500/15 bg-blue-500/[0.03] hover:bg-blue-500/10 text-zinc-400 hover:text-blue-400 transition-colors text-[11px]"
-              title="Analitik Belajar"
-            >
-              <TrendingUp className="h-3 w-3" />
-              <span>Stats</span>
-            </button>
-            {/* Referral button */}
-            <button
-              onClick={() => setReferralOpen(true)}
-              className="flex items-center gap-1 px-2 py-0.5 rounded border border-green-500/15 bg-green-500/[0.03] hover:bg-green-500/10 text-zinc-400 hover:text-green-400 transition-colors text-[11px]"
-              title="Ajak Teman"
-            >
-              <Gift className="h-3 w-3" />
-              <span>Refer</span>
-            </button>
+
           </div>
         </div>
       </div>
