@@ -63,6 +63,9 @@ import { AmbientThemes } from '@/components/AmbientThemes';
 import { LofiBackground } from '@/components/LofiBackground';
 import { cn } from '@/lib/utils';
 import { speak, stop as ttsStop, isSpeaking, pause as ttsPause, resume as ttsResume } from '@/lib/text-to-speech';
+import { VoiceTutor } from '@/components/VoiceTutor';
+import { StudyBuddy } from '@/components/StudyBuddy';
+import { ExamSimulator } from '@/components/ExamSimulator';
 
 interface StudyPipelineProps {
   open: boolean;
@@ -71,7 +74,7 @@ interface StudyPipelineProps {
 }
 
 type PipelineStage = 'idle' | 'splitting' | 'mindmap' | 'chapters' | 'complete';
-type MainTab = 'materi' | 'kuis' | 'mindmap' | 'tanya' | 'session';
+type MainTab = 'materi' | 'kuis' | 'mindmap' | 'tanya' | 'voice' | 'buddy' | 'session';
 
 export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps) {
   const [stage, setStage] = useState<PipelineStage>('idle');
@@ -90,6 +93,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   const [focusMode, setFocusMode] = useState(false);
   const [readChapters, setReadChapters] = useState<Set<number>>(new Set());
   const [quickNote, setQuickNote] = useState('');
+  const [examOpen, setExamOpen] = useState(false);
 
   // ── Pomodoro + Focus state (inline, not separate component) ──
   const [timerTotal, setTimerTotal] = useState(25 * 60);
@@ -488,6 +492,15 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               <Swords className="h-3 w-3 mr-1" />
               Quiz Battle ({Object.values(quizzes).flat().length} soal)
             </Button>
+            <Button
+              onClick={() => setExamOpen(true)}
+              variant="outline"
+              size="sm"
+              className="w-full text-[10px] border-red-500/20 text-red-400 hover:bg-red-500/10"
+            >
+              <GraduationCap className="h-3 w-3 mr-1" />
+              Exam Simulator
+            </Button>
           </div>
         )}
 
@@ -505,6 +518,13 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           onClose={() => setQuizBattleOpen(false)}
           questions={Object.values(quizzes).flat()}
           title={`Quiz Battle - ${chapters.length} Bab`}
+        />
+
+        {/* Exam Simulator */}
+        <ExamSimulator
+          open={examOpen}
+          onClose={() => setExamOpen(false)}
+          chapters={chapters}
         />
       </div>
 
@@ -552,6 +572,26 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
             >
               <MessageCircle className="h-3 w-3 inline mr-1" />
               Tanya AI
+            </button>
+            <button
+              onClick={() => setMainTab('voice')}
+              className={cn(
+                'px-3 py-1 rounded text-xs font-medium transition-colors',
+                mainTab === 'voice' ? 'bg-green-600 text-white' : 'text-zinc-500 hover:text-zinc-300'
+              )}
+            >
+              <Mic className="h-3 w-3 inline mr-1" />
+              Voice Tutor
+            </button>
+            <button
+              onClick={() => setMainTab('buddy')}
+              className={cn(
+                'px-3 py-1 rounded text-xs font-medium transition-colors',
+                mainTab === 'buddy' ? 'bg-orange-600 text-white' : 'text-zinc-500 hover:text-zinc-300'
+              )}
+            >
+              <Sparkles className="h-3 w-3 inline mr-1" />
+              Study Buddy
             </button>
             <button
               onClick={() => setMainTab('session')}
@@ -789,6 +829,16 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
             allChapters={chapters}
             quizzes={quizzes}
           />
+        )}
+
+        {/* VOICE TUTOR TAB */}
+        {mainTab === 'voice' && stage === 'complete' && activeChapter && (
+          <VoiceTutor chapter={activeChapter} transcript={transcript} />
+        )}
+
+        {/* STUDY BUDDY TAB */}
+        {mainTab === 'buddy' && stage === 'complete' && activeChapter && (
+          <StudyBuddy chapter={activeChapter} transcript={transcript} />
         )}
 
         {/* SESSION TAB: Pomodoro + Focus + Ambient */}
