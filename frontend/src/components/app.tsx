@@ -6,6 +6,7 @@ import { KnowledgeHub } from '@/components/KnowledgeHub';
 import { Scratchpad } from '@/components/Scratchpad';
 import { WeeklyAnalytics } from '@/components/WeeklyAnalytics';
 import { ReferralPanel } from '@/components/ReferralPanel';
+import { FlashcardPanel } from '@/components/FlashcardPanel';
 import { SettingsDialog } from '@/components/settings-dialog';
 import { LoginScreen } from '@/components/login-screen';
 import { AdminPanel } from '@/components/admin-panel';
@@ -13,11 +14,12 @@ import { Badge } from '@/components/ui/badge';
 import { stopSttRecording } from '@/lib/stt-controller';
 import {
   Mic, Bot, Settings, Wifi, Radio, LogOut, MicOff,
-  Menu, X, Shield, Sparkles, FolderOpen, StickyNote, TrendingUp, Gift, FileText, Monitor, ArrowLeft, Network, Wand2,
+  Menu, X, Shield, Sparkles, FolderOpen, StickyNote, TrendingUp, Gift, FileText, Monitor, ArrowLeft, Network, Wand2, Layers,
 } from 'lucide-react';
 import { isAdmin } from '@/lib/admin';
 import { cn } from '@/lib/utils';
 import { useClientSession } from '@/lib/use-client-session';
+import { registerShortcuts } from '@/lib/keyboard-shortcuts';
 import { useEffect, useState, useRef, useMemo } from 'react';
 
 const ALYNNE_DOMAINS = ['alynne.my.id', 'www.alynne.my.id'];
@@ -26,7 +28,7 @@ function isAlynneDomain(): boolean {
   return ALYNNE_DOMAINS.includes(window.location.hostname);
 }
 
-type TabId = 'stt' | 'belajar' | 'hub' | 'notes' | 'stats' | 'refer' | 'admin';
+type TabId = 'stt' | 'belajar' | 'hub' | 'notes' | 'stats' | 'refer' | 'flash' | 'admin';
 
 const TABS: { id: TabId; label: string; icon: typeof Mic; adminOnly?: boolean }[] = [
   { id: 'stt', label: 'Speech to Text', icon: Mic },
@@ -35,6 +37,7 @@ const TABS: { id: TabId; label: string; icon: typeof Mic; adminOnly?: boolean }[
   { id: 'notes', label: 'Scratchpad', icon: StickyNote },
   { id: 'stats', label: 'Analitik', icon: TrendingUp },
   { id: 'refer', label: 'Referral', icon: Gift },
+  { id: 'flash', label: 'Flashcard', icon: Layers },
   { id: 'admin', label: 'Admin Panel', icon: Shield, adminOnly: true },
 ];
 
@@ -45,6 +48,7 @@ const TAB_TITLES: Record<TabId, string> = {
   notes: 'Scratchpad',
   stats: 'Analitik Belajar',
   refer: 'Referral',
+  flash: 'Flashcard',
   admin: 'Admin Panel',
 };
 
@@ -303,6 +307,7 @@ export default function App({ onBackToLanding }: AppProps) {
             {activeTab === 'notes' && <Scratchpad open={true} onClose={() => setActiveTab('stt')} />}
             {activeTab === 'stats' && <WeeklyAnalytics open={true} onClose={() => setActiveTab('stt')} />}
             {activeTab === 'refer' && <ReferralPanel open={true} onClose={() => setActiveTab('stt')} />}
+            {activeTab === 'flash' && <FlashcardPanel open={true} onClose={() => setActiveTab('stt')} chapters={[]} />}
             {activeTab === 'admin' && userIsAdmin && <AdminPanel />}
           </div>
         </main>

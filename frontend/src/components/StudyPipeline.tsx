@@ -40,6 +40,13 @@ import {
   User,
   Swords,
   Presentation,
+  Volume2,
+  VolumeX,
+  Pause,
+  Play as PlayIcon,
+  Maximize2,
+  Minimize2,
+  CheckCircle2 as CheckIcon,
 } from 'lucide-react';
 import {
   splitTranscriptIntoChapters,
@@ -55,6 +62,7 @@ import { recordQuizResult, updateStreak } from '@/lib/ai-memory';
 import { AmbientThemes } from '@/components/AmbientThemes';
 import { LofiBackground } from '@/components/LofiBackground';
 import { cn } from '@/lib/utils';
+import { speak, stop as ttsStop, isSpeaking, pause as ttsPause, resume as ttsResume } from '@/lib/text-to-speech';
 
 interface StudyPipelineProps {
   open: boolean;
@@ -77,6 +85,11 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   const [llmMindmap, setLLMMindmap] = useState<LLMMindmapNode | null>(null);
   const [quizBattleOpen, setQuizBattleOpen] = useState(false);
   const [slideExporterOpen, setSlideExporterOpen] = useState(false);
+  const [ttsPlaying, setTtsPlaying] = useState(false);
+  const [ttsPaused, setTtsPaused] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
+  const [readChapters, setReadChapters] = useState<Set<number>>(new Set());
+  const [quickNote, setQuickNote] = useState('');
 
   // ── Pomodoro + Focus state (inline, not separate component) ──
   const [timerTotal, setTimerTotal] = useState(25 * 60);
@@ -269,6 +282,46 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     setTimerLeft(timerTotal);
   };
 
+  // TTS toggle
+  const handleToggleTTS = () => {
+    if (!activeChapter) return;
+    if (ttsPlaying && !ttsPaused) {
+      ttsPause();
+      setTtsPaused(true);
+    } else if (ttsPlaying && ttsPaused) {
+      ttsResume();
+      setTtsPaused(false);
+    } else {
+      speak(activeChapter.content, {
+        rate: 1.0,
+        onEnd: () => {
+          setTtsPlaying(false);
+          setTtsPaused(false);
+        },
+      });
+      setTtsPlaying(true);
+      setTtsPaused(false);
+    }
+  };
+
+  const handleStopTTS = () => {
+    ttsStop();
+    setTtsPlaying(false);
+    setTtsPaused(false);
+  };
+
+  // Mark chapter as read when selected
+  const handleSelectChapter = (id: number) => {
+    setActiveChapterId(id);
+    setMainTab('materi');
+    setReadChapters((prev) => new Set(prev).add(id));
+  };
+
+  // Focus mode toggle
+  const handleToggleFocus = () => {
+    setFocusMode(!focusMode);
+  };
+
   const handleDownloadMicro = (ch: Chapter) => {
     generateMicroPDF(ch, quizzes[ch.id] || []);
   };
@@ -352,16 +405,26 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
 
 
 
-        {/* Chapter list */}
+        {/* Chapter list with progress */}
         {stage === 'complete' && (
           <div className="flex-1 overflow-y-auto p-2 space-y-1 min-h-0">
+            {/* Progress bar */}
+            <div className="px-2 py-1 mb-1">
+              <div className="flex items-center justify-between text-[9px] text-zinc-600 mb-0.5">
+                <span>Progress Baca</span>
+                <span>{readChapters.size}/{chapters.length}</span>
+              </div>
+              <div className="h-1 rounded-full bg-white/[0.04] overflow-hidden">
+                <div
+                  className="h-full bg-green-500 transition-all"
+                  style={{ width: `${chapters.length > 0 ? (readChapters.size / chapters.length) * 100 : 0}%` }}
+                />
+              </div>
+            </div>
             {chapters.map((ch) => (
               <button
                 key={ch.id}
-                onClick={() => {
-                  setActiveChapterId(ch.id);
-                  setMainTab('materi');
-                }}
+                onClick={() => handleSelectChapter(ch.id)}
                 className={cn(
                   'w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs transition-colors text-left',
                   activeChapterId === ch.id
@@ -369,8 +432,11 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                     : 'text-zinc-400 hover:bg-white/[0.04]'
                 )}
               >
-                <span className="w-5 h-5 rounded-full bg-white/[0.04] flex items-center justify-center text-[9px] font-bold shrink-0">
-                  {ch.id}
+                <span className={cn(
+                  'w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0',
+                  readChapters.has(ch.id) ? 'bg-green-500/20 text-green-400' : 'bg-white/[0.04]'
+                )}>
+                  {readChapters.has(ch.id) ? <CheckIcon className="h-2.5 w-2.5" /> : ch.id}
                 </span>
                 <span className="truncate">{ch.title}</span>
               </button>
@@ -564,16 +630,75 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{activeChapter.content}</p>
             </div>
 
-            {/* Download micro PDF */}
-            <Button
-              onClick={() => handleDownloadMicro(activeChapter)}
-              variant="outline"
-              size="sm"
-              className="border-blue-500/20 text-blue-400 hover:bg-blue-500/10"
-            >
-              <Download className="h-3 w-3 mr-1" />
-              Download PDF Bab Ini
-            </Button>
+            {/* Actions: TTS + Focus + PDF */}
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={handleToggleTTS}
+                size="sm"
+                className={cn(
+                  ttsPlaying && !ttsPaused ? 'bg-green-600 hover:bg-green-700' : 'bg-[#8B5CF6] hover:bg-[#7C3AED]'
+                )}
+              >
+                {ttsPlaying && !ttsPaused ? (
+                  <>
+                    <Pause className="h-3 w-3 mr-1" />
+                    Pause Baca
+                  </>
+                ) : ttsPaused ? (
+                  <>
+                    <PlayIcon className="h-3 w-3 mr-1" />
+                    Lanjut Baca
+                  </>
+                ) : (
+                  <>
+                    <Volume2 className="h-3 w-3 mr-1" />
+                    Bacakan
+                  </>
+                )}
+              </Button>
+              {ttsPlaying && (
+                <Button
+                  onClick={handleStopTTS}
+                  variant="outline"
+                  size="sm"
+                  className="border-red-500/20 text-red-400"
+                >
+                  <VolumeX className="h-3 w-3 mr-1" />
+                  Stop
+                </Button>
+              )}
+              <Button
+                onClick={handleToggleFocus}
+                variant="outline"
+                size="sm"
+                className="border-amber-500/20 text-amber-400 hover:bg-amber-500/10"
+              >
+                {focusMode ? <Minimize2 className="h-3 w-3 mr-1" /> : <Maximize2 className="h-3 w-3 mr-1" />}
+                {focusMode ? 'Exit Focus' : 'Focus Mode'}
+              </Button>
+              <Button
+                onClick={() => handleDownloadMicro(activeChapter)}
+                variant="outline"
+                size="sm"
+                className="border-blue-500/20 text-blue-400 hover:bg-blue-500/10"
+              >
+                <Download className="h-3 w-3 mr-1" />
+                PDF
+              </Button>
+            </div>
+
+            {/* Quick Note (floating textarea) */}
+            {focusMode && (
+              <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.05] p-3">
+                <p className="text-[10px] text-amber-400 uppercase mb-2">Quick Note</p>
+                <textarea
+                  value={quickNote}
+                  onChange={(e) => setQuickNote(e.target.value)}
+                  placeholder="Catat sesuatu sambil baca..."
+                  className="w-full h-20 px-3 py-2 rounded bg-white/[0.04] border border-white/[0.08] text-xs text-zinc-300 placeholder:text-zinc-600 resize-none focus:outline-none focus:border-amber-500/50"
+                />
+              </div>
+            )}
           </div>
         )}
 
