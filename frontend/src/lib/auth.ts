@@ -113,7 +113,7 @@ export function getGoogleAuthUrl(baseUrl?: string): string {
     client_id: GOOGLE_CLIENT_ID,
     redirect_uri: `${base}/api/auth/callback`,
     response_type: 'code',
-    scope: 'openid email profile',
+    scope: 'openid email profile https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/classroom.courses.readonly https://www.googleapis.com/auth/classroom.student-submissions.me.readonly https://www.googleapis.com/auth/classroom.topics.readonly https://www.googleapis.com/auth/forms.body.readonly https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/documents https://www.googleapis.com/auth/presentations',
     prompt: 'consent',
     access_type: 'offline',
   });

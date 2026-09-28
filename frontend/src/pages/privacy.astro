@@ -1,0 +1,143 @@
+---
+layout: ../layouts/Layout.astro
+title: "Privacy Policy - ALYNNE.EDU"
+---
+
+<div class="min-h-screen bg-[#09090b] text-zinc-300 px-6 py-12 max-w-3xl mx-auto">
+  <h1 class="text-3xl font-bold text-white mb-2">Privacy Policy</h1>
+  <p class="text-sm text-zinc-500 mb-8">Last updated: September 27, 2026</p>
+
+  <div class="space-y-6 text-sm leading-relaxed">
+    <section>
+      <h2 class="text-lg font-semibold text-white mb-2">1. Introduction</h2>
+      <p>ALYNNE.EDU ("we", "us", or "our") is an AI-powered education platform operated by Povycon Technology. This Privacy Policy explains how we collect, use, and protect your data when you use our website at <a href="https://alynne.my.id" class="text-[#8B5CF6] underline">https://alynne.my.id</a>.</p>
+      <p>By using ALYNNE.EDU, you agree to the collection and use of information in accordance with this policy.</p>
+    </section>
+
+    <section>
+      <h2 class="text-lg font-semibold text-white mb-2">2. Information We Collect</h2>
+      <h3 class="text-sm font-medium text-zinc-200 mb-1">2.1 Account Information</h3>
+      <p>When you sign in with Google, we collect:</p>
+      <ul class="list-disc list-inside ml-2 space-y-1 text-zinc-400">
+        <li>Google Account ID (UID)</li>
+        <li>Email address (Gmail)</li>
+        <li>Display name</li>
+        <li>Profile picture URL</li>
+      </ul>
+
+      <h3 class="text-sm font-medium text-zinc-200 mt-4 mb-1">2.2 Google API Data</h3>
+      <p>With your permission, we may access the following Google services:</p>
+      <ul class="list-disc list-inside ml-2 space-y-1 text-zinc-400">
+        <li><strong>Google Drive</strong> — Create and manage files in an "ALYNNE.EDU" folder (only files created by our app)</li>
+        <li><strong>Google Calendar</strong> — Create study schedule events and reminders</li>
+        <li><strong>Gmail</strong> — Send weekly study reports on your behalf (we do not read your emails)</li>
+        <li><strong>Google Classroom</strong> — View your classes, course work, and grades (read-only)</li>
+        <li><strong>Google Forms</strong> — View your forms for quiz import (read-only)</li>
+        <li><strong>Google Sheets</strong> — Export study analytics to spreadsheets</li>
+        <li><strong>Google Docs</strong> — Export study modules to documents</li>
+        <li><strong>Google Slides</strong> — Export presentations from study materials</li>
+        <li><strong>YouTube</strong> — View your YouTube account for transcript extraction (read-only)</li>
+        <li><strong>Cloud Vision</strong> — Process images for OCR (text extraction from photos)</li>
+      </ul>
+
+      <h3 class="text-sm font-medium text-zinc-200 mt-4 mb-1">2.3 Study Data</h3>
+      <p>The following data is stored locally in your browser (localStorage), not on our servers:</p>
+      <ul class="list-disc list-inside ml-2 space-y-1 text-zinc-400">
+        <li>Speech-to-Text transcripts</li>
+        <li>AI chat conversations</li>
+        <li>Study preferences (Pomodoro settings, focus sensitivity)</li>
+        <li>Quiz results and scores</li>
+        <li>Knowledge Hub items (notes, PDFs, mindmaps)</li>
+        <li>AI Memory (learning style, streak, activity history)</li>
+        <li>Referral codes</li>
+      </ul>
+
+      <h3 class="text-sm font-medium text-zinc-200 mt-4 mb-1">2.4 Server-Stored Data</h3>
+      <p>The following data is stored in our Cloudflare D1 database:</p>
+      <ul class="list-disc list-inside ml-2 space-y-1 text-zinc-400">
+        <li>User account: UID, username, Gmail, subscription status</li>
+        <li>Google Drive refresh tokens (for Drive sync, encrypted)</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2 class="text-lg font-semibold text-white mb-2">3. How We Use Your Data</h2>
+      <ul class="list-disc list-inside ml-2 space-y-1 text-zinc-400">
+        <li>To provide AI-powered speech-to-text transcription</li>
+        <li>To generate study materials (PDFs, mindmaps, quizzes, slides)</li>
+        <li>To sync your study materials to Google Drive (with permission)</li>
+        <li>To send weekly study reports via email (with permission)</li>
+        <li>To create calendar reminders for study sessions (with permission)</li>
+        <li>To import classes and assignments from Google Classroom (with permission)</li>
+        <li>To track study progress and analytics</li>
+        <li>To provide AI chat assistance with study materials</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2 class="text-lg font-semibold text-white mb-2">4. Data Sharing</h2>
+      <p>We do not sell, rent, or share your personal data with third parties. Your data is used solely to provide ALYNNE.EDU services.</p>
+      <p>We use the following third-party services:</p>
+      <ul class="list-disc list-inside ml-2 space-y-1 text-zinc-400">
+        <li><strong>Google APIs</strong> — For Drive, Calendar, Gmail, Classroom, YouTube, and other integrations (you authorize access)</li>
+        <li><strong>Cloudflare D1</strong> — For storing user account data (encrypted at rest)</li>
+        <li><strong>Groq API</strong> — For AI-powered features (quiz generation, mindmap, chat). Transcripts and study materials may be sent to Groq for processing but are not stored by Groq.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2 class="text-lg font-semibold text-white mb-2">5. Data Security</h2>
+      <ul class="list-disc list-inside ml-2 space-y-1 text-zinc-400">
+        <li>All server data is encrypted at rest (Cloudflare D1)</li>
+        <li>Google OAuth tokens are stored server-side only, never exposed to client</li>
+        <li>Webcam video for focus detection is processed 100% client-side and never sent to any server</li>
+        <li>STT transcripts are stored in browser localStorage, not on servers</li>
+        <li>HTTPS/TLS encryption for all communications</li>
+        <li>No third-party tracking cookies or analytics</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2 class="text-lg font-semibold text-white mb-2">6. Your Rights</h2>
+      <ul class="list-disc list-inside ml-2 space-y-1 text-zinc-400">
+        <li><strong>Access</strong> — You can view your data in Knowledge Hub and Settings</li>
+        <li><strong>Delete</strong> — You can delete study data from your browser at any time</li>
+        <li><strong>Revoke Access</strong> — You can revoke Google API access at <a href="https://myaccount.google.com/permissions" class="text-[#8B5CF6] underline">Google Account Permissions</a></li>
+        <li><strong>Export</strong> — You can export your data via Google Drive sync or PDF download</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2 class="text-lg font-semibold text-white mb-2">7. Data Retention</h2>
+      <ul class="list-disc list-inside ml-2 space-y-1 text-zinc-400">
+        <li>Browser data (localStorage): Retained until you clear browser data or delete items manually</li>
+        <li>Server data (D1): Retained while your account is active</li>
+        <li>Google Drive files: Retained in your Drive until you delete them</li>
+        <li>Google OAuth tokens: Retained until you revoke access</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2 class="text-lg font-semibold text-white mb-2">8. Children's Privacy</h2>
+      <p>ALYNNE.EDU is designed for educational purposes and is intended for students, teachers, and institutions. We do not knowingly collect data from children under 13. If you believe a child has provided us with personal information, please contact us to have it removed.</p>
+    </section>
+
+    <section>
+      <h2 class="text-lg font-semibold text-white mb-2">9. Changes to This Policy</h2>
+      <p>We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last updated" date.</p>
+    </section>
+
+    <section>
+      <h2 class="text-lg font-semibold text-white mb-2">10. Contact Us</h2>
+      <p>If you have any questions about this Privacy Policy, please contact us at:</p>
+      <ul class="list-disc list-inside ml-2 space-y-1 text-zinc-400">
+        <li>Email: <a href="mailto:alynneai25@gmail.com" class="text-[#8B5CF6] underline">alynneai25@gmail.com</a></li>
+        <li>Website: <a href="https://alynne.my.id" class="text-[#8B5CF6] underline">https://alynne.my.id</a></li>
+      </ul>
+    </section>
+
+    <div class="pt-8 border-t border-white/[0.06]">
+      <a href="/" class="text-[#8B5CF6] underline">← Back to ALYNNE.EDU</a>
+    </div>
+  </div>
+</div>

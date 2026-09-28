@@ -229,6 +229,7 @@ export function AgentLanding({ onEnter }: { onEnter: (agentId: string) => void }
       <footer className="border-t border-white/[0.04] py-6 px-6">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <span className="text-[11px] text-zinc-500">Povycon Technology</span>
+          <a href="/privacy" className="text-[11px] text-zinc-500 hover:text-zinc-300">Privacy Policy</a>
           <span className="text-[11px] text-zinc-500">{new Date().getFullYear()}</span>
         </div>
       </footer>
