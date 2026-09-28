@@ -47,6 +47,7 @@ import {
   Maximize2,
   Minimize2,
   CheckCircle2 as CheckIcon,
+  GraduationCap,
 } from 'lucide-react';
 import {
   splitTranscriptIntoChapters,
