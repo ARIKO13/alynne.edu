@@ -10,7 +10,7 @@
  *   - Delete items/projects
  */
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -35,8 +35,6 @@ import {
   X,
   Clock,
   ChevronRight,
-  Cloud,
-  RefreshCw,
 } from 'lucide-react';
 import {
   getProjects,
@@ -81,9 +79,6 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
   const [newProjectName, setNewProjectName] = useState('');
   const [showNewProject, setShowNewProject] = useState(false);
   const [viewingItem, setViewingItem] = useState<KnowledgeItem | null>(null);
-  const [gdriveConnected, setGdriveConnected] = useState(false);
-  const [gdriveFiles, setGdriveFiles] = useState<Array<{id:string;name:string;modifiedTime:string}>>([]);
-  const [gdriveLoading, setGdriveLoading] = useState(false);
 
   const refresh = useCallback(() => {
     setProjects(getProjects());
@@ -99,70 +94,6 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
   }, [open, refresh]);
 
   const stats = useMemo(() => getHubStats(), [open, items]);
-
-  // Google Drive functions
-  const checkGDrive = useCallback(async () => {
-    try {
-      const res = await fetch("/api/gdrive/status");
-      if (res.ok) {
-        const data = await res.json();
-        setGdriveConnected(data.connected);
-      }
-    } catch {}
-  }, []);
-
-  const loadGDriveFiles = useCallback(async () => {
-    setGdriveLoading(true);
-    try {
-      const res = await fetch("/api/gdrive/list");
-      if (res.ok) {
-        const data = await res.json();
-        setGdriveFiles(data.files || []);
-      }
-    } catch {}
-    setGdriveLoading(false);
-  }, []);
-
-  const connectGDrive = useCallback(async () => {
-    try {
-      const res = await fetch("/api/gdrive/status");
-      const data = await res.json();
-      if (data.authUrl) {
-        window.location.href = data.authUrl;
-      }
-    } catch (e) {
-      toast.error("Gagal connect Google Drive");
-    }
-  }, []);
-
-  const syncToDrive = useCallback(async (item: KnowledgeItem) => {
-    try {
-      const res = await fetch("/api/gdrive/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          filename: `${item.title}.txt`,
-          content: item.content,
-        }),
-      });
-      if (res.ok) {
-        toast.success(`Tersimpan ke Google Drive: ${item.title}`);
-        loadGDriveFiles();
-      } else {
-        toast.error("Gagal upload ke Drive");
-      }
-    } catch {
-      toast.error("Gagal upload ke Drive");
-    }
-  }, [loadGDriveFiles]);
-
-  // Check GDrive on open
-  useEffect(() => {
-    if (open) {
-      checkGDrive();
-      if (gdriveConnected) loadGDriveFiles();
-    }
-  }, [open, checkGDrive, gdriveConnected, loadGDriveFiles]);
 
   const handleCreateProject = () => {
     if (!newProjectName.trim()) return;
@@ -315,46 +246,6 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
                 Klik + untuk buat.
               </p>
             )}
-
-            {/* Google Drive Section */}
-            <div className="pt-3 mt-3 border-t border-white/[0.04]">
-              <div className="flex items-center gap-2 mb-2">
-                <Cloud className="h-4 w-4 text-blue-400" />
-                <span className="text-xs font-medium text-zinc-300">Google Drive</span>
-                {gdriveConnected && (
-                  <Badge variant="outline" className="text-[8px] border-green-500/30 text-green-400 ml-auto">
-                    Connected
-                  </Badge>
-                )}
-              </div>
-              {!gdriveConnected ? (
-                <button
-                  onClick={connectGDrive}
-                  className="w-full px-3 py-2 rounded-md text-xs bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors border border-blue-500/20"
-                >
-                  Connect Google Drive
-                </button>
-              ) : (
-                <div className="space-y-1">
-                  <button
-                    onClick={loadGDriveFiles}
-                    className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-zinc-300"
-                  >
-                    <RefreshCw className="h-2.5 w-2.5" />
-                    Refresh files ({gdriveFiles.length})
-                  </button>
-                  {gdriveLoading && <p className="text-[10px] text-zinc-600">Loading...</p>}
-                  {gdriveFiles.slice(0, 5).map((f) => (
-                    <div key={f.id} className="text-[10px] text-zinc-500 truncate pl-2">
-                      📄 {f.name}
-                    </div>
-                  ))}
-                  {gdriveFiles.length > 5 && (
-                    <p className="text-[9px] text-zinc-600 pl-2">+{gdriveFiles.length - 5} lainnya</p>
-                  )}
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Items list */}
@@ -397,18 +288,6 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
                         </Badge>
                       </div>
                     </div>
-                    {gdriveConnected && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          syncToDrive(item);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 text-blue-400 hover:text-blue-300 p-1"
-                        title="Sync to Google Drive"
-                      >
-                        <Cloud className="h-3 w-3" />
-                      </button>
-                    )}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
