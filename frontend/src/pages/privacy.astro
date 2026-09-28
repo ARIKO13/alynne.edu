@@ -1,41 +1,19 @@
 ---
-layout: Layout.astro
-title: "Privacy Policy"
+import Layout from '../layouts/Layout.astro';
 ---
-<div class="min-h-screen bg-[#09090b] text-zinc-300 px-6 py-12 max-w-3xl mx-auto">
-  <h1 class="text-3xl font-bold text-white mb-2">Privacy Policy</h1>
-  <p class="text-sm text-zinc-500 mb-8">Last updated: September 27, 2026</p>
-  <div class="space-y-6 text-sm leading-relaxed">
-    <section>
-      <h2 class="text-lg font-semibold text-white mb-2">1. Introduction</h2>
-      <p>ALYNNE.EDU is an AI-powered education platform operated by Povycon Technology. This Privacy Policy explains how we collect, use, and protect your data when you use our website at alynne.my.id.</p>
-    </section>
-    <section>
-      <h2 class="text-lg font-semibold text-white mb-2">2. Information We Collect</h2>
-      <p>When you sign in with Google, we collect: Google Account ID, email address, display name, and profile picture URL. With your permission, we access Google Drive, Calendar, Gmail, Classroom, Forms, Sheets, Docs, Slides, YouTube, and Cloud Vision APIs. Study data (transcripts, chat, quiz results, preferences) is stored locally in your browser. Server data (account info, OAuth tokens) is stored in Cloudflare D1.</p>
-    </section>
-    <section>
-      <h2 class="text-lg font-semibold text-white mb-2">3. How We Use Your Data</h2>
-      <p>We use your data to provide speech-to-text transcription, generate study materials, sync to Google Drive, send study reports, create calendar reminders, import from Classroom, track progress, and provide AI chat assistance.</p>
-    </section>
-    <section>
-      <h2 class="text-lg font-semibold text-white mb-2">4. Data Sharing</h2>
-      <p>We do not sell or share your data with third parties. We use Google APIs (authorized by you), Cloudflare D1 (encrypted), and Groq API for AI features (data processed but not stored).</p>
-    </section>
-    <section>
-      <h2 class="text-lg font-semibold text-white mb-2">5. Data Security</h2>
-      <p>Server data encrypted at rest. OAuth tokens stored server-side only. Webcam video processed client-side only. STT transcripts in browser localStorage. HTTPS/TLS for all communications. No tracking cookies.</p>
-    </section>
-    <section>
-      <h2 class="text-lg font-semibold text-white mb-2">6. Your Rights</h2>
-      <p>You can access, delete, and export your data. Revoke Google API access at myaccount.google.com/permissions.</p>
-    </section>
-    <section>
-      <h2 class="text-lg font-semibold text-white mb-2">7. Contact</h2>
-      <p>Email: alynneai25@gmail.com | Website: alynne.my.id</p>
-    </section>
-    <div class="pt-8 border-t border-white/[0.06]">
-      <a href="/" class="text-[#8B5CF6] underline">Back to ALYNNE.EDU</a>
+<Layout title="Privacy Policy">
+  <div class="min-h-screen bg-[#09090b] text-zinc-300 px-6 py-12 max-w-3xl mx-auto">
+    <h1 class="text-3xl font-bold text-white mb-2">Privacy Policy</h1>
+    <p class="text-sm text-zinc-500 mb-8">Last updated: September 27, 2026</p>
+    <div class="space-y-6 text-sm leading-relaxed">
+      <section><h2 class="text-lg font-semibold text-white mb-2">1. Introduction</h2><p>ALYNNE.EDU is an AI-powered education platform operated by Povycon Technology. This Privacy Policy explains how we collect, use, and protect your data when you use our website at alynne.my.id.</p></section>
+      <section><h2 class="text-lg font-semibold text-white mb-2">2. Information We Collect</h2><p>When you sign in with Google, we collect: Google Account ID, email address, display name, and profile picture URL. With your permission, we access Google Drive, Calendar, Gmail, Classroom, Forms, Sheets, Docs, Slides, YouTube, and Cloud Vision APIs. Study data is stored locally in your browser. Server data is stored in Cloudflare D1.</p></section>
+      <section><h2 class="text-lg font-semibold text-white mb-2">3. How We Use Your Data</h2><p>We use your data to provide speech-to-text transcription, generate study materials, sync to Google Drive, send study reports, create calendar reminders, import from Classroom, track progress, and provide AI chat assistance.</p></section>
+      <section><h2 class="text-lg font-semibold text-white mb-2">4. Data Sharing</h2><p>We do not sell or share your data with third parties. We use Google APIs (authorized by you), Cloudflare D1 (encrypted), and Groq API for AI features.</p></section>
+      <section><h2 class="text-lg font-semibold text-white mb-2">5. Data Security</h2><p>Server data encrypted at rest. OAuth tokens stored server-side only. Webcam video processed client-side only. STT transcripts in browser localStorage. HTTPS/TLS for all communications. No tracking cookies.</p></section>
+      <section><h2 class="text-lg font-semibold text-white mb-2">6. Your Rights</h2><p>You can access, delete, and export your data. Revoke Google API access at myaccount.google.com/permissions.</p></section>
+      <section><h2 class="text-lg font-semibold text-white mb-2">7. Contact</h2><p>Email: alynneai25@gmail.com | Website: alynne.my.id</p></section>
+      <div class="pt-8 border-t border-white/[0.06]"><a href="/" class="text-[#8B5CF6] underline">Back to ALYNNE.EDU</a></div>
     </div>
   </div>
-</div>
+</Layout>
