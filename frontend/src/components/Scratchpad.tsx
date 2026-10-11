@@ -41,17 +41,21 @@ export function Scratchpad({ open, onClose, initialContent }: ScratchpadProps) {
   const [content, setContent] = useState(initialContent || '');
   const [organizing, setOrganizing] = useState(false);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     if (!content.trim()) {
       toast.error('Isi dulu catatannya');
       return;
     }
-    quickSaveNote(
-      `Scratchpad ${new Date().toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`,
-      content
-    );
-    toast.success('Catatan disimpan ke Knowledge Hub!');
-    onClose();
+    try {
+      await quickSaveNote(
+        `Scratchpad ${new Date().toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`,
+        content
+      );
+      toast.success('Catatan disimpan ke Knowledge Hub!');
+      onClose();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal menyimpan catatan');
+    }
   }, [content, onClose]);
 
   const handleOrganize = useCallback(() => {

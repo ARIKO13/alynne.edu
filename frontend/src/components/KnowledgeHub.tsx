@@ -1,5 +1,5 @@
 /**
- * KnowledgeHub.tsx — Personal Knowledge Hub UI
+ * KnowledgeHub.tsx — Personal Knowledge Hub UI (IndexedDB-backed)
  *
  * Folder/project system for organizing saved work.
  * User can:
@@ -8,9 +8,12 @@
  *   - Browse and search saved items
  *   - View item content
  *   - Delete items/projects
+ *
+ * Storage: IndexedDB via @/lib/knowledge-hub.
+ * Shows a storage usage indicator with warning at 80% of quota.
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -21,6 +24,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
 import {
   Folder,
   FolderOpen,
@@ -35,6 +39,8 @@ import {
   X,
   Clock,
   ChevronRight,
+  HardDrive,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   getProjects,
@@ -43,8 +49,12 @@ import {
   getItems,
   deleteItem,
   getHubStats,
+  getStorageInfo,
+  initKnowledgeHub,
   type Project,
   type KnowledgeItem,
+  type HubStats,
+  type StorageInfo,
 } from '@/lib/knowledge-hub';
 import { toast } from 'sonner';
 
@@ -71,6 +81,12 @@ const TYPE_COLORS: Record<string, string> = {
   image: 'text-pink-400',
 };
 
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
 export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProject, setActiveProject] = useState<Project | null>(null);
@@ -79,44 +95,71 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
   const [newProjectName, setNewProjectName] = useState('');
   const [showNewProject, setShowNewProject] = useState(false);
   const [viewingItem, setViewingItem] = useState<KnowledgeItem | null>(null);
+  const [stats, setStats] = useState<HubStats | null>(null);
+  const [storageInfo, setStorageInfo] = useState<StorageInfo | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const refresh = useCallback(() => {
-    setProjects(getProjects());
-    if (activeProject) {
-      setItems(getItems(activeProject.id));
-    } else {
-      setItems(getItems());
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [ps, its, st, si] = await Promise.all([
+        getProjects(),
+        activeProject ? getItems(activeProject.id) : getItems(),
+        getHubStats(),
+        getStorageInfo(),
+      ]);
+      setProjects(ps);
+      setItems(its);
+      setStats(st);
+      setStorageInfo(si);
+    } catch (err) {
+      console.error('[KnowledgeHub] refresh failed:', err);
+      toast.error('Gagal memuat data Knowledge Hub');
+    } finally {
+      setLoading(false);
     }
   }, [activeProject]);
 
-  useMemo(() => {
-    if (open) refresh();
+  // Load when opened
+  useEffect(() => {
+    if (open) {
+      initKnowledgeHub().then(() => refresh());
+    }
   }, [open, refresh]);
 
-  const stats = useMemo(() => getHubStats(), [open, items]);
-
-  const handleCreateProject = () => {
+  const handleCreateProject = async () => {
     if (!newProjectName.trim()) return;
-    createProject(newProjectName.trim());
-    setNewProjectName('');
-    setShowNewProject(false);
-    refresh();
-    toast.success('Project dibuat!');
-  };
-
-  const handleDeleteProject = (id: string) => {
-    if (confirm('Hapus project dan semua isinya?')) {
-      deleteProject(id);
-      if (activeProject?.id === id) setActiveProject(null);
-      refresh();
-      toast.success('Project dihapus');
+    try {
+      await createProject(newProjectName.trim());
+      setNewProjectName('');
+      setShowNewProject(false);
+      await refresh();
+      toast.success('Project dibuat!');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal membuat project');
     }
   };
 
-  const handleDeleteItem = (id: string) => {
-    deleteItem(id);
-    refresh();
-    toast.success('Item dihapus');
+  const handleDeleteProject = async (id: string) => {
+    if (!confirm('Hapus project dan semua isinya?')) return;
+    try {
+      await deleteProject(id);
+      if (activeProject?.id === id) setActiveProject(null);
+      await refresh();
+      toast.success('Project dihapus');
+    } catch (err) {
+      toast.error('Gagal menghapus project');
+    }
+  };
+
+  const handleDeleteItem = async (id: string) => {
+    try {
+      await deleteItem(id);
+      await refresh();
+      toast.success('Item dihapus');
+    } catch (err) {
+      toast.error('Gagal menghapus item');
+    }
   };
 
   const filteredItems = useMemo(() => {
@@ -130,6 +173,9 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
   }, [items, search]);
 
   if (!open) return null;
+
+  const storageNearLimit = storageInfo && storageInfo.percentUsed >= storageInfo.warningThreshold;
+  const storageFull = storageInfo && storageInfo.percentUsed >= 100;
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -148,25 +194,94 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
         <div className="grid grid-cols-4 gap-3">
           <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-center">
             <Folder className="h-4 w-4 mx-auto mb-1 text-[#8B5CF6]" />
-            <p className="text-lg font-semibold text-white">{stats.totalProjects}</p>
+            <p className="text-lg font-semibold text-white">{stats?.totalProjects ?? 0}</p>
             <p className="text-[10px] text-zinc-500 uppercase">Project</p>
           </div>
           <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-center">
             <FileText className="h-4 w-4 mx-auto mb-1 text-blue-400" />
-            <p className="text-lg font-semibold text-white">{stats.totalItems}</p>
+            <p className="text-lg font-semibold text-white">{stats?.totalItems ?? 0}</p>
             <p className="text-[10px] text-zinc-500 uppercase">Item</p>
           </div>
           <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-center">
             <Mic className="h-4 w-4 mx-auto mb-1 text-green-400" />
-            <p className="text-lg font-semibold text-white">{stats.byType.stt || 0}</p>
+            <p className="text-lg font-semibold text-white">{stats?.byType.stt || 0}</p>
             <p className="text-[10px] text-zinc-500 uppercase">STT</p>
           </div>
           <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-center">
             <Brain className="h-4 w-4 mx-auto mb-1 text-[#8B5CF6]" />
-            <p className="text-lg font-semibold text-white">{(stats.byType.pdf || 0) + (stats.byType.mindmap || 0)}</p>
+            <p className="text-lg font-semibold text-white">
+              {(stats?.byType.pdf || 0) + (stats?.byType.mindmap || 0)}
+            </p>
             <p className="text-[10px] text-zinc-500 uppercase">PDF+Map</p>
           </div>
         </div>
+
+        {/* Storage usage indicator */}
+        {storageInfo && (
+          <div
+            className={`rounded-lg border p-3 ${
+              storageFull
+                ? 'border-red-500/40 bg-red-500/5'
+                : storageNearLimit
+                ? 'border-amber-500/40 bg-amber-500/5'
+                : 'border-white/[0.06] bg-white/[0.02]'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-2 text-xs">
+                <HardDrive
+                  className={`h-3.5 w-3.5 ${
+                    storageFull ? 'text-red-400' : storageNearLimit ? 'text-amber-400' : 'text-zinc-400'
+                  }`}
+                />
+                <span className="text-zinc-300">Storage</span>
+                {storageFull && (
+                  <span className="flex items-center gap-1 text-red-400">
+                    <AlertTriangle className="h-3 w-3" /> Penuh
+                  </span>
+                )}
+                {storageNearLimit && !storageFull && (
+                  <span className="flex items-center gap-1 text-amber-400">
+                    <AlertTriangle className="h-3 w-3" /> Hampir penuh
+                  </span>
+                )}
+              </div>
+              <span
+                className={`text-xs font-medium ${
+                  storageFull ? 'text-red-400' : storageNearLimit ? 'text-amber-400' : 'text-zinc-400'
+                }`}
+              >
+                {formatBytes(storageInfo.totalSizeBytes)} / {formatBytes(storageInfo.maxTotalBytes)}
+                {' · '}
+                {storageInfo.itemCount}/{storageInfo.maxItems} items
+              </span>
+            </div>
+            <Progress
+              value={storageInfo.percentUsed}
+              className={`h-1.5 ${
+                storageFull
+                  ? 'bg-red-500/20'
+                  : storageNearLimit
+                  ? 'bg-amber-500/20'
+                  : 'bg-white/[0.06]'
+              }`}
+            />
+            <p className="text-[9px] text-zinc-600 mt-1.5">
+              Tersimpan di IndexedDB browser{storageInfo.isPersistent ? ' (persisten)' : ''}.
+              {storageInfo.browserQuotaBytes && (
+                <>
+                  {' '}
+                  Browser quota: {formatBytes(storageInfo.browserUsageBytes || 0)} /{' '}
+                  {formatBytes(storageInfo.browserQuotaBytes)}
+                </>
+              )}
+            </p>
+          </div>
+        )}
+
+        {loading && (
+          <div className="text-center py-4 text-xs text-zinc-500">Memuat…</div>
+        )}
 
         {/* Project list + Items */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -211,7 +326,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
             >
               <FolderOpen className="h-4 w-4" />
               Semua Item
-              <Badge variant="outline" className="ml-auto text-[9px]">{stats.totalItems}</Badge>
+              <Badge variant="outline" className="ml-auto text-[9px]">{stats?.totalItems ?? 0}</Badge>
             </button>
 
             {/* Projects */}

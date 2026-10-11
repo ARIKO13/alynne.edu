@@ -102,18 +102,23 @@ export function SmartContinuity({ open, onClose, transcript }: SmartContinuityPr
 
     setStep('saving');
     await sleep(300);
-    // Save to Knowledge Hub
-    quickSaveSTT(transcript, 'Smart Continuity');
-    quickSavePDF(
-      `Modul STT ${new Date().toLocaleDateString('id-ID')}`,
-      split.map((c) => `Bab ${c.id}: ${c.title}\n\n${c.content}\n`).join('\n---\n'),
-      'Smart Continuity'
-    );
-    quickSaveNote(
-      `Mindmap STT ${new Date().toLocaleDateString('id-ID')}`,
-      split.map((c) => `- Bab ${c.id}: ${c.title} (${c.wordCount} kata)`).join('\n'),
-      'Smart Continuity'
-    );
+    // Save to Knowledge Hub (IndexedDB)
+    try {
+      await quickSaveSTT(transcript, 'Smart Continuity');
+      await quickSavePDF(
+        `Modul STT ${new Date().toLocaleDateString('id-ID')}`,
+        split.map((c) => `Bab ${c.id}: ${c.title}\n\n${c.content}\n`).join('\n---\n'),
+        'Smart Continuity'
+      );
+      await quickSaveNote(
+        `Mindmap STT ${new Date().toLocaleDateString('id-ID')}`,
+        split.map((c) => `- Bab ${c.id}: ${c.title} (${c.wordCount} kata)`).join('\n'),
+        'Smart Continuity'
+      );
+    } catch (err) {
+      console.error('[SmartContinuity] save to Knowledge Hub failed:', err);
+      toast.error(err instanceof Error ? err.message : 'Gagal simpan ke Knowledge Hub');
+    }
     recordActivity({
       type: 'pdf',
       title: `Smart Continuity: ${split.length} bab, ${Object.values(quizMap).reduce((s, q) => s + q.length, 0)} kuis`,
