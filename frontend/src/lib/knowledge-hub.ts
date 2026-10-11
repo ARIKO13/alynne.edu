@@ -35,6 +35,7 @@ export interface Project {
   name: string;
   description?: string;
   color: string; // hex color for folder icon
+  sortOrder?: number; // for manual drag-drop ordering; undefined = auto (by updatedAt desc)
   createdAt: string;
   updatedAt: string;
 }
@@ -263,7 +264,14 @@ export function initKnowledgeHub(): Promise<void> {
 export async function getProjects(): Promise<Project[]> {
   await initKnowledgeHub();
   const projects = await getAll<Project>(PROJECTS_STORE);
-  return projects.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  // Sort: projects with explicit sortOrder come first (in that order),
+  // then the rest by updatedAt desc (most recently touched first).
+  return projects.sort((a, b) => {
+    const sa = a.sortOrder ?? Number.MAX_SAFE_INTEGER;
+    const sb = b.sortOrder ?? Number.MAX_SAFE_INTEGER;
+    if (sa !== sb) return sa - sb;
+    return b.updatedAt.localeCompare(a.updatedAt);
+  });
 }
 
 export async function createProject(name: string, description?: string): Promise<Project> {
@@ -391,6 +399,86 @@ export async function saveItem(
 export async function deleteItem(id: string): Promise<void> {
   await initKnowledgeHub();
   await tx(ITEMS_STORE, 'readwrite', s => s.delete(id));
+}
+
+/** Partial update of an item (rename, edit content, move project, etc.). */
+export async function updateItem(
+  id: string,
+  updates: Partial<Pick<KnowledgeItem, 'title' | 'content' | 'projectId' | 'type' | 'metadata'>>
+): Promise<void> {
+  await initKnowledgeHub();
+  // Per-item size check if content is being replaced
+  if (updates.content !== undefined) {
+    const newSize = new Blob([updates.content]).size;
+    if (newSize > LIMITS.MAX_ITEM_SIZE_BYTES) {
+      throw new Error(
+        `Item terlalu besar (${(newSize / 1024 / 1024).toFixed(1)} MB). ` +
+        `Maksimal ${LIMITS.MAX_ITEM_SIZE_BYTES / 1024 / 1024} MB per item.`
+      );
+    }
+  }
+  await txMulti('readwrite', [ITEMS_STORE], (_db, tx) => {
+    const store = tx.objectStore(ITEMS_STORE);
+    const getReq = store.get(id);
+    getReq.onsuccess = () => {
+      const existing = getReq.result as KnowledgeItem | undefined;
+      if (!existing) return;
+      const updated: KnowledgeItem = {
+        ...existing,
+        ...updates,
+        updatedAt: new Date().toISOString(),
+      };
+      store.put(updated);
+    };
+  });
+}
+
+/** Move an item to a different project (just updates projectId). */
+export async function moveItem(id: string, newProjectId: string): Promise<void> {
+  await updateItem(id, { projectId: newProjectId });
+}
+
+/** Duplicate an item under the same project with " (copy)" appended to title. */
+export async function duplicateItem(id: string): Promise<KnowledgeItem | null> {
+  await initKnowledgeHub();
+  const original = await getItem(id);
+  if (!original) return null;
+  return saveItem({
+    projectId: original.projectId,
+    type: original.type,
+    title: `${original.title} (copy)`,
+    content: original.content,
+    metadata: original.metadata,
+  });
+}
+
+/** Bulk reorder projects by passing the desired order of IDs. */
+export async function reorderProjects(orderedIds: string[]): Promise<void> {
+  await initKnowledgeHub();
+  await txMulti('readwrite', [PROJECTS_STORE], (_db, tx) => {
+    const store = tx.objectStore(PROJECTS_STORE);
+    for (let i = 0; i < orderedIds.length; i++) {
+      const getReq = store.get(orderedIds[i]);
+      getReq.onsuccess = () => {
+        const p = getReq.result as Project | undefined;
+        if (p) {
+          store.put({ ...p, sortOrder: i });
+        }
+      };
+    }
+  });
+}
+
+/** Bulk delete multiple items in one transaction. */
+export async function deleteItems(ids: string[]): Promise<void> {
+  await initKnowledgeHub();
+  if (ids.length === 0) return;
+  await txMulti('readwrite', [ITEMS_STORE], (_db, tx) => {
+    const store = tx.objectStore(ITEMS_STORE);
+    for (const id of ids) {
+      store.delete(id);
+    }
+  });
 }
 
 // ── Quick save helpers ───────────────────────────────────
