@@ -48,6 +48,7 @@ import {
   Minimize2,
   CheckCircle2 as CheckIcon,
   GraduationCap,
+  Mic,
 } from 'lucide-react';
 import {
   splitTranscriptIntoChapters,

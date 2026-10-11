@@ -163,9 +163,8 @@ export function FileUploadChunked({ onTranscript, onError }: FileUploadChunkedPr
 
     try {
       // Dynamically import to avoid circular deps + load on demand
-      const { transcribeFile } = await import('@/lib/whisper-client');
-      const { fileToFloat32Audio, transcribe } = await import('@/lib/whisper-client');
-      const audioData = await fileToFloat32Audio(file);
+      const { blobToFloat32Audio, transcribe } = await import('@/lib/whisper-client');
+      const audioData = await blobToFloat32Audio(file);
       const result = await transcribe(audioData, 'indonesian');
       onTranscript(result.text);
     } catch (err) {

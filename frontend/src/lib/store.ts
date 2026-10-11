@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export type TabId =
+  | 'stt' | 'modul' | 'mindmap' | 'sharpen' | 'admin'
+  | 'voice-cmd' | 'belajar' | 'hub' | 'notes' | 'stats' | 'refer' | 'flash';
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -110,12 +114,24 @@ interface AppState {
   // UI
   settingsOpen: boolean;
   setSettingsOpen: (v: boolean) => void;
-  activeTab: 'stt' | 'modul' | 'mindmap' | 'sharpen' | 'admin';
-  setActiveTab: (tab: AppState['activeTab']) => void;
+  activeTab: TabId;
+  setActiveTab: (tab: TabId) => void;
   studyModeEnabled: boolean;
   setStudyModeEnabled: (v: boolean) => void;
   studyModeOpen: boolean;
   setStudyModeOpen: (v: boolean) => void;
+
+  // Mode Selector (legacy - kept for back-compat with any older UI)
+  selectedMode: string | null;
+  setSelectedMode: (m: string | null) => void;
+  generatedContent: string;
+  setGeneratedContent: (s: string) => void;
+  isGenerating: boolean;
+  setIsGenerating: (v: boolean) => void;
+
+  // Voice Command
+  voiceCmdActive: boolean;
+  setVoiceCmdActive: (v: boolean) => void;
 
   // Study Mode Config (persisted)
   studyDefaultMinutes: number;
@@ -207,14 +223,32 @@ export const useAppStore = create<AppState>()(
       // UI
       settingsOpen: false,
       setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
-      activeTab: 'stt' as const,
+      activeTab: 'stt' as TabId,
       setActiveTab: (activeTab) => set({ activeTab }),
       studyModeEnabled: true,
       setStudyModeEnabled: (v) => set({ studyModeEnabled: v }),
       studyModeOpen: false,
       setStudyModeOpen: (v) => set({ studyModeOpen: v }),
 
-      // Study Mode Config
+      // Mode Selector (legacy defaults)
+      selectedMode: null,
+      setSelectedMode: (selectedMode) => set({ selectedMode }),
+      generatedContent: '',
+      setGeneratedContent: (generatedContent) => set({ generatedContent }),
+      isGenerating: false,
+      setIsGenerating: (isGenerating) => set({ isGenerating }),
+
+      // Voice Command
+      voiceCmdActive: false,
+      setVoiceCmdActive: (voiceCmdActive) => set({ voiceCmdActive }),
+
+      // Study Mode Config (persisted)
+      studyDefaultMinutes: 25,
+      setStudyDefaultMinutes: (studyDefaultMinutes) => set({ studyDefaultMinutes }),
+      studyFocusTracker: true,
+      setStudyFocusTracker: (studyFocusTracker) => set({ studyFocusTracker }),
+      studyFocusSensitivity: 0.5,
+      setStudyFocusSensitivity: (studyFocusSensitivity) => set({ studyFocusSensitivity }),
     }),
     {
       name: 'lina-learning-v2',

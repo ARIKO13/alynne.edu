@@ -23,8 +23,6 @@ interface VoiceCommand {
   description: string;
 }
 
-type TabId = 'stt' | 'modul' | 'mindmap' | 'voice-cmd' | 'admin';
-
 export function VoiceCommandPanel() {
   const { setActiveTab, setSettingsOpen, user, voiceCmdActive, setVoiceCmdActive } = useAppStore();
   const [logs, setLogs] = useState<CommandLog[]>([]);
@@ -45,17 +43,17 @@ export function VoiceCommandPanel() {
     const userIsAdmin = ['ardilanpro@gmail.com', 'arshikocode@gmail.com'].includes(user?.email || '');
     const cmds: VoiceCommand[] = [
       { keywords: ['stt', 'speech to text', 'speech', 'transkrip', 'rekam suara', 'rekam'],
-        action: () => setActiveTab('stt' as TabId), label: 'Buka Speech to Text', description: 'Navigasi ke fitur STT' },
+        action: () => setActiveTab('stt'), label: 'Buka Speech to Text', description: 'Navigasi ke fitur STT' },
       { keywords: ['modul', 'pdf', 'materi', 'bahan'],
-        action: () => setActiveTab('modul' as TabId), label: 'Buka Modul PDF', description: 'Navigasi ke fitur Modul' },
+        action: () => setActiveTab('modul'), label: 'Buka Modul PDF', description: 'Navigasi ke fitur Modul' },
       { keywords: ['mind map', 'mindmap', 'peta konsep', 'peta'],
-        action: () => setActiveTab('mindmap' as TabId), label: 'Buka Mind Map', description: 'Navigasi ke fitur Mind Map' },
+        action: () => setActiveTab('mindmap'), label: 'Buka Mind Map', description: 'Navigasi ke fitur Mind Map' },
       { keywords: ['setting', 'pengaturan', 'setelan', 'konfigurasi'],
         action: () => setSettingsOpen(true), label: 'Buka Settings', description: 'Buka dialog pengaturan' },
     ];
     if (userIsAdmin) {
       cmds.push({ keywords: ['admin', 'administrator', 'panel admin'],
-        action: () => setActiveTab('admin' as TabId), label: 'Buka Admin Panel', description: 'Navigasi ke Admin Panel' });
+        action: () => setActiveTab('admin'), label: 'Buka Admin Panel', description: 'Navigasi ke Admin Panel' });
     }
     return cmds;
   }, [setActiveTab, setSettingsOpen, user?.email]);

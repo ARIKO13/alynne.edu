@@ -169,7 +169,7 @@ function loadDict() {
       }
       _remove = new Set<string>();
 
-      console.log(`[STT-Dict] ✓ Loaded from SQLite (SSD): KBBI=${_kbbi.size} (incl. ${slangCount} slang), EN=${_enWords.size}, fixes=${Object.keys(_fixes).length}`);
+      console.log(`[STT-Dict] ✓ Loaded from SQLite (SSD): KBBI=${_kbbi.size} (incl. ${slangCount} slang), EN=${_enWords.size}, fixes=${Object.keys(_fixes || {}).length}`);
       sqliteLoaded = true;
     }
   } catch (err) {
@@ -237,7 +237,7 @@ function loadDict() {
         _phraseMap = dict.phrase_map;
       }
 
-      console.log(`[STT-Dict] Loaded from JSON fallback: KBBI=${_kbbi.size}, EN=${_enWords.size}, slang_id=${Object.keys(_indoSlang).length}, slang_en=${Object.keys(_enSlang).length}, fixes=${Object.keys(_fixes).length}, phrase_map=${_phraseMap ? Object.keys(_phraseMap).length : 0}`);
+      console.log(`[STT-Dict] Loaded from JSON fallback: KBBI=${_kbbi.size}, EN=${_enWords.size}, slang_id=${Object.keys(_indoSlang || {}).length}, slang_en=${Object.keys(_enSlang || {}).length}, fixes=${Object.keys(_fixes || {}).length}, phrase_map=${_phraseMap ? Object.keys(_phraseMap).length : 0}`);
     } catch (err) {
       console.error('[STT-Dict] Load failed:', err);
     }
@@ -262,7 +262,7 @@ function loadDict() {
       _actionPhrases = ph.action_phrases || {};
       // Invalidate cached _phraseMap so getPhraseMap() rebuilds with merged data
       _phraseMap = null;
-      console.log(`[STT-Dict] Phonetic map loaded: tickers=${Object.keys(_phoneticTickers).length}, companies=${Object.keys(_companyNames).length}, actions=${Object.keys(_actionPhrases).length}`);
+      console.log(`[STT-Dict] Phonetic map loaded: tickers=${Object.keys(_phoneticTickers || {}).length}, companies=${Object.keys(_companyNames || {}).length}, actions=${Object.keys(_actionPhrases || {}).length}`);
     } else {
       console.warn('[STT-Dict] phonetic-map.json not found, using hardcoded fallback only');
     }
@@ -276,47 +276,47 @@ const fbSlang: Record<string, string> = {
   'nggak': 'tidak', 'ngga': 'tidak', 'gak': 'tidak', 'ga': 'tidak',
   'ndak': 'tidak', 'kagak': 'tidak',
   'dah': 'sudah', 'udah': 'sudah', 'gitu': 'begitu',
-  'kalo': 'kalau', 'klo': 'kalau',
-  'gimana': 'bagaimana', 'gmn': 'bagaimana',
+  'kalo': 'kalau', 
+  
   'bener': 'benar', 'bgt': 'sangat', 'bget': 'sangat', 'banget': 'sangat', 'bngt': 'sangat',
   'ngomong': 'berbicara', 'bikin': 'membuat',
   'bilang': 'mengatakan', 'tau': 'tahu',
-  'pengen': 'ingin', 'mo': 'mau', 'bakal': 'akan',
-  'gemana': 'bagaimana', 'nggmana': 'bagaimana',
+  'pengen': 'ingin', 'bakal': 'akan',
+  'nggmana': 'bagaimana',
   'niyang': 'yang', 'iyang': 'yang', 'nyang': 'yang',
   'neng': 'dengan', 'deng': 'dengan',
   'beneran': 'benar-benar', 'nonton': 'menonton',
   'dateng': 'datang', 'napa': 'kenapa', 'yah': 'ya',
-  'udh': 'sudah', 'nih': 'ini', 'tuh': 'itu',
+  'nih': 'ini', 'tuh': 'itu',
   'gini': 'begini', 'emang': 'memang',
   // Common abbreviations (IndoCollex equivalent)
-  'tdk': 'tidak', 'td': 'tidak', 'gk': 'tidak',
-  'bkn': 'bukan', 'blm': 'belum', 'blum': 'belum',
-  'sdh': 'sudah', 'udh': 'sudah',
+  'gk': 'tidak',
+  'bkn': 'bukan', 'blum': 'belum',
+  
   'bbrp': 'beberapa', 'brp': 'berapa', 'brapa': 'berapa',
-  'yg': 'yang', 'dgn': 'dengan', 'dng': 'dengan',
+  'yg': 'yang', 'dng': 'dengan',
   'utk': 'untuk', 'krn': 'karena', 'krna': 'karena',
   'sprt': 'seperti', 'spt': 'seperti', 'sprti': 'seperti',
   'sdgkan': 'sedangkan', 'sdg': 'sedang',
   'tlg': 'tolong', 'tlng': 'tolong',
-  'trs': 'terus', 'teros': 'terus', 'trus': 'terus',
+  'teros': 'terus', 
   'dlm': 'dalam', 'ats': 'atas', 'bwh': 'bawah',
-  'dtg': 'datang', 'dtng': 'datang',
+  'dtng': 'datang',
   'brg': 'barang', 'brng': 'barang',
-  'org': 'orang', 'skrg': 'sekarang', 'skrang': 'sekarang',
+  'skrang': 'sekarang',
   'nnti': 'nanti', 'nti': 'nanti', 'ntar': 'nanti',
-  'bsk': 'besok', 'bsok': 'besok',
+  
   'kmrn': 'kemarin', 'kmaren': 'kemarin',
   'hr': 'hari', 'hrini': 'hari ini',
   'bln': 'bulan', 'thn': 'tahun', 'th': 'tahun',
   'mng': 'minggu', 'mgg': 'minggu',
   'sy': 'saya', 'aq': 'aku', 'ak': 'aku', 'q': 'aku', 'gue': 'aku', 'gw': 'aku',
-  'km': 'kamu', 'kmu': 'kamu', 'lu': 'kamu', 'lo': 'kamu', 'elu': 'kamu',
+  'kmu': 'kamu', 'lu': 'kamu', 'lo': 'kamu', 'elu': 'kamu',
   'dy': 'dia', 'dya': 'dia',
   'kmi': 'kami', 'mrk': 'mereka',
   'klian': 'kalian', 'kliann': 'kalian',
   'ap': 'apa', 'gmn': 'bagaimana', 'gimana': 'bagaimana', 'gemana': 'bagaimana',
-  'kmn': 'ke mana', 'kmana': 'ke mana',
+  'kmana': 'ke mana',
   'kn': 'kenapa', 'knp': 'kenapa',
   'bru': 'baru', 'br': 'baru',
   'jgn': 'jangan', 'bnr': 'benar', 'bner': 'benar', 'bnar': 'benar',
@@ -337,7 +337,7 @@ const fbSlang: Record<string, string> = {
   'kcil': 'kecil', 'kcl': 'kecil',
   'pnjg': 'panjang', 'pjg': 'panjang',
   'pndk': 'pendek', 'pdk': 'pendek',
-  'tp': 'tapi', 'tpi': 'tapi',
+  'tpi': 'tapi',
   'kl': 'kalau', 'klo': 'kalau',
   'jka': 'jika', 'jik': 'jika',
   'shg': 'sehingga', 'shingga': 'sehingga',
@@ -358,14 +358,14 @@ const fbSlang: Record<string, string> = {
   'salfok': 'salah fokus', 'mager': 'malas gerak',
   // Casual conversation slang
   'lg': 'lagi', 'td': 'tadi', 'tdk': 'tidak',
-  'dtg': 'datang', 'trs': 'terus', 'trus': 'terus',
+  'dtg': 'datang', 'trus': 'terus',
   'knl': 'kenal', 'blm': 'belum', 'sdh': 'sudah', 'udh': 'sudah',
-  'bsk': 'besok', 'km': 'kamu', 'kmn': 'ke mana',
+  'km': 'kamu', 'kmn': 'ke mana',
   'dgn': 'dengan', 'sapa': 'siapa', 'spa': 'siapa', 'spp': 'siapa',
   'bsk': 'besok', 'bsok': 'besok',
   'orgnya': 'orangnya', 'org': 'orang',
   'bsa': 'bisa', 'bs': 'bisa',
-  'skrg': 'sekarang', 'skrng': 'sekarang',
+  'skrng': 'sekarang',
   'aj': 'aja', 'ajj': 'aja', 'ja': 'aja',
   'skrg': 'sekarang',
   'trs': 'terus',
@@ -390,9 +390,9 @@ const fbSlang: Record<string, string> = {
 const fbFixes: Record<string, string> = {
   // Existing - spelling normalization
   'sistim': 'sistem', 'metoda': 'metode',
-  'strateji': 'strategi', 'difinisi': 'definisi',
+  'difinisi': 'definisi',
   'annalisa': 'analisis', 'analisa': 'analisis',
-  'produktifitas': 'produktivitas', 'hipotesa': 'hipotesis',
+  'produktifitas': 'produktivitas', 
   'algoritm': 'algoritma', 'ngapain': 'mengapa',
 
   // ── Common Indonesian STT mishearings (curated) ──
@@ -547,7 +547,7 @@ function getPhraseMap(): Record<string, string> {
     'go to': 'GOTO', 'go 2': 'GOTO', 'goto': 'GOTO', 'go dua': 'GOTO', 'gotol': 'GOTO', 'go toko': 'GOTO',
     'be ca a': 'BBCA', 'be be ca a': 'BBCA', 'be be se a': 'BBCA', 'boba': 'BBCA', 'aba': 'BBCA',
     'be be ri': 'BBRI', 'be ri': 'BBRI', 'beri': 'BBRI',
-    'be be ni': 'BBNI', 'be ni': 'BBNI', 'bni': 'BBNI',
+    'be be ni': 'BBNI', 'be ni': 'BBNI',
     'be em ri': 'BMRI', 'be em er i': 'BMRI', 'bintaro': 'BMRI', 'mandiri': 'BMRI',
     't l k m': 'TLKM', 'a s i i': 'ASII', 'mar i': 'MARI',
     'antm': 'ANTM', 'inco': 'INCO', 'kras': 'KRAS', 'myoh': 'MYOH',
@@ -954,6 +954,7 @@ export function localCorrect(rawText: string): CorrectionResult {
   const stats = {
     totalWords: 0, slangFixed: 0, sttFixed: 0, homophonesFixed: 0,
     fuzzyFixed: 0, phraseFixed: 0, unknownWords: 0, removedParticles: 0,
+    phoneticFixed: 0,
   };
   if (!rawText.trim()) return { text: '', needsLLM: false, llmReason: '', stats };
 

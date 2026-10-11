@@ -9,8 +9,11 @@ import { getModel } from './whisper-models';
 env.allowRemoteModels = true;
 env.allowLocalModels = false;
 env.useBrowserCache = true;
-env.backends.onnx.wasm.numThreads = 1;
-env.backends.onnx.wasm.proxy = false;
+(env as any).backends ??= {};
+(env as any).backends.onnx ??= {};
+(env as any).backends.onnx.wasm ??= {};
+(env as any).backends.onnx.wasm.numThreads = 1;
+(env as any).backends.onnx.wasm.proxy = false;
 
 type Pipeline = Awaited<ReturnType<typeof pipeline>>;
 
@@ -49,11 +52,12 @@ export async function loadModel(
   isLoading = true;
 
   try {
-    // WebGPU detection
+    // WebGPU detection (cast navigator to any: TS DOM lib doesn't ship `gpu` prop yet)
     let useDevice = 'wasm';
     try {
-      if (navigator.gpu) {
-        const adapter = await navigator.gpu.requestAdapter();
+      const nav = navigator as any;
+      if (nav.gpu) {
+        const adapter = await nav.gpu.requestAdapter();
         if (adapter) {
           useDevice = 'webgpu';
           console.log('[Whisper] WebGPU available! Using GPU');

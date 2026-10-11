@@ -12,6 +12,7 @@ export interface Subscription {
   userId: string;
   status: string;
   plan?: string;
+  trialEndsAt?: string;
 }
 
 class StubSubscriptionDb {

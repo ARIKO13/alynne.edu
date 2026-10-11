@@ -32,7 +32,7 @@ function useFocusDetector(enabled: boolean, isRunning: boolean) {
   const streamRef = useRef<MediaStream | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animRef = useRef<number>(0);
-  const faceCheckRef = useRef<ReturnType<typeof setInterval>>();
+  const faceCheckRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const scoreHistory = useRef<number[]>([]);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const prevFrameRef = useRef<Uint8ClampedArray | null>(null);
@@ -260,9 +260,9 @@ export function StudyMode() {
   const [completedMinutes, setCompletedMinutes] = useState(0);
   const [showDistractedPopup, setShowDistractedPopup] = useState(false);
 
-  const timerRef = useRef<ReturnType<typeof setInterval>>();
+  const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const { focusState } = useFocusDetector(studyFocusTracker, isRunning);
-  const distractedTimerRef = useRef<ReturnType<typeof setInterval>>();
+  const distractedTimerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const distractedStartRef = useRef<number>(0);
   const distractedCooldownRef = useRef<number>(0);
 

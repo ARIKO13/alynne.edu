@@ -352,7 +352,7 @@ export function AdminPanel() {
                       </div>
                       <div className="col-span-2 text-center">
                         <p className="text-sm font-semibold text-white">"-"</p>
-                        <p className="text-[10px] text-zinc-600">{tier.name}</p>
+                        <p className="text-[10px] text-zinc-600">-</p>
                       </div>
                       <div className="col-span-2 text-center">
                         <span className="text-sm text-amber-400 font-medium">"-"</span>

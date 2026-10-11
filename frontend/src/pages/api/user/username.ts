@@ -25,7 +25,7 @@ export const PUT: APIRoute = async ({ request }) => {
     const trimmed = name.trim();
     await db.user.update({
       where: { id: session.user.id },
-      data: { name: trimmed },
+      data: { username: trimmed },
     });
 
     return Response.json({ success: true, name: trimmed });

@@ -215,7 +215,7 @@ async function gatewayPipeline(transcript: string, materialTexts: string[]): Pro
     tables: null, steps: null, reviewNotes: null,
   }));
 
-  const ringkumanAkhir = summaryData?.ringkasan_bab?.map((r: any) => r.ringkasan) || [];
+  const rangkumanAkhir = summaryData?.ringkasan_bab?.map((r: any) => r.ringkasan) || [];
   const entitasPenting = { tools: [], namaOrang: [], angkaAturan: [], istilahTeknis: [], kodeRumus: [] };
 
   return {

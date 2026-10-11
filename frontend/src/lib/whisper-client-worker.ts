@@ -18,6 +18,8 @@
 
 /// <reference lib="webworker" />
 
+export {}; // make this a module so its top-level functions don't pollute global scope
+
 interface LoadMessage {
   type: 'load';
   modelId: string;

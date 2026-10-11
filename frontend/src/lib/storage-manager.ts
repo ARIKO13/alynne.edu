@@ -227,7 +227,7 @@ async function getModelSizeOPFS(modelId: string): Promise<number> {
     // @ts-ignore - async iterator
     for await (const [name, handle] of modelDir.entries()) {
       if (handle.kind === 'file') {
-        const file = await handle.getFile();
+        const file = await (handle as FileSystemFileHandle).getFile();
         totalSize += file.size;
       }
     }

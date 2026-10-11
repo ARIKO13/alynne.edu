@@ -10,26 +10,26 @@ export const GET: APIRoute = async ({ request }) => {
     }
 
     // Fetch user from D1 - this has the saved username
-    let user = await db.user.findUnique({ where: { id: session.user.id } });
+    let user = await db.user.findUnique({ where: { uid: session.user.id } });
 
     // Auto-create if missing (first login after account system migration)
     if (!user) {
       const u = session.user;
       user = await db.user.create({
         data: {
-          id: u.id || u.email || crypto.randomUUID(),
+          uid: u.id || u.email || crypto.randomUUID(),
           googleId: u.id || '',
-          email: u.email || '',
-          name: u.name || 'Player',
-          image: u.image || null,
+          gmail: u.email || '',
+          username: u.name || 'Player',
         },
       });
     }
 
+    // Map db.User (uid/gmail/username) → session shape (id/email/name/image)
     return Response.json({
-      name: user.name,
-      email: user.email,
-      image: user.image,
+      name: user.username,
+      email: user.gmail,
+      image: null,
     });
   } catch (error) {
     console.error('Profile fetch error:', error);

@@ -22,22 +22,21 @@ export const POST: APIRoute = async ({ request }) => {
       return Response.json({ error: 'Nama dan email wajib diisi' }, { status: 400 });
     }
 
-    let user = await db.user.findUnique({ where: { email } });
+    let user = await db.user.findUnique({ where: { gmail: email } });
     if (!user) {
       user = await db.user.create({
         data: {
-          id: crypto.randomUUID(),
+          uid: crypto.randomUUID(),
           googleId: 'demo-' + crypto.randomUUID(),
-          email,
-          name,
-          image: image || null,
+          gmail: email,
+          username: name,
         },
       });
       // Create trial subscription for new demo users
       try {
-        const existingSub = await subscriptionDb.findByUserId(user.id!);
+        const existingSub = await subscriptionDb.findByUserId(user.uid);
         if (!existingSub) {
-          await subscriptionDb.createTrial(user.id!);
+          await subscriptionDb.createTrial(user.uid);
         }
       } catch (subErr) {
         console.error('[demo-login] subscription creation error (non-blocking):', subErr);
@@ -45,11 +44,12 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Create JWT token (same as Google OAuth callback)
+    // Map db.User (uid/gmail/username) → SessionUser (id/email/name/image)
     const token = await createToken({
-      id: user.id!,
-      email: user.email,
-      name: user.name,
-      image: user.image,
+      id: user.uid,
+      email: user.gmail,
+      name: user.username,
+      image: image || null,
     });
 
     // Set session cookie (30 days, same as callback.ts)
@@ -57,10 +57,10 @@ export const POST: APIRoute = async ({ request }) => {
 
     return new Response(
       JSON.stringify({
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        image: user.image,
+        id: user.uid,
+        email: user.gmail,
+        name: user.username,
+        image: image || null,
       }),
       {
         status: 200,

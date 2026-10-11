@@ -131,7 +131,7 @@ export function STTPanel() {
     screenCv,
   } = useSpeechRecognition();
   
-const { transcriptEntries, sttAudioMode } = useAppStore();
+const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
 
   // Whisper STT hook - client-side, jalan di browser via Web Worker
   const whisperSTT = useWhisperSTT({

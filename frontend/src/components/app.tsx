@@ -1,4 +1,4 @@
-import { useAppStore } from '@/lib/store';
+import { useAppStore, type TabId } from '@/lib/store';
 import { STTPanel } from '@/components/stt-panel';
 import { AIAssistant } from '@/components/ai-assistant';
 import { StudyPipeline } from '@/components/StudyPipeline';
@@ -28,8 +28,6 @@ function isAlynneDomain(): boolean {
   return ALYNNE_DOMAINS.includes(window.location.hostname);
 }
 
-type TabId = 'stt' | 'belajar' | 'hub' | 'notes' | 'stats' | 'refer' | 'flash' | 'admin';
-
 const TABS: { id: TabId; label: string; icon: typeof Mic; adminOnly?: boolean }[] = [
   { id: 'stt', label: 'Speech to Text', icon: Mic },
   { id: 'belajar', label: 'Mode Belajar', icon: Sparkles },
@@ -43,6 +41,10 @@ const TABS: { id: TabId; label: string; icon: typeof Mic; adminOnly?: boolean }[
 
 const TAB_TITLES: Record<TabId, string> = {
   stt: 'Speech to Text',
+  modul: 'Modul PDF',
+  mindmap: 'Mind Map',
+  sharpen: 'Image Sharpener',
+  'voice-cmd': 'Voice Command',
   belajar: 'Mode Belajar',
   hub: 'Knowledge Hub',
   notes: 'Scratchpad',

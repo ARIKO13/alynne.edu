@@ -28,9 +28,12 @@ env.useBrowserCache = true;
 
 // PRIMARY: WebGPU backend (GPU acceleration, avoids WASM OrtRun crash)
 // WebGPU allocates memory di GPU VRAM (bukan RAM), bisa handle model besar
-env.backends.onnx.wasm.numThreads = 1;
-env.backends.onnx.wasm.proxy = false;
-env.backends.onnx.wasm.simd = true;
+(env as any).backends ??= {};
+(env as any).backends.onnx ??= {};
+(env as any).backends.onnx.wasm ??= {};
+(env as any).backends.onnx.wasm.numThreads = 1;
+(env as any).backends.onnx.wasm.proxy = false;
+(env as any).backends.onnx.wasm.simd = true;
 
 // WebGPU will be used as device parameter in pipeline() call
 // Fallback ke WASM kalau WebGPU tidak support
@@ -92,11 +95,12 @@ self.addEventListener('message', async (e: MessageEvent) => {
 
       const useQuantized = quantized !== undefined ? quantized : !model.includes('tiny') && !model.includes('base');
 
-      // WebGPU detection
+      // WebGPU detection (cast navigator to any to avoid TS DOM lib missing `gpu` property)
       let useDevice = 'wasm';
       try {
-        if (typeof navigator !== 'undefined' && navigator.gpu) {
-          const adapter = await navigator.gpu.requestAdapter();
+        const nav = navigator as any;
+        if (typeof navigator !== 'undefined' && nav.gpu) {
+          const adapter = await nav.gpu.requestAdapter();
           if (adapter) {
             useDevice = 'webgpu';
             console.log('[Worker] WebGPU available! Using GPU');
@@ -110,9 +114,9 @@ self.addEventListener('message', async (e: MessageEvent) => {
         console.log('[Worker] WebGPU check failed:', e);
       }
 
-      // v4 API: device + dtype for WebGPU
-      const pipelineOpts = {
-        progress_callback: (p) => {
+      // v4 API: device + dtype for WebGPU (use `any` so dtype/device are allowed)
+      const pipelineOpts: any = {
+        progress_callback: (p: any) => {
           if (p.status === 'progress') {
             self.postMessage({ type: 'loading', progress: p.progress || 0, model });
           } else if (p.status === 'ready') {

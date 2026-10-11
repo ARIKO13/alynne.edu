@@ -29,6 +29,8 @@ export interface PdfKegiatan {
   tables: PdfTable[];
   steps: string[] | null;
   reviewNotes: string[] | null;
+  // Optional summary field used by keyword/question generators
+  rangkuman?: string[];
 }
 
 export interface EntitasPenting {
@@ -54,6 +56,10 @@ export interface PdfModuleData {
   totalChars: number;
   materialCount: number;
   branding: string;
+  /** Origin label of the data (e.g. 'tier1', 'tier3', 'local', 'gateway'). */
+  source?: string;
+  /** Internal origin tag used by structureContent() before normalization. */
+  _source?: string;
 }
 
 // ── Color System (Catatan / Notes - 3 Warna) ──
@@ -445,7 +451,7 @@ export async function structureContent(
 
           // Validate entity coverage
           validateEntityCoverage(result);
-          console.log('[structureContent] Tier 1 result:', JSON.stringify(result.kegiatanPembelajaran.map(k => ({ title: k.title, materiLen: k.materi?.length, firstMateri: k.materi?.[0]?.slice(0, 80) })), null, 2));
+          console.log('[structureContent] Tier 1 result:', JSON.stringify(result.kegiatanPembelajaran.map((k: PdfKegiatan) => ({ title: k.title, materiLen: k.materi?.length, firstMateri: k.materi?.[0]?.slice(0, 80) })), null, 2));
           return result;
         } else {
           console.error('❌ [structureContent] Tier 1 response missing title/kegiatanPembelajaran - skipping to Tier 2');
@@ -478,7 +484,7 @@ export async function structureContent(
             date: dateStr, totalChars, materialCount: materialTexts.length, branding: 'ALYNNE.EDU',
             _source: 'tier2',
           };
-          console.log('[structureContent] Tier 2 result:', JSON.stringify(result.kegiatanPembelajaran.map(k => ({ title: k.title, materiLen: k.materi?.length, firstMateri: k.materi?.[0]?.slice(0, 80) })), null, 2));
+          console.log('[structureContent] Tier 2 result:', JSON.stringify(result.kegiatanPembelajaran.map((k: PdfKegiatan) => ({ title: k.title, materiLen: k.materi?.length, firstMateri: k.materi?.[0]?.slice(0, 80) })), null, 2));
           validateEntityCoverage(result);
           return result;
         }
@@ -828,7 +834,7 @@ function localStructure(
       kegiatanPembelajaran: [{
         title: 'Kegiatan Pembelajaran', stimulus: 'Perhatikan materi berikut.',
         materi: ['(Konten terlalu pendek untuk dianalisis.)'],
-        steps: null, reviewNotes: null,
+        tables: [], steps: null, reviewNotes: null,
       }],
       rangkumanAkhir: [],
       entitasPenting: { tools: [], namaOrang: [], angkaAturan: [], istilahTeknis: [], kodeRumus: [] },
@@ -909,7 +915,7 @@ function localStructure(
       title: segment.title || `Kegiatan ${ci + 1}`,
       stimulus: `Perhatikan uraian berikut mengenai ${segment.title.toLowerCase()}.`,
       materi: validParas.length > 0 ? validParas : ['(Tidak cukup konten untuk bagian ini.)'],
-      steps: null, reviewNotes: null,
+      tables: [], steps: null, reviewNotes: null,
     };
   });
 
@@ -976,7 +982,7 @@ function extractCornellKeywords(kg: PdfKegiatan): CornellKeywords {
   }
 
   // 4. Generate questions from rangkuman
-  for (const r of kg.rangkuman) {
+  for (const r of (kg.rangkuman || [])) {
     const clean = r.replace(/[.!?]+$/, '').trim();
     if (clean.length > 15) {
       // Convert statement to question

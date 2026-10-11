@@ -192,7 +192,7 @@ export function useSpeechRecognition() {
   //
   // Fire-and-forget is intentional - we don't block the onresult callback,
   // and the actual transcript correction still happens later via enhanceNewEntries.
-  const logWebspeechFailures = useCallback((rawText: string, confidence: number = 0.9) => {
+  const logWebspeechFailures = useCallback(async (rawText: string, confidence: number = 0.9) => {
     const text = (rawText || '').trim();
     if (!text) return;
 
@@ -201,7 +201,7 @@ export function useSpeechRecognition() {
     // will skip words that are already known.
     // Confidence comes from Web Speech API result.confidence (0.0-1.0)
     try {
-      const promoted = recordHeardSentence(text, confidence, (w) => {
+      const promoted = await recordHeardSentence(text, confidence, (w) => {
         // Simple client-side check - for things like tech terms + stock tickers
         // Full KBBI check happens server-side. This is just a fast pre-filter.
         const wl = w.toLowerCase();
