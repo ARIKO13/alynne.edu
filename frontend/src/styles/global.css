@@ -229,20 +229,20 @@
 
 /* Plain bg-white stays white — still works on light theme */
 
-/* Text — Solarized palette. KEY DIFFERENCE: text is MEDIUM slate gray
-   (NOT dark/black). Contrast ratio ~4.5-5.6:1 (AA minimum, intentionally
-   lower than 7:1 AAA which causes eye strain). */
-.light .text-white { color: #586e75 !important; }       /* base01 slate dark */
-.light .text-zinc-100 { color: #586e75 !important; }
-.light .text-zinc-200 { color: #657b83 !important; }   /* base00 slate medium */
-.light .text-zinc-300 { color: #839496 !important; }   /* base0 slate light */
-.light .text-zinc-400 { color: #93a1a1 !important; }   /* base1 slate lighter */
-.light .text-zinc-500 { color: #93a1a1 !important; }   /* base1 (workhorse muted) */
-.light .text-zinc-600 { color: #a7b1b3 !important; }   /* even lighter */
-.light .text-zinc-700 { color: #c4cccd !important; }
-.light .text-zinc-800 { color: #d4d9da !important; }
-.light .text-zinc-900 { color: #586e75 !important; }  /* use slate dark, not pure */
-.light .text-black { color: #586e75 !important; }     /* slate dark, not pure black */
+/* Text — DARK warm stone on cream bg. User wants 'text gelap' (dark text)
+   on the soft cream bg, not medium slate. Cream bg reduces blue light
+   strain, dark text gives high contrast for readability. */
+.light .text-white { color: #292524 !important; }       /* stone-800 dark warm */
+.light .text-zinc-100 { color: #292524 !important; }
+.light .text-zinc-200 { color: #44403c !important; }   /* stone-700 */
+.light .text-zinc-300 { color: #57534e !important; }   /* stone-600 */
+.light .text-zinc-400 { color: #78716c !important; }   /* stone-500 */
+.light .text-zinc-500 { color: #78716c !important; }   /* stone-500 (workhorse muted) */
+.light .text-zinc-600 { color: #a8a29e !important; }  /* stone-400 */
+.light .text-zinc-700 { color: #d6d3d1 !important; }  /* stone-300 */
+.light .text-zinc-800 { color: #e7e5e4 !important; }  /* stone-200 */
+.light .text-zinc-900 { color: #292524 !important; }  /* stone-800 */
+.light .text-black { color: #292524 !important; }     /* stone-800, not pure black */
 
 /* Hover states — `hover:bg-white/[0.x]` becomes `hover:bg-black/[0.x]` */
 .light .hover\:bg-white\/\[0\.04\]:hover { background-color: rgba(0, 0, 0, 0.04) !important; }
@@ -250,11 +250,11 @@
 .light .hover\:bg-white\/\[0\.06\]:hover { background-color: rgba(0, 0, 0, 0.06) !important; }
 .light .hover\:bg-white\/\[0\.08\]:hover { background-color: rgba(0, 0, 0, 0.08) !important; }
 
-/* Hover text — `hover:text-white` becomes slate dark */
-.light .hover\:text-white:hover { color: #586e75 !important; }
-.light .hover\:text-zinc-100:hover { color: #586e75 !important; }
-.light .hover\:text-zinc-200:hover { color: #657b83 !important; }
-.light .hover\:text-zinc-300:hover { color: #839496 !important; }
+/* Hover text — `hover:text-white` becomes warm dark text */
+.light .hover\:text-white:hover { color: #292524 !important; }
+.light .hover\:text-zinc-100:hover { color: #292524 !important; }
+.light .hover\:text-zinc-200:hover { color: #44403c !important; }
+.light .hover\:text-zinc-300:hover { color: #57534e !important; }
 
 /* Borders — warm cream borders that blend with the Solarized palette */
 .light .border-white\/\[0\.04\] { border-color: #d4c9a8 !important; }
