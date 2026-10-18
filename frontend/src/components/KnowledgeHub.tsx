@@ -64,6 +64,7 @@ import {
   getHubStats,
   getStorageInfo,
   initKnowledgeHub,
+  clearAll,
   type Project,
   type KnowledgeItem,
   type HubStats,
@@ -610,6 +611,35 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
                 <br />
                 Klik + untuk buat.
               </p>
+            )}
+
+            {/* Danger zone — wipe all data (for cleaning up test/placeholder projects) */}
+            {(projects.length > 0 || (stats?.totalItems ?? 0) > 0) && (
+              <div className="mt-4 pt-3 border-t border-white/[0.04]">
+                <button
+                  onClick={async () => {
+                    const s = await getHubStats();
+                    if (s.totalProjects === 0 && s.totalItems === 0) return;
+                    if (!confirm(
+                      `Hapus SEMUA data Knowledge Hub?\n` +
+                      `${s.totalProjects} project + ${s.totalItems} item akan dihapus permanen.\n` +
+                      `Tindakan ini tidak bisa dibatalkan.`
+                    )) return;
+                    try {
+                      await clearAll();
+                      await refresh();
+                      toast.success('Semua data Knowledge Hub dihapus');
+                    } catch (err) {
+                      toast.error('Gagal wipe data');
+                    }
+                  }}
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-[10px] text-zinc-600 hover:text-red-400 hover:bg-red-500/5 transition-colors"
+                  title="Hapus semua project dan item permanen"
+                >
+                  <Trash2 className="h-3 w-3" />
+                  Hapus Semua Data
+                </button>
+              </div>
             )}
           </div>
 

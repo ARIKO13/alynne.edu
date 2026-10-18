@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { useClientSession } from '@/lib/use-client-session';
+import { BrandLogo } from '@/components/brand-logo';
 import { toast } from 'sonner';
 
 const ALYNNE_DOMAINS = ['alynne.my.id', 'www.alynne.my.id'];
@@ -46,7 +47,7 @@ export function LoginScreen() {
         {/* Logo & Branding */}
         <div className="text-center space-y-4">
           <div className="flex justify-center">
-            <img src="/alynne-ai-logo.png" alt="ALYNNE" className="h-16 w-16 rounded-2xl ring-2 ring-white/10" />
+            <BrandLogo size={64} className="rounded-2xl ring-2 ring-white/10" />
           </div>
           <div className="space-y-1.5">
             <h1 className="text-2xl font-bold tracking-tight text-white">

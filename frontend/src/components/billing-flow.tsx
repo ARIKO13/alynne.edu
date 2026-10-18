@@ -208,12 +208,12 @@ export function BillingFlow() {
                         className={`absolute -top-2 right-3 inline-flex items-center gap-1 rounded-full ${accent.badge} px-2 py-0.5 text-[10px] font-semibold text-white`}
                       >
                         <Sparkles className="h-2.5 w-2.5" />
-                        Default
+                        Bawaan
                       </span>
                     )}
                     {disabled && (
                       <span className="absolute -top-2 right-3 inline-flex items-center gap-1 rounded-full bg-zinc-700 px-2 py-0.5 text-[10px] font-semibold text-white">
-                        Coming Soon
+                        Segera Hadir
                       </span>
                     )}
                     <div className="mb-3 flex items-center justify-between">
@@ -492,7 +492,7 @@ function StepperHeader({ currentStep }: { currentStep: Step }) {
     { n: 1, label: 'Pilih Model' },
     { n: 2, label: 'Pilih Paket' },
     { n: 3, label: 'Metode Bayar' },
-    { n: 4, label: 'Checkout' },
+    { n: 4, label: 'Ringkasan' },
   ];
   return (
     <div className="flex items-center gap-2">

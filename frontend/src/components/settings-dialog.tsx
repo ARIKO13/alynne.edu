@@ -66,7 +66,7 @@ export function SettingsDialog() {
               <DialogTitle className="text-zinc-100">Profil</DialogTitle>
             </div>
             <DialogDescription className="text-zinc-500">
-              Atur username yang tampil di sertifikat dan leaderboard.
+              Nama ini akan tampil di profil, sertifikat, dan leaderboard kamu.
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -98,9 +98,9 @@ export function SettingsDialog() {
           <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3 space-y-1.5">
             <p className="text-[11px] font-medium text-zinc-400">Info</p>
             <ul className="text-[11px] text-zinc-500 space-y-0.5">
-              <li>- Username ini yang muncul di sertifikat</li>
+              <li>- Tampil di profil, sertifikat, dan leaderboard</li>
               <li>- Bisa diubah kapan saja</li>
-              <li>- Tidak boleh kosong atau kurang dari 2 karakter</li>
+              <li>- Minimal 2 karakter, maksimal 30 karakter</li>
             </ul>
           </div>
         </div>
