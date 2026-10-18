@@ -110,18 +110,23 @@ export function Scratchpad({ open, onClose, initialContent }: ScratchpadProps) {
   const charCount = content.length;
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-2xl bg-zinc-950/95 border-white/10 text-white">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <StickyNote className="h-5 w-5 text-amber-400" />
-            Scratchpad
-          </DialogTitle>
-          <DialogDescription className="text-zinc-400">
-            Coret-coret apa saja. AI bantu organize nanti.
-          </DialogDescription>
-        </DialogHeader>
+    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
+        <div className="flex items-center gap-2.5">
+          <StickyNote className="h-5 w-5 text-amber-400" />
+          <div>
+            <h2 className="text-base font-semibold text-zinc-100">Scratchpad</h2>
+            <p className="text-[11px] text-zinc-500">Coret-coret apa saja. AI bantu organize nanti.</p>
+          </div>
+        </div>
+        <Button onClick={onClose} variant="ghost" size="sm" className="text-zinc-400 hover:text-white hover:bg-white/[0.04]">
+          <X className="h-4 w-4" />
+          <span className="ml-1 hidden sm:inline">Tutup</span>
+        </Button>
+      </div>
 
+      <div className="p-5 space-y-4">
         {/* Stats */}
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="text-[10px] text-zinc-500">
@@ -177,7 +182,7 @@ Lalu klik 'Organize dengan AI' untuk merapikan."
             Clear
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }

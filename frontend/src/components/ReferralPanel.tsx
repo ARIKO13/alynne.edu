@@ -69,18 +69,23 @@ export function ReferralPanel({ open, onClose }: ReferralPanelProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg bg-zinc-950/95 border-white/10 text-white">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <Gift className="h-5 w-5 text-[#8B5CF6]" />
-            Ajak Teman, Dapat Gratis!
-          </DialogTitle>
-          <DialogDescription className="text-zinc-400">
-            Setiap teman yang daftar pakai link kamu, kalian berdua dapat 1 bulan premium gratis.
-          </DialogDescription>
-        </DialogHeader>
+    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
+        <div className="flex items-center gap-2.5">
+          <Gift className="h-5 w-5 text-[#8B5CF6]" />
+          <div>
+            <h2 className="text-base font-semibold text-zinc-100">Ajak Teman, Dapat Gratis!</h2>
+            <p className="text-[11px] text-zinc-500">Setiap teman yang daftar pakai link kamu, kalian berdua dapat 1 bulan premium gratis.</p>
+          </div>
+        </div>
+        <Button onClick={onClose} variant="ghost" size="sm" className="text-zinc-400 hover:text-white hover:bg-white/[0.04]">
+          <X className="h-4 w-4" />
+          <span className="ml-1 hidden sm:inline">Tutup</span>
+        </Button>
+      </div>
 
+      <div className="p-5 space-y-4">
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
           <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-center">
@@ -173,7 +178,7 @@ export function ReferralPanel({ open, onClose }: ReferralPanelProps) {
             Tutup
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }

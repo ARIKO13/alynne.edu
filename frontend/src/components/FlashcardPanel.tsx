@@ -133,20 +133,26 @@ export function FlashcardPanel({ open, onClose, chapters = [] }: FlashcardPanelP
   const progress = dueCards.length > 0 ? ((currentCardIdx) / dueCards.length) * 100 : 0;
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-2xl bg-zinc-950/95 border-white/10 text-white max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <Layers className="h-5 w-5 text-[#8B5CF6]" />
-            Flashcard
-            <Badge variant="outline" className="text-[10px] ml-auto border-[#8B5CF6]/30 text-[#8B5CF6]">
-              Spaced Repetition
-            </Badge>
-          </DialogTitle>
-          <DialogDescription className="text-zinc-400">
-            Kartu hafalan otomatis dari materi STT. Algoritma SM-2 (sama kayak Anki).
-          </DialogDescription>
-        </DialogHeader>
+    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
+        <div className="flex items-center gap-2.5">
+          <Layers className="h-5 w-5 text-[#8B5CF6]" />
+          <div>
+            <h2 className="text-base font-semibold text-zinc-100">Flashcard</h2>
+            <p className="text-[11px] text-zinc-500">Kartu hafalan otomatis dari materi STT. Algoritma SM-2 (sama kayak Anki).</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-[10px] border-[#8B5CF6]/30 text-[#8B5CF6]">Spaced Repetition</Badge>
+          <Button onClick={onClose} variant="ghost" size="sm" className="text-zinc-400 hover:text-white hover:bg-white/[0.04]">
+            <X className="h-4 w-4" />
+            <span className="ml-1 hidden sm:inline">Tutup</span>
+          </Button>
+        </div>
+      </div>
+
+      <div className="p-5 space-y-5">
 
         {/* Stats bar */}
         <div className="grid grid-cols-4 gap-2">
@@ -340,7 +346,7 @@ export function FlashcardPanel({ open, onClose, chapters = [] }: FlashcardPanelP
             )}
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }

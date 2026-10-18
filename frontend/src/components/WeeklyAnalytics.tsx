@@ -51,18 +51,23 @@ export function WeeklyAnalytics({ open, onClose }: WeeklyAnalyticsProps) {
   const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-2xl bg-zinc-950/95 border-white/10 text-white max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <TrendingUp className="h-5 w-5 text-[#8B5CF6]" />
-            Analitik Belajar Minggu Ini
-          </DialogTitle>
-          <DialogDescription className="text-zinc-400">
-            Statistik fokus dan progress belajar 7 hari terakhir.
-          </DialogDescription>
-        </DialogHeader>
+    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
+        <div className="flex items-center gap-2.5">
+          <TrendingUp className="h-5 w-5 text-[#8B5CF6]" />
+          <div>
+            <h2 className="text-base font-semibold text-zinc-100">Analitik Belajar Minggu Ini</h2>
+            <p className="text-[11px] text-zinc-500">Statistik fokus dan progress belajar 7 hari terakhir.</p>
+          </div>
+        </div>
+        <Button onClick={onClose} variant="ghost" size="sm" className="text-zinc-400 hover:text-white hover:bg-white/[0.04]">
+          <X className="h-4 w-4" />
+          <span className="ml-1 hidden sm:inline">Tutup</span>
+        </Button>
+      </div>
 
+      <div className="p-5 space-y-5">
         {/* Stats cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <StatCard
@@ -240,8 +245,8 @@ export function WeeklyAnalytics({ open, onClose }: WeeklyAnalyticsProps) {
             Tutup
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }
 
