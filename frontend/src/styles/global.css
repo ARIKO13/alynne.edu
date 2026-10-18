@@ -219,6 +219,15 @@
 .light .bg-white\/\[0\.08\] { background-color: rgba(0, 0, 0, 0.08) !important; }
 .light .bg-white\/\[0\.1\]  { background-color: rgba(0, 0, 0, 0.08) !important; }
 
+/* Bare bg-white/X (no brackets) — also semi-transparent white */
+.light .bg-white\/5  { background-color: rgba(0, 0, 0, 0.04) !important; }
+.light .bg-white\/10 { background-color: rgba(0, 0, 0, 0.06) !important; }
+
+/* Pure bg-white (e.g. Google OAuth button) — replace pure white with
+   very subtle off-white so it's not blinding against the gray page bg.
+   Still reads as 'white' for brand recognition but much softer. */
+.light .bg-white { background-color: #fafaf9 !important; }
+
 /* Plain bg-white stays white — still works on light theme */
 
 /* Text — dark warm stone text. Primary is stone-800 (#292524) on light
@@ -235,6 +244,8 @@
 .light .text-zinc-600 { color: #a8a29e !important; }  /* stone-400 */
 .light .text-zinc-700 { color: #d6d3d1 !important; }  /* stone-300 */
 .light .text-zinc-800 { color: #e7e5e4 !important; }  /* stone-200 */
+.light .text-zinc-900 { color: #292524 !important; }  /* stone-800 — was pure dark on white */
+.light .text-black { color: #292524 !important; }     /* stone-800 — softer than pure black */
 
 /* Hover states — `hover:bg-white/[0.x]` becomes `hover:bg-black/[0.x]` */
 .light .hover\:bg-white\/\[0\.04\]:hover { background-color: rgba(0, 0, 0, 0.04) !important; }
