@@ -1,6 +1,9 @@
 ---
+import Layout from '@/layouts/Layout.astro';
 import '@/styles/global.css';
 import SettingsPanel from '@/components/SettingsPanel';
 ---
 
-<SettingsPanel client:load />
+<Layout title="Pengaturan - ALYNNE AI" showNavbar={false}>
+  <SettingsPanel client:load />
+</Layout>
