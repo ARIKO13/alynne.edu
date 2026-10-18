@@ -174,38 +174,39 @@
 */
 
 .light {
-  /* Warm-tinted light palette (stone family) — softer on the eyes than
-     cool grays. Inspired by Notion's Default Light mode. */
-  --background: oklch(0.97 0.002 80);    /* stone-100 warm off-white */
-  --foreground: oklch(0.32 0.003 80);  /* stone-700 warm dark */
-  --card: oklch(0.99 0.001 80);        /* stone-50 warm white */
-  --card-foreground: oklch(0.32 0.003 80);
-  --popover: oklch(0.99 0.001 80);
-  --popover-foreground: oklch(0.32 0.003 80);
-  --secondary: oklch(0.95 0.002 80);
-  --secondary-foreground: oklch(0.4 0.003 80);
-  --muted: oklch(0.95 0.002 80);
-  --muted-foreground: oklch(0.5 0.003 80);
-  --accent: oklch(0.95 0.002 80);
-  --accent-foreground: oklch(0.4 0.003 80);
-  --border: oklch(0.92 0.002 80);
-  --input: oklch(0.92 0.002 80);
-  --sidebar: oklch(0.96 0.002 80);
-  --sidebar-foreground: oklch(0.4 0.003 80);
-  --sidebar-border: oklch(0.93 0.002 80);
-  --sidebar-accent: oklch(0.95 0.005 295);
+  /* 'Dim light' palette — bg is light gray (stone-200) not white,
+     cards are stone-100 (lighter gray, pop against page), text dark.
+     Net brightness much lower than white-bg light mode → easier on eyes. */
+  --background: oklch(0.92 0.002 80);    /* stone-200 warm gray */
+  --foreground: oklch(0.27 0.003 80);   /* stone-800 warm dark */
+  --card: oklch(0.97 0.002 80);        /* stone-100 lighter gray */
+  --card-foreground: oklch(0.27 0.003 80);
+  --popover: oklch(0.97 0.002 80);
+  --popover-foreground: oklch(0.27 0.003 80);
+  --secondary: oklch(0.88 0.002 80);
+  --secondary-foreground: oklch(0.35 0.003 80);
+  --muted: oklch(0.88 0.002 80);
+  --muted-foreground: oklch(0.45 0.003 80);
+  --accent: oklch(0.88 0.002 80);
+  --accent-foreground: oklch(0.35 0.003 80);
+  --border: oklch(0.82 0.002 80);       /* stone-400 visible */
+  --input: oklch(0.88 0.002 80);
+  --sidebar: oklch(0.89 0.002 80);      /* stone-300 darker gray */
+  --sidebar-foreground: oklch(0.35 0.003 80);
+  --sidebar-border: oklch(0.84 0.002 80);
+  --sidebar-accent: oklch(0.9 0.005 295);
 }
 
-/* Backgrounds — warm stone palette: page is warm off-white (stone-100),
-   sidebar is slightly darker (between stone-100/200), cards are warm
-   white (stone-50) so they pop softly against the page. Warm undertones
-   reduce eye strain vs cool grays. */
-.light .bg-\[\#09090b\] { background-color: #f5f5f4 !important; }  /* stone-100 */
-.light .bg-\[\#0a0a0b\] { background-color: #f5f5f4 !important; }
-.light .bg-\[\#0c0c0e\] { background-color: #efeeec !important; }  /* stone-200-ish */
-.light .bg-\[\#0e0e10\] { background-color: #efeeec !important; }
-.light .bg-\[\#18181b\] { background-color: #fafaf9 !important; }  /* stone-50 */
-.light .bg-\[\#161616\] { background-color: #efeeec !important; }
+/* Backgrounds — DIM LIGHT mode: page is light gray (stone-200),
+   sidebar is darker gray (stone-300), cards are lighter gray (stone-100)
+   so they pop softly against the page. NO pure white anywhere — much
+   lower overall brightness → easier on the eyes. */
+.light .bg-\[\#09090b\] { background-color: #e7e5e4 !important; }  /* stone-200 light gray */
+.light .bg-\[\#0a0a0b\] { background-color: #e7e5e4 !important; }
+.light .bg-\[\#0c0c0e\] { background-color: #d6d3d1 !important; }  /* stone-300 darker gray */
+.light .bg-\[\#0e0e10\] { background-color: #d6d3d1 !important; }
+.light .bg-\[\#18181b\] { background-color: #f5f5f4 !important; }  /* stone-100 lighter gray (cards) */
+.light .bg-\[\#161616\] { background-color: #d6d3d1 !important; }
 
 /* Backgrounds — semi-transparent white overlays (on dark bg) become
    semi-transparent black overlays (on light bg) so cards/inputs still
@@ -220,18 +221,17 @@
 
 /* Plain bg-white stays white — still works on light theme */
 
-/* Text — warm stone palette. Primary text uses stone-700 (#44403c) instead
-   of cool gray-800 — warm undertone reads softer. Muted text uses stone-500
-   for consistency with the warm family. */
-.light .text-white { color: #44403c !important; }       /* stone-700 */
-.light .text-zinc-100 { color: #44403c !important; }
-.light .text-zinc-200 { color: #57534e !important; }   /* stone-600 */
-.light .text-zinc-300 { color: #78716c !important; }   /* stone-500 */
-.light .text-zinc-400 { color: #a8a29e !important; }   /* stone-400 */
-/* zinc-500 — keep as stone-500 for consistent warm tone */
+/* Text — dark warm stone text. Primary is stone-800 (#292524) on light
+   gray bg = high contrast for readability, but overall page brightness
+   is low so eyes don't strain. */
+.light .text-white { color: #292524 !important; }       /* stone-800 dark */
+.light .text-zinc-100 { color: #292524 !important; }
+.light .text-zinc-200 { color: #44403c !important; }   /* stone-700 */
+.light .text-zinc-300 { color: #57534e !important; }   /* stone-600 */
+.light .text-zinc-400 { color: #78716c !important; }   /* stone-500 */
+/* zinc-500 — workhorse muted text, use stone-500 warm */
 .light .text-zinc-500 { color: #78716c !important; }
-/* zinc-600+ in dark theme = 'even more muted' text. On light theme that
-   needs to become lighter (not darker) to stay visible on warm bg. */
+/* zinc-600+ were 'even more muted' on dark — flip to lighter warm grays */
 .light .text-zinc-600 { color: #a8a29e !important; }  /* stone-400 */
 .light .text-zinc-700 { color: #d6d3d1 !important; }  /* stone-300 */
 .light .text-zinc-800 { color: #e7e5e4 !important; }  /* stone-200 */
@@ -243,22 +243,22 @@
 .light .hover\:bg-white\/\[0\.08\]:hover { background-color: rgba(0, 0, 0, 0.08) !important; }
 
 /* Hover text — `hover:text-white` becomes warm dark text */
-.light .hover\:text-white:hover { color: #44403c !important; }
-.light .hover\:text-zinc-100:hover { color: #44403c !important; }
-.light .hover\:text-zinc-200:hover { color: #57534e !important; }
-.light .hover\:text-zinc-300:hover { color: #78716c !important; }
+.light .hover\:text-white:hover { color: #292524 !important; }
+.light .hover\:text-zinc-100:hover { color: #292524 !important; }
+.light .hover\:text-zinc-200:hover { color: #44403c !important; }
+.light .hover\:text-zinc-300:hover { color: #57534e !important; }
 
-/* Borders — warm stone gray, softer than cool gray for visible but not
-   harsh separation. */
-.light .border-white\/\[0\.04\] { border-color: #e7e5e4 !important; }  /* stone-200 */
-.light .border-white\/\[0\.06\] { border-color: #e7e5e4 !important; }
-.light .border-white\/\[0\.08\] { border-color: #d6d3d1 !important; }  /* stone-300 */
-.light .border-white\/\[0\.1\]  { border-color: #d6d3d1 !important; }
-.light .border-white\/10 { border-color: #d6d3d1 !important; }
+/* Borders — visible warm gray (stone-400/500) since bg is darker now,
+   borders need to be slightly more visible to separate sections. */
+.light .border-white\/\[0\.04\] { border-color: #a8a29e !important; }  /* stone-400 */
+.light .border-white\/\[0\.06\] { border-color: #a8a29e !important; }
+.light .border-white\/\[0\.08\] { border-color: #8b837a !important; }  /* between 400-500 */
+.light .border-white\/\[0\.1\]  { border-color: #78716c !important; }  /* stone-500 */
+.light .border-white\/10 { border-color: #78716c !important; }
 
-/* Ring — focus rings, warm soft gray */
-.light .ring-white\/10 { --tw-ring-color: #d6d3d1 !important; }
-.light .ring-white\/\[0\.06\] { --tw-ring-color: #e7e5e4 !important; }
+/* Ring — focus rings, warm visible gray */
+.light .ring-white\/10 { --tw-ring-color: #78716c !important; }  /* stone-500 */
+.light .ring-white\/\[0\.06\] { --tw-ring-color: #a8a29e !important; }  /* stone-400 */
 
 /* Glass cards (defined in @layer utilities above) — switch to light variant */
 .light .glass-card {
@@ -272,19 +272,19 @@
   border: 1px solid #e4e4e7 !important;
 }
 
-/* Scrollbar in light mode — dark thumb on light track */
+/* Scrollbar in dim light mode — darker thumb on gray track */
 .light ::-webkit-scrollbar-track {
   background: transparent;
 }
 .light ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
+  background: rgba(0, 0, 0, 0.25);
 }
 .light ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.4);
 }
 
 /* The loading spinner div (full-screen min-h-screen with bg-[#09090b])
-   in app.tsx needs to also flip to warm off-white */
+   in app.tsx flips to light gray bg */
 .light .min-h-screen.bg-\[\#09090b\] {
-  background-color: #f5f5f4 !important;
+  background-color: #e7e5e4 !important;
 }
