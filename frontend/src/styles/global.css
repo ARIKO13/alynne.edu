@@ -174,39 +174,39 @@
 */
 
 .light {
-  /* 'Dim light' palette — bg is light gray (stone-200) not white,
-     cards are stone-100 (lighter gray, pop against page), text dark.
-     Net brightness much lower than white-bg light mode → easier on eyes. */
-  --background: oklch(0.92 0.002 80);    /* stone-200 warm gray */
-  --foreground: oklch(0.27 0.003 80);   /* stone-800 warm dark */
-  --card: oklch(0.97 0.002 80);        /* stone-100 lighter gray */
-  --card-foreground: oklch(0.27 0.003 80);
-  --popover: oklch(0.97 0.002 80);
-  --popover-foreground: oklch(0.27 0.003 80);
-  --secondary: oklch(0.88 0.002 80);
-  --secondary-foreground: oklch(0.35 0.003 80);
-  --muted: oklch(0.88 0.002 80);
-  --muted-foreground: oklch(0.45 0.003 80);
-  --accent: oklch(0.88 0.002 80);
-  --accent-foreground: oklch(0.35 0.003 80);
-  --border: oklch(0.82 0.002 80);       /* stone-400 visible */
-  --input: oklch(0.88 0.002 80);
-  --sidebar: oklch(0.89 0.002 80);      /* stone-300 darker gray */
-  --sidebar-foreground: oklch(0.35 0.003 80);
-  --sidebar-border: oklch(0.84 0.002 80);
-  --sidebar-accent: oklch(0.9 0.005 295);
+  /* Solarized Light palette (Ethan Schoonover) — designed specifically
+     to be eye-friendly. Warm cream bg + medium slate text = lower contrast
+     (4-5:1) which is intentional. High contrast causes eye strain.
+     Cream bg mimics reading paper book, not looking at LED screen. */
+  --background: #fdf6e3;   /* base3 — warm cream */
+  --foreground: #586e75;   /* base01 — slate dark (medium, NOT pure dark) */
+  --card: #eee8d5;          /* base2 — darker cream for cards */
+  --card-foreground: #586e75;
+  --popover: #eee8d5;
+  --popover-foreground: #586e75;
+  --secondary: #eee8d5;
+  --secondary-foreground: #657b83;  /* base00 */
+  --muted: #eee8d5;
+  --muted-foreground: #839496;  /* base0 — slate light */
+  --accent: #eee8d5;
+  --accent-foreground: #657b83;
+  --border: #d4c9a8;        /* warm cream border */
+  --input: #eee8d5;
+  --sidebar: #eee8d5;
+  --sidebar-foreground: #657b83;
+  --sidebar-border: #d4c9a8;
+  --sidebar-accent: #fdf6e3;
 }
 
-/* Backgrounds — DIM LIGHT mode: page is light gray (stone-200),
-   sidebar is darker gray (stone-300), cards are lighter gray (stone-100)
-   so they pop softly against the page. NO pure white anywhere — much
-   lower overall brightness → easier on the eyes. */
-.light .bg-\[\#09090b\] { background-color: #e7e5e4 !important; }  /* stone-200 light gray */
-.light .bg-\[\#0a0a0b\] { background-color: #e7e5e4 !important; }
-.light .bg-\[\#0c0c0e\] { background-color: #d6d3d1 !important; }  /* stone-300 darker gray */
-.light .bg-\[\#0e0e10\] { background-color: #d6d3d1 !important; }
-.light .bg-\[\#18181b\] { background-color: #f5f5f4 !important; }  /* stone-100 lighter gray (cards) */
-.light .bg-\[\#161616\] { background-color: #d6d3d1 !important; }
+/* Backgrounds — Solarized Light warm cream. Page is base3 (#fdf6e3),
+   sidebar/cards are base2 (#eee8d5) for subtle elevation. NO white
+   or gray bg — warm cream reduces perceived brightness significantly. */
+.light .bg-\[\#09090b\] { background-color: #fdf6e3 !important; }  /* base3 cream */
+.light .bg-\[\#0a0a0b\] { background-color: #fdf6e3 !important; }
+.light .bg-\[\#0c0c0e\] { background-color: #eee8d5 !important; }  /* base2 darker cream */
+.light .bg-\[\#0e0e10\] { background-color: #eee8d5 !important; }
+.light .bg-\[\#18181b\] { background-color: #f7f1dd !important; }  /* between base2/base3 */
+.light .bg-\[\#161616\] { background-color: #eee8d5 !important; }
 
 /* Backgrounds — semi-transparent white overlays (on dark bg) become
    semi-transparent black overlays (on light bg) so cards/inputs still
@@ -223,29 +223,26 @@
 .light .bg-white\/5  { background-color: rgba(0, 0, 0, 0.04) !important; }
 .light .bg-white\/10 { background-color: rgba(0, 0, 0, 0.06) !important; }
 
-/* Pure bg-white (e.g. Google OAuth button) — replace pure white with
-   very subtle off-white so it's not blinding against the gray page bg.
-   Still reads as 'white' for brand recognition but much softer. */
-.light .bg-white { background-color: #fafaf9 !important; }
+/* Pure bg-white (e.g. Google OAuth button) — use base2 cream so it
+   blends with Solarized palette instead of pure white. */
+.light .bg-white { background-color: #eee8d5 !important; }
 
 /* Plain bg-white stays white — still works on light theme */
 
-/* Text — dark warm stone text. Primary is stone-800 (#292524) on light
-   gray bg = high contrast for readability, but overall page brightness
-   is low so eyes don't strain. */
-.light .text-white { color: #292524 !important; }       /* stone-800 dark */
-.light .text-zinc-100 { color: #292524 !important; }
-.light .text-zinc-200 { color: #44403c !important; }   /* stone-700 */
-.light .text-zinc-300 { color: #57534e !important; }   /* stone-600 */
-.light .text-zinc-400 { color: #78716c !important; }   /* stone-500 */
-/* zinc-500 — workhorse muted text, use stone-500 warm */
-.light .text-zinc-500 { color: #78716c !important; }
-/* zinc-600+ were 'even more muted' on dark — flip to lighter warm grays */
-.light .text-zinc-600 { color: #a8a29e !important; }  /* stone-400 */
-.light .text-zinc-700 { color: #d6d3d1 !important; }  /* stone-300 */
-.light .text-zinc-800 { color: #e7e5e4 !important; }  /* stone-200 */
-.light .text-zinc-900 { color: #292524 !important; }  /* stone-800 — was pure dark on white */
-.light .text-black { color: #292524 !important; }     /* stone-800 — softer than pure black */
+/* Text — Solarized palette. KEY DIFFERENCE: text is MEDIUM slate gray
+   (NOT dark/black). Contrast ratio ~4.5-5.6:1 (AA minimum, intentionally
+   lower than 7:1 AAA which causes eye strain). */
+.light .text-white { color: #586e75 !important; }       /* base01 slate dark */
+.light .text-zinc-100 { color: #586e75 !important; }
+.light .text-zinc-200 { color: #657b83 !important; }   /* base00 slate medium */
+.light .text-zinc-300 { color: #839496 !important; }   /* base0 slate light */
+.light .text-zinc-400 { color: #93a1a1 !important; }   /* base1 slate lighter */
+.light .text-zinc-500 { color: #93a1a1 !important; }   /* base1 (workhorse muted) */
+.light .text-zinc-600 { color: #a7b1b3 !important; }   /* even lighter */
+.light .text-zinc-700 { color: #c4cccd !important; }
+.light .text-zinc-800 { color: #d4d9da !important; }
+.light .text-zinc-900 { color: #586e75 !important; }  /* use slate dark, not pure */
+.light .text-black { color: #586e75 !important; }     /* slate dark, not pure black */
 
 /* Hover states — `hover:bg-white/[0.x]` becomes `hover:bg-black/[0.x]` */
 .light .hover\:bg-white\/\[0\.04\]:hover { background-color: rgba(0, 0, 0, 0.04) !important; }
@@ -253,49 +250,48 @@
 .light .hover\:bg-white\/\[0\.06\]:hover { background-color: rgba(0, 0, 0, 0.06) !important; }
 .light .hover\:bg-white\/\[0\.08\]:hover { background-color: rgba(0, 0, 0, 0.08) !important; }
 
-/* Hover text — `hover:text-white` becomes warm dark text */
-.light .hover\:text-white:hover { color: #292524 !important; }
-.light .hover\:text-zinc-100:hover { color: #292524 !important; }
-.light .hover\:text-zinc-200:hover { color: #44403c !important; }
-.light .hover\:text-zinc-300:hover { color: #57534e !important; }
+/* Hover text — `hover:text-white` becomes slate dark */
+.light .hover\:text-white:hover { color: #586e75 !important; }
+.light .hover\:text-zinc-100:hover { color: #586e75 !important; }
+.light .hover\:text-zinc-200:hover { color: #657b83 !important; }
+.light .hover\:text-zinc-300:hover { color: #839496 !important; }
 
-/* Borders — visible warm gray (stone-400/500) since bg is darker now,
-   borders need to be slightly more visible to separate sections. */
-.light .border-white\/\[0\.04\] { border-color: #a8a29e !important; }  /* stone-400 */
-.light .border-white\/\[0\.06\] { border-color: #a8a29e !important; }
-.light .border-white\/\[0\.08\] { border-color: #8b837a !important; }  /* between 400-500 */
-.light .border-white\/\[0\.1\]  { border-color: #78716c !important; }  /* stone-500 */
-.light .border-white\/10 { border-color: #78716c !important; }
+/* Borders — warm cream borders that blend with the Solarized palette */
+.light .border-white\/\[0\.04\] { border-color: #d4c9a8 !important; }
+.light .border-white\/\[0\.06\] { border-color: #c9bd9a !important; }
+.light .border-white\/\[0\.08\] { border-color: #b8ad88 !important; }
+.light .border-white\/\[0\.1\]  { border-color: #a89c78 !important; }
+.light .border-white\/10 { border-color: #a89c78 !important; }
 
-/* Ring — focus rings, warm visible gray */
-.light .ring-white\/10 { --tw-ring-color: #78716c !important; }  /* stone-500 */
-.light .ring-white\/\[0\.06\] { --tw-ring-color: #a8a29e !important; }  /* stone-400 */
+/* Ring — focus rings, warm cream */
+.light .ring-white\/10 { --tw-ring-color: #a89c78 !important; }
+.light .ring-white\/\[0\.06\] { --tw-ring-color: #d4c9a8 !important; }
 
-/* Glass cards (defined in @layer utilities above) — switch to light variant */
+/* Glass cards — Solarized cream variant */
 .light .glass-card {
-  background: rgba(255, 255, 255, 0.85) !important;
+  background: rgba(253, 246, 227, 0.85) !important;
   backdrop-filter: blur(12px);
-  border: 1px solid #e4e4e7 !important;
+  border: 1px solid #d4c9a8 !important;
 }
 .light .glass-card-sm {
-  background: rgba(255, 255, 255, 0.75) !important;
+  background: rgba(238, 232, 213, 0.7) !important;
   backdrop-filter: blur(8px);
-  border: 1px solid #e4e4e7 !important;
+  border: 1px solid #d4c9a8 !important;
 }
 
-/* Scrollbar in dim light mode — darker thumb on gray track */
+/* Scrollbar in Solarized light mode — warm thumb on cream track */
 .light ::-webkit-scrollbar-track {
   background: transparent;
 }
 .light ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(101, 123, 131, 0.3);  /* slate medium */
 }
 .light ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(101, 123, 131, 0.5);
 }
 
 /* The loading spinner div (full-screen min-h-screen with bg-[#09090b])
-   in app.tsx flips to light gray bg */
+   in app.tsx flips to Solarized cream bg */
 .light .min-h-screen.bg-\[\#09090b\] {
-  background-color: #e7e5e4 !important;
+  background-color: #fdf6e3 !important;
 }
