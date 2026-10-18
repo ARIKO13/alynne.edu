@@ -98,9 +98,10 @@ export function SettingsDialog() {
           <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3 space-y-1.5">
             <p className="text-[11px] font-medium text-zinc-400">Info</p>
             <ul className="text-[11px] text-zinc-500 space-y-0.5">
-              <li>- Tampil di profil, sertifikat, dan leaderboard</li>
-              <li>- Bisa diubah kapan saja</li>
-              <li>- Minimal 2 karakter, maksimal 30 karakter</li>
+              <li>- Bisa diubah kapan saja, sebanyak apa pun</li>
+              <li>- Minimal 2, maksimal 30 karakter</li>
+              <li>- Hindari pakai email, NIS/NIP, atau data pribadi</li>
+              <li>- Spasi dan huruf/angka diperbolehkan</li>
             </ul>
           </div>
         </div>

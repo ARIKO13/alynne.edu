@@ -20,7 +20,6 @@ import { isAdmin } from '@/lib/admin';
 import { cn } from '@/lib/utils';
 import { useClientSession } from '@/lib/use-client-session';
 import { registerShortcuts } from '@/lib/keyboard-shortcuts';
-import { BrandLogo } from '@/components/brand-logo';
 import { useEffect, useState, useRef, useMemo } from 'react';
 
 const ALYNNE_DOMAINS = ['alynne.my.id', 'www.alynne.my.id'];
@@ -154,7 +153,6 @@ export default function App({ onBackToLanding }: AppProps) {
         )}
       >
         <div className="flex items-center gap-3 px-5 h-14 border-b border-white/[0.06]">
-          <BrandLogo size={28} className="rounded-lg" />
           <span className="text-sm font-semibold tracking-tight text-white">ALYNNE AI</span>
           <button
             onClick={() => setSidebarOpen(false)}

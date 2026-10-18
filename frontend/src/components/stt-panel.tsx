@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { MaterialUpload } from '@/components/material-upload';
 import { YouTubeTranscript } from '@/components/youtube-transcript';
+import { BrandLogo } from '@/components/brand-logo';
 import { cn } from '@/lib/utils';
 import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
@@ -311,7 +312,13 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
 
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
-        <h3 className="text-sm font-medium text-zinc-200">Speech to Text</h3>
+        <div className="flex items-center gap-2.5">
+          <BrandLogo size={28} />
+          <div className="leading-tight">
+            <h3 className="text-sm font-semibold text-zinc-100">Speech to Text</h3>
+            <p className="text-[10px] text-zinc-500">Rekam audio → transkrip otomatis</p>
+          </div>
+        </div>
         <div className="flex items-center gap-2">
           <Button
             onClick={() => setModelSelectorOpen(true)}
