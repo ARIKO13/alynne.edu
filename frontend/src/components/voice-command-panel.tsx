@@ -40,7 +40,7 @@ export function VoiceCommandPanel() {
   }, [lastRecognized]);
 
   const getCommands = useCallback((): VoiceCommand[] => {
-    const userIsAdmin = ['ardilanpro@gmail.com', 'arshikocode@gmail.com'].includes(user?.email || '');
+    const userIsAdmin = ['ardilanpro@gmail.com', 'arshikocode@gmail.com', 'moonahoshinova@gmail.com'].includes(user?.email || '');
     const cmds: VoiceCommand[] = [
       { keywords: ['stt', 'speech to text', 'speech', 'transkrip', 'rekam suara', 'rekam'],
         action: () => setActiveTab('stt'), label: 'Buka Speech to Text', description: 'Navigasi ke fitur STT' },
