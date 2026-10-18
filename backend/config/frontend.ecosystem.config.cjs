@@ -1,7 +1,7 @@
 module.exports = {
   apps: [{
     name: 'lina-learning',
-    script: 'dist/server/entry.mjs',
+    script: 'server/entry.mjs',
     cwd: '/root/lina-learning',
     env: {
       NODE_ENV: 'production',
