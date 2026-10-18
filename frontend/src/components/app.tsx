@@ -15,6 +15,7 @@ import { stopSttRecording } from '@/lib/stt-controller';
 import {
   Mic, Bot, Settings, Wifi, Radio, LogOut, MicOff,
   Menu, X, Shield, Sparkles, FolderOpen, StickyNote, TrendingUp, Gift, FileText, Monitor, ArrowLeft, Network, Wand2, Layers,
+  Sun, Moon,
 } from 'lucide-react';
 import { isAdmin } from '@/lib/admin';
 import { cn } from '@/lib/utils';
@@ -59,7 +60,7 @@ interface AppProps {
 }
 
 export default function App({ onBackToLanding }: AppProps) {
-  const { user, setUser, activeTab, setActiveTab, setSettingsOpen, sttSource, sttStatus, transcript } = useAppStore();
+  const { user, setUser, activeTab, setActiveTab, setSettingsOpen, sttSource, sttStatus, transcript, theme, setTheme } = useAppStore();
   const { data: session, status } = useClientSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isAlynne = isAlynneDomain();
@@ -109,6 +110,14 @@ export default function App({ onBackToLanding }: AppProps) {
     }
   }, [activeTab, userIsAdmin, setActiveTab, user]);
 
+  // Apply theme class to <html> — runs on mount + whenever theme changes.
+  // Layout.astro has an inline script that pre-applies the class from
+  // localStorage BEFORE React hydrates, so there's no flash of dark mode.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.documentElement.classList.toggle('light', theme === 'light');
+  }, [theme]);
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#09090b]">
@@ -155,8 +164,16 @@ export default function App({ onBackToLanding }: AppProps) {
         <div className="flex items-center gap-3 px-5 h-14 border-b border-white/[0.06]">
           <span className="text-sm font-semibold tracking-tight text-white">ALYNNE AI</span>
           <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="ml-auto p-1.5 rounded-md hover:bg-white/[0.06] transition-colors text-zinc-400 hover:text-zinc-200"
+            title={theme === 'dark' ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+          <button
             onClick={() => setSidebarOpen(false)}
-            className="ml-auto lg:hidden p-1 rounded-md hover:bg-white/[0.06] transition-colors"
+            className="lg:hidden p-1 rounded-md hover:bg-white/[0.06] transition-colors"
           >
             <X className="h-4 w-4 text-zinc-400" />
           </button>

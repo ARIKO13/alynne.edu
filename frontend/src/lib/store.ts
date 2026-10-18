@@ -133,6 +133,10 @@ interface AppState {
   voiceCmdActive: boolean;
   setVoiceCmdActive: (v: boolean) => void;
 
+  // Theme (persisted)
+  theme: 'dark' | 'light';
+  setTheme: (t: 'dark' | 'light') => void;
+
   // Study Mode Config (persisted)
   studyDefaultMinutes: number;
   setStudyDefaultMinutes: (v: number) => void;
@@ -242,6 +246,10 @@ export const useAppStore = create<AppState>()(
       voiceCmdActive: false,
       setVoiceCmdActive: (voiceCmdActive) => set({ voiceCmdActive }),
 
+      // Theme (persisted) - default dark to match existing dark-first design
+      theme: 'dark' as 'dark' | 'light',
+      setTheme: (theme) => set({ theme }),
+
       // Study Mode Config (persisted)
       studyDefaultMinutes: 25,
       setStudyDefaultMinutes: (studyDefaultMinutes) => set({ studyDefaultMinutes }),
@@ -259,6 +267,7 @@ export const useAppStore = create<AppState>()(
         transcript: state.transcript,
         transcriptEntries: state.transcriptEntries,
         uploadedMaterials: state.uploadedMaterials,
+        theme: state.theme,
         user: state.user ? {
           id: String(state.user.id || ''),
           email: String(state.user.email || ''),
