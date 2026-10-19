@@ -34,6 +34,11 @@ export interface FaceMeshResult {
 
 let detectorPromise: Promise<any | null> | null = null;
 let lastDetection = 0;
+let lastSuccessfulResult: FaceMeshResult = {
+  detected: false,
+  landmarks: null,
+  inferenceTimeMs: 0,
+};
 let inferenceTimes: number[] = [];
 let tooSlow = false;  // adaptive flag — if true, permanently fall back
 
@@ -91,9 +96,14 @@ export async function getFaceMeshDetector(): Promise<any | null> {
  */
 export async function detectFace(video: HTMLVideoElement): Promise<FaceMeshResult> {
   const now = Date.now();
-  // Throttle to 8fps (every 125ms)
+  // Throttle to 8fps (every 125ms). When throttled, return the LAST
+  // successful result (cached) — NOT { detected: false }. This way the
+  // caller's computeHeadPose() still gets valid landmarks between
+  // detections, instead of falling through to the legacy fallback path.
+  // Without this cache, 52/60 frames per second would fall through to
+  // the broken legacy method, making the overall score wrong.
   if (now - lastDetection < 125) {
-    return { detected: false, landmarks: null, inferenceTimeMs: 0 };
+    return lastSuccessfulResult;
   }
   lastDetection = now;
 
@@ -123,13 +133,21 @@ export async function detectFace(video: HTMLVideoElement): Promise<FaceMeshResul
     }
 
     if (faces.length === 0) {
-      return { detected: false, landmarks: null, inferenceTimeMs: inferenceTime };
+      // No face detected — update cache to reflect this
+      lastSuccessfulResult = {
+        detected: false,
+        landmarks: null,
+        inferenceTimeMs: inferenceTime,
+      };
+      return lastSuccessfulResult;
     }
-    return {
+    // Face detected — cache the result for throttled frames
+    lastSuccessfulResult = {
       detected: true,
       landmarks: faces[0].keypoints,
       inferenceTimeMs: inferenceTime,
     };
+    return lastSuccessfulResult;
   } catch (err) {
     return { detected: false, landmarks: null, inferenceTimeMs: 0 };
   }
