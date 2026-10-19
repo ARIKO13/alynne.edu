@@ -169,8 +169,8 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          width: { ideal: 640 },
-          height: { ideal: 480 },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
           facingMode: 'user',
           frameRate: { ideal: 30 },
         },
@@ -278,9 +278,13 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                   face.boundingBox.top + face.boundingBox.height / 2;
                 const vh = video.videoHeight || 120;
                 facePresent = true;
-                // Face in upper 65% of frame = head up, looking at screen.
-                // Face in lower 35% = head down (nunduk) = distracted posture.
-                faceAttentive = faceCenterY < vh * 0.65;
+                // Face in upper 50% of frame = head up, looking at screen.
+                // Face in lower 50% = head down (nunduk) = distracted posture.
+                // (Stricter than 0.65 — face needs to be in UPPER HALF to count
+                // as attentive. Camera on laptop is above screen, so when user
+                // looks at screen face is roughly at vh*0.45. Looking down
+                // shifts face to vh*0.6+ which fails this check.)
+                faceAttentive = faceCenterY < vh * 0.5;
               } else {
                 facePresent = false;
                 faceAttentive = false;
@@ -290,11 +294,51 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               faceAttentive = false;
             }
           } else {
-            // Fallback when FaceDetector API unavailable: use brightness in
-            // upper area as proxy. Good brightness in upper-center = head up
-            // + light on face = attentive. Low brightness = head down or away.
-            facePresent = upperBrightness > 50;
-            faceAttentive = upperBrightness > 80;
+            // Fallback when FaceDetector API unavailable (Firefox/Safari):
+            // Use skin tone distribution. When head is UP, face skin (forehead,
+            // cheeks, eyes) is visible in the TOP portion of the frame.
+            // When head is DOWN (nunduk), top of frame shows hair (no skin tone)
+            // and skin tone moves to BOTTOM of frame (chin/neck).
+            //
+            // Check 2 regions:
+            //   topSkin: skin tone in top 1/3 center (where face should be when up)
+            //   bottomSkin: skin tone in bottom 1/3 center (where chin/neck go when down)
+            const topSkin = (() => {
+              let s = 0, t = 0;
+              for (let y = 5; y < 40; y += 2) {
+                for (let x = 50; x < 110; x += 2) {
+                  const idx = (y * 160 + x) * 4;
+                  const r = frame[idx], g = frame[idx + 1], b = frame[idx + 2];
+                  t++;
+                  if (r > 80 && g > 40 && b > 20 && r > g && r > b && (r - g) > 15 && r < 250) s++;
+                }
+              }
+              return t > 0 ? s / t : 0;
+            })();
+            const bottomSkin = (() => {
+              let s = 0, t = 0;
+              for (let y = 80; y < 115; y += 2) {
+                for (let x = 50; x < 110; x += 2) {
+                  const idx = (y * 160 + x) * 4;
+                  const r = frame[idx], g = frame[idx + 1], b = frame[idx + 2];
+                  t++;
+                  if (r > 80 && g > 40 && b > 20 && r > g && r > b && (r - g) > 15 && r < 250) s++;
+                }
+              }
+              return t > 0 ? s / t : 0;
+            })();
+
+            const totalSkin = topSkin + bottomSkin;
+            if (totalSkin < 0.03) {
+              // Almost no skin tone → no face visible → away from screen
+              facePresent = false;
+              faceAttentive = false;
+            } else {
+              facePresent = true;
+              // Attentive = significantly more skin in TOP than BOTTOM
+              // (face is up, chin/neck not visible from above)
+              faceAttentive = topSkin > bottomSkin * 1.5 && topSkin > 0.08;
+            }
           }
         }
 
