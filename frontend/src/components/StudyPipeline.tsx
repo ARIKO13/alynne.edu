@@ -168,7 +168,12 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   const startCamera = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 240, height: 180, facingMode: 'user' },
+        video: {
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          facingMode: 'user',
+          frameRate: { ideal: 30 },
+        },
         audio: false,
       });
       streamRef.current = stream;
@@ -200,49 +205,148 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     const video = videoRef.current;
     if (!video || !streamRef.current) return;
 
+    // Higher resolution canvas for better detection accuracy
     const canvas = document.createElement('canvas');
-    canvas.width = 80;
-    canvas.height = 60;
-    const ctx = canvas.getContext('2d');
+    canvas.width = 160;
+    canvas.height = 120;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
 
-    const check = () => {
+    // Use FaceDetector API if available (Chrome). It returns bounding boxes
+    // which we can use to check head position (looking up vs down).
+    const hasFaceAPI = typeof (window as any).FaceDetector === 'function';
+    let faceDetector: any = null;
+    if (hasFaceAPI) {
+      try {
+        faceDetector = new (window as any).FaceDetector({
+          fastMode: true,
+          maxDetectedFaces: 1,
+        });
+      } catch {}
+    }
+
+    // Closure state for throttling + smoothing
+    let lastFaceCheck = 0;
+    let facePresent = false;
+    let faceAttentive = false; // face detected AND in upper area (looking at screen)
+    let lastScoreUpdate = 0;
+    const scoreHistory: number[] = [];
+
+    const check = async () => {
       if (!isRunning || !focusEnabled) {
         animRef.current = requestAnimationFrame(check);
         return;
       }
       try {
-        ctx.drawImage(video, 0, 0, 80, 60);
-        const frame = ctx.getImageData(0, 0, 80, 60).data;
+        ctx.drawImage(video, 0, 0, 160, 120);
+        const frame = ctx.getImageData(0, 0, 160, 120).data;
 
-        // Frame difference (motion detection)
+        // ── 1. Motion detection (frame diff, sampled every 4th pixel) ──
         let diff = 0;
+        let count = 0;
         if (prevFrameRef.current) {
-          for (let i = 0; i < frame.length; i += 4) {
+          for (let i = 0; i < frame.length; i += 16) {
             diff += Math.abs(frame[i] - prevFrameRef.current[i]);
+            count++;
           }
-          diff = diff / (80 * 60);
+          diff = diff / count;
         }
-        prevFrameRef.current = frame;
+        prevFrameRef.current = new Uint8ClampedArray(frame);
 
-        // If too much motion = distracted (moving around)
-        // If very little motion for long = might be away
-        const motionScore = Math.min(100, 100 - diff * 2);
-        const newScore = Math.round(motionScore);
-        setFocusScore(newScore);
+        // ── 2. Brightness in upper-center area (where face should be when looking at screen) ──
+        let brightnessSum = 0;
+        let brightnessSamples = 0;
+        for (let y = 20; y < 70; y += 2) {
+          for (let x = 40; x < 120; x += 2) {
+            const idx = (y * 160 + x) * 4;
+            brightnessSum += (frame[idx] + frame[idx + 1] + frame[idx + 2]) / 3;
+            brightnessSamples++;
+          }
+        }
+        const upperBrightness = brightnessSum / brightnessSamples;
 
-        if (newScore < 50) {
-          if (distractedStartRef.current === 0) {
-            distractedStartRef.current = Date.now();
+        // ── 3. Face detection (throttled to ~1/sec — heavy operation) ──
+        const now = Date.now();
+        if (now - lastFaceCheck > 1000) {
+          lastFaceCheck = now;
+          if (faceDetector) {
+            try {
+              const faces = await faceDetector.detect(video);
+              if (faces.length > 0) {
+                const face = faces[0];
+                const faceCenterY =
+                  face.boundingBox.top + face.boundingBox.height / 2;
+                const vh = video.videoHeight || 120;
+                facePresent = true;
+                // Face in upper 65% of frame = head up, looking at screen.
+                // Face in lower 35% = head down (nunduk) = distracted posture.
+                faceAttentive = faceCenterY < vh * 0.65;
+              } else {
+                facePresent = false;
+                faceAttentive = false;
+              }
+            } catch {
+              facePresent = false;
+              faceAttentive = false;
+            }
+          } else {
+            // Fallback when FaceDetector API unavailable: use brightness in
+            // upper area as proxy. Good brightness in upper-center = head up
+            // + light on face = attentive. Low brightness = head down or away.
+            facePresent = upperBrightness > 50;
+            faceAttentive = upperBrightness > 80;
           }
-          const elapsed = (Date.now() - distractedStartRef.current) / 1000;
-          if (elapsed > 5 && !showWarning) {
-            setShowWarning(true);
-            setDistractedCount((c) => c + 1);
-          }
+        }
+
+        // ── 4. Score calculation ──
+        // Base score from face presence + position
+        let baseScore = 0;
+        if (facePresent && faceAttentive) {
+          baseScore = 60; // attentive posture
+        } else if (facePresent) {
+          baseScore = 25; // face detected but looking down (partial credit)
         } else {
-          distractedStartRef.current = 0;
-          setShowWarning(false);
+          baseScore = 0; // no face = away from screen
+        }
+
+        // Motion bonus (active studying is good, too much motion is bad)
+        // diff ranges roughly 0-50 in practice.
+        //   diff 1-15: subtle motion (typing/reading) = +25 (active)
+        //   diff < 1:  no motion = +10 (passive but ok, could be reading)
+        //   diff > 30: large motion = +0 (distracted, moving around)
+        let motionBonus = 10;
+        if (diff > 1 && diff < 15) {
+          motionBonus = 25;
+        } else if (diff > 30) {
+          motionBonus = 0;
+        }
+
+        const score = Math.min(100, baseScore + motionBonus);
+        scoreHistory.push(score);
+        if (scoreHistory.length > 8) scoreHistory.shift();
+        const avgScore = Math.round(
+          scoreHistory.reduce((a, b) => a + b, 0) / scoreHistory.length
+        );
+
+        // Throttle UI updates to ~4/sec (avoid 60fps re-renders which
+        // was making the camera preview look laggy)
+        if (now - lastScoreUpdate > 250) {
+          lastScoreUpdate = now;
+          setFocusScore(avgScore);
+
+          if (avgScore < 50) {
+            if (distractedStartRef.current === 0) {
+              distractedStartRef.current = Date.now();
+            }
+            const elapsed = (Date.now() - distractedStartRef.current) / 1000;
+            if (elapsed > 5 && !showWarning) {
+              setShowWarning(true);
+              setDistractedCount((c) => c + 1);
+            }
+          } else {
+            distractedStartRef.current = 0;
+            setShowWarning(false);
+          }
         }
       } catch {}
       animRef.current = requestAnimationFrame(check);
@@ -923,14 +1027,17 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
 
               {focusEnabled ? (
                 <>
-                  {/* Hidden video for face detection */}
+                  {/* Camera preview — mirrored (selfie view), no opacity dimming */}
                   <video
                     ref={videoRef}
                     autoPlay
                     playsInline
                     muted
-                    className="w-24 h-18 rounded mx-auto opacity-30"
-                    style={{ display: isRunning ? 'block' : 'none' }}
+                    className="w-32 h-24 rounded-lg mx-auto object-cover"
+                    style={{
+                      display: isRunning ? 'block' : 'none',
+                      transform: 'scaleX(-1)', // mirror like selfie
+                    }}
                   />
 
                   {/* Focus score */}
