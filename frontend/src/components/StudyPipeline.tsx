@@ -185,6 +185,10 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        // v3: Explicitly start playing. autoPlay attribute might not
+        // work immediately after srcObject is set — video.videoWidth
+        // stays 0 until play() resolves → detection fails.
+        await videoRef.current.play().catch(() => {});
       }
       detectFocus();
     } catch (err) {
@@ -252,11 +256,15 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
 
     const check = async () => {
       // v2: check stoppedRef (sync ref) instead of isRunning (stale closure).
-      // When user clicks Stop, stopCamera sets stoppedRef.current = true.
-      // This makes the check loop stop immediately, even if isRunning
-      // closure value is still true.
       if (stoppedRef.current || !isRunning || !focusEnabled) {
-        return;  // Don't schedule next rAF — loop stops here
+        return;
+      }
+      // v3: Wait for video to be ready. When video.videoWidth = 0 (stream
+      // not yet playing, or display:none was just toggled to block),
+      // estimateFaces fails silently → face never detected → score stuck 0%.
+      if (!video.videoWidth || !video.videoHeight) {
+        animRef.current = requestAnimationFrame(check);
+        return;
       }
       try {
         ctx.drawImage(video, 0, 0, 160, 120);

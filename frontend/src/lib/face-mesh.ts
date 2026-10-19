@@ -112,6 +112,7 @@ export async function detectFace(video: HTMLVideoElement): Promise<FaceMeshResul
     lastSuccessfulResult = { detected: true, landmarks: faces[0].keypoints, inferenceTimeMs: inferenceTime };
     return lastSuccessfulResult;
   } catch (err) {
+    console.warn('[FaceMesh] Detection error:', err instanceof Error ? err.message : String(err));
     return { detected: false, landmarks: null, inferenceTimeMs: 0 };
   }
 }
