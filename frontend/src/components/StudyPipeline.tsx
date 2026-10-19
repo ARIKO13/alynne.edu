@@ -68,6 +68,8 @@ import { speak, stop as ttsStop, isSpeaking, pause as ttsPause, resume as ttsRes
 import { VoiceTutor } from '@/components/VoiceTutor';
 import { StudyBuddy } from '@/components/StudyBuddy';
 import { ExamSimulator } from '@/components/ExamSimulator';
+import { detectFace, isFaceMeshAvailable, resetFaceMesh } from '@/lib/face-mesh';
+import { computeHeadPose, type HeadPose } from '@/lib/head-pose';
 
 interface StudyPipelineProps {
   open: boolean;
@@ -106,6 +108,9 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   const [distracted, setDistracted] = useState(false);
   const [distractedCount, setDistractedCount] = useState(0);
   const [showWarning, setShowWarning] = useState(false);
+  const [faceMeshLoading, setFaceMeshLoading] = useState(false);
+  const [posture, setPosture] = useState<'attentive' | 'nunduk' | 'away' | 'ngantuk'>('away');
+  const [usingFaceMesh, setUsingFaceMesh] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -205,32 +210,39 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     const video = videoRef.current;
     if (!video || !streamRef.current) return;
 
-    // Higher resolution canvas for better detection accuracy
+    // Canvas for motion detection (lower-res = faster, used for frame diff)
     const canvas = document.createElement('canvas');
     canvas.width = 160;
     canvas.height = 120;
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
 
-    // Use FaceDetector API if available (Chrome). It returns bounding boxes
-    // which we can use to check head position (looking up vs down).
+    // Old-method FaceDetector API (used as fallback if Face Mesh unavailable)
     const hasFaceAPI = typeof (window as any).FaceDetector === 'function';
-    let faceDetector: any = null;
+    let legacyFaceDetector: any = null;
     if (hasFaceAPI) {
       try {
-        faceDetector = new (window as any).FaceDetector({
+        legacyFaceDetector = new (window as any).FaceDetector({
           fastMode: true,
           maxDetectedFaces: 1,
         });
       } catch {}
     }
 
+    // Trigger async load of Face Mesh (lazy)
+    setFaceMeshLoading(true);
+    isFaceMeshAvailable().then((available) => {
+      setUsingFaceMesh(available);
+      setFaceMeshLoading(false);
+    });
+
     // Closure state for throttling + smoothing
-    let lastFaceCheck = 0;
-    let facePresent = false;
-    let faceAttentive = false; // face detected AND in upper area (looking at screen)
+    let lastLegacyFaceCheck = 0;
+    let legacyFacePresent = false;
+    let legacyFaceAttentive = false;
     let lastScoreUpdate = 0;
     const scoreHistory: number[] = [];
+    let eyesClosedSince = 0;
 
     const check = async () => {
       if (!isRunning || !focusEnabled) {
@@ -241,7 +253,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
         ctx.drawImage(video, 0, 0, 160, 120);
         const frame = ctx.getImageData(0, 0, 160, 120).data;
 
-        // ── 1. Motion detection (frame diff, sampled every 4th pixel) ──
+        // ── Motion detection (always computed — used in both paths) ──
         let diff = 0;
         let count = 0;
         if (prevFrameRef.current) {
@@ -253,111 +265,119 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
         }
         prevFrameRef.current = new Uint8ClampedArray(frame);
 
-        // ── 2. Brightness in upper-center area (where face should be when looking at screen) ──
-        let brightnessSum = 0;
-        let brightnessSamples = 0;
-        for (let y = 20; y < 70; y += 2) {
-          for (let x = 40; x < 120; x += 2) {
-            const idx = (y * 160 + x) * 4;
-            brightnessSum += (frame[idx] + frame[idx + 1] + frame[idx + 2]) / 3;
-            brightnessSamples++;
-          }
-        }
-        const upperBrightness = brightnessSum / brightnessSamples;
-
-        // ── 3. Face detection (throttled to ~1/sec — heavy operation) ──
         const now = Date.now();
-        if (now - lastFaceCheck > 1000) {
-          lastFaceCheck = now;
-          if (faceDetector) {
-            try {
-              const faces = await faceDetector.detect(video);
-              if (faces.length > 0) {
-                const face = faces[0];
-                const faceCenterY =
-                  face.boundingBox.top + face.boundingBox.height / 2;
-                const vh = video.videoHeight || 120;
-                facePresent = true;
-                // Face in upper 50% of frame = head up, looking at screen.
-                // Face in lower 50% = head down (nunduk) = distracted posture.
-                // (Stricter than 0.65 — face needs to be in UPPER HALF to count
-                // as attentive. Camera on laptop is above screen, so when user
-                // looks at screen face is roughly at vh*0.45. Looking down
-                // shifts face to vh*0.6+ which fails this check.)
-                faceAttentive = faceCenterY < vh * 0.5;
-              } else {
-                facePresent = false;
-                faceAttentive = false;
-              }
-            } catch {
-              facePresent = false;
-              faceAttentive = false;
+
+        // ── Primary: Face Mesh (MediaPipe 468 landmarks) ──
+        // detectFace() handles its own throttling (8fps) + adaptive fallback
+        // Returns FaceMeshResult with landmarks OR { detected: false }
+        const faceMeshResult = await detectFace(video);
+        const headPose = computeHeadPose(faceMeshResult);
+
+        let baseScore = 0;
+        let currentPosture: 'attentive' | 'nunduk' | 'away' | 'ngantuk' = 'away';
+
+        if (headPose) {
+          // ── Face Mesh path — proper head pose + eye openness ──
+          if (headPose.eyesClosed) {
+            // Eyes closed — could be blinking or sleeping
+            if (eyesClosedSince === 0) eyesClosedSince = now;
+            const closedDuration = (now - eyesClosedSince) / 1000;
+            if (closedDuration > 2) {
+              // Closed > 2 seconds = ngantuk
+              baseScore = 10;
+              currentPosture = 'ngantuk';
+            } else {
+              // Brief blink — partial credit
+              baseScore = 40;
+              currentPosture = 'attentive'; // still counts as attentive during blink
             }
           } else {
-            // Fallback when FaceDetector API unavailable (Firefox/Safari):
-            // Use skin tone distribution. When head is UP, face skin (forehead,
-            // cheeks, eyes) is visible in the TOP portion of the frame.
-            // When head is DOWN (nunduk), top of frame shows hair (no skin tone)
-            // and skin tone moves to BOTTOM of frame (chin/neck).
-            //
-            // Check 2 regions:
-            //   topSkin: skin tone in top 1/3 center (where face should be when up)
-            //   bottomSkin: skin tone in bottom 1/3 center (where chin/neck go when down)
-            const topSkin = (() => {
-              let s = 0, t = 0;
-              for (let y = 5; y < 40; y += 2) {
-                for (let x = 50; x < 110; x += 2) {
-                  const idx = (y * 160 + x) * 4;
-                  const r = frame[idx], g = frame[idx + 1], b = frame[idx + 2];
-                  t++;
-                  if (r > 80 && g > 40 && b > 20 && r > g && r > b && (r - g) > 15 && r < 250) s++;
-                }
-              }
-              return t > 0 ? s / t : 0;
-            })();
-            const bottomSkin = (() => {
-              let s = 0, t = 0;
-              for (let y = 80; y < 115; y += 2) {
-                for (let x = 50; x < 110; x += 2) {
-                  const idx = (y * 160 + x) * 4;
-                  const r = frame[idx], g = frame[idx + 1], b = frame[idx + 2];
-                  t++;
-                  if (r > 80 && g > 40 && b > 20 && r > g && r > b && (r - g) > 15 && r < 250) s++;
-                }
-              }
-              return t > 0 ? s / t : 0;
-            })();
-
-            const totalSkin = topSkin + bottomSkin;
-            if (totalSkin < 0.03) {
-              // Almost no skin tone → no face visible → away from screen
-              facePresent = false;
-              faceAttentive = false;
+            eyesClosedSince = 0;
+            if (headPose.lookingDown) {
+              // Pitch < -15° = nunduk
+              baseScore = 25;
+              currentPosture = 'nunduk';
             } else {
-              facePresent = true;
-              // Attentive = significantly more skin in TOP than BOTTOM
-              // (face is up, chin/neck not visible from above)
-              faceAttentive = topSkin > bottomSkin * 1.5 && topSkin > 0.08;
+              // Head up, eyes open = attentive
+              baseScore = 60;
+              currentPosture = 'attentive';
             }
+          }
+        } else {
+          // ── Fallback: legacy method (FaceDetector API + skin tone) ──
+          // Only runs when Face Mesh unavailable (Firefox/Safari without
+          // WASM support, or device too slow and marked as 'tooSlow').
+          if (now - lastLegacyFaceCheck > 1000) {
+            lastLegacyFaceCheck = now;
+            if (legacyFaceDetector) {
+              try {
+                const faces = await legacyFaceDetector.detect(video);
+                if (faces.length > 0) {
+                  const face = faces[0];
+                  const faceCenterY =
+                    face.boundingBox.top + face.boundingBox.height / 2;
+                  const vh = video.videoHeight || 120;
+                  legacyFacePresent = true;
+                  legacyFaceAttentive = faceCenterY < vh * 0.5;
+                } else {
+                  legacyFacePresent = false;
+                  legacyFaceAttentive = false;
+                }
+              } catch {
+                legacyFacePresent = false;
+                legacyFaceAttentive = false;
+              }
+            } else {
+              // Skin tone fallback (very low-end devices)
+              const topSkin = (() => {
+                let s = 0, t = 0;
+                for (let y = 5; y < 40; y += 2) {
+                  for (let x = 50; x < 110; x += 2) {
+                    const idx = (y * 160 + x) * 4;
+                    const r = frame[idx], g = frame[idx + 1], b = frame[idx + 2];
+                    t++;
+                    if (r > 80 && g > 40 && b > 20 && r > g && r > b && (r - g) > 15 && r < 250) s++;
+                  }
+                }
+                return t > 0 ? s / t : 0;
+              })();
+              const bottomSkin = (() => {
+                let s = 0, t = 0;
+                for (let y = 80; y < 115; y += 2) {
+                  for (let x = 50; x < 110; x += 2) {
+                    const idx = (y * 160 + x) * 4;
+                    const r = frame[idx], g = frame[idx + 1], b = frame[idx + 2];
+                    t++;
+                    if (r > 80 && g > 40 && b > 20 && r > g && r > b && (r - g) > 15 && r < 250) s++;
+                  }
+                }
+                return t > 0 ? s / t : 0;
+              })();
+
+              const totalSkin = topSkin + bottomSkin;
+              if (totalSkin < 0.03) {
+                legacyFacePresent = false;
+                legacyFaceAttentive = false;
+              } else {
+                legacyFacePresent = true;
+                legacyFaceAttentive = topSkin > bottomSkin * 1.5 && topSkin > 0.08;
+              }
+            }
+          }
+
+          if (legacyFacePresent && legacyFaceAttentive) {
+            baseScore = 60;
+            currentPosture = 'attentive';
+          } else if (legacyFacePresent) {
+            baseScore = 25;
+            currentPosture = 'nunduk';
+          } else {
+            baseScore = 0;
+            currentPosture = 'away';
           }
         }
 
-        // ── 4. Score calculation ──
-        // Base score from face presence + position
-        let baseScore = 0;
-        if (facePresent && faceAttentive) {
-          baseScore = 60; // attentive posture
-        } else if (facePresent) {
-          baseScore = 25; // face detected but looking down (partial credit)
-        } else {
-          baseScore = 0; // no face = away from screen
-        }
-
-        // Motion bonus (active studying is good, too much motion is bad)
-        // diff ranges roughly 0-50 in practice.
-        //   diff 1-15: subtle motion (typing/reading) = +25 (active)
-        //   diff < 1:  no motion = +10 (passive but ok, could be reading)
-        //   diff > 30: large motion = +0 (distracted, moving around)
+        // Motion bonus
         let motionBonus = 10;
         if (diff > 1 && diff < 15) {
           motionBonus = 25;
@@ -372,11 +392,11 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           scoreHistory.reduce((a, b) => a + b, 0) / scoreHistory.length
         );
 
-        // Throttle UI updates to ~4/sec (avoid 60fps re-renders which
-        // was making the camera preview look laggy)
+        // Throttle UI updates to ~4/sec
         if (now - lastScoreUpdate > 250) {
           lastScoreUpdate = now;
           setFocusScore(avgScore);
+          setPosture(currentPosture);
 
           if (avgScore < 50) {
             if (distractedStartRef.current === 0) {
@@ -1071,7 +1091,12 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
 
               {focusEnabled ? (
                 <>
-                  {/* Camera preview — mirrored (selfie view), no opacity dimming */}
+                  {/* Camera preview — mirrored selfie view, no opacity dimming */}
+                  {faceMeshLoading && (
+                    <div className="text-center text-[10px] text-zinc-500 py-2">
+                      Loading focus model... (~3s first time)
+                    </div>
+                  )}
                   <video
                     ref={videoRef}
                     autoPlay
@@ -1103,6 +1128,31 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                         )}
                         style={{ width: `${focusScore}%` }}
                       />
+                    </div>
+                    {/* Posture indicator — shows what the model detected */}
+                    <div className="flex items-center justify-between mt-1.5 text-[10px]">
+                      <span className="text-zinc-600">Postur:</span>
+                      <span className={cn(
+                        'font-medium',
+                        posture === 'attentive' ? 'text-green-400'
+                          : posture === 'nunduk' ? 'text-amber-400'
+                          : posture === 'ngantuk' ? 'text-red-400'
+                          : 'text-zinc-500'
+                      )}>
+                        {posture === 'attentive' ? 'Fokus ✓'
+                          : posture === 'nunduk' ? 'Nunduk ↓'
+                          : posture === 'ngantuk' ? 'Ngantuk 😴'
+                          : 'Pergi'}
+                      </span>
+                    </div>
+                    {/* Engine indicator — shows if using MediaPipe or fallback */}
+                    <div className="flex items-center justify-between mt-0.5 text-[9px] text-zinc-600">
+                      <span>Engine:</span>
+                      <span>
+                        {faceMeshLoading ? 'Loading...'
+                          : usingFaceMesh ? 'MediaPipe Face Mesh ✓'
+                          : 'Legacy (fallback)'}
+                      </span>
                     </div>
                   </div>
 
