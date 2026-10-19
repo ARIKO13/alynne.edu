@@ -57,12 +57,23 @@ export async function getFaceMeshDetector(): Promise<any | null> {
           '@tensorflow-models/face-landmarks-detection'
         );
         const tf = await import('@tensorflow/tfjs-core');
-        await import('@tensorflow/tfjs-backend-wasm');
+        const wasmBackend = await import('@tensorflow/tfjs-backend-wasm');
         await import('@tensorflow/tfjs-converter');
+
+        // CRITICAL: Set WASM paths to CDN BEFORE initializing backend.
+        // Without this, TF.js tries to load the .wasm files from the
+        // site root (alynne.my.id/tfjs-backend-wasm-threaded-simd.wasm)
+        // which returns 404 → backend init fails → MediaPipe falls back
+        // to legacy (broken) method.
+        //
+        // jsdelivr CDN serves the exact same WASM files that ship in the
+        // npm package. Version must match the installed package version.
+        wasmBackend.setWasmPaths(
+          'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@4.22.0/dist/'
+        );
 
         // Set WASM backend (universal compatibility — works on all devices).
         // SIMD auto-enabled on x86 if browser supports it.
-        // Files are loaded from jsdelivr CDN by default (cached after first load).
         await tf.setBackend('wasm');
         await tf.ready();
 
