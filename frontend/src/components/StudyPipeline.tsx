@@ -104,7 +104,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   const [timerLeft, setTimerLeft] = useState(25 * 60);
   const [isRunning, setIsRunning] = useState(false);
   const [focusEnabled, setFocusEnabled] = useState(true);
-  const [focusScore, setFocusScore] = useState(100);
+  const [focusScore, setFocusScore] = useState(0);  // v2: start at 0, not 100
   const [distracted, setDistracted] = useState(false);
   const [distractedCount, setDistractedCount] = useState(0);
   const [showWarning, setShowWarning] = useState(false);
@@ -117,6 +117,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   const audioCtxRef = useRef<AudioContext | null>(null);
   const animRef = useRef<number>(0);
   const prevFrameRef = useRef<Uint8ClampedArray | null>(null);
+  const stoppedRef = useRef(false);  // v2: properly stop check loop when user clicks Stop
   const distractedStartRef = useRef<number>(0);
 
   // Auto-start pipeline when opened
@@ -193,22 +194,27 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   }, []);
 
   const stopCamera = useCallback(() => {
+    stoppedRef.current = true;  // v2: signal check loop to stop
+    cancelAnimationFrame(animRef.current);
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
-    if (animRef.current) {
-      cancelAnimationFrame(animRef.current);
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
     }
     if (audioCtxRef.current) {
       try { audioCtxRef.current.close(); } catch {}
       audioCtxRef.current = null;
     }
+    setFocusScore(0);
   }, []);
 
   const detectFocus = useCallback(() => {
     const video = videoRef.current;
     if (!video || !streamRef.current) return;
+
+    stoppedRef.current = false;  // v2: reset for this session
 
     // Canvas for motion detection (lower-res = faster, used for frame diff)
     const canvas = document.createElement('canvas');
@@ -245,9 +251,12 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     let eyesClosedSince = 0;
 
     const check = async () => {
-      if (!isRunning || !focusEnabled) {
-        animRef.current = requestAnimationFrame(check);
-        return;
+      // v2: check stoppedRef (sync ref) instead of isRunning (stale closure).
+      // When user clicks Stop, stopCamera sets stoppedRef.current = true.
+      // This makes the check loop stop immediately, even if isRunning
+      // closure value is still true.
+      if (stoppedRef.current || !isRunning || !focusEnabled) {
+        return;  // Don't schedule next rAF — loop stops here
       }
       try {
         ctx.drawImage(video, 0, 0, 160, 120);
