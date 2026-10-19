@@ -312,13 +312,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
 
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
-        <div className="flex items-center gap-2.5">
-          <BrandLogo size={28} />
-          <div className="leading-tight">
-            <h3 className="text-sm font-semibold text-zinc-100">Speech to Text</h3>
-            <p className="text-[10px] text-zinc-500">Rekam audio → transkrip otomatis</p>
-          </div>
-        </div>
+        <h3 className="text-sm font-medium text-zinc-200">Speech to Text</h3>
         <div className="flex items-center gap-2">
           <Button
             onClick={() => setModelSelectorOpen(true)}
@@ -563,7 +557,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
                 : 'bg-[#8B5CF6] hover:bg-[#d14e1c] text-white'
             )}
           >
-            {whisperSTT.status === 'loading-model' ? <Loader2 className="h-5 w-5 animate-spin" /> : isProcessing ? <RefreshCw className="h-5 w-5 animate-spin" /> : isRecording ? <MicOff className="h-5 w-5 text-red-400" /> : <Mic className="h-5 w-5" />}
+            {whisperSTT.status === 'loading-model' ? <Loader2 className="h-5 w-5 animate-spin" /> : isProcessing ? <RefreshCw className="h-5 w-5 animate-spin" /> : isRecording ? <MicOff className="h-5 w-5 text-red-400" /> : <BrandLogo size={20} color="#ffffff" />}
             {hybridProcessing ? 'Whisper memproses...' : whisperSTT.status === 'loading-model' ? 'Memuat Model...' : isProcessing ? 'Memproses...' : isRecording ? 'Stop Recording' : 'Start Recording'}
           </Button>
           {transcript && (
