@@ -379,6 +379,15 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           } else if (legacyFacePresent) {
             baseScore = 25;
             currentPosture = 'nunduk';
+          } else if (avgBrightness > 15 && diff > 0.5) {
+            // No face detected BUT camera is on + there's motion
+            // → probably at desk, FaceDetector just failed. Give moderate score.
+            baseScore = 35;
+            currentPosture = 'attentive';
+          } else if (avgBrightness > 15) {
+            // Camera on but no motion — passive (reading?)
+            baseScore = 20;
+            currentPosture = 'attentive';
           } else {
             baseScore = 0;
             currentPosture = 'away';

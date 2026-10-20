@@ -76,16 +76,41 @@ export const POST: APIRoute = async ({ request }) => {
           model: 'qwen2.5-3b-instruct',
         });
       }
-      return Response.json(
-        { error: `Qwen local error: ${res.status}` },
-        { status: res.status }
-      );
+      console.log(`[ai/chat] Qwen local ${res.status}, trying Gateway...`);
     } catch (e) {
-      return Response.json(
-        { error: 'Both Groq and Qwen failed', detail: e instanceof Error ? e.message : 'unknown' },
-        { status: 503 }
-      );
+      console.log(`[ai/chat] Qwen failed: ${e instanceof Error ? e.message : 'unknown'}, trying Gateway...`);
     }
+
+    // ===== Step 3: Try Gateway API (Polyvor Labs) =====
+    const gwKey = process.env.GATEWAY_API_KEY;
+    if (gwKey) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30_000);
+        const res = await fetch('https://gateway.polyvorlabs.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${gwKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ model: 'cx/gpt-5.6-sol', messages, temperature, max_tokens: maxTokens }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        if (res.ok) {
+          const data = await res.json();
+          return Response.json({ ...data, provider: 'gateway' });
+        }
+        console.log(`[ai/chat] Gateway ${res.status}, all providers failed`);
+      } catch (e) {
+        console.log(`[ai/chat] Gateway failed: ${e instanceof Error ? e.message : 'unknown'}`);
+      }
+    }
+
+    return Response.json(
+      { error: 'Semua AI provider gagal (Groq rate-limited, Qwen offline, Gateway down). Coba lagi nanti.' },
+      { status: 503 }
+    );
   } catch (e) {
     return Response.json(
       { error: 'Internal error', detail: e instanceof Error ? e.message : 'unknown' },
