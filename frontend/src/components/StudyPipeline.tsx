@@ -285,68 +285,58 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
 
         const now = Date.now();
 
-        // ── Primary: Face Mesh (MediaPipe 468 landmarks) ──
-        // detectFace() handles its own throttling (8fps) + adaptive fallback
-        // Returns FaceMeshResult with landmarks OR { detected: false }
-        const faceMeshResult = await detectFace(video);
-        const headPose = computeHeadPose(faceMeshResult);
+        // ── Brightness check (camera covered = all black) ──
+        let brightnessSum = 0;
+        let brightnessCount = 0;
+        for (let i = 0; i < frame.length; i += 16) {
+          brightnessSum += (frame[i] + frame[i + 1] + frame[i + 2]) / 3;
+          brightnessCount++;
+        }
+        const avgBrightness = brightnessSum / brightnessCount;
+        const cameraCovered = avgBrightness < 15;
 
         let baseScore = 0;
         let currentPosture: 'attentive' | 'nunduk' | 'away' | 'ngantuk' = 'away';
 
-        if (headPose) {
-          // ── Face Mesh path — proper head pose + eye openness ──
-          if (headPose.eyesClosed) {
-            // Eyes closed — could be blinking or sleeping
-            if (eyesClosedSince === 0) eyesClosedSince = now;
-            const closedDuration = (now - eyesClosedSince) / 1000;
-            if (closedDuration > 2) {
-              // Closed > 2 seconds = ngantuk
-              baseScore = 10;
-              currentPosture = 'ngantuk';
-            } else {
-              // Brief blink — partial credit
-              baseScore = 40;
-              currentPosture = 'attentive'; // still counts as attentive during blink
-            }
-          } else {
-            eyesClosedSince = 0;
-            if (headPose.lookingDown) {
-              // Pitch < -15° = nunduk
-              baseScore = 25;
-              currentPosture = 'nunduk';
-            } else {
-              // Head up, eyes open = attentive
-              baseScore = 60;
-              currentPosture = 'attentive';
-            }
-          }
+        if (cameraCovered) {
+          // Camera covered / very dark → no face → 0%
+          baseScore = 0;
+          currentPosture = 'away';
         } else {
-          // ── Fallback: legacy method (FaceDetector API + skin tone) ──
-          // Only runs when Face Mesh unavailable (Firefox/Safari without
-          // WASM support, or device too slow and marked as 'tooSlow').
+          // ── Face detection (throttled to ~1/sec) ──
           if (now - lastLegacyFaceCheck > 1000) {
             lastLegacyFaceCheck = now;
             if (legacyFaceDetector) {
               try {
                 const faces = await legacyFaceDetector.detect(video);
+                console.log('[Focus] FaceDetector faces:', faces.length,
+                  faces.length > 0 ? 'box:' + JSON.stringify(faces[0].boundingBox) : '');
                 if (faces.length > 0) {
                   const face = faces[0];
-                  const faceCenterY =
-                    face.boundingBox.top + face.boundingBox.height / 2;
+                  const faceHeight = face.boundingBox.height;
+                  const faceWidth = face.boundingBox.width;
+                  // Bounding box aspect ratio: height/width
+                  // Head straight: box is TALL → ratio > 1.0
+                  // Nunduk (head down): box is SHORT → ratio < 1.0
+                  const aspectRatio = faceHeight / (faceWidth + 0.001);
+                  const faceCenterY = face.boundingBox.top + faceHeight / 2;
                   const vh = video.videoHeight || 120;
+                  const inUpperHalf = faceCenterY < vh * 0.5;
                   legacyFacePresent = true;
-                  legacyFaceAttentive = faceCenterY < vh * 0.5;
+                  legacyFaceAttentive = aspectRatio > 1.0 && inUpperHalf;
+                  console.log('[Focus] aspectRatio:', aspectRatio.toFixed(2),
+                    'inUpperHalf:', inUpperHalf, 'attentive:', legacyFaceAttentive);
                 } else {
                   legacyFacePresent = false;
                   legacyFaceAttentive = false;
                 }
-              } catch {
+              } catch (e) {
+                console.warn('[Focus] FaceDetector error:', e);
                 legacyFacePresent = false;
                 legacyFaceAttentive = false;
               }
             } else {
-              // Skin tone fallback (very low-end devices)
+              // Skin tone fallback (Firefox/Safari)
               const topSkin = (() => {
                 let s = 0, t = 0;
                 for (let y = 5; y < 40; y += 2) {
@@ -371,8 +361,8 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                 }
                 return t > 0 ? s / t : 0;
               })();
-
               const totalSkin = topSkin + bottomSkin;
+              console.log('[Focus] skin tone: top:', topSkin.toFixed(3), 'bottom:', bottomSkin.toFixed(3));
               if (totalSkin < 0.03) {
                 legacyFacePresent = false;
                 legacyFaceAttentive = false;
