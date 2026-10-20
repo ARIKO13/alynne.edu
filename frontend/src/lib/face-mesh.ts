@@ -73,6 +73,10 @@ export function getDetectorSync(): any | null {
   return loadedDetector;
 }
 
+let detectCanvas: HTMLCanvasElement | null = null;
+let detectCtx: CanvasRenderingContext2D | null = null;
+let debugLogCounter = 0;
+
 export async function detectFace(video: HTMLVideoElement): Promise<FaceMeshResult> {
   const now = Date.now();
   if (now - lastDetection < 125) {
@@ -80,18 +84,41 @@ export async function detectFace(video: HTMLVideoElement): Promise<FaceMeshResul
   }
   lastDetection = now;
 
-  // v2: sync check — don't await model loading. If not loaded yet,
-  // return immediately instead of blocking the check loop.
+  // v2: sync check — don't await model loading.
   const detector = getDetectorSync();
   if (!detector) {
     return { detected: false, landmarks: null, inferenceTimeMs: 0 };
   }
 
+  // v4: Draw video to canvas and pass CANVAS to estimateFaces.
+  // Passing video element directly can fail when readyState = 2 but
+  // the internal video frame buffer hasn't fully synced with the
+  // element. Canvas approach guarantees valid pixel data.
+  if (!detectCanvas) {
+    detectCanvas = document.createElement('canvas');
+    detectCanvas.width = 320;
+    detectCanvas.height = 240;
+    detectCtx = detectCanvas.getContext('2d', { willReadFrequently: true });
+  }
+  if (!detectCtx || !video.videoWidth) {
+    return { detected: false, landmarks: null, inferenceTimeMs: 0 };
+  }
+  detectCtx.drawImage(video, 0, 0, 320, 240);
+
   const t0 = performance.now();
   try {
-    const faces = await detector.estimateFaces(video, { flipHorizontal: false });
+    const faces = await detector.estimateFaces(detectCanvas, { flipHorizontal: false });
     const t1 = performance.now();
     const inferenceTime = t1 - t0;
+
+    // Debug: log every 4th detection (~every 500ms at 8fps)
+    debugLogCounter++;
+    if (debugLogCounter % 4 === 0) {
+      console.log('[FaceMesh] faces:', faces.length,
+        'inference:', inferenceTime.toFixed(0) + 'ms',
+        'videoW:', video.videoWidth,
+        'readyState:', video.readyState);
+    }
 
     inferenceTimes.push(inferenceTime);
     if (inferenceTimes.length > 10) inferenceTimes.shift();
@@ -109,7 +136,14 @@ export async function detectFace(video: HTMLVideoElement): Promise<FaceMeshResul
       lastSuccessfulResult = { detected: false, landmarks: null, inferenceTimeMs: inferenceTime };
       return lastSuccessfulResult;
     }
-    lastSuccessfulResult = { detected: true, landmarks: faces[0].keypoints, inferenceTimeMs: inferenceTime };
+
+    // v4: Log landmark count to verify format
+    const kps = faces[0].keypoints || faces[0].landmarks || [];
+    if (debugLogCounter % 4 === 0) {
+      console.log('[FaceMesh] keypoints:', kps.length, 'first:', kps[0]);
+    }
+
+    lastSuccessfulResult = { detected: true, landmarks: kps, inferenceTimeMs: inferenceTime };
     return lastSuccessfulResult;
   } catch (err) {
     console.warn('[FaceMesh] Detection error:', err instanceof Error ? err.message : String(err));

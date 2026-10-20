@@ -259,10 +259,11 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
       if (stoppedRef.current || !isRunning || !focusEnabled) {
         return;
       }
-      // v3: Wait for video to be ready. When video.videoWidth = 0 (stream
-      // not yet playing, or display:none was just toggled to block),
-      // estimateFaces fails silently → face never detected → score stuck 0%.
-      if (!video.videoWidth || !video.videoHeight) {
+      // v4: Wait for video to have ACTUAL FRAME DATA (not just metadata).
+      // videoWidth is set at readyState 1 (HAVE_METADATA), but frame pixels
+      // aren't available until readyState >= 2 (HAVE_CURRENT_DATA).
+      // estimateFaces on readyState < 2 → blank frame → 0 faces → score 0%.
+      if (!video.videoWidth || !video.videoHeight || video.readyState < 2) {
         animRef.current = requestAnimationFrame(check);
         return;
       }
