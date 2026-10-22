@@ -373,8 +373,9 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                 legacyFacePresent = false;
                 legacyFaceAttentive = false;
               } else {
+                // v10: Same as FaceDetector path — face detected = attentive
                 legacyFacePresent = true;
-                legacyFaceAttentive = topSkin > bottomSkin * 1.5 && topSkin > 0.08;
+                legacyFaceAttentive = true;
               }
             }
           }
