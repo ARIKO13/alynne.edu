@@ -338,14 +338,16 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                   if (aspectRatioHistory.length > 3) aspectRatioHistory.shift();
                   const smoothRatio = aspectRatioHistory.reduce((a, b) => a + b, 0) / aspectRatioHistory.length;
 
-                  // v8: Hysteresis — prevents flip-flop around threshold 1.0
-                  // If currently attentive: need ratio < 0.85 to switch to nunduk
-                  // If currently nunduk: need ratio > 1.15 to switch to attentive
-                  // Dead zone between 0.85-1.15 = state stays stable
+                  // v9: Default to ATTENTIVE when face detected.
+                  // Only flag as nunduk if ratio is VERY low (< 0.6).
+                  // This prevents false "nunduk" for users with wide/round
+                  // faces where ratio is naturally < 1.0 even when looking at camera.
+                  // Hysteresis: attentive → nunduk needs ratio < 0.5
+                  //             nunduk → attentive needs ratio > 0.7
                   if (wasAttentive) {
-                    legacyFaceAttentive = smoothRatio > 0.85;
+                    legacyFaceAttentive = smoothRatio > 0.5;
                   } else {
-                    legacyFaceAttentive = smoothRatio > 1.15;
+                    legacyFaceAttentive = smoothRatio > 0.7;
                   }
                   wasAttentive = legacyFaceAttentive;
 
