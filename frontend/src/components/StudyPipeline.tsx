@@ -117,8 +117,16 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   const audioCtxRef = useRef<AudioContext | null>(null);
   const animRef = useRef<number>(0);
   const prevFrameRef = useRef<Uint8ClampedArray | null>(null);
-  const stoppedRef = useRef(false);  // v2: properly stop check loop when user clicks Stop
+  const stoppedRef = useRef(false);
+  const isRunningRef = useRef(false);  // v6: ref untuk avoid stale closure
+  const focusEnabledRef = useRef(true);  // v6: same
+  const showWarningRef = useRef(false);  // v6: same
   const distractedStartRef = useRef<number>(0);
+
+  // Sync refs with state
+  useEffect(() => { isRunningRef.current = isRunning; }, [isRunning]);
+  useEffect(() => { focusEnabledRef.current = focusEnabled; }, [focusEnabled]);
+  useEffect(() => { showWarningRef.current = showWarning; }, [showWarning]);
 
   // Auto-start pipeline when opened
   useEffect(() => {
@@ -255,8 +263,11 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     let eyesClosedSince = 0;
 
     const check = async () => {
-      // v2: check stoppedRef (sync ref) instead of isRunning (stale closure).
-      if (stoppedRef.current || !isRunning || !focusEnabled) {
+      // v6: Use refs instead of stale closure values.
+      // isRunningRef.current is always current (synced via useEffect).
+      // OLD code used isRunning from closure — was always false because
+      // startCamera captured detectFocus when isRunning was false.
+      if (stoppedRef.current || !isRunningRef.current || !focusEnabledRef.current) {
         return;
       }
       // v4: Wait for video to have ACTUAL FRAME DATA (not just metadata).
@@ -420,7 +431,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               distractedStartRef.current = Date.now();
             }
             const elapsed = (Date.now() - distractedStartRef.current) / 1000;
-            if (elapsed > 5 && !showWarning) {
+            if (elapsed > 5 && !showWarningRef.current) {
               setShowWarning(true);
               setDistractedCount((c) => c + 1);
             }
@@ -433,7 +444,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
       animRef.current = requestAnimationFrame(check);
     };
     check();
-  }, [isRunning, focusEnabled, showWarning]);
+  }, []);  // v6: no deps — uses refs, not stale closure values
 
   // Timer countdown
   useEffect(() => {
