@@ -315,107 +315,43 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
         let currentPosture: 'attentive' | 'nunduk' | 'away' | 'ngantuk' = 'away';
 
         if (cameraCovered) {
-          // Camera covered / very dark → no face → 0%
           baseScore = 0;
           currentPosture = 'away';
         } else {
-          // ── Face detection (throttled to ~1/sec) ──
-          if (now - lastLegacyFaceCheck > 500) {  // v8: 500ms (was 1000ms)
+          // v14: SCLERA detection directly from existing 160x120 canvas.
+          // NO FaceDetector API needed. Works on ALL browsers.
+          // Count white pixels (sclera) in center area where face/eyes would be.
+          if (now - lastLegacyFaceCheck > 500) {
             lastLegacyFaceCheck = now;
-            if (legacyFaceDetector) {
-              try {
-                const faces = await legacyFaceDetector.detect(video);
-                console.log('[Focus] FaceDetector faces:', faces.length,
-                  faces.length > 0 ? 'box:' + JSON.stringify(faces[0].boundingBox) : '');
-                if (faces.length > 0) {
-                  // v13: Detect eye gaze via SCLERA (white of eyes) visibility.
-                  // When looking at camera: sclera visible → bright white pixels
-                  // When looking down: eyelids cover sclera → few/no white pixels
-                  // This directly detects WHERE eyes are looking, not just head angle.
-                  const face = faces[0];
-                  const fb = face.boundingBox;
 
-                  const fc = document.createElement('canvas');
-                  fc.width = 60; fc.height = 40;
-                  const fctx = fc.getContext('2d', { willReadFrequently: true });
-                  if (fctx) {
-                    // Draw EYE AREA: 25-55% of face height (where eyes are)
-                    const eyeTop = fb.top + fb.height * 0.25;
-                    const eyeHeight = fb.height * 0.30;
-                    fctx.drawImage(video,
-                      fb.x, eyeTop, fb.width, eyeHeight,
-                      0, 0, 60, 40
-                    );
-                    const eyePixels = fctx.getImageData(0, 0, 60, 40).data;
-
-                    // Count WHITE pixels (sclera = r>200, g>200, b>200)
-                    let whiteCount = 0;
-                    let totalPixels = 0;
-                    for (let i = 0; i < eyePixels.length; i += 4) {
-                      const r = eyePixels[i], g = eyePixels[i + 1], b = eyePixels[i + 2];
-                      totalPixels++;
-                      if (r > 180 && g > 180 && b > 180) {
-                        whiteCount++;
-                      }
-                    }
-                    const whiteRatio = whiteCount / totalPixels;
-                    // whiteRatio > 0.02 = sclera visible = looking at camera = ATTENTIVE
-                    // whiteRatio < 0.02 = no sclera = looking down = NUNDUK
-                    legacyFacePresent = true;
-                    legacyFaceAttentive = whiteRatio > 0.02;
-                    console.log('[Focus] eye white:', whiteRatio.toFixed(3),
-                      whiteRatio > 0.02 ? '→ attentive (eyes open, looking forward)'
-                                        : '→ NUNDUK (eyes looking down)');
-                  } else {
-                    legacyFacePresent = true;
-                    legacyFaceAttentive = true;
-                  }
-                } else {
-                  legacyFacePresent = false;
-                  legacyFaceAttentive = false;
-                }
-              } catch (e) {
-                console.warn('[Focus] FaceDetector error:', e);
-                legacyFacePresent = false;
-                legacyFaceAttentive = false;
-              }
-            } else {
-              // Skin tone fallback (Firefox/Safari)
-              const topSkin = (() => {
-                let s = 0, t = 0;
-                for (let y = 5; y < 40; y += 2) {
-                  for (let x = 50; x < 110; x += 2) {
-                    const idx = (y * 160 + x) * 4;
-                    const r = frame[idx], g = frame[idx + 1], b = frame[idx + 2];
-                    t++;
-                    if (r > 80 && g > 40 && b > 20 && r > g && r > b && (r - g) > 15 && r < 250) s++;
-                  }
-                }
-                return t > 0 ? s / t : 0;
-              })();
-              const bottomSkin = (() => {
-                let s = 0, t = 0;
-                for (let y = 80; y < 115; y += 2) {
-                  for (let x = 50; x < 110; x += 2) {
-                    const idx = (y * 160 + x) * 4;
-                    const r = frame[idx], g = frame[idx + 1], b = frame[idx + 2];
-                    t++;
-                    if (r > 80 && g > 40 && b > 20 && r > g && r > b && (r - g) > 15 && r < 250) s++;
-                  }
-                }
-                return t > 0 ? s / t : 0;
-              })();
-              const totalSkin = topSkin + bottomSkin;
-              console.log('[Focus] skin tone: top:', topSkin.toFixed(3), 'bottom:', bottomSkin.toFixed(3));
-              if (totalSkin < 0.03) {
-                legacyFacePresent = false;
-                legacyFaceAttentive = false;
-              } else {
-                // v10: Same as FaceDetector path — face detected = attentive
-                legacyFacePresent = true;
-                legacyFaceAttentive = true;
+            // Sample center 50% of frame (where face is when sitting at desk)
+            let whiteCount = 0;
+            let skinCount = 0;
+            let totalPixels = 0;
+            // Center area: x=40-120 (of 160), y=20-80 (of 120)
+            for (let y = 20; y < 80; y += 2) {
+              for (let x = 40; x < 120; x += 2) {
+                const idx = (y * 160 + x) * 4;
+                const r = frame[idx], g = frame[idx + 1], b = frame[idx + 2];
+                totalPixels++;
+                // Sclera = bright white
+                if (r > 180 && g > 180 && b > 180) whiteCount++;
+                // Skin tone (for face presence check)
+                if (r > 80 && g > 40 && b > 20 && r > g && r > b && (r - g) > 15 && r < 250) skinCount++;
               }
             }
+            const whiteRatio = whiteCount / totalPixels;
+            const skinRatio = skinCount / totalPixels;
+            
+            // Face present if some skin tone detected
+            legacyFacePresent = skinRatio > 0.05;
+            // Attentive if sclera (white) visible = eyes open, looking forward
+            // Nunduk if face present but no sclera = eyes looking down
+            legacyFaceAttentive = legacyFacePresent && whiteRatio > 0.01;
+            
+            console.log('[Focus] white:', whiteRatio.toFixed(3),
+              'skin:', skinRatio.toFixed(3),
+              legacyFaceAttentive ? '→ attentive' : '→ NUNDUK');
           }
 
           if (legacyFacePresent && legacyFaceAttentive) {
