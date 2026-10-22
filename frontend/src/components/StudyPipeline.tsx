@@ -258,8 +258,11 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     let lastLegacyFaceCheck = 0;
     let legacyFacePresent = false;
     let legacyFaceAttentive = false;
-    let wasAttentive = false;  // v8: hysteresis state
-    const aspectRatioHistory: number[] = [];  // v8: smoothing
+    // v11: Relative face position tracking. Record baseline face Y position
+    // when session starts. If face moves DOWN significantly → nunduk.
+    // Adapts to each user's face shape + camera position (no fixed threshold).
+    let baselineFaceY: number | null = null;
+    const baselineSamples: number[] = [];
     let lastScoreUpdate = 0;
     const scoreHistory: number[] = [];
     let eyesClosedSince = 0;
@@ -325,13 +328,40 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                 console.log('[Focus] FaceDetector faces:', faces.length,
                   faces.length > 0 ? 'box:' + JSON.stringify(faces[0].boundingBox) : '');
                 if (faces.length > 0) {
-                  // v10: REMOVE aspect ratio check entirely.
-                  // 9 iterations of threshold tuning couldn't fix false
-                  // 'nunduk' across different face shapes + camera angles.
-                  // New approach: face detected = at desk = attentive. Simple.
-                  legacyFacePresent = true;
-                  legacyFaceAttentive = true;
-                  console.log('[Focus] Face detected → attentive');
+                  // v11: Relative face position tracking.
+                  // Record baseline (first 5 detections) then compare.
+                  // If face center Y moves DOWN >15% of video height
+                  // from baseline → nunduk.
+                  const face = faces[0];
+                  const faceCenterY = face.boundingBox.top + face.boundingBox.height / 2;
+                  const vh = video.videoHeight || 480;
+                  const normalizedY = faceCenterY / vh;  // 0-1 (0=top, 1=bottom)
+
+                  // Collect baseline samples (first 5 detections)
+                  if (baselineSamples.length < 5) {
+                    baselineSamples.push(normalizedY);
+                    if (baselineSamples.length === 5) {
+                      baselineFaceY = baselineSamples.reduce((a, b) => a + b, 0) / 5;
+                      console.log('[Focus] Baseline Y:', baselineFaceY.toFixed(3));
+                    }
+                    // During baseline collection, assume attentive
+                    legacyFacePresent = true;
+                    legacyFaceAttentive = true;
+                  } else if (baselineFaceY !== null) {
+                    // Compare current position to baseline
+                    // Face moved DOWN >15% of frame → nunduk
+                    // Face moved DOWN >25% → very nunduk
+                    const drop = normalizedY - baselineFaceY;
+                    legacyFacePresent = true;
+                    legacyFaceAttentive = drop < 0.15;  // <15% drop = attentive
+                    console.log('[Focus] Y:', normalizedY.toFixed(3),
+                      'baseline:', baselineFaceY.toFixed(3),
+                      'drop:', drop.toFixed(3),
+                      legacyFaceAttentive ? '→ attentive' : '→ NUNDUK');
+                  } else {
+                    legacyFacePresent = true;
+                    legacyFaceAttentive = true;
+                  }
                 } else {
                   legacyFacePresent = false;
                   legacyFaceAttentive = false;
