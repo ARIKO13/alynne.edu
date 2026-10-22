@@ -328,45 +328,44 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                 console.log('[Focus] FaceDetector faces:', faces.length,
                   faces.length > 0 ? 'box:' + JSON.stringify(faces[0].boundingBox) : '');
                 if (faces.length > 0) {
-                  // v12: Detect nunduk via forehead visibility.
-                  // When head is UP: top of face box = forehead (skin tone)
-                  // When head is DOWN (nunduk): top of face box = hair (no skin)
-                  // This implicitly detects eye position without needing ML.
+                  // v13: Detect eye gaze via SCLERA (white of eyes) visibility.
+                  // When looking at camera: sclera visible → bright white pixels
+                  // When looking down: eyelids cover sclera → few/no white pixels
+                  // This directly detects WHERE eyes are looking, not just head angle.
                   const face = faces[0];
-                  const box = face.boundingBox;
                   const fb = face.boundingBox;
 
-                  // Draw video to canvas at face box resolution for pixel sampling
                   const fc = document.createElement('canvas');
-                  fc.width = 60; fc.height = 60;
+                  fc.width = 60; fc.height = 40;
                   const fctx = fc.getContext('2d', { willReadFrequently: true });
                   if (fctx) {
-                    // Draw ONLY the top 1/3 of the face bounding box
-                    const topThird = fb.top;
-                    const thirdHeight = fb.height / 3;
+                    // Draw EYE AREA: 25-55% of face height (where eyes are)
+                    const eyeTop = fb.top + fb.height * 0.25;
+                    const eyeHeight = fb.height * 0.30;
                     fctx.drawImage(video,
-                      fb.x, fb.top, fb.width, thirdHeight,  // source: top 1/3 of face
-                      0, 0, 60, 60                          // dest: 60x60 canvas
+                      fb.x, eyeTop, fb.width, eyeHeight,
+                      0, 0, 60, 40
                     );
-                    const upperPixels = fctx.getImageData(0, 0, 60, 60).data;
+                    const eyePixels = fctx.getImageData(0, 0, 60, 40).data;
 
-                    // Count skin tone pixels in upper area (forehead)
-                    let skinCount = 0;
+                    // Count WHITE pixels (sclera = r>200, g>200, b>200)
+                    let whiteCount = 0;
                     let totalPixels = 0;
-                    for (let i = 0; i < upperPixels.length; i += 4) {
-                      const r = upperPixels[i], g = upperPixels[i + 1], b = upperPixels[i + 2];
+                    for (let i = 0; i < eyePixels.length; i += 4) {
+                      const r = eyePixels[i], g = eyePixels[i + 1], b = eyePixels[i + 2];
                       totalPixels++;
-                      if (r > 80 && g > 40 && b > 20 && r > g && r > b && (r - g) > 15 && r < 250) {
-                        skinCount++;
+                      if (r > 180 && g > 180 && b > 180) {
+                        whiteCount++;
                       }
                     }
-                    const skinRatio = skinCount / totalPixels;
-                    // skinRatio > 0.2 = forehead visible = head UP = attentive
-                    // skinRatio < 0.2 = hair visible = head DOWN = nunduk
+                    const whiteRatio = whiteCount / totalPixels;
+                    // whiteRatio > 0.02 = sclera visible = looking at camera = ATTENTIVE
+                    // whiteRatio < 0.02 = no sclera = looking down = NUNDUK
                     legacyFacePresent = true;
-                    legacyFaceAttentive = skinRatio > 0.2;
-                    console.log('[Focus] upper skin:', skinRatio.toFixed(2),
-                      skinRatio > 0.2 ? '→ attentive (forehead visible)' : '→ NUNDUK (hair visible)');
+                    legacyFaceAttentive = whiteRatio > 0.02;
+                    console.log('[Focus] eye white:', whiteRatio.toFixed(3),
+                      whiteRatio > 0.02 ? '→ attentive (eyes open, looking forward)'
+                                        : '→ NUNDUK (eyes looking down)');
                   } else {
                     legacyFacePresent = true;
                     legacyFaceAttentive = true;
