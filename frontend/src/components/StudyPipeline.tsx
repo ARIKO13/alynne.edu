@@ -325,35 +325,13 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                 console.log('[Focus] FaceDetector faces:', faces.length,
                   faces.length > 0 ? 'box:' + JSON.stringify(faces[0].boundingBox) : '');
                 if (faces.length > 0) {
-                  const face = faces[0];
-                  const faceHeight = face.boundingBox.height;
-                  const faceWidth = face.boundingBox.width;
-                  // Bounding box aspect ratio: height/width
-                  // Head straight: box is TALL → ratio > 1.0
-                  // Nunduk (head down): box is SHORT → ratio < 1.0
-                  const aspectRatio = faceHeight / (faceWidth + 0.001);
+                  // v10: REMOVE aspect ratio check entirely.
+                  // 9 iterations of threshold tuning couldn't fix false
+                  // 'nunduk' across different face shapes + camera angles.
+                  // New approach: face detected = at desk = attentive. Simple.
                   legacyFacePresent = true;
-                  // v8: Smooth aspect ratio (average last 3) for stability
-                  aspectRatioHistory.push(aspectRatio);
-                  if (aspectRatioHistory.length > 3) aspectRatioHistory.shift();
-                  const smoothRatio = aspectRatioHistory.reduce((a, b) => a + b, 0) / aspectRatioHistory.length;
-
-                  // v9: Default to ATTENTIVE when face detected.
-                  // Only flag as nunduk if ratio is VERY low (< 0.6).
-                  // This prevents false "nunduk" for users with wide/round
-                  // faces where ratio is naturally < 1.0 even when looking at camera.
-                  // Hysteresis: attentive → nunduk needs ratio < 0.5
-                  //             nunduk → attentive needs ratio > 0.7
-                  if (wasAttentive) {
-                    legacyFaceAttentive = smoothRatio > 0.5;
-                  } else {
-                    legacyFaceAttentive = smoothRatio > 0.7;
-                  }
-                  wasAttentive = legacyFaceAttentive;
-
-                  console.log('[Focus] ratio:', smoothRatio.toFixed(2),
-                    'attentive:', legacyFaceAttentive,
-                    wasAttentive ? '(was attentive)' : '(was nunduk)');
+                  legacyFaceAttentive = true;
+                  console.log('[Focus] Face detected → attentive');
                 } else {
                   legacyFacePresent = false;
                   legacyFaceAttentive = false;
