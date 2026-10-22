@@ -258,6 +258,8 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     let lastLegacyFaceCheck = 0;
     let legacyFacePresent = false;
     let legacyFaceAttentive = false;
+    let wasAttentive = false;  // v8: hysteresis state
+    const aspectRatioHistory: number[] = [];  // v8: smoothing
     let lastScoreUpdate = 0;
     const scoreHistory: number[] = [];
     let eyesClosedSince = 0;
@@ -315,7 +317,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           currentPosture = 'away';
         } else {
           // ── Face detection (throttled to ~1/sec) ──
-          if (now - lastLegacyFaceCheck > 1000) {
+          if (now - lastLegacyFaceCheck > 500) {  // v8: 500ms (was 1000ms)
             lastLegacyFaceCheck = now;
             if (legacyFaceDetector) {
               try {
@@ -331,13 +333,25 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                   // Nunduk (head down): box is SHORT → ratio < 1.0
                   const aspectRatio = faceHeight / (faceWidth + 0.001);
                   legacyFacePresent = true;
-                  // v7: Only use aspect ratio, NOT face position (inUpperHalf).
-                  // inUpperHalf fails when user moves away from camera
-                  // (face center moves to middle of frame, not upper half).
-                  // aspectRatio is distance-invariant: tall = head up, short = nunduk.
-                  legacyFaceAttentive = aspectRatio > 1.0;
-                  console.log('[Focus] aspectRatio:', aspectRatio.toFixed(2),
-                    'attentive:', legacyFaceAttentive);
+                  // v8: Smooth aspect ratio (average last 3) for stability
+                  aspectRatioHistory.push(aspectRatio);
+                  if (aspectRatioHistory.length > 3) aspectRatioHistory.shift();
+                  const smoothRatio = aspectRatioHistory.reduce((a, b) => a + b, 0) / aspectRatioHistory.length;
+
+                  // v8: Hysteresis — prevents flip-flop around threshold 1.0
+                  // If currently attentive: need ratio < 0.85 to switch to nunduk
+                  // If currently nunduk: need ratio > 1.15 to switch to attentive
+                  // Dead zone between 0.85-1.15 = state stays stable
+                  if (wasAttentive) {
+                    legacyFaceAttentive = smoothRatio > 0.85;
+                  } else {
+                    legacyFaceAttentive = smoothRatio > 1.15;
+                  }
+                  wasAttentive = legacyFaceAttentive;
+
+                  console.log('[Focus] ratio:', smoothRatio.toFixed(2),
+                    'attentive:', legacyFaceAttentive,
+                    wasAttentive ? '(was attentive)' : '(was nunduk)');
                 } else {
                   legacyFacePresent = false;
                   legacyFaceAttentive = false;
