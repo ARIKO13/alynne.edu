@@ -328,36 +328,45 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                 console.log('[Focus] FaceDetector faces:', faces.length,
                   faces.length > 0 ? 'box:' + JSON.stringify(faces[0].boundingBox) : '');
                 if (faces.length > 0) {
-                  // v11: Relative face position tracking.
-                  // Record baseline (first 5 detections) then compare.
-                  // If face center Y moves DOWN >15% of video height
-                  // from baseline → nunduk.
+                  // v12: Detect nunduk via forehead visibility.
+                  // When head is UP: top of face box = forehead (skin tone)
+                  // When head is DOWN (nunduk): top of face box = hair (no skin)
+                  // This implicitly detects eye position without needing ML.
                   const face = faces[0];
-                  const faceCenterY = face.boundingBox.top + face.boundingBox.height / 2;
-                  const vh = video.videoHeight || 480;
-                  const normalizedY = faceCenterY / vh;  // 0-1 (0=top, 1=bottom)
+                  const box = face.boundingBox;
+                  const fb = face.boundingBox;
 
-                  // Collect baseline samples (first 5 detections)
-                  if (baselineSamples.length < 5) {
-                    baselineSamples.push(normalizedY);
-                    if (baselineSamples.length === 5) {
-                      baselineFaceY = baselineSamples.reduce((a, b) => a + b, 0) / 5;
-                      console.log('[Focus] Baseline Y:', baselineFaceY.toFixed(3));
+                  // Draw video to canvas at face box resolution for pixel sampling
+                  const fc = document.createElement('canvas');
+                  fc.width = 60; fc.height = 60;
+                  const fctx = fc.getContext('2d', { willReadFrequently: true });
+                  if (fctx) {
+                    // Draw ONLY the top 1/3 of the face bounding box
+                    const topThird = fb.top;
+                    const thirdHeight = fb.height / 3;
+                    fctx.drawImage(video,
+                      fb.x, fb.top, fb.width, thirdHeight,  // source: top 1/3 of face
+                      0, 0, 60, 60                          // dest: 60x60 canvas
+                    );
+                    const upperPixels = fctx.getImageData(0, 0, 60, 60).data;
+
+                    // Count skin tone pixels in upper area (forehead)
+                    let skinCount = 0;
+                    let totalPixels = 0;
+                    for (let i = 0; i < upperPixels.length; i += 4) {
+                      const r = upperPixels[i], g = upperPixels[i + 1], b = upperPixels[i + 2];
+                      totalPixels++;
+                      if (r > 80 && g > 40 && b > 20 && r > g && r > b && (r - g) > 15 && r < 250) {
+                        skinCount++;
+                      }
                     }
-                    // During baseline collection, assume attentive
+                    const skinRatio = skinCount / totalPixels;
+                    // skinRatio > 0.2 = forehead visible = head UP = attentive
+                    // skinRatio < 0.2 = hair visible = head DOWN = nunduk
                     legacyFacePresent = true;
-                    legacyFaceAttentive = true;
-                  } else if (baselineFaceY !== null) {
-                    // Compare current position to baseline
-                    // Face moved DOWN >15% of frame → nunduk
-                    // Face moved DOWN >25% → very nunduk
-                    const drop = normalizedY - baselineFaceY;
-                    legacyFacePresent = true;
-                    legacyFaceAttentive = drop < 0.15;  // <15% drop = attentive
-                    console.log('[Focus] Y:', normalizedY.toFixed(3),
-                      'baseline:', baselineFaceY.toFixed(3),
-                      'drop:', drop.toFixed(3),
-                      legacyFaceAttentive ? '→ attentive' : '→ NUNDUK');
+                    legacyFaceAttentive = skinRatio > 0.2;
+                    console.log('[Focus] upper skin:', skinRatio.toFixed(2),
+                      skinRatio > 0.2 ? '→ attentive (forehead visible)' : '→ NUNDUK (hair visible)');
                   } else {
                     legacyFacePresent = true;
                     legacyFaceAttentive = true;
