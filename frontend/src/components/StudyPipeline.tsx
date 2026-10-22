@@ -330,13 +330,14 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                   // Head straight: box is TALL → ratio > 1.0
                   // Nunduk (head down): box is SHORT → ratio < 1.0
                   const aspectRatio = faceHeight / (faceWidth + 0.001);
-                  const faceCenterY = face.boundingBox.top + faceHeight / 2;
-                  const vh = video.videoHeight || 120;
-                  const inUpperHalf = faceCenterY < vh * 0.5;
                   legacyFacePresent = true;
-                  legacyFaceAttentive = aspectRatio > 1.0 && inUpperHalf;
+                  // v7: Only use aspect ratio, NOT face position (inUpperHalf).
+                  // inUpperHalf fails when user moves away from camera
+                  // (face center moves to middle of frame, not upper half).
+                  // aspectRatio is distance-invariant: tall = head up, short = nunduk.
+                  legacyFaceAttentive = aspectRatio > 1.0;
                   console.log('[Focus] aspectRatio:', aspectRatio.toFixed(2),
-                    'inUpperHalf:', inUpperHalf, 'attentive:', legacyFaceAttentive);
+                    'attentive:', legacyFaceAttentive);
                 } else {
                   legacyFacePresent = false;
                   legacyFaceAttentive = false;
