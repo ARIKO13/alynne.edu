@@ -436,23 +436,20 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
             // Face present but no sclera = eyes closed or looking away
             baseScore = 45;
             currentPosture = 'nunduk';
-          } else if (avgBrightness > 5 && diff > 0.5) {
-            // No face detected BUT camera on + motion = probably at desk
-            baseScore = 55;  // v16: was 35 — boost, detector just failed
-            currentPosture = 'attentive';
-          } else if (avgBrightness > 5) {
-            // Camera on but no motion — passive (reading?)
-            baseScore = 50;  // v16: was 20 — too low, made user feel broken
-            currentPosture = 'attentive';
           } else {
+            // v21: NO skin detected = user NOT visible (kabur/away).
+            // Old v16 logic gave 50-55% here as "benefit of the doubt" →
+            // false 'Kurang Fokus' when user was actually away.
+            // User explicitly requested: 'user ga ada = 0%'.
             baseScore = 0;
             currentPosture = 'away';
           }
 
-          // v16: Penalty for very dim lighting (but not zero)
-          if (avgBrightness < 30 && avgBrightness >= 5) {
-            baseScore = Math.max(20, baseScore - 15);
-          }
+          // v21: REMOVED dim lighting penalty.
+          // Old v16 logic: if avgBrightness < 30 → baseScore -= 15.
+          // This was source of lighting bias — score dropped in dim rooms
+          // even when user was present and attentive. User explicitly said
+          // 'ini bergantung cahaya banget ya? jadi sering bias' — remove.
         }
 
         // Motion bonus — v16: more forgiving (don't zero out score for motion)
