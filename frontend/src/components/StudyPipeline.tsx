@@ -75,6 +75,7 @@ import {
   getDetectorSync,
 } from '@/lib/face-mesh';
 import { computeHeadPose, type HeadPose } from '@/lib/head-pose';
+import { useAppStore } from '@/lib/store';
 
 interface StudyPipelineProps {
   open: boolean;
@@ -103,6 +104,12 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   const [readChapters, setReadChapters] = useState<Set<number>>(new Set());
   const [quickNote, setQuickNote] = useState('');
   const [examOpen, setExamOpen] = useState(false);
+
+  // v24: ML toggle from persisted store (default OFF — pixel path is lighter).
+  // When OFF, we never call isFaceMeshAvailable() so no 5MB model download
+  // happens. When toggled OFF mid-session, resetFaceMesh() disposes the
+  // loaded model to free ~50MB RAM.
+  const { studyFocusMLEnabled, setStudyFocusMLEnabled } = useAppStore();
 
   // ── Pomodoro + Focus state (inline, not separate component) ──
   const [timerTotal, setTimerTotal] = useState(25 * 60);
@@ -135,12 +142,21 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   const isRunningRef = useRef(false);  // v6: ref untuk avoid stale closure
   const focusEnabledRef = useRef(true);  // v6: same
   const showWarningRef = useRef(false);  // v6: same
+  const studyFocusMLEnabledRef = useRef(studyFocusMLEnabled);  // v24: same pattern
   const distractedStartRef = useRef<number>(0);
 
   // Sync refs with state
   useEffect(() => { isRunningRef.current = isRunning; }, [isRunning]);
   useEffect(() => { focusEnabledRef.current = focusEnabled; }, [focusEnabled]);
   useEffect(() => { showWarningRef.current = showWarning; }, [showWarning]);
+  // v24: when ML toggle flips OFF mid-session, dispose the loaded model so
+  // ~50MB of RAM is freed immediately. The check() loop will see
+  // studyFocusMLEnabledRef.current = false on the next frame and skip the
+  // FaceMesh branch entirely (getDetectorSync() returns null).
+  useEffect(() => {
+    studyFocusMLEnabledRef.current = studyFocusMLEnabled;
+    if (!studyFocusMLEnabled) resetFaceMesh();
+  }, [studyFocusMLEnabled]);
 
   // Auto-start pipeline when opened
   useEffect(() => {
@@ -266,11 +282,20 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     }
 
     // Trigger async load of Face Mesh (lazy)
-    setFaceMeshLoading(true);
-    isFaceMeshAvailable().then((available) => {
-      setUsingFaceMesh(available);
+    // v24: only trigger ML model load if user has opted in. When OFF,
+    // we skip the async isFaceMeshAvailable() call entirely — no network
+    // request for the ~5MB model. The check() loop will also skip the
+    // FaceMesh branch (getDetectorSync() returns null when ML disabled).
+    if (studyFocusMLEnabledRef.current) {
+      setFaceMeshLoading(true);
+      isFaceMeshAvailable().then((available) => {
+        setUsingFaceMesh(available);
+        setFaceMeshLoading(false);
+      });
+    } else {
       setFaceMeshLoading(false);
-    });
+      setUsingFaceMesh(false);
+    }
 
     // Closure state for throttling + smoothing
     let lastLegacyFaceCheck = 0;
@@ -392,7 +417,10 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           // head-pose.ts derives nunduk from face ASPECT RATIO (height/width)
           // and ngantuk from Eye Aspect Ratio (EAR) -- both are normalized
           // measurements, invariant to overall brightness.
-          const fmDetector = getDetectorSync();
+          // v24: short-circuit when ML toggle is OFF. getDetectorSync()
+          // returns null anyway (we never called isFaceMeshAvailable()), but
+          // the explicit check makes the intent clear and saves a function call.
+          const fmDetector = studyFocusMLEnabledRef.current ? getDetectorSync() : null;
           let faceMeshHandled = false;
 
           if (fmDetector && (now - lastFaceMeshCheck > 125)) {
@@ -1333,6 +1361,36 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                       Kalibrasi cahaya… jangan tutup kamera
                     </div>
                   )}
+                  {/* v24: ML toggle. Default OFF — pixel path is lighter and
+                      works without downloading any model. ON loads MediaPipe
+                      FaceMesh + iris refinement (~5MB first-time download,
+                      ~50MB RAM) for accurate head-pose + gaze detection. */}
+                  <div className="flex items-center justify-between gap-2 px-2.5 py-2 rounded-md border border-white/[0.06] bg-white/[0.02]">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-medium text-zinc-200">Deteksi ML (akurat)</p>
+                      <p className="text-[9px] text-zinc-500 mt-0.5 leading-tight">
+                        {studyFocusMLEnabled
+                          ? 'FaceMesh + iris aktif. Deteksi kepala + mata ke HP. ~50MB RAM.'
+                          : 'OFF — pakai pixel path ringan. Aktifkan untuk akurasi lebih baik (download ~5MB sekali).'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setStudyFocusMLEnabled(!studyFocusMLEnabled)}
+                      className={cn(
+                        'relative w-9 h-5 rounded-full transition-colors shrink-0',
+                        studyFocusMLEnabled ? 'bg-[#8B5CF6]' : 'bg-zinc-700'
+                      )}
+                      aria-label="Toggle ML face detection"
+                    >
+                      <span
+                        className={cn(
+                          'absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform',
+                          studyFocusMLEnabled && 'translate-x-4'
+                        )}
+                      />
+                    </button>
+                  </div>
                   <video
                     ref={videoRef}
                     autoPlay

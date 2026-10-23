@@ -144,6 +144,12 @@ interface AppState {
   setStudyFocusTracker: (v: boolean) => void;
   studyFocusSensitivity: number;
   setStudyFocusSensitivity: (v: number) => void;
+  // v24: ML toggle — default OFF. When OFF, focus detector uses pixel path
+  // only (light, no model download, ~5MB saved). When ON, loads MediaPipe
+  // FaceMesh + iris refinement (more accurate, detects eye gaze + head pose).
+  // User opt-in via Focus Detector panel toggle.
+  studyFocusMLEnabled: boolean;
+  setStudyFocusMLEnabled: (v: boolean) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -257,6 +263,9 @@ export const useAppStore = create<AppState>()(
       setStudyFocusTracker: (studyFocusTracker) => set({ studyFocusTracker }),
       studyFocusSensitivity: 0.5,
       setStudyFocusSensitivity: (studyFocusSensitivity) => set({ studyFocusSensitivity }),
+      // v24: ML default OFF — pixel path is lighter, no 5MB model download
+      studyFocusMLEnabled: false,
+      setStudyFocusMLEnabled: (studyFocusMLEnabled) => set({ studyFocusMLEnabled }),
     }),
     {
       name: 'lina-learning-v2',
@@ -274,6 +283,11 @@ export const useAppStore = create<AppState>()(
           name: String(state.user.name || 'Player'),
           image: typeof state.user.image === 'string' ? state.user.image : null,
         } : null,
+        // v24: persist study config so user's toggle choice survives reloads
+        studyDefaultMinutes: state.studyDefaultMinutes,
+        studyFocusTracker: state.studyFocusTracker,
+        studyFocusSensitivity: state.studyFocusSensitivity,
+        studyFocusMLEnabled: state.studyFocusMLEnabled,
       }),
     }
   )
