@@ -22,40 +22,47 @@ import { callLLM, extractJson } from '@/lib/gateway-client';
  * No legacy fallback — pi-bansos only (per user explicit requirement).
  */
 
-const MAX_TRANSCRIPT_CHARS = 50000;  // 1hr lecture ~ 50-80K chars, fits Cohere 256K ctx
+const MAX_TRANSCRIPT_CHARS = 200000;  // bumped: Cohere 256K ctx, 200K chars safe
 
 const SYSTEM_PROMPT = `You are an educational content splitter for Indonesian lecture transcripts.
 
-TASK: Given a raw STT (speech-to-text) transcript of a lecture, split it into 5-15 semantic chapters based on TOPIC changes.
+TASK: Given a raw STT (speech-to-text) transcript, split it into 5-15 chapters based on TOPIC changes. DO NOT summarize. DO NOT abbreviate.
 
-INPUT CHARACTERISTICS:
-- Raw spoken text, may have filler words ("eh", "ya", "kan", "gitu", "oke", "nah")
-- May have STT typos / misheard words
-- Sentences may be run-on or fragmented
-- Speaker may jump between topics
+CRITICAL — DO NOT SUMMARIZE:
+- Content of each chapter MUST be the FULL transcript text for that topic, word-for-word
+- DO NOT condense, paraphrase, shorten, or summarize
+- EVERY sentence in the transcript MUST appear in some chapter (in original form, just cleaned of filler)
+- If a topic has 30 sentences in the original transcript, the chapter content MUST contain ~30 sentences
+- A chapter with only 2-3 sentences is WRONG — you are splitting, not summarizing
+- Expected content length: 200-2000 words per chapter (NOT 30-50 words)
 
-RULES:
-1. Each chapter = ONE coherent topic/section (e.g. "Pengertian MSCI", "Sejarah MSCI", "Cara Hitung")
-2. Chapter title = concise (max 8 words), describes the topic — like a textbook table of contents
-3. Content = the relevant transcript text for that topic
-   - CLEAN filler words ("eh", "ya", "kan", "gitu", "nah", "anu", "jadi gini")
-   - Fix obvious STT typos based on context
-   - PRESERVE original meaning and key terms
-   - Don't rewrite to formal — keep spoken tone but readable
-4. Order chapters as they appear in the transcript (chronological)
-5. Don't skip content — every meaningful part of transcript should be in some chapter
-6. Don't duplicate content across chapters
-7. Chapter titles in Indonesian (match the transcript language)
-8. Aim for 5-15 chapters total — don't over-split (each chapter should have substantive content, min 50 words)
+WHAT YOU CAN DO (only these):
+1. Remove filler words: "eh", "ya", "kan", "gitu", "oke", "nah", "anu", "jadi gini", "gua bilang", "kayak", repetitions
+2. Fix obvious STT typos based on context (e.g. "juice" → "UI" if context is design)
+3. Fix basic punctuation + capitalization
+4. Group consecutive sentences about the same topic into one chapter
+
+WHAT YOU CANNOT DO:
+- DO NOT rewrite sentences to be "more formal" — keep spoken tone
+- DO NOT merge multiple sentences into one shorter sentence
+- DO NOT skip any sentence — every meaningful sentence must appear
+- DO NOT add information not in the original
+- DO NOT paraphrase
+
+CHAPTER TITLE:
+- Concise (max 8 words), describes the topic — like textbook table of contents
+- In Indonesian (match transcript language)
+- Example good titles: "Pengertian MSCI", "Sejarah MSCI", "Cara Hitung Free Float"
 
 OUTPUT STRICT JSON ONLY (no markdown fences, no prose, no explanation):
 {
   "chapters": [
-    {"title": "Pengenalan MSCI", "content": "Halo warga CPL. Hari ini kita bahas MSCI..."},
-    {"title": "Sejarah MSCI", "content": "Dulu MSCI itu..."},
-    ...
+    {"title": "Pengertian MSCI", "content": "[FULL transcript text for this topic, ALL sentences preserved, only filler removed]"},
+    {"title": "Sejarah MSCI", "content": "[FULL transcript text for this topic, ALL sentences preserved, only filler removed]"}
   ]
-}`;
+}
+
+REMEMBER: Content = FULL transcript text per topic (cleaned of filler), NOT a summary.`;
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -86,8 +93,8 @@ ${truncated}
 Output JSON only.`;
 
     const result = await callLLM('structured-json', SYSTEM_PROMPT, userPrompt, {
-      maxTokens: 12000,  // chapters can be long
-      timeout: 180_000,
+      maxTokens: 30000,  // bumped: full content per chapter can be long
+      timeout: 300_000,  // 5 min — long content takes longer
       temperature: 0.2,
       endpoint: 'stt/split-chapters',
     });
