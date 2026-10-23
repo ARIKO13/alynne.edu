@@ -345,9 +345,10 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
             
             // Face present if some skin tone detected
             legacyFacePresent = skinRatio > 0.05;
-            // Attentive if sclera (white) visible = eyes open, looking forward
-            // Nunduk if face present but no sclera = eyes looking down
-            legacyFaceAttentive = legacyFacePresent && whiteRatio > 0.01;
+            // v15: Tighten sclera threshold — 0.01 was too permissive (any 1% bright
+            // pixel = "attentive"). Now require 3%+ white pixels to confirm eyes-open,
+            // looking forward. Below 3% but face present → looking down (nunduk).
+            legacyFaceAttentive = legacyFacePresent && whiteRatio > 0.03;
             
             console.log('[Focus] white:', whiteRatio.toFixed(3),
               'skin:', skinRatio.toFixed(3),
@@ -1113,7 +1114,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                       <span className="text-zinc-500">Focus Score</span>
                       <span className={cn(
                         'font-bold',
-                        focusScore > 70 ? 'text-green-400' : focusScore > 40 ? 'text-amber-400' : 'text-red-400'
+                        focusScore >= 70 ? 'text-green-400' : focusScore >= 40 ? 'text-amber-400' : focusScore >= 15 ? 'text-orange-400' : 'text-red-400'
                       )}>
                         {focusScore}%
                       </span>
@@ -1122,24 +1123,26 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                       <div
                         className={cn(
                           'h-full transition-all',
-                          focusScore > 70 ? 'bg-green-500' : focusScore > 40 ? 'bg-amber-500' : 'bg-red-500'
+                          focusScore >= 70 ? 'bg-green-500' : focusScore >= 40 ? 'bg-amber-500' : focusScore >= 15 ? 'bg-orange-500' : 'bg-red-500'
                         )}
                         style={{ width: `${focusScore}%` }}
                       />
                     </div>
-                    {/* Posture indicator — shows what the model detected */}
+                    {/* v15: Postur label DITURUNKAN dari focusScore (%),
+                        BUKAN dari posture state categorical. Jadi label
+                        SELALU match sama angka yang user lihat. */}
                     <div className="flex items-center justify-between mt-1.5 text-[10px]">
                       <span className="text-zinc-600">Postur:</span>
                       <span className={cn(
                         'font-medium',
-                        posture === 'attentive' ? 'text-green-400'
-                          : posture === 'nunduk' ? 'text-amber-400'
-                          : posture === 'ngantuk' ? 'text-red-400'
+                        focusScore >= 70 ? 'text-green-400'
+                          : focusScore >= 40 ? 'text-amber-400'
+                          : focusScore >= 15 ? 'text-orange-400'
                           : 'text-zinc-500'
                       )}>
-                        {posture === 'attentive' ? 'Fokus ✓'
-                          : posture === 'nunduk' ? 'Nunduk ↓'
-                          : posture === 'ngantuk' ? 'Ngantuk 😴'
+                        {focusScore >= 70 ? 'Fokus ✓'
+                          : focusScore >= 40 ? 'Kurang Fokus'
+                          : focusScore >= 15 ? 'Lengah ↓'
                           : 'Pergi'}
                       </span>
                     </div>
@@ -1149,7 +1152,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                       <span>
                         {faceMeshLoading ? 'Loading...'
                           : usingFaceMesh ? 'MediaPipe Face Mesh ✓'
-                          : 'Legacy (fallback)'}
+                          : 'Sclera + Skin Tone (fallback)'}
                       </span>
                     </div>
                   </div>
