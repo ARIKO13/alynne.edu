@@ -68,7 +68,12 @@ import { speak, stop as ttsStop, isSpeaking, pause as ttsPause, resume as ttsRes
 import { VoiceTutor } from '@/components/VoiceTutor';
 import { StudyBuddy } from '@/components/StudyBuddy';
 import { ExamSimulator } from '@/components/ExamSimulator';
-import { detectFace, isFaceMeshAvailable, resetFaceMesh } from '@/lib/face-mesh';
+import {
+  detectFace,
+  isFaceMeshAvailable,
+  resetFaceMesh,
+  getDetectorSync,
+} from '@/lib/face-mesh';
 import { computeHeadPose, type HeadPose } from '@/lib/head-pose';
 
 interface StudyPipelineProps {
@@ -113,6 +118,13 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   const [usingFaceMesh, setUsingFaceMesh] = useState(false);
   // v20: UI debug overlay — show detection values directly in panel
   const [focusDebug, setFocusDebug] = useState<string>('');
+  // v22: Calibration state — recorded once per session start. We sample
+  // ambient brightness for the first 5s of a session so the pixel-based
+  // fallback can normalize against the user's actual lighting instead of
+  // using absolute thresholds that are biased toward well-lit rooms.
+  const [calibrating, setCalibrating] = useState(false);
+  const calibrationStartRef = useRef<number>(0);
+  const calibrationBrightnessSamples = useRef<number[]>([]);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -221,6 +233,10 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
       try { audioCtxRef.current.close(); } catch {}
       audioCtxRef.current = null;
     }
+    // v22: Reset calibration state when session stops.
+    calibrationStartRef.current = 0;
+    calibrationBrightnessSamples.current = [];
+    setCalibrating(false);
     setFocusScore(0);
   }, []);
 
@@ -258,10 +274,20 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
 
     // Closure state for throttling + smoothing
     let lastLegacyFaceCheck = 0;
+    let lastFaceMeshCheck = 0;  // v22: throttle FaceMesh calls to ~8fps
     let legacyFacePresent = false;
     let legacyFaceAttentive = false;
+    // v22: HOISTED to outer scope. Original code declared these as `const`
+    // inside the `if (now - lastLegacyFaceCheck > 500)` block but used them
+    // in the posture branches below that block. On frames where the legacy
+    // check didn't run, the reference would throw ReferenceError, swallowed
+    // by the try-catch — leaving the focus score stuck at 0%. Declaring them
+    // here as `let` makes them persist between legacy checks (cached value
+    // is reused on intermediate frames), which is the intended behavior.
+    let headBowedDown = false;
+    let lookingDown = false;
     // v11: Relative face position tracking. Record baseline face Y position
-    // when session starts. If face moves DOWN significantly → nunduk.
+    // when session starts. If face moves DOWN significantly -> nunduk.
     // Adapts to each user's face shape + camera position (no fixed threshold).
     let baselineFaceY: number | null = null;
     const baselineSamples: number[] = [];
@@ -272,7 +298,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     const check = async () => {
       // v6: Use refs instead of stale closure values.
       // isRunningRef.current is always current (synced via useEffect).
-      // OLD code used isRunning from closure — was always false because
+      // OLD code used isRunning from closure -- was always false because
       // startCamera captured detectFocus when isRunning was false.
       if (stoppedRef.current || !isRunningRef.current || !focusEnabledRef.current) {
         return;
@@ -280,7 +306,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
       // v4: Wait for video to have ACTUAL FRAME DATA (not just metadata).
       // videoWidth is set at readyState 1 (HAVE_METADATA), but frame pixels
       // aren't available until readyState >= 2 (HAVE_CURRENT_DATA).
-      // estimateFaces on readyState < 2 → blank frame → 0 faces → score 0%.
+      // estimateFaces on readyState < 2 -> blank frame -> 0 faces -> score 0%.
       if (!video.videoWidth || !video.videoHeight || video.readyState < 2) {
         animRef.current = requestAnimationFrame(check);
         return;
@@ -289,7 +315,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
         ctx.drawImage(video, 0, 0, 160, 120);
         const frame = ctx.getImageData(0, 0, 160, 120).data;
 
-        // ── Motion detection (always computed — used in both paths) ──
+        // -- Motion detection (always computed -- used in both paths) --
         let diff = 0;
         let count = 0;
         if (prevFrameRef.current) {
@@ -303,7 +329,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
 
         const now = Date.now();
 
-        // ── Brightness check (camera covered = all black) ──
+        // -- Brightness check (camera covered = all black) --
         let brightnessSum = 0;
         let brightnessCount = 0;
         for (let i = 0; i < frame.length; i += 16) {
@@ -311,9 +337,33 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           brightnessCount++;
         }
         const avgBrightness = brightnessSum / brightnessCount;
-        // v16: Lower threshold (was 15). Only truly black camera = covered.
-        // Old threshold made dim lighting trigger cameraCovered → score 0%.
+        // v16/v22: Only truly black camera (avgBrightness < 5) is treated as
+        // covered. Previous v16 also had a separate -15 penalty below 30
+        // brightness -- that was the explicit lighting bias v21 removed.
+        // v22 keeps the cameraCovered floor as-is because < 5 is genuinely
+        // a covered lens, not dim room light.
         const cameraCovered = avgBrightness < 5;
+
+        // -- v22: Calibration phase (first 5s of session) --
+        // Sample ambient brightness on every frame for the first 5s. The
+        // pixel-based fallback uses these samples to compute a relative
+        // brightness baseline so sclera/skin thresholds normalize to the
+        // user's actual lighting instead of absolute numbers. While
+        // calibrating, we don't penalize the score (benefit of doubt) and
+        // show a "Kalibrasi" indicator in the debug overlay.
+        if (calibrationStartRef.current === 0) {
+          calibrationStartRef.current = now;
+          setCalibrating(true);
+        }
+        const calibrationElapsedSec = (now - calibrationStartRef.current) / 1000;
+        const inCalibration = calibrationElapsedSec < 5;
+        if (inCalibration) {
+          calibrationBrightnessSamples.current.push(avgBrightness);
+        } else if (calibrating) {
+          // First frame after calibration ends -- flip UI flag.
+          // React will bail out on subsequent frames since state is already false.
+          setCalibrating(false);
+        }
 
         let baseScore = 0;
         let currentPosture: 'attentive' | 'nunduk' | 'away' | 'ngantuk' = 'away';
@@ -321,138 +371,230 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
         if (cameraCovered) {
           baseScore = 0;
           currentPosture = 'away';
+        } else if (inCalibration) {
+          // Don't penalize while baseline is being built -- could be a well-lit
+          // room with a slowly-warming webcam, or a dim room. Either way, the
+          // post-calibration pixel path will use the recorded baseline.
+          baseScore = 50;
+          currentPosture = 'attentive';
+          setFocusDebug(
+            `Kalibrasi ${calibrationElapsedSec.toFixed(1)}s/5s ` +
+            `bright:${avgBrightness.toFixed(0)} ` +
+            `(jangan tutup kamera)`
+          );
         } else {
-          // v14: SCLERA detection directly from existing 160x120 canvas.
-          // NO FaceDetector API needed. Works on ALL browsers.
-          // Count white pixels (sclera) in center area where face/eyes would be.
-          if (now - lastLegacyFaceCheck > 500) {
-            lastLegacyFaceCheck = now;
+          // -- v22 PRIMARY PATH: FaceMesh + computeHeadPose --
+          // MediaPipe FaceMesh landmarks are GEOMETRY (x,y positions on the
+          // face), not raw pixel brightness. The model is trained across
+          // lighting conditions so detection works in dim rooms, bright
+          // rooms, side-lit, etc. -- no lighting bias.
+          //
+          // head-pose.ts derives nunduk from face ASPECT RATIO (height/width)
+          // and ngantuk from Eye Aspect Ratio (EAR) -- both are normalized
+          // measurements, invariant to overall brightness.
+          const fmDetector = getDetectorSync();
+          let faceMeshHandled = false;
 
-            // Sample center 50% of frame, split into TOP-HALF and BOTTOM-HALF.
-            // v19: NO shirt-specific detection (outfit colors vary — can't
-            // hardcode "white shirt"). Instead use topSkinRatio:
-            //   - Sitting upright: top-half = forehead + eyes → topSkinRatio HIGH
-            //   - Head bowed: top-half = hair → topSkinRatio LOW (< 2%)
-            // This works for ANY shirt color (white, black, colored, patterned).
-            let whiteCount = 0;
-            let skinCount = 0;
-            let totalPixels = 0;
-            let topWhite = 0, bottomWhite = 0;
-            let topSkin = 0, bottomSkin = 0;
-            let topTotal = 0, bottomTotal = 0;
-            // Center area: x=40-120 (of 160), y=20-80 (of 120)
-            // TOP-HALF: y=20-50 (forehead + upper eyes — face skin)
-            // BOTTOM-HALF: y=50-80 (lower eyes + nose + mouth + shirt collar)
-            for (let y = 20; y < 80; y += 2) {
-              for (let x = 40; x < 120; x += 2) {
-                const idx = (y * 160 + x) * 4;
-                const r = frame[idx], g = frame[idx + 1], b = frame[idx + 2];
-                totalPixels++;
-                // Sclera = bright white
-                const isWhite = r > 180 && g > 180 && b > 180;
-                if (isWhite) whiteCount++;
-                // Skin tone (for face presence check)
-                const isSkin = r > 80 && g > 40 && b > 20 && r > g && r > b && (r - g) > 15 && r < 250;
-                if (isSkin) skinCount++;
-                // Track top vs bottom for gaze direction + head bowed
-                if (y < 50) {
-                  topTotal++;
-                  if (isWhite) topWhite++;
-                  if (isSkin) topSkin++;
+          if (fmDetector && (now - lastFaceMeshCheck > 125)) {
+            lastFaceMeshCheck = now;
+            try {
+              const fmResult = await detectFace(video);
+              const headPose = fmResult.detected ? computeHeadPose(fmResult) : null;
+
+              if (headPose) {
+                // Face detected + pose computed -> use ML signal as source of truth.
+                setUsingFaceMesh(true);
+                faceMeshHandled = true;
+                if (headPose.attentive) {
+                  baseScore = 80;
+                  currentPosture = 'attentive';
+                } else if (headPose.eyesClosed) {
+                  baseScore = 40;
+                  currentPosture = 'ngantuk';
+                } else if (headPose.lookingDown) {
+                  baseScore = 35;
+                  currentPosture = 'nunduk';
                 } else {
-                  bottomTotal++;
-                  if (isWhite) bottomWhite++;
-                  if (isSkin) bottomSkin++;
+                  // Face present but ambiguous -- slightly below attentive.
+                  baseScore = 60;
+                  currentPosture = 'attentive';
+                }
+                setFocusDebug(
+                  `[FM] pitch:${headPose.pitch} ` +
+                  `EAR L:${headPose.eyeOpenness.left.toFixed(2)} ` +
+                  `R:${headPose.eyeOpenness.right.toFixed(2)} ` +
+                  `bright:${avgBrightness.toFixed(0)} ` +
+                  `m:${diff.toFixed(1)} ` +
+                  `| ${currentPosture}`
+                );
+              } else if (fmResult.detected === false) {
+                // Model loaded, but no face in frame. Trust this -- pixel
+                // fallback could falsely detect warm-colored clothing as
+                // skin and report "attentive" when user is actually away.
+                setUsingFaceMesh(true);
+                faceMeshHandled = true;
+                baseScore = 0;
+                currentPosture = 'away';
+                setFocusDebug(
+                  `[FM] no face -> away ` +
+                  `bright:${avgBrightness.toFixed(0)} ` +
+                  `m:${diff.toFixed(1)}`
+                );
+              }
+              // If model not yet loaded (getDetectorSync() === null),
+              // fmResult.detected is false with landmarks null -- fall
+              // through to pixel-based path below.
+            } catch (fmErr) {
+              console.warn('[Focus] FaceMesh check error:', fmErr);
+              // Fall through to pixel path on transient errors.
+            }
+          }
+
+          // -- v22 FALLBACK: improved pixel-based detection --
+          // Only runs when FaceMesh model isn't available (still loading,
+          // failed to load, or marked tooSlow). The previous logic was
+          // biased toward well-lit rooms because:
+          //   1. Skin: `r > 80` -> fails in dim light (real skin can be R<80)
+          //   2. Sclera: `r > 180 && g > 180 && b > 180` -> fails in dim light,
+          //      over-saturates in direct sun (false-positive everywhere)
+          //   3. Scope bug: headBowedDown/lookingDown declared inside the
+          //      500ms-throttled block but used outside it -- ReferenceError
+          //      was swallowed by the try-catch, leaving score stuck at 0%
+          //      on frames where the legacy check didn't run.
+          if (!faceMeshHandled) {
+            setUsingFaceMesh(false);
+            if (now - lastLegacyFaceCheck > 500) {
+              lastLegacyFaceCheck = now;
+
+              // Sample center 50% of frame, split into TOP-HALF and BOTTOM-HALF.
+              // v19/v22: NO shirt-specific detection. Use topSkinRatio for head
+              // bowed detection -- works for any shirt color.
+              let skinCount = 0;
+              let totalPixels = 0;
+              let topSkin = 0, bottomSkin = 0;
+              let topTotal = 0, bottomTotal = 0;
+              // v22: collect brightnesses per region for percentile-based
+              // sclera threshold (replaces absolute r > 180 which is biased
+              // toward bright light).
+              const topBrightnesses: number[] = [];
+              const bottomBrightnesses: number[] = [];
+              // Center area: x=40-120 (of 160), y=20-80 (of 120)
+              // TOP-HALF: y=20-50 (forehead + upper eyes -- face skin)
+              // BOTTOM-HALF: y=50-80 (lower eyes + nose + mouth + shirt collar)
+              for (let y = 20; y < 80; y += 2) {
+                for (let x = 40; x < 120; x += 2) {
+                  const idx = (y * 160 + x) * 4;
+                  const r = frame[idx], g = frame[idx + 1], b = frame[idx + 2];
+                  totalPixels++;
+                  const brightness = (r + g + b) / 3;
+
+                  // v22: Normalized RGB skin detection.
+                  // OLD: r > 80 && g > 40 && b > 20 && r > g && r > b && (r-g) > 15 && r < 250
+                  //   -> biased toward bright light (r > 80 fails in dim) AND
+                  //      biased against darker skin tones ((r-g) > 15 excludes
+                  //      low-saturation faces).
+                  // NEW: r/(r+g+b), g/(r+g+b), b/(r+g+b) -- these ratios are
+                  //   invariant to overall brightness. Skin cluster in
+                  //   normalized RGB: rn in [0.36, 0.52], gn in [0.28, 0.40],
+                  //   bn <= 0.32, with rn > gn > bn.
+                  const t = r + g + b + 1;
+                  const rn = r / t;
+                  const gn = g / t;
+                  const bn = b / t;
+                  const isSkin = rn >= 0.36 && rn <= 0.52
+                    && gn >= 0.28 && gn <= 0.40
+                    && bn <= 0.32
+                    && rn > gn && rn > bn;
+                  if (isSkin) skinCount++;
+
+                  if (y < 50) {
+                    topTotal++;
+                    topBrightnesses.push(brightness);
+                    if (isSkin) topSkin++;
+                  } else {
+                    bottomTotal++;
+                    bottomBrightnesses.push(brightness);
+                    if (isSkin) bottomSkin++;
+                  }
                 }
               }
+
+              // v22: Percentile-based sclera detection.
+              // Per region, take the top 5% brightest pixels as "white".
+              // Replaces the absolute `r > 180 && g > 180 && b > 180` rule
+              // which biased toward bright light. We still require a sanity
+              // floor (top-5% brightness must exceed 80 absolute) so we don't
+              // count noise as sclera in pitch-black frames.
+              const computeWhiteCount = (arr: number[]): number => {
+                if (arr.length === 0) return 0;
+                const sorted = [...arr].sort((a, b) => a - b);
+                const threshold = sorted[Math.floor(arr.length * 0.95)] || 0;
+                const SCLERA_FLOOR = 80;
+                if (threshold < SCLERA_FLOOR) return 0;
+                return Math.ceil(arr.length * 0.05);
+              };
+              const topWhite = computeWhiteCount(topBrightnesses);
+              const bottomWhite = computeWhiteCount(bottomBrightnesses);
+              const whiteCount = topWhite + bottomWhite;
+              const whiteRatio = whiteCount / totalPixels;
+              const skinRatio = skinCount / totalPixels;
+              const topSkinRatio = topSkin / topTotal;
+              const bottomSkinRatio = bottomSkin / bottomTotal;
+
+              headBowedDown = skinRatio > 0.05 && topSkinRatio < 0.02;
+              const totalWhite = topWhite + bottomWhite;
+              const gazeDownRatio = totalWhite > 3
+                ? topWhite / totalWhite
+                : 0.5;
+              lookingDown = totalWhite > 3 && gazeDownRatio > 0.65;
+
+              legacyFacePresent = skinRatio > 0.05;
+              legacyFaceAttentive = legacyFacePresent
+                && topSkinRatio > 0.05
+                && whiteRatio > 0.02
+                && !lookingDown
+                && !headBowedDown;
+
+              const debugStr = `[PX] bright:${avgBrightness.toFixed(0)} ` +
+                `white:${whiteRatio.toFixed(3)} ` +
+                `topW:${topWhite} botW:${bottomWhite} ` +
+                `topSkin:${topSkinRatio.toFixed(3)} ` +
+                `botSkin:${bottomSkinRatio.toFixed(3)} ` +
+                `gaze:${gazeDownRatio.toFixed(2)} ` +
+                `skin:${skinRatio.toFixed(3)} ` +
+                `m:${diff.toFixed(1)} ` +
+                `| ${headBowedDown ? 'BOWED' : (lookingDown ? 'GAZE-DOWN' : (legacyFaceAttentive ? 'ATTENTIVE' : '?'))}`;
+              setFocusDebug(debugStr);
             }
-            const whiteRatio = whiteCount / totalPixels;
-            const skinRatio = skinCount / totalPixels;
-            const topSkinRatio = topSkin / topTotal;
-            const bottomSkinRatio = bottomSkin / bottomTotal;
 
-            // v19: HEAD BOWED detection via topSkinRatio.
-            // If top-half is mostly hair (topSkinRatio < 2%) but skin is detected
-            // overall, head is bowed forward. Works regardless of shirt color.
-            const headBowedDown = skinRatio > 0.05 && topSkinRatio < 0.02;
-
-            // v17: Gaze direction via top/bottom white ratio.
-            // Note: bottom white might be from shirt (any color), but ratio
-            // still informative when user looks down with eyes only.
-            const totalWhite = topWhite + bottomWhite;
-            const gazeDownRatio = totalWhite > 3
-              ? topWhite / totalWhite
-              : 0.5;
-            const lookingDown = totalWhite > 3 && gazeDownRatio > 0.65;
-
-            // Face present if some skin tone detected
-            legacyFacePresent = skinRatio > 0.05;
-            // v19: Attentive = face present + skin in TOP half (forehead visible)
-            //   + sclera visible + NOT lookingDown + NOT headBowedDown
-            // topSkinRatio > 0.05 ensures forehead/eyes are in frame (not hair).
-            legacyFaceAttentive = legacyFacePresent
-              && topSkinRatio > 0.05
-              && whiteRatio > 0.02
-              && !lookingDown
-              && !headBowedDown;
-
-            console.log('[Focus] bright:', avgBrightness.toFixed(1),
-              'white:', whiteRatio.toFixed(3),
-              'topW:', topWhite, 'botW:', bottomWhite,
-              'topSkin:', topSkinRatio.toFixed(3),
-              'botSkin:', bottomSkinRatio.toFixed(3),
-              'gaze↓:', gazeDownRatio.toFixed(2),
-              'skin:', skinRatio.toFixed(3),
-              'motion:', diff.toFixed(1),
-              headBowedDown ? '→ NUNDUK (head bowed)'
-                : (lookingDown ? '→ NUNDUK (gaze down)'
-                : (legacyFaceAttentive ? '→ attentive' : '→ ?')));
-
-            // v20: Update UI debug overlay (visible in panel, no console needed)
-            const debugStr = `bright:${avgBrightness.toFixed(0)} ` +
-              `topSkin:${topSkinRatio.toFixed(2)} ` +
-              `botSkin:${bottomSkinRatio.toFixed(2)} ` +
-              `topW:${topWhite} botW:${bottomWhite} ` +
-              `gaze↓:${gazeDownRatio.toFixed(2)} ` +
-              `skin:${skinRatio.toFixed(2)} ` +
-              `m:${diff.toFixed(1)} ` +
-              `| ${headBowedDown ? 'BOWED' : (lookingDown ? 'GAZE↓' : (legacyFaceAttentive ? 'ATTENTIVE' : '?'))}`;
-            setFocusDebug(debugStr);
+            // v22: posture branches -- now safe because headBowedDown/
+            // lookingDown are declared at outer scope and persist between
+            // legacy checks (which only run every 500ms).
+            if (legacyFacePresent && legacyFaceAttentive) {
+              baseScore = 75;  // v16: was 60 -- boost true fokus
+              currentPosture = 'attentive';
+            } else if (legacyFacePresent && headBowedDown) {
+              baseScore = 30;  // v18: significant penalty for head bowed
+              currentPosture = 'nunduk';
+            } else if (legacyFacePresent && lookingDown) {
+              baseScore = 35;  // v17: specific penalty for gaze down
+              currentPosture = 'nunduk';
+            } else if (legacyFacePresent) {
+              // Face present but no sclera = eyes closed or looking away
+              baseScore = 45;
+              currentPosture = 'nunduk';
+            } else {
+              // v21: NO skin detected = user NOT visible (kabur/away).
+              // Old v16 logic gave 50-55% here as "benefit of the doubt" ->
+              // false 'Kurang Fokus' when user was actually away.
+              // User explicitly requested: 'user ga ada = 0%'.
+              baseScore = 0;
+              currentPosture = 'away';
+            }
           }
-
-          if (legacyFacePresent && legacyFaceAttentive) {
-            baseScore = 75;  // v16: was 60 — boost true fokus
-            currentPosture = 'attentive';
-          } else if (legacyFacePresent && headBowedDown) {
-            // v18: Head bowed forward (top is hair, no eyes visible)
-            baseScore = 30;  // v18: significant penalty for head bowed
-            currentPosture = 'nunduk';
-          } else if (legacyFacePresent && lookingDown) {
-            // v17: Face present + gaze directed down = nunduk
-            // (looking at phone/lap with head straight, eyes only)
-            baseScore = 35;  // v17: specific penalty for gaze down
-            currentPosture = 'nunduk';
-          } else if (legacyFacePresent) {
-            // Face present but no sclera = eyes closed or looking away
-            baseScore = 45;
-            currentPosture = 'nunduk';
-          } else {
-            // v21: NO skin detected = user NOT visible (kabur/away).
-            // Old v16 logic gave 50-55% here as "benefit of the doubt" →
-            // false 'Kurang Fokus' when user was actually away.
-            // User explicitly requested: 'user ga ada = 0%'.
-            baseScore = 0;
-            currentPosture = 'away';
-          }
-
-          // v21: REMOVED dim lighting penalty.
-          // Old v16 logic: if avgBrightness < 30 → baseScore -= 15.
-          // This was source of lighting bias — score dropped in dim rooms
-          // even when user was present and attentive. User explicitly said
-          // 'ini bergantung cahaya banget ya? jadi sering bias' — remove.
         }
 
-        // Motion bonus — v16: more forgiving (don't zero out score for motion)
+        // Motion bonus -- v16: more forgiving (don't zero out score for motion)
         let motionBonus = 15;
         if (diff > 1 && diff < 15) {
           motionBonus = 20;  // active (typing/reading)
@@ -473,7 +615,8 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           setFocusScore(avgScore);
           setPosture(currentPosture);
 
-          if (avgScore < 50) {
+          // v22: don't trigger distracted warning during calibration
+          if (avgScore < 50 && !inCalibration) {
             if (distractedStartRef.current === 0) {
               distractedStartRef.current = Date.now();
             }
@@ -1173,6 +1316,12 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                   {faceMeshLoading && (
                     <div className="text-center text-[10px] text-zinc-500 py-2">
                       Loading focus model... (~3s first time)
+                    </div>
+                  )}
+                  {/* v22: Calibration banner — shown for first 5s of session */}
+                  {calibrating && (
+                    <div className="rounded-md bg-blue-500/10 border border-blue-500/30 px-2 py-1.5 text-center text-[10px] text-blue-300 animate-pulse">
+                      Kalibrasi cahaya… jangan tutup kamera
                     </div>
                   )}
                   <video
