@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
   Users, Trophy, Flame, Award, Search, RefreshCw, Shield,
-  Loader2, TrendingUp, Activity, FileText, Database,
+  Loader2, TrendingUp, Activity, FileText, Database, Cpu, Zap,
 } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
@@ -67,7 +67,7 @@ export function AdminPanel() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState<'overview' | 'users' | 'dataset' | 'd1'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'users' | 'dataset' | 'd1' | 'llm'>('overview');
   // NOTE: STT Failures UI removed (privacy: storing raw user transcripts is
   // not appropriate). API endpoints remain at /api/admin/stt-failures for
   // debugging only.
@@ -205,6 +205,18 @@ export function AdminPanel() {
         >
           <Database className="h-3.5 w-3.5" />
           D1 Monitor
+        </button>
+        <button
+          onClick={() => setActiveView('llm')}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all',
+            activeView === 'llm'
+              ? 'bg-emerald-500/15 text-emerald-400'
+              : 'text-zinc-500 hover:text-zinc-300'
+          )}
+        >
+          <Cpu className="h-3.5 w-3.5" />
+          LLM Health
         </button>
         {/* STT Failures tab removed - privacy concern: storing raw user speech
             transcripts in D1 is not appropriate. API endpoints remain for
@@ -437,6 +449,213 @@ export function AdminPanel() {
         <D1MonitoringView />
       )}
 
+      {activeView === 'llm' && (
+        <LlmHealthView />
+      )}
+
+    </div>
+  );
+}
+
+// ── LLM Health sub-component ──────────────────────────────────────
+interface LlmHealthResponse {
+  latest: {
+    checkedAt: string;
+    triggeredBy: string;
+    proxyReachable: boolean;
+    models: {
+      modelId: string;
+      alive: boolean;
+      replySnippet?: string;
+      errorType?: string;
+      errorMessage?: string;
+      responseMs: number;
+    }[];
+  } | null;
+  fallbackEvents: {
+    timestamp: string;
+    fromModel: string;
+    toModel: string;
+    task: string;
+    errorType: string;
+    errorMessage: string;
+    endpoint: string;
+  }[];
+  fallbackCount24h: number;
+  piBansosUrl: string;
+}
+
+function modelShortName(id: string): string {
+  if (id.includes('cohere')) return 'Cohere';
+  if (id.includes('nemotron')) return 'Nemotron';
+  if (id.includes('poolside')) return 'Poolside';
+  return id.split('/').pop()?.split(':')[0] || id;
+}
+
+function LlmHealthView() {
+  const [data, setData] = useState<LlmHealthResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [testing, setTesting] = useState(false);
+
+  const fetchHealth = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/llm-health');
+      if (res.status === 403) return;
+      const json = await res.json();
+      setData(json);
+    } catch (err) {
+      console.error('LLM health fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchHealth(); }, [fetchHealth]);
+
+  const handleTestNow = async () => {
+    setTesting(true);
+    try {
+      await fetch('/api/admin/llm-health', { method: 'POST' });
+      await fetchHealth();
+    } catch (err) {
+      console.error('LLM health test error:', err);
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  if (loading && !data) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-5 w-5 animate-spin text-emerald-400" />
+      </div>
+    );
+  }
+
+  if (!data) {
+    return <p className="text-xs text-zinc-500 text-center py-8">Gagal memuat data LLM health.</p>;
+  }
+
+  const { latest, fallbackEvents, fallbackCount24h, piBansosUrl } = data;
+  const allAlive = latest?.models?.every(m => m.alive) ?? false;
+  const anyAlive = latest?.models?.some(m => m.alive) ?? false;
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+            <Cpu className="h-4 w-4 text-emerald-400" />
+            LLM Health Monitor
+          </h3>
+          <p className="text-[10px] text-zinc-500 mt-1">
+            Proxy: <code className="text-zinc-400">{piBansosUrl}</code>
+            {latest && (
+              <> • Last check: {new Date(latest.checkedAt).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })} ({latest.triggeredBy})</>
+            )}
+          </p>
+        </div>
+        <Button
+          onClick={handleTestNow}
+          disabled={testing}
+          size="sm"
+          variant="outline"
+          className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 gap-1.5 h-8 text-xs"
+        >
+          {testing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Zap className="h-3 w-3" />}
+          Test Now
+        </Button>
+      </div>
+
+      {/* Status banner */}
+      <div className={cn(
+        'rounded-lg border px-3 py-2.5 text-xs',
+        !latest
+          ? 'border-zinc-700 bg-zinc-900/40 text-zinc-400'
+          : !latest.proxyReachable
+            ? 'border-red-500/40 bg-red-500/10 text-red-300'
+            : allAlive
+              ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+              : anyAlive
+                ? 'border-amber-500/40 bg-amber-500/10 text-amber-300'
+                : 'border-red-500/40 bg-red-500/10 text-red-300'
+      )}>
+        {!latest && 'Belum ada data health check. Klik "Test Now" untuk memulai.'}
+        {latest && !latest.proxyReachable && '⚠️ pi-bansos proxy tidak reachable. Cek PM2: pm2 status pi-bansos'}
+        {latest && latest.proxyReachable && allAlive && `✓ Semua 3 model sehat (${latest.models.length}/3)`}
+        {latest && latest.proxyReachable && !allAlive && anyAlive && `⚠️ ${latest.models.filter(m => m.alive).length}/${latest.models.length} model sehat — beberapa fallback aktif`}
+        {latest && latest.proxyReachable && !anyAlive && '✗ Semua model mati. Cek pi-bansos logs: pm2 logs pi-bansos'}
+      </div>
+
+      {/* Model status cards */}
+      {latest && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          {latest.models.map((m) => (
+            <div key={m.modelId} className={cn(
+              'rounded-lg border p-3 space-y-1.5',
+              m.alive
+                ? 'border-emerald-500/30 bg-emerald-500/[0.04]'
+                : 'border-red-500/30 bg-red-500/[0.04]'
+            )}>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-white">{modelShortName(m.modelId)}</span>
+                <span className={cn(
+                  'w-2 h-2 rounded-full',
+                  m.alive ? 'bg-emerald-400' : 'bg-red-400'
+                )} />
+              </div>
+              <p className="text-[9px] text-zinc-500 truncate">{m.modelId}</p>
+              <p className="text-[10px] text-zinc-400">
+                {m.alive ? `${m.responseMs}ms` : m.errorType || 'dead'}
+              </p>
+              {m.alive && m.replySnippet && (
+                <p className="text-[9px] text-zinc-500 italic truncate">"{m.replySnippet}"</p>
+              )}
+              {!m.alive && m.errorMessage && (
+                <p className="text-[9px] text-red-400/70 truncate" title={m.errorMessage}>{m.errorMessage}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Fallback events summary */}
+      <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-xs font-medium text-zinc-200">Recent Fallback Events</h4>
+          <Badge variant="outline" className="text-[10px] border-white/10 text-zinc-400">
+            {fallbackCount24h} in 24h
+          </Badge>
+        </div>
+        {fallbackEvents.length === 0 ? (
+          <p className="text-[10px] text-zinc-600 text-center py-4">
+            Belum ada fallback. Semua request LLM pakai primary model.
+          </p>
+        ) : (
+          <div className="space-y-1 max-h-64 overflow-y-auto">
+            {fallbackEvents.slice(0, 20).map((ev, i) => (
+              <div key={i} className="text-[10px] flex items-start gap-2 p-1.5 rounded hover:bg-white/[0.02]">
+                <span className="text-zinc-600 shrink-0">
+                  {new Date(ev.timestamp).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'medium' })}
+                </span>
+                <span className="text-zinc-400 truncate flex-1">
+                  <code className="text-amber-400">{ev.endpoint}</code>{' → '}
+                  <code>{modelShortName(ev.fromModel)}</code>{' '}
+                  <span className="text-red-400">→</span>{' '}
+                  <code className="text-emerald-400">{modelShortName(ev.toModel)}</code>
+                  <span className="text-zinc-500 ml-2">({ev.errorType})</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <p className="text-[10px] text-zinc-600">
+        Cron daily 02:00 UTC+7 otomatis test semua 3 model. Bila ada model mati, akan tampil merah di sini.
+      </p>
     </div>
   );
 }
