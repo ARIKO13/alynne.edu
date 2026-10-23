@@ -181,12 +181,16 @@ async function groqPipeline(transcript: string, materialTexts: string[]): Promis
 async function gatewayPipeline(transcript: string, materialTexts: string[]): Promise<any | null> {
   // Step 1: transcript → JSON module structure
   console.log('[struct-gw] Step 1: transcript → JSON structure (' + MODELS.structure + ')...');
-  const maxInput = 12000;
+  // v-pi-bansos: bump maxInput from 12K to 200K chars. Nemotron (via callLLM
+  // inside callPolyvor) has 1M token context — easily absorbs a 1-hour
+  // lecture (~50-80K chars ≈ 15-25K tokens). Old 12K was for Polyvor's smaller
+  // context window; pi-bansos doesn't need it.
+  const maxInput = 200000;
   const truncated = transcript.length > maxInput ? transcript.slice(0, maxInput) + '\n[...dipotong...]' : transcript;
   const slideSection = buildSlideSection(materialTexts || []);
   const userContent = '--- TRANSCRIPT AUDIO ---\n' + truncated + '\n\n' + slideSection;
 
-  const structRaw = await callPolyvor(MODELS.structure, GATEWAY_STRUCT_PROMPT, userContent, { maxTokens: 6144, timeout: 120000 });
+  const structRaw = await callPolyvor(MODELS.structure, GATEWAY_STRUCT_PROMPT, userContent, { maxTokens: 6144, timeout: 180000 });
   if (!structRaw) return null;
 
   let moduleJson: any;

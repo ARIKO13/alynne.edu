@@ -1,9 +1,18 @@
 import type { APIRoute } from 'astro';
 import { localCorrect } from '@/lib/stt-dictionary';
+import { callLLM } from '@/lib/gateway-client';
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const QWEN_LOCAL = 'http://localhost:8000/llm/enhance';
 const QWEN_TIMEOUT_MS = 60_000;
+
+const ENHANCE_SYSTEM = `Perbaiki teks STT bahasa Indonesia. Teks sudah sebagian dikoreksi secara lokal.
+Tugasmu: perbaiki sisa kata yang tidak dikenali, tambahkan tanda baca, huruf kapital awal kalimat.
+Aturan KETAT:
+1. JANGAN ubah kata asing/teknis (English, istilah IT)
+2. JANGAN tambah atau hapus kata
+3. JAGA makna asli
+4. Kembalikan TEKS SAJA`;
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -22,7 +31,25 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    // ===== STEP 2: Try Groq (fast external) =====
+    // ===== STEP 2: pi-bansos primary (Cohere → Nemotron → Poolside via callLLM, task='fast') =====
+    const piResult = await callLLM('fast', ENHANCE_SYSTEM, local.text, {
+      maxTokens: 2048,
+      timeout: 30_000,
+      temperature: 0.1,
+      endpoint: 'stt/enhance',
+    });
+    if (piResult.content) {
+      const enhanced = piResult.content.trim();
+      return Response.json({
+        text: enhanced || addBasicPunctuation(local.text),
+        source: 'pi-bansos',
+        model: piResult.modelUsed,
+        stats: local.stats,
+      });
+    }
+    console.log('[Enhance] pi-bansos failed, falling back to Groq...');
+
+    // ===== STEP 3: Fall back to Groq =====
     const apiKey = process.env.GROQ_API_KEY;
     if (apiKey) {
       try {
@@ -37,16 +64,7 @@ export const POST: APIRoute = async ({ request }) => {
           body: JSON.stringify({
             model: 'qwen/qwen3.8-27b',
             messages: [
-              {
-                role: 'system',
-                content: `Perbaiki teks STT bahasa Indonesia. Teks sudah sebagian dikoreksi secara lokal.
-Tugasmu: perbaiki sisa kata yang tidak dikenali, tambahkan tanda baca, huruf kapital awal kalimat.
-Aturan KETAT:
-1. JANGAN ubah kata asing/teknis (English, istilah IT)
-2. JANGAN tambah atau hapus kata
-3. JAGA makna asli
-4. Kembalikan TEKS SAJA`,
-              },
+              { role: 'system', content: ENHANCE_SYSTEM },
               { role: 'user', content: local.text },
             ],
             temperature: 0.1,
@@ -71,7 +89,7 @@ Aturan KETAT:
       }
     }
 
-    // ===== STEP 3: Fallback to Qwen local =====
+    // ===== STEP 4: Fallback to Qwen local =====
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), QWEN_TIMEOUT_MS);

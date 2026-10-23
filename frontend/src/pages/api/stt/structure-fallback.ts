@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { callLLM as callLLMPiBansos, extractJson as extractJsonGlobal } from '@/lib/gateway-client';
 
 const GATEWAY_URL = 'https://gateway.polyvorlabs.com/v1/chat/completions';
 const FALLBACK_MODELS = ['cx/gpt-5.6-sol', 'openai/gpt-oss-120b'];
@@ -153,6 +154,40 @@ export const POST: APIRoute = async ({ request }) => {
     if (!transcript?.trim()) return Response.json({ error: 'Transcript kosong' }, { status: 400 });
     if (!process.env.GATEWAY_API_KEY) { console.error('[structure-fallback] GATEWAY_API_KEY not found'); return Response.json({ error: 'no-key' }); }
 
+    // ═══════════════════════════════════════════════════════
+    // PATH 0 (NEW v-pi-bansos): Single full-transcript call via pi-bansos
+    // Nemotron 1M context can absorb the WHOLE lecture in one call. Skips
+    // the multi-chunk pipeline entirely (no TPM_DELAY_MS waits = ~65s saved
+    // per chunk). Falls through to chunked Polyvor pipeline if pi-bansos
+    // returns invalid JSON or all 3 models fail.
+    // ═══════════════════════════════════════════════════════
+    console.log('[structure-fallback] PATH 0: trying pi-bansos with full transcript (' + transcript.length + ' chars)...');
+    const slideSection = buildSlideSection(materialTexts || []);
+    const piUserPrompt = '--- TRANSCRIPT AUDIO ---\n' + transcript + '\n\n' + slideSection;
+    const piResult = await callLLMPiBansos('long', SYSTEM_PROMPT, piUserPrompt, {
+      maxTokens: MAX_OUTPUT_TOKENS,
+      timeout: 180_000,
+      endpoint: 'structure-fallback/pi-bansos-full',
+    });
+    if (piResult.content) {
+      try {
+        const parsed = JSON.parse(extractJsonGlobal(piResult.content));
+        if (parsed?.title && Array.isArray(parsed.kegiatanPembelajaran) && parsed.kegiatanPembelajaran.length > 0) {
+          console.log('[structure-fallback] PATH 0 SUCCESS: ' + parsed.kegiatanPembelajaran.length + ' kegiatan (model: ' + piResult.modelUsed + ')');
+          return Response.json({ ...parsed, source: 'pi-bansos' });
+        }
+        console.error('[structure-fallback] PATH 0: invalid structure, falling through to chunked pipeline');
+      } catch (e) {
+        console.error('[structure-fallback] PATH 0: JSON parse failed, falling through:', e);
+      }
+    } else {
+      console.warn('[structure-fallback] PATH 0: pi-bansos returned null, falling through to chunked pipeline');
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // PATH 1 (LEGACY): Multi-chunk Polyvor Gateway pipeline
+    // Kept as fallback when pi-bansos fails. Has ~65s TPM wait per chunk.
+    // ═══════════════════════════════════════════════════════
     const chunks = splitTranscriptIntoChunks(transcript, CHUNK_SIZE);
     const totalChunks = chunks.length;
     console.log('[structure-fallback] transcript:' + transcript.length + ' chars -> ' + totalChunks + ' chunk(s)');

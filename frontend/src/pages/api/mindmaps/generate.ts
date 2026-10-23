@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
+import { callLLM, extractJson } from '@/lib/gateway-client';
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const MODELS = ['llama-3.1-8b-instant', 'llama3-70b-8192'];
+const GROQ_MODELS = ['llama-3.1-8b-instant', 'llama3-70b-8192'];
 
 const SYSTEM_PROMPT = `Kamu adalah AI ahli mind mapping. TUGASMU: analisa teks transcript dan buat struktur mind map dalam JSON.
 
@@ -24,17 +25,10 @@ const GATEWAY_URL = 'https://gateway.polyvorlabs.com/v1/chat/completions';
 const GATEWAY_KEY = process.env.GATEWAY_API_KEY || '';
 const GATEWAY_MODEL = 'groq/llama-3.1-8b-instant';
 
-function extractJson(text: string): string {
-  const cb = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (cb) return cb[1].trim();
-  const m = text.match(/\{[\s\S]*\}/);
-  return m ? m[0] : text;
-}
-
 function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
 
 async function callGroq(systemPrompt: string, userPrompt: string): Promise<string | null> {
-  for (const model of MODELS) {
+  for (const model of GROQ_MODELS) {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         if (attempt > 0) await sleep(15000);
@@ -92,10 +86,25 @@ export const POST: APIRoute = async ({ request }) => {
 
     const userPrompt = 'Analisa teks berikut dan buat mind map:\n\n' + inputText;
 
-    console.log('[mindmap-gen] Trying Groq API...');
-    let raw = await callGroq(SYSTEM_PROMPT, userPrompt);
-    let source = 'groq';
+    // ===== Step 1: pi-bansos primary (Cohere → Nemotron → Poolside via callLLM) =====
+    console.log('[mindmap-gen] Trying pi-bansos first...');
+    const piResult = await callLLM('structured-json', SYSTEM_PROMPT, userPrompt, {
+      maxTokens: 2048,
+      timeout: 60_000,
+      temperature: 0.3,
+      endpoint: 'mindmaps/generate',
+    });
+    let raw: string | null = piResult.content;
+    let source = 'pi-bansos';
 
+    // ===== Step 2: Fall back to Groq if pi-bansos fails =====
+    if (!raw) {
+      console.log('[mindmap-gen] pi-bansos failed, trying Groq...');
+      raw = await callGroq(SYSTEM_PROMPT, userPrompt);
+      if (raw) source = 'groq';
+    }
+
+    // ===== Step 3: Last resort — Gateway =====
     if (!raw) {
       console.log('[mindmap-gen] Groq failed, trying Gateway API...');
       const gw = await callGateway(SYSTEM_PROMPT, userPrompt);
@@ -104,7 +113,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     if (!raw) {
-      return Response.json({ error: 'Gagal menghasilkan mind map. Coba lagi.' }, { status: 500 });
+      return Response.json({ error: 'Gagal menghasilkan mind map (pi-bansos + Groq + Gateway all failed). Coba lagi.' }, { status: 500 });
     }
 
     try {

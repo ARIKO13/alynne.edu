@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { callLLM, type LLMTask } from '@/lib/gateway-client';
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const QWEN_LOCAL = 'http://localhost:8000/llm/chat';
@@ -13,20 +14,52 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
     const messages: ChatMessage[] = body.messages || [];
-    const model = body.model || 'qwen/qwen3.8-27b';
     const temperature = body.temperature ?? 0.7;
     const maxTokens = body.max_tokens || 2048;
+    const task: LLMTask = body.task || 'conversation';
 
     if (!messages.length) {
       return Response.json({ error: 'messages required' }, { status: 400 });
     }
 
-    // ===== Step 1: Try Groq first (fast, external) =====
+    // ===== Step 1: Try pi-bansos first (free, local proxy on VPS) =====
+    // callLLM has internal fallback chain (Cohere → Nemotron → Poolside)
+    // depending on task type. If all 3 fail, falls through to Groq below.
+    const systemMsg = messages.find(m => m.role === 'system')?.content || '';
+    const userMsgs = messages.filter(m => m.role !== 'system');
+    const userContent = userMsgs.map(m => `${m.role}: ${m.content}`).join('\n\n');
+
+    const piResult = await callLLM(task, systemMsg, userContent, {
+      maxTokens,
+      timeout: 60_000,
+      temperature,
+      endpoint: 'ai/chat',
+    });
+
+    if (piResult.content) {
+      return Response.json({
+        id: `pi-bansos-${Date.now()}`,
+        object: 'chat.completion',
+        choices: [{
+          index: 0,
+          message: { role: 'assistant', content: piResult.content },
+          finish_reason: 'stop',
+        }],
+        usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+        provider: 'pi-bansos',
+        model: piResult.modelUsed,
+        fallbacksTriggered: piResult.fallbacksTriggered.length,
+      });
+    }
+    console.log(`[ai/chat] pi-bansos all 3 models failed, falling back to Groq...`);
+
+    // ===== Step 2: Fallback to Groq (rate-limited, but available) =====
     const apiKey = process.env.GROQ_API_KEY;
+    const model = body.model || 'qwen/qwen3.8-27b';
     if (apiKey) {
       try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 30_000); // 30s timeout
+        const timeout = setTimeout(() => controller.abort(), 30_000);
         const res = await fetch(GROQ_URL, {
           method: 'POST',
           headers: {
@@ -45,14 +78,13 @@ export const POST: APIRoute = async ({ request }) => {
             provider: 'groq',
           });
         }
-        // If 429 (rate limit) or 5xx, fall through to Qwen
         console.log(`[ai/chat] Groq ${res.status}, falling back to Qwen...`);
       } catch (e) {
         console.log(`[ai/chat] Groq failed: ${e instanceof Error ? e.message : 'unknown'}, trying Qwen...`);
       }
     }
 
-    // ===== Step 2: Fallback to Qwen local =====
+    // ===== Step 3: Fallback to Qwen local =====
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), QWEN_TIMEOUT_MS);
@@ -81,7 +113,7 @@ export const POST: APIRoute = async ({ request }) => {
       console.log(`[ai/chat] Qwen failed: ${e instanceof Error ? e.message : 'unknown'}, trying Gateway...`);
     }
 
-    // ===== Step 3: Try Gateway API (Polyvor Labs) =====
+    // ===== Step 4: Last resort — Gateway API (Polyvor Labs) =====
     const gwKey = process.env.GATEWAY_API_KEY;
     if (gwKey) {
       try {
@@ -108,7 +140,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     return Response.json(
-      { error: 'Semua AI provider gagal (Groq rate-limited, Qwen offline, Gateway down). Coba lagi nanti.' },
+      { error: 'Semua AI provider gagal (pi-bansos down, Groq rate-limited, Qwen offline, Gateway down). Coba lagi nanti.' },
       { status: 503 }
     );
   } catch (e) {

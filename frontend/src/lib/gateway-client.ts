@@ -206,14 +206,30 @@ export async function callLLM(
   return { content: null, modelUsed: null, fallbacksTriggered };
 }
 
-// ── LEGACY: callPolyvor (still used by structure-module Tier-1) ────
+// ── LEGACY: callPolyvor — now routes through callLLM (pi-bansos) first ──
+// Updated v-pi-bansos-migration: try pi-bansos callLLM('long') first; only
+// fall through to Polyvor gateway if pi-bansos fails. This auto-migrates
+// call sites J, K (structure-module Tier-1) + any other callPolyvor caller
+// without needing per-caller code changes.
 export async function callPolyvor(model: string, systemPrompt: string, userContent: string, opts?: { maxTokens?: number; timeout?: number }): Promise<string | null> {
+  // ── Step 1: try pi-bansos first (task='long' → Nemotron primary 1M ctx) ──
+  const piResult = await callLLM('long', systemPrompt, userContent, {
+    maxTokens: opts?.maxTokens ?? 4096,
+    timeout: opts?.timeout ?? 120_000,
+    endpoint: `callPolyvor/${model}`,
+  });
+  if (piResult.content) {
+    return piResult.content;
+  }
+  console.warn(`[gateway] pi-bansos failed for ${model}, falling back to Polyvor Gateway...`);
+
+  // ── Step 2: Polyvor Gateway (legacy path, kept as ultimate fallback) ──
   const maxTokens = opts?.maxTokens ?? 4096;
   const timeout = opts?.timeout ?? 120_000;
   const key = process.env.GATEWAY_API_KEY || '';
 
   if (!key) {
-    console.error('[gateway] No GATEWAY_API_KEY set');
+    console.error('[gateway] No GATEWAY_API_KEY set (and pi-bansos already failed)');
     return null;
   }
 

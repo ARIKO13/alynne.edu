@@ -145,12 +145,13 @@ function sanitizeModuleData(d: any): PdfModuleData {
 // ── DIRECT GATEWAY FALLBACK (client → gateway, no server proxy needed) ──
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-const GW_KEY = 'gw_sk_8754bb9017cfe3124c9a265d22634a0da2f7043b7edaf2317ece746058b96259';
-const GW_URL = 'https://gateway.polyvorlabs.com/v1/chat/completions';
-
-// Model routing: deteksi konten coding/teknis → Codex, else Claude Sonnet 5
-const GW_MODEL_DEFAULT = 'cx/gpt-5.6-sol';
-const GW_MODEL_CODE = 'cx/gpt-5.6-terra';
+// v-pi-bansos-migration: removed hardcoded GW_KEY + GW_URL constants.
+// PDF module generation now goes through /api/stt/structure-direct server
+// endpoint, which routes to pi-bansos via callLLM (Poolside primary for
+// code content, Nemotron primary for normal content). Fallback chain
+// Cohere/Nemotron/Poolside handled inside callLLM. No client-side key
+// exposure = security issue fixed (was P0).
+// Model routing still happens server-side via CODE_KEYWORDS regex.
 const CODE_KEYWORDS = /\b(?:function|class|import |export |const |let |var |return |async |await|useState|useEffect|def |print\(|printf|console\.log|git |npm |docker |api|endpoint|database|sql|query|html|css|javascript|typescript|python|java\b|react|vue|angular|node\.?js|express|flask|django|laravel)\b/i;
 
 const GW_COMBINED_PROMPT = `Kamu mengubah materi kuliah menjadi modul catatan pembelajaran terstruktur dalam Bahasa Indonesia formal.
@@ -234,131 +235,63 @@ function extractJsonFromLLM(text: string): string {
   return m ? m[0] : text;
 }
 
-function pickModel(transcript: string): string {
-  return CODE_KEYWORDS.test(transcript) ? GW_MODEL_CODE : GW_MODEL_DEFAULT;
+function pickModel(transcript: string): 'code' | 'long' {
+  return CODE_KEYWORDS.test(transcript) ? 'code' : 'long';
 }
 
 async function tryGatewayFallback(
   transcript: string, materialTexts: string[], dateStr: string, totalChars: number,
 ): Promise<PdfModuleData | null> {
   const cleaned = cleanTranscript(transcript);
-  const matSec = materialTexts.length > 0
-    ? '\n\nMATERI PENDUKUNG:\n' + materialTexts.map((t, i) => `--- MATERI SLIDE ${i + 1} ---\n${t.slice(0, 5000)}`).join('\n\n')
-    : '';
   console.log(`[DEBUG] Panjang transkrip yang dikirim ke LLM: ${cleaned.length} karakter`);
-  const userMsg = `Ubah transkrip ini jadi modul catatan pembelajaran.${matSec}\n\n--- TRANSCRIPT AUDIO ---\n${cleaned}`;
 
-  let model = pickModel(cleaned);
-  console.log(`[gateway] Trying model: ${model} (transcript: ${cleaned.length} chars)`);
+  // v-pi-bansos-migration: call NEW server endpoint /api/stt/structure-direct
+  // instead of direct Polyvor fetch with hardcoded key. Server endpoint routes
+  // to pi-bansos via callLLM (Poolside primary for code, Nemotron for normal).
+  const task = pickModel(cleaned);
+  console.log(`[structure-direct] Calling server endpoint (task=${task}, transcript: ${cleaned.length} chars)...`);
 
   try {
-    const r = await fetch(GW_URL, {
+    const r = await fetch('/api/stt/structure-direct', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${GW_KEY}`, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: GW_COMBINED_PROMPT },
-          { role: 'user', content: userMsg },
-        ],
-        temperature: 0.2,
-        max_tokens: 24000,
+        transcript: cleaned,
+        materialTexts,
+        dateStr,
+        totalChars,
       }),
       signal: AbortSignal.timeout(180_000),
     });
 
-    // ── 503: model down → coba model lain sebelum fallback local ──
-    if (r.status === 503) {
-      const altModel = model === GW_MODEL_DEFAULT ? GW_MODEL_CODE : GW_MODEL_DEFAULT;
-      console.error(`❌ [gateway] ${model} returned 503 (service unavailable). Retrying with ${altModel}...`);
-      try {
-        const r2 = await fetch(GW_URL, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${GW_KEY}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: altModel,
-            messages: [
-              { role: 'system', content: GW_COMBINED_PROMPT },
-              { role: 'user', content: userMsg },
-            ],
-            temperature: 0.2,
-            max_tokens: 24000,
-          }),
-          signal: AbortSignal.timeout(180_000),
-        });
-        if (!r2.ok) {
-          console.error(`❌ [gateway] ${altModel} also failed with HTTP ${r2.status} - returning null`);
-          return null;
-        }
-        const d2 = await r2.json();
-        const raw2 = d2.choices?.[0]?.message?.content || '';
-        if (!raw2) {
-          console.error('❌ [gateway] Empty response from fallback model', altModel);
-          return null;
-        }
-        const s2 = JSON.parse(extractJsonFromLLM(raw2));
-        if (!s2.title || !Array.isArray(s2.kegiatanPembelajaran) || s2.kegiatanPembelajaran.length === 0) {
-          console.error('❌ [gateway] Invalid structure from fallback model', altModel);
-          return null;
-        }
-        console.log(`✅ [gateway] OK with ${altModel} after 503 retry (${s2.kegiatanPembelajaran.length} kegiatan)`);
-        return {
-          title: String(s2.title),
-          identitas: { mataPelajaran: String(s2.identitas?.mataPelajaran || 'Umum'), kelas: String(s2.identitas?.kelas || '-') },
-          pendahuluan: String(s2.pendahuluan || ''),
-          tujuanPembelajaran: Array.isArray(s2.tujuanPembelajaran) ? s2.tujuanPembelajaran.map(String) : [],
-          kegiatanPembelajaran: s2.kegiatanPembelajaran.map(normalizeKegiatan),
-          rangkumanAkhir: Array.isArray(s2.rangkumanAkhir) ? s2.rangkumanAkhir.map(String) : [],
-          entitasPenting: normalizeEntitasPenting(s2.entitasPenting),
-          date: dateStr, totalChars, materialCount: materialTexts.length, branding: 'ALYNNE.EDU',
-        };
-      } catch (retryErr) {
-        console.error(`❌ [gateway] ${altModel} retry also failed:`, retryErr);
-        return null;
-      }
-    }
-
     if (!r.ok) {
-      console.error(`❌ [gateway] ${model} HTTP ${r.status} - returning null`);
+      console.error(`❌ [structure-direct] HTTP ${r.status} - returning null`);
       return null;
     }
 
-    const d = await r.json();
-    const raw = d.choices?.[0]?.message?.content || '';
-    if (!raw) {
-      console.error('❌ [gateway] Empty response from', model);
+    const d = await r.json() as any;
+    if (d.error) {
+      console.error(`❌ [structure-direct] endpoint error: ${d.error}`);
+      return null;
+    }
+    if (!d.title || !Array.isArray(d.kegiatanPembelajaran) || d.kegiatanPembelajaran.length === 0) {
+      console.error('❌ [structure-direct] Invalid structure from endpoint');
       return null;
     }
 
-    let s;
-    try {
-      s = JSON.parse(extractJsonFromLLM(raw));
-    } catch (parseErr) {
-      console.error('❌ [gateway] JSON parse failed from', model, ':', parseErr);
-      return null;
-    }
-
-    if (!s.title || !Array.isArray(s.kegiatanPembelajaran) || s.kegiatanPembelajaran.length === 0) {
-      console.error('❌ [gateway] Invalid structure from', model, ':', JSON.stringify({
-        hasTitle: !!s.title,
-        kegCount: s.kegiatanPembelajaran?.length,
-      }));
-      return null;
-    }
-
-    console.log(`✅ [gateway] OK with ${model} (${s.kegiatanPembelajaran.length} kegiatan)`);
+    console.log(`✅ [structure-direct] OK (${d.kegiatanPembelajaran.length} kegiatan, model: ${d.modelUsed}, fallbacks: ${d.fallbacksTriggered})`);
     return {
-      title: String(s.title),
-      identitas: { mataPelajaran: String(s.identitas?.mataPelajaran || 'Umum'), kelas: String(s.identitas?.kelas || '-') },
-      pendahuluan: String(s.pendahuluan || ''),
-      tujuanPembelajaran: Array.isArray(s.tujuanPembelajaran) ? s.tujuanPembelajaran.map(String) : [],
-      kegiatanPembelajaran: s.kegiatanPembelajaran.map(normalizeKegiatan),
-      rangkumanAkhir: Array.isArray(s.rangkumanAkhir) ? s.rangkumanAkhir.map(String) : [],
-      entitasPenting: normalizeEntitasPenting(s.entitasPenting),
+      title: String(d.title),
+      identitas: { mataPelajaran: String(d.identitas?.mataPelajaran || 'Umum'), kelas: String(d.identitas?.kelas || '-') },
+      pendahuluan: String(d.pendahuluan || ''),
+      tujuanPembelajaran: Array.isArray(d.tujuanPembelajaran) ? d.tujuanPembelajaran.map(String) : [],
+      kegiatanPembelajaran: d.kegiatanPembelajaran.map(normalizeKegiatan),
+      rangkumanAkhir: Array.isArray(d.rangkumanAkhir) ? d.rangkumanAkhir.map(String) : [],
+      entitasPenting: normalizeEntitasPenting(d.entitasPenting),
       date: dateStr, totalChars, materialCount: materialTexts.length, branding: 'ALYNNE.EDU',
     };
   } catch (err) {
-    console.error(`❌ [gateway] ${model} unhandled exception:`, err);
+    console.error(`❌ [structure-direct] unhandled exception:`, err);
     return null;
   }
 }
