@@ -181,7 +181,35 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     setStage('splitting');
     setProgress(10);
     await sleep(300);
-    const split = splitTranscriptIntoChapters(transcript);
+
+    // v-llm-split: try LLM-powered chapter splitting FIRST (proper titles
+    // + cleaned content). Falls back to regex splitTranscriptIntoChapters
+    // if pi-bansos fails or returns invalid data.
+    let split: Chapter[];
+    try {
+      const res = await fetch('/api/stt/split-chapters', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transcript, maxChapters: 15 }),
+        signal: AbortSignal.timeout(180_000),
+      });
+      if (res.ok) {
+        const data = await res.json() as { chapters?: Chapter[]; error?: string };
+        if (data.chapters && data.chapters.length > 0) {
+          split = data.chapters;
+          console.log(`[Pipeline] LLM split: ${split.length} chapters (model: ${(data as any).modelUsed})`);
+        } else {
+          console.warn('[Pipeline] LLM split returned no chapters, falling back to regex');
+          split = splitTranscriptIntoChapters(transcript);
+        }
+      } else {
+        console.warn('[Pipeline] LLM split HTTP', res.status, ', falling back to regex');
+        split = splitTranscriptIntoChapters(transcript);
+      }
+    } catch (err) {
+      console.warn('[Pipeline] LLM split failed, falling back to regex:', err);
+      split = splitTranscriptIntoChapters(transcript);
+    }
     setChapters(split);
     setProgress(25);
 
