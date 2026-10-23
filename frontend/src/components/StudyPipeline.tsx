@@ -326,45 +326,78 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           if (now - lastLegacyFaceCheck > 500) {
             lastLegacyFaceCheck = now;
 
-            // Sample center 50% of frame (where face is when sitting at desk)
+            // Sample center 50% of frame, split into TOP-HALF and BOTTOM-HALF
+            // v17: gaze direction via top/bottom white ratio split.
+            // Looking down (eyes only, head straight) → pupil drops →
+            // sclera (white) revealed at TOP of eye → top half has more white.
+            // Looking forward → white balanced top/bottom (around pupil).
             let whiteCount = 0;
             let skinCount = 0;
             let totalPixels = 0;
+            let topWhite = 0, bottomWhite = 0;
+            let topTotal = 0, bottomTotal = 0;
             // Center area: x=40-120 (of 160), y=20-80 (of 120)
+            // TOP-HALF: y=20-50 (forehead + upper eyes)
+            // BOTTOM-HALF: y=50-80 (lower eyes + nose + mouth)
             for (let y = 20; y < 80; y += 2) {
               for (let x = 40; x < 120; x += 2) {
                 const idx = (y * 160 + x) * 4;
                 const r = frame[idx], g = frame[idx + 1], b = frame[idx + 2];
                 totalPixels++;
                 // Sclera = bright white
-                if (r > 180 && g > 180 && b > 180) whiteCount++;
+                const isWhite = r > 180 && g > 180 && b > 180;
+                if (isWhite) whiteCount++;
                 // Skin tone (for face presence check)
                 if (r > 80 && g > 40 && b > 20 && r > g && r > b && (r - g) > 15 && r < 250) skinCount++;
+                // Track top vs bottom for gaze direction
+                if (y < 50) {
+                  topTotal++;
+                  if (isWhite) topWhite++;
+                } else {
+                  bottomTotal++;
+                  if (isWhite) bottomWhite++;
+                }
               }
             }
             const whiteRatio = whiteCount / totalPixels;
             const skinRatio = skinCount / totalPixels;
-            
+
+            // v17: Gaze direction via top/bottom white ratio.
+            // gazeDownRatio > 0.65 = white concentrated at TOP = looking down (nunduk)
+            // gazeDownRatio < 0.35 = white at BOTTOM = looking up (rare)
+            // 0.4-0.6 = balanced = looking forward
+            const totalWhite = topWhite + bottomWhite;
+            const gazeDownRatio = totalWhite > 3
+              ? topWhite / totalWhite
+              : 0.5;  // not enough white to determine
+            const lookingDown = totalWhite > 3 && gazeDownRatio > 0.65;
+            const lookingUp = totalWhite > 3 && gazeDownRatio < 0.35;
+
             // Face present if some skin tone detected
             legacyFacePresent = skinRatio > 0.05;
-            // v15: Tighten sclera threshold — 0.01 was too permissive (any 1% bright
-            // pixel = "attentive"). Now require 3%+ white pixels to confirm eyes-open,
-            // looking forward. Below 3% but face present → looking down (nunduk).
-            legacyFaceAttentive = legacyFacePresent && whiteRatio > 0.03;
-            
+            // v17: Attentive = face present + sclera visible + NOT looking down
+            legacyFaceAttentive = legacyFacePresent && whiteRatio > 0.03 && !lookingDown;
+
             console.log('[Focus] bright:', avgBrightness.toFixed(1),
               'white:', whiteRatio.toFixed(3),
+              'topW:', topWhite, 'botW:', bottomWhite,
+              'gaze↓:', gazeDownRatio.toFixed(2),
               'skin:', skinRatio.toFixed(3),
               'motion:', diff.toFixed(1),
-              legacyFaceAttentive ? '→ attentive' : '→ NUNDUK');
+              lookingDown ? '→ NUNDUK (gaze down)' : (legacyFaceAttentive ? '→ attentive' : '→ ?'));
           }
 
           if (legacyFacePresent && legacyFaceAttentive) {
             baseScore = 75;  // v16: was 60 — boost true fokus
             currentPosture = 'attentive';
+          } else if (legacyFacePresent && lookingDown) {
+            // v17: Face present + gaze directed down = nunduk
+            // (looking at phone/lap with head straight, eyes only)
+            baseScore = 35;  // v17: specific penalty for gaze down
+            currentPosture = 'nunduk';
           } else if (legacyFacePresent) {
-            // Face present but no sclera = looking down (nunduk)
-            baseScore = 45;  // v16: was 25 — too punishing, made user feel broken
+            // Face present but no sclera = eyes closed or looking away
+            baseScore = 45;
             currentPosture = 'nunduk';
           } else if (avgBrightness > 5 && diff > 0.5) {
             // No face detected BUT camera on + motion = probably at desk
