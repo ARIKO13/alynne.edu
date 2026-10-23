@@ -309,7 +309,9 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           brightnessCount++;
         }
         const avgBrightness = brightnessSum / brightnessCount;
-        const cameraCovered = avgBrightness < 15;
+        // v16: Lower threshold (was 15). Only truly black camera = covered.
+        // Old threshold made dim lighting trigger cameraCovered → score 0%.
+        const cameraCovered = avgBrightness < 5;
 
         let baseScore = 0;
         let currentPosture: 'attentive' | 'nunduk' | 'away' | 'ngantuk' = 'away';
@@ -350,38 +352,45 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
             // looking forward. Below 3% but face present → looking down (nunduk).
             legacyFaceAttentive = legacyFacePresent && whiteRatio > 0.03;
             
-            console.log('[Focus] white:', whiteRatio.toFixed(3),
+            console.log('[Focus] bright:', avgBrightness.toFixed(1),
+              'white:', whiteRatio.toFixed(3),
               'skin:', skinRatio.toFixed(3),
+              'motion:', diff.toFixed(1),
               legacyFaceAttentive ? '→ attentive' : '→ NUNDUK');
           }
 
           if (legacyFacePresent && legacyFaceAttentive) {
-            baseScore = 60;
+            baseScore = 75;  // v16: was 60 — boost true fokus
             currentPosture = 'attentive';
           } else if (legacyFacePresent) {
-            baseScore = 25;
+            // Face present but no sclera = looking down (nunduk)
+            baseScore = 45;  // v16: was 25 — too punishing, made user feel broken
             currentPosture = 'nunduk';
-          } else if (avgBrightness > 15 && diff > 0.5) {
-            // No face detected BUT camera is on + there's motion
-            // → probably at desk, FaceDetector just failed. Give moderate score.
-            baseScore = 35;
+          } else if (avgBrightness > 5 && diff > 0.5) {
+            // No face detected BUT camera on + motion = probably at desk
+            baseScore = 55;  // v16: was 35 — boost, detector just failed
             currentPosture = 'attentive';
-          } else if (avgBrightness > 15) {
+          } else if (avgBrightness > 5) {
             // Camera on but no motion — passive (reading?)
-            baseScore = 20;
+            baseScore = 50;  // v16: was 20 — too low, made user feel broken
             currentPosture = 'attentive';
           } else {
             baseScore = 0;
             currentPosture = 'away';
           }
+
+          // v16: Penalty for very dim lighting (but not zero)
+          if (avgBrightness < 30 && avgBrightness >= 5) {
+            baseScore = Math.max(20, baseScore - 15);
+          }
         }
 
-        // Motion bonus
-        let motionBonus = 10;
+        // Motion bonus — v16: more forgiving (don't zero out score for motion)
+        let motionBonus = 15;
         if (diff > 1 && diff < 15) {
-          motionBonus = 25;
+          motionBonus = 20;  // active (typing/reading)
         } else if (diff > 30) {
-          motionBonus = 0;
+          motionBonus = -5;  // big motion = distracted (but don't zero out)
         }
 
         const score = Math.min(100, baseScore + motionBonus);
@@ -411,7 +420,10 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
             setShowWarning(false);
           }
         }
-      } catch {}
+      } catch (e) {
+        // v16: log errors instead of silently swallowing
+        console.error('[Focus] check error:', e);
+      }
       animRef.current = requestAnimationFrame(check);
     };
     check();
