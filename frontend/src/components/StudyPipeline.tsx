@@ -327,18 +327,22 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
             lastLegacyFaceCheck = now;
 
             // Sample center 50% of frame, split into TOP-HALF and BOTTOM-HALF
-            // v17: gaze direction via top/bottom white ratio split.
-            // Looking down (eyes only, head straight) → pupil drops →
-            // sclera (white) revealed at TOP of eye → top half has more white.
-            // Looking forward → white balanced top/bottom (around pupil).
+            // v18: detect "white shirt at bottom" — common false positive for
+            // sclera. When user wears white shirt + bows head, camera sees:
+            //   TOP: hair (dark, no skin, no white)
+            //   BOTTOM: shirt collar (very white, >180 RGB)
+            // Old v17 counted shirt white as sclera → bottomWhite high →
+            // gazeDownRatio low → "not lookingDown" → "attentive" → Fokus 91%.
+            // Bug. v18 excludes shirt white from sclera count.
             let whiteCount = 0;
             let skinCount = 0;
             let totalPixels = 0;
             let topWhite = 0, bottomWhite = 0;
+            let topSkin = 0, bottomSkin = 0;
             let topTotal = 0, bottomTotal = 0;
             // Center area: x=40-120 (of 160), y=20-80 (of 120)
             // TOP-HALF: y=20-50 (forehead + upper eyes)
-            // BOTTOM-HALF: y=50-80 (lower eyes + nose + mouth)
+            // BOTTOM-HALF: y=50-80 (lower eyes + nose + mouth + shirt collar)
             for (let y = 20; y < 80; y += 2) {
               for (let x = 40; x < 120; x += 2) {
                 const idx = (y * 160 + x) * 4;
@@ -348,48 +352,74 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                 const isWhite = r > 180 && g > 180 && b > 180;
                 if (isWhite) whiteCount++;
                 // Skin tone (for face presence check)
-                if (r > 80 && g > 40 && b > 20 && r > g && r > b && (r - g) > 15 && r < 250) skinCount++;
-                // Track top vs bottom for gaze direction
+                const isSkin = r > 80 && g > 40 && b > 20 && r > g && r > b && (r - g) > 15 && r < 250;
+                if (isSkin) skinCount++;
+                // Track top vs bottom for gaze direction + shirt detection
                 if (y < 50) {
                   topTotal++;
                   if (isWhite) topWhite++;
+                  if (isSkin) topSkin++;
                 } else {
                   bottomTotal++;
                   if (isWhite) bottomWhite++;
+                  if (isSkin) bottomSkin++;
                 }
               }
             }
             const whiteRatio = whiteCount / totalPixels;
             const skinRatio = skinCount / totalPixels;
+            const topSkinRatio = topSkin / topTotal;
+            const bottomSkinRatio = bottomSkin / bottomTotal;
+            const bottomWhiteRatio = bottomWhite / bottomTotal;
 
-            // v17: Gaze direction via top/bottom white ratio.
-            // gazeDownRatio > 0.65 = white concentrated at TOP = looking down (nunduk)
-            // gazeDownRatio < 0.35 = white at BOTTOM = looking up (rare)
-            // 0.4-0.6 = balanced = looking forward
-            const totalWhite = topWhite + bottomWhite;
-            const gazeDownRatio = totalWhite > 3
-              ? topWhite / totalWhite
-              : 0.5;  // not enough white to determine
-            const lookingDown = totalWhite > 3 && gazeDownRatio > 0.65;
-            const lookingUp = totalWhite > 3 && gazeDownRatio < 0.35;
+            // v18: SHIRT DETECTION. If bottom half is mostly white (>20%), it's
+            // likely a shirt collar, not sclera. Exclude from sclera count.
+            const isShirtDetected = bottomWhiteRatio > 0.20;
+            // effectiveWhite = sclera-only count (excludes shirt)
+            const effectiveWhite = isShirtDetected ? topWhite : (topWhite + bottomWhite);
+            const effectiveWhiteRatio = effectiveWhite / totalPixels;
+
+            // v17: Gaze direction via top/bottom white ratio (using EFFECTIVE white)
+            // v18: Use effectiveWhite (shirt-excluded) for gaze calculation.
+            const gazeDownRatio = effectiveWhite > 3
+              ? topWhite / effectiveWhite
+              : 0.5;
+            const lookingDown = effectiveWhite > 3 && gazeDownRatio > 0.65;
+
+            // v18: HEAD BOWED detection. If top half has very low skin ratio
+            // (< 2%) but overall skin is detected, top of frame is hair (not face).
+            // That means head is bowed forward → no eyes visible → nunduk.
+            const headBowedDown = skinRatio > 0.05 && topSkinRatio < 0.02;
 
             // Face present if some skin tone detected
             legacyFacePresent = skinRatio > 0.05;
-            // v17: Attentive = face present + sclera visible + NOT looking down
-            legacyFaceAttentive = legacyFacePresent && whiteRatio > 0.03 && !lookingDown;
+            // v18: Attentive = face + REAL sclera (not shirt) + NOT lookingDown
+            //   + NOT headBowedDown
+            legacyFaceAttentive = legacyFacePresent
+              && effectiveWhiteRatio > 0.02
+              && !lookingDown
+              && !headBowedDown;
 
             console.log('[Focus] bright:', avgBrightness.toFixed(1),
-              'white:', whiteRatio.toFixed(3),
+              'effWhite:', effectiveWhiteRatio.toFixed(3),
               'topW:', topWhite, 'botW:', bottomWhite,
+              isShirtDetected ? 'SHIRT!' : '',
+              'topSkin:', topSkinRatio.toFixed(3),
               'gaze↓:', gazeDownRatio.toFixed(2),
               'skin:', skinRatio.toFixed(3),
               'motion:', diff.toFixed(1),
-              lookingDown ? '→ NUNDUK (gaze down)' : (legacyFaceAttentive ? '→ attentive' : '→ ?'));
+              headBowedDown ? '→ NUNDUK (head bowed)'
+                : (lookingDown ? '→ NUNDUK (gaze down)'
+                : (legacyFaceAttentive ? '→ attentive' : '→ ?')));
           }
 
           if (legacyFacePresent && legacyFaceAttentive) {
             baseScore = 75;  // v16: was 60 — boost true fokus
             currentPosture = 'attentive';
+          } else if (legacyFacePresent && headBowedDown) {
+            // v18: Head bowed forward (top is hair, no eyes visible)
+            baseScore = 30;  // v18: significant penalty for head bowed
+            currentPosture = 'nunduk';
           } else if (legacyFacePresent && lookingDown) {
             // v17: Face present + gaze directed down = nunduk
             // (looking at phone/lap with head straight, eyes only)
