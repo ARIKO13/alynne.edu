@@ -111,6 +111,8 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   const [faceMeshLoading, setFaceMeshLoading] = useState(false);
   const [posture, setPosture] = useState<'attentive' | 'nunduk' | 'away' | 'ngantuk'>('away');
   const [usingFaceMesh, setUsingFaceMesh] = useState(false);
+  // v20: UI debug overlay — show detection values directly in panel
+  const [focusDebug, setFocusDebug] = useState<string>('');
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -405,6 +407,17 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               headBowedDown ? '→ NUNDUK (head bowed)'
                 : (lookingDown ? '→ NUNDUK (gaze down)'
                 : (legacyFaceAttentive ? '→ attentive' : '→ ?')));
+
+            // v20: Update UI debug overlay (visible in panel, no console needed)
+            const debugStr = `bright:${avgBrightness.toFixed(0)} ` +
+              `topSkin:${topSkinRatio.toFixed(2)} ` +
+              `botSkin:${bottomSkinRatio.toFixed(2)} ` +
+              `topW:${topWhite} botW:${bottomWhite} ` +
+              `gaze↓:${gazeDownRatio.toFixed(2)} ` +
+              `skin:${skinRatio.toFixed(2)} ` +
+              `m:${diff.toFixed(1)} ` +
+              `| ${headBowedDown ? 'BOWED' : (lookingDown ? 'GAZE↓' : (legacyFaceAttentive ? 'ATTENTIVE' : '?'))}`;
+            setFocusDebug(debugStr);
           }
 
           if (legacyFacePresent && legacyFaceAttentive) {
@@ -1224,6 +1237,15 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                           : 'Sclera + Skin Tone (fallback)'}
                       </span>
                     </div>
+                    {/* v20: UI DEBUG OVERLAY — live detection values
+                        visible directly in panel (no console needed).
+                        If you see this box with values updating → bundle v20+ is loaded. */}
+                    {focusDebug && (
+                      <div className="mt-1.5 p-1.5 rounded bg-zinc-900/80 border border-zinc-700/50 font-mono text-[8px] text-zinc-400 leading-tight break-all">
+                        <span className="text-zinc-500">[v20 debug] </span>
+                        {focusDebug}
+                      </div>
+                    )}
                   </div>
 
                   <p className="text-[10px] text-zinc-500">
