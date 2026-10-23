@@ -1,20 +1,22 @@
 /**
- * Shared LLM client for Lina Learning — pi-bansos only.
+ * Shared LLM client for Lina Learning — pi-bansos primary + emergency fallback.
  *
- * Two helpers (both route to pi-bansos local proxy):
+ * Two helpers (both route to pi-bansos local proxy as primary):
  *   - callLLM(task, system, user, opts) — primary helper. Routes to
  *     pi-bansos local proxy at 127.0.0.1:18080 with task-appropriate primary
  *     model + fallback chain (Cohere → Nemotron → Poolside or reverse).
+ *     If ALL 3 pi-bansos models fail, makes ONE emergency Polyvor Gateway
+ *     call as ultimate safety net (so critical features like chat/mindmap/
+ *     flashcard/structure don't error when pi-bansos is down).
  *     Logs fallback events to llm-health-log.ts for admin panel visibility.
  *   - callPolyvor(model, system, user, opts) — kept for backward-compat
  *     with structure-module.ts callers. Internally just delegates to
  *     callLLM('long'). The `model` arg is now just a label/tag — actual
  *     model selection is by task type.
  *
- * v-cleanup: removed all legacy fallback paths (Groq / Qwen local /
- * Polyvor Gateway). pi-bansos + its internal fallback chain is the ONLY
- * LLM path. If all 3 pi-bansos models fail, returns null — caller
- * handles null as needed.
+ * Architecture:
+ *   NORMAL: pi-bansos (3-model chain) — 99% of traffic
+ *   EMERGENCY: 1 Polyvor call — only when pi-bansos dies entirely
  *
  * Note: OCR (vision) + Whisper (audio) endpoints still use their own
  * direct fetches — those need capabilities pi-bansos doesn't have.
@@ -197,7 +199,71 @@ export async function callLLM(
     }
   }
 
-  console.error(`[callLLM] ${endpoint} all ${chain.length} models failed`);
+  console.error(`[callLLM] ${endpoint} all ${chain.length} pi-bansos models failed, trying emergency Polyvor fallback...`);
+
+  // ── EMERGENCY FALLBACK: single Polyvor Gateway call (no retries, no chain) ──
+  // User requirement: critical features (chat, mindmap, flashcard, structure)
+  // must not error when pi-bansos dies entirely. ONE Polyvor call as ultimate
+  // safety net. If this also fails, return null and caller handles the error.
+  // We don't log this to fallback.jsonl (it's a different provider tier, not
+  // an internal pi-bansos fallback) — but we do log to console for ops.
+  const gwKey = process.env.GATEWAY_API_KEY;
+  if (gwKey) {
+    try {
+      const t0 = Date.now();
+      const res = await fetch('https://gateway.polyvorlabs.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${gwKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          // Pick Polyvor model based on task type — match the pi-bansos task
+          // mapping as closely as possible. cx/gpt-5.6-sol is a good general
+          // default; cx/gpt-5.6-terra is the code variant.
+          model: task === 'code' ? 'cx/gpt-5.6-terra' : 'cx/gpt-5.6-sol',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userContent },
+          ],
+          temperature,
+          max_tokens: maxTokens,
+          stream: false,
+        }),
+        signal: AbortSignal.timeout(timeout),
+      });
+
+      if (res.ok) {
+        const data = await res.json() as any;
+        const content = data.choices?.[0]?.message?.content || null;
+        if (content) {
+          const elapsedMs = Date.now() - t0;
+          console.warn(`[callLLM] ${endpoint} EMERGENCY Polyvor fallback SUCCESS (${elapsedMs}ms, ${data.usage?.total_tokens ?? '?'} tokens) — pi-bansos was down`);
+          // Log as a fallback event for admin panel visibility
+          const event: FallbackEvent = {
+            timestamp: new Date().toISOString(),
+            fromModel: 'pi-bansos-all-failed',
+            toModel: task === 'code' ? 'cx/gpt-5.6-terra (polyvor)' : 'cx/gpt-5.6-sol (polyvor)',
+            task,
+            errorType: 'PiBansosAllDown',
+            errorMessage: `All 3 pi-bansos models failed → emergency Polyvor call`,
+            endpoint,
+          };
+          logFallbackEvent(event);
+          fallbacksTriggered.push(event);
+          return { content, modelUsed: `polyvor-emergency/${task}`, fallbacksTriggered };
+        }
+        console.error(`[callLLM] ${endpoint} emergency Polyvor: empty content`);
+      } else {
+        console.error(`[callLLM] ${endpoint} emergency Polyvor HTTP ${res.status}`);
+      }
+    } catch (e: any) {
+      console.error(`[callLLM] ${endpoint} emergency Polyvor fetch failed:`, e?.message);
+    }
+  } else {
+    console.error(`[callLLM] ${endpoint} no GATEWAY_API_KEY set — no emergency fallback available`);
+  }
+
   return { content: null, modelUsed: null, fallbacksTriggered };
 }
 
