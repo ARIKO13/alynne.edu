@@ -326,14 +326,12 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           if (now - lastLegacyFaceCheck > 500) {
             lastLegacyFaceCheck = now;
 
-            // Sample center 50% of frame, split into TOP-HALF and BOTTOM-HALF
-            // v18: detect "white shirt at bottom" — common false positive for
-            // sclera. When user wears white shirt + bows head, camera sees:
-            //   TOP: hair (dark, no skin, no white)
-            //   BOTTOM: shirt collar (very white, >180 RGB)
-            // Old v17 counted shirt white as sclera → bottomWhite high →
-            // gazeDownRatio low → "not lookingDown" → "attentive" → Fokus 91%.
-            // Bug. v18 excludes shirt white from sclera count.
+            // Sample center 50% of frame, split into TOP-HALF and BOTTOM-HALF.
+            // v19: NO shirt-specific detection (outfit colors vary — can't
+            // hardcode "white shirt"). Instead use topSkinRatio:
+            //   - Sitting upright: top-half = forehead + eyes → topSkinRatio HIGH
+            //   - Head bowed: top-half = hair → topSkinRatio LOW (< 2%)
+            // This works for ANY shirt color (white, black, colored, patterned).
             let whiteCount = 0;
             let skinCount = 0;
             let totalPixels = 0;
@@ -341,7 +339,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
             let topSkin = 0, bottomSkin = 0;
             let topTotal = 0, bottomTotal = 0;
             // Center area: x=40-120 (of 160), y=20-80 (of 120)
-            // TOP-HALF: y=20-50 (forehead + upper eyes)
+            // TOP-HALF: y=20-50 (forehead + upper eyes — face skin)
             // BOTTOM-HALF: y=50-80 (lower eyes + nose + mouth + shirt collar)
             for (let y = 20; y < 80; y += 2) {
               for (let x = 40; x < 120; x += 2) {
@@ -354,7 +352,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                 // Skin tone (for face presence check)
                 const isSkin = r > 80 && g > 40 && b > 20 && r > g && r > b && (r - g) > 15 && r < 250;
                 if (isSkin) skinCount++;
-                // Track top vs bottom for gaze direction + shirt detection
+                // Track top vs bottom for gaze direction + head bowed
                 if (y < 50) {
                   topTotal++;
                   if (isWhite) topWhite++;
@@ -370,41 +368,37 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
             const skinRatio = skinCount / totalPixels;
             const topSkinRatio = topSkin / topTotal;
             const bottomSkinRatio = bottomSkin / bottomTotal;
-            const bottomWhiteRatio = bottomWhite / bottomTotal;
 
-            // v18: SHIRT DETECTION. If bottom half is mostly white (>20%), it's
-            // likely a shirt collar, not sclera. Exclude from sclera count.
-            const isShirtDetected = bottomWhiteRatio > 0.20;
-            // effectiveWhite = sclera-only count (excludes shirt)
-            const effectiveWhite = isShirtDetected ? topWhite : (topWhite + bottomWhite);
-            const effectiveWhiteRatio = effectiveWhite / totalPixels;
-
-            // v17: Gaze direction via top/bottom white ratio (using EFFECTIVE white)
-            // v18: Use effectiveWhite (shirt-excluded) for gaze calculation.
-            const gazeDownRatio = effectiveWhite > 3
-              ? topWhite / effectiveWhite
-              : 0.5;
-            const lookingDown = effectiveWhite > 3 && gazeDownRatio > 0.65;
-
-            // v18: HEAD BOWED detection. If top half has very low skin ratio
-            // (< 2%) but overall skin is detected, top of frame is hair (not face).
-            // That means head is bowed forward → no eyes visible → nunduk.
+            // v19: HEAD BOWED detection via topSkinRatio.
+            // If top-half is mostly hair (topSkinRatio < 2%) but skin is detected
+            // overall, head is bowed forward. Works regardless of shirt color.
             const headBowedDown = skinRatio > 0.05 && topSkinRatio < 0.02;
+
+            // v17: Gaze direction via top/bottom white ratio.
+            // Note: bottom white might be from shirt (any color), but ratio
+            // still informative when user looks down with eyes only.
+            const totalWhite = topWhite + bottomWhite;
+            const gazeDownRatio = totalWhite > 3
+              ? topWhite / totalWhite
+              : 0.5;
+            const lookingDown = totalWhite > 3 && gazeDownRatio > 0.65;
 
             // Face present if some skin tone detected
             legacyFacePresent = skinRatio > 0.05;
-            // v18: Attentive = face + REAL sclera (not shirt) + NOT lookingDown
-            //   + NOT headBowedDown
+            // v19: Attentive = face present + skin in TOP half (forehead visible)
+            //   + sclera visible + NOT lookingDown + NOT headBowedDown
+            // topSkinRatio > 0.05 ensures forehead/eyes are in frame (not hair).
             legacyFaceAttentive = legacyFacePresent
-              && effectiveWhiteRatio > 0.02
+              && topSkinRatio > 0.05
+              && whiteRatio > 0.02
               && !lookingDown
               && !headBowedDown;
 
             console.log('[Focus] bright:', avgBrightness.toFixed(1),
-              'effWhite:', effectiveWhiteRatio.toFixed(3),
+              'white:', whiteRatio.toFixed(3),
               'topW:', topWhite, 'botW:', bottomWhite,
-              isShirtDetected ? 'SHIRT!' : '',
               'topSkin:', topSkinRatio.toFixed(3),
+              'botSkin:', bottomSkinRatio.toFixed(3),
               'gaze↓:', gazeDownRatio.toFixed(2),
               'skin:', skinRatio.toFixed(3),
               'motion:', diff.toFixed(1),
