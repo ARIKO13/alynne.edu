@@ -213,31 +213,60 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     setChapters(split);
     setProgress(25);
 
-    // Generate LLM-powered structured mindmap
+    // ── PARALLELIZE: mindmap + all quizzes at once (v-speed-boost) ──
+    // Both depend only on `split` (not each other), so fire all in parallel.
+    // Old code was sequential: split → mindmap → quiz1 → quiz2 → ... → quizN
+    //   + 1s sleep between quizzes (legacy Groq rate-limit avoidance, not
+    //   needed for pi-bansos which has 200 req/hr per IP — well within limits).
+    // New code: split → [mindmap || quiz1 || quiz2 || ... || quizN] in parallel
+    //   = saves ~N × (quiz_latency + 1s sleep) of total time.
+    //   For 8 chapters: old = ~50-80s for quizzes alone. New = ~10-15s.
     setStage('mindmap');
-    try {
-      const mindmapData = await generateLLMMindmap(split);
-      setLLMMindmap(mindmapData);
-    } catch (err) {
-      console.warn('[Mindmap] LLM failed, using fallback:', err);
-    }
-    setProgress(50);
 
-    // Generate LLM-powered quizzes (sequential with delay to avoid rate limit)
-    setStage('chapters');
-    const quizMap: Record<number, QuizQuestion[]> = {};
-    for (let i = 0; i < split.length; i++) {
-      const ch = split[i];
-      try {
-        quizMap[ch.id] = await generateLLMQuiz(ch);
-      } catch {
-        quizMap[ch.id] = generateQuizFromChapter(ch, 3);
+    // Concurrency limit for quizzes — fire 3 at a time to avoid
+    // overwhelming Cohere/KiloCode gateway with N concurrent requests.
+    // (KiloCode limit is 200 req/hr/IP, not per-second — but be polite.)
+    const QUIZ_CONCURRENCY = 3;
+
+    async function generateQuizBatch(chapters: Chapter[]): Promise<Record<number, QuizQuestion[]>> {
+      const result: Record<number, QuizQuestion[]> = {};
+      // Process in batches of QUIZ_CONCURRENCY
+      for (let i = 0; i < chapters.length; i += QUIZ_CONCURRENCY) {
+        const batch = chapters.slice(i, i + QUIZ_CONCURRENCY);
+        const batchResults = await Promise.all(
+          batch.map(async (ch) => {
+            try {
+              return { id: ch.id, quiz: await generateLLMQuiz(ch) };
+            } catch {
+              return { id: ch.id, quiz: generateQuizFromChapter(ch, 3) };
+            }
+          })
+        );
+        for (const r of batchResults) {
+          result[r.id] = r.quiz;
+        }
+        // Update progress per batch completion
+        const completed = Math.min(i + QUIZ_CONCURRENCY, chapters.length);
+        setProgress(50 + Math.round(completed / chapters.length * 40));
       }
-      setProgress(50 + Math.round((i + 1) / split.length * 40));
-      // Delay between requests to avoid Groq rate limit
-      if (i < split.length - 1) await sleep(1000);
+      return result;
     }
-    setQuizzes(quizMap);
+
+    // Fire mindmap + quizzes in parallel
+    const [mindmapResult, quizMap] = await Promise.allSettled([
+      generateLLMMindmap(split).catch((err) => {
+        console.warn('[Mindmap] LLM failed, using fallback:', err);
+        return null;
+      }),
+      generateQuizBatch(split),
+    ]);
+
+    if (mindmapResult.status === 'fulfilled' && mindmapResult.value) {
+      setLLMMindmap(mindmapResult.value);
+    }
+    const quizResult = quizMap.status === 'fulfilled' ? quizMap.value : {};
+    setQuizzes(quizResult);
+
     setProgress(100);
     setStage('complete');
     if (split.length > 0) setActiveChapterId(split[0].id);
