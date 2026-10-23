@@ -181,7 +181,13 @@ export const POST: APIRoute = async ({ request }) => {
 
                 try {
                   const chunk = JSON.parse(jsonStr);
-                  const delta = chunk.choices?.[0]?.delta?.content || '';
+                  // v-cohere-fix: Cohere North Mini Code emits output via
+                  // delta.reasoning (chain-of-thought visible) instead of
+                  // delta.content. Capture BOTH so we don't miss the actual
+                  // NDJSON output.
+                  const delta = chunk.choices?.[0]?.delta?.content
+                    || chunk.choices?.[0]?.delta?.reasoning
+                    || '';
                   if (!delta) continue;
 
                   // delta is a fragment of LLM output (NDJSON text).
