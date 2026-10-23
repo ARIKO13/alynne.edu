@@ -187,6 +187,17 @@ export function reviewCard(cardId: string, quality: ReviewQuality): Flashcard | 
 
 import type { Chapter } from './stt-chapter-splitter';
 
+/**
+ * generateFlashcardsFromChapter — CLIENT-SIDE algorithmic fallback.
+ *
+ * Used as a deterministic fallback when the server-side LLM endpoint
+ * (/api/flashcards/generate) fails or is unreachable. Sentence split +
+ * key-word removal + fill-in-the-blank pattern. Lower quality than
+ * LLM-generated Q&A but always works offline.
+ *
+ * For LLM-powered generation, call the server endpoint from the browser:
+ *   POST /api/flashcards/generate { title, content } → { cards: [...] }
+ */
 export function generateFlashcardsFromChapter(chapter: Chapter, deckId: string): Flashcard[] {
   const sentences = chapter.content
     .split(/[.!?]+/)

@@ -87,13 +87,58 @@ export function FlashcardPanel({ open, onClose, chapters = [] }: FlashcardPanelP
     await new Promise(r => setTimeout(r, 500));
 
     const deck = createDeck(`STT Flashcard ${new Date().toLocaleDateString('id-ID')}`);
+    let totalGenerated = 0;
+    let llmUsedCount = 0;
+
     for (const ch of chapters) {
-      generateFlashcardsFromChapter(ch, deck.id);
+      // v2: try server-side LLM endpoint first (routes to pi-bansos via callLLM).
+      // Server has access to PI_BANSOS_URL + the proxy at 127.0.0.1:18080.
+      // Browser can't reach 127.0.0.1 directly (that's the user's machine).
+      let cardsFromLlm: { front: string; back: string }[] = [];
+      let usedLlm = false;
+      try {
+        const res = await fetch('/api/flashcards/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: ch.title,
+            content: ch.content,
+            maxCards: 10,
+          }),
+          signal: AbortSignal.timeout(70_000),
+        });
+        if (res.ok) {
+          const data = await res.json() as { cards?: { front: string; back: string }[] };
+          cardsFromLlm = data.cards || [];
+          usedLlm = cardsFromLlm.length > 0;
+        }
+      } catch (e) {
+        console.warn('[flashcards] server endpoint failed, using algorithmic fallback:', e);
+      }
+
+      if (usedLlm) {
+        // LLM cards — addCard for each via flashcard-system's addCard
+        for (const c of cardsFromLlm) {
+          addCard(deck.id, c.front, c.back);
+        }
+        totalGenerated += cardsFromLlm.length;
+        llmUsedCount++;
+      } else {
+        // Fallback: local algorithmic generation (fill-in-the-blank pattern)
+        const fallbackCards = generateFlashcardsFromChapter(ch, deck.id);
+        totalGenerated += fallbackCards.length;
+      }
     }
 
     refresh();
     setGenerating(false);
-    toast.success(`Deck dibuat dengan ${chapters.length} bab!`);
+    if (llmUsedCount === chapters.length) {
+      toast.success(`Deck dibuat: ${totalGenerated} kartu (LLM) dari ${chapters.length} bab!`);
+    } else if (llmUsedCount > 0) {
+      toast.success(`Deck dibuat: ${totalGenerated} kartu (${llmUsedCount}/${chapters.length} bab pakai LLM, sisanya algoritmik)`);
+    } else {
+      toast.success(`Deck dibuat: ${totalGenerated} kartu (algoritmik fallback — LLM tidak tersedia)`);
+    }
   }, [chapters, refresh]);
 
   const handleStudy = useCallback((deck: Deck) => {
