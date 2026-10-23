@@ -144,12 +144,12 @@ interface AppState {
   setStudyFocusTracker: (v: boolean) => void;
   studyFocusSensitivity: number;
   setStudyFocusSensitivity: (v: number) => void;
-  // v24: ML toggle — default OFF. When OFF, focus detector uses pixel path
-  // only (light, no model download, ~5MB saved). When ON, loads MediaPipe
-  // FaceMesh + iris refinement (more accurate, detects eye gaze + head pose).
-  // User opt-in via Focus Detector panel toggle.
-  studyFocusMLEnabled: boolean;
-  setStudyFocusMLEnabled: (v: boolean) => void;
+  // v25: Vision mode picker — user picks BEFORE session starts.
+  //   'ringan'  = pixel path only, no ML download (default — safe for low-end devices)
+  //   'stabil'  = FaceMesh WITHOUT iris refinement (~30MB RAM, no gaze-down detection)
+  //   'akurat'  = FaceMesh + iris refinement (~50MB RAM, detects eye gaze to phone)
+  studyFocusVisionMode: 'ringan' | 'stabil' | 'akurat';
+  setStudyFocusVisionMode: (v: 'ringan' | 'stabil' | 'akurat') => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -263,9 +263,10 @@ export const useAppStore = create<AppState>()(
       setStudyFocusTracker: (studyFocusTracker) => set({ studyFocusTracker }),
       studyFocusSensitivity: 0.5,
       setStudyFocusSensitivity: (studyFocusSensitivity) => set({ studyFocusSensitivity }),
-      // v24: ML default OFF — pixel path is lighter, no 5MB model download
-      studyFocusMLEnabled: false,
-      setStudyFocusMLEnabled: (studyFocusMLEnabled) => set({ studyFocusMLEnabled }),
+      // v25: default 'ringan' — pixel path is lightest, no model download.
+      // User picks 'stabil' or 'akurat' explicitly when device can handle ML.
+      studyFocusVisionMode: 'ringan' as 'ringan' | 'stabil' | 'akurat',
+      setStudyFocusVisionMode: (studyFocusVisionMode) => set({ studyFocusVisionMode }),
     }),
     {
       name: 'lina-learning-v2',
@@ -283,11 +284,11 @@ export const useAppStore = create<AppState>()(
           name: String(state.user.name || 'Player'),
           image: typeof state.user.image === 'string' ? state.user.image : null,
         } : null,
-        // v24: persist study config so user's toggle choice survives reloads
+        // v24/v25: persist study config so user's toggle choice survives reloads
         studyDefaultMinutes: state.studyDefaultMinutes,
         studyFocusTracker: state.studyFocusTracker,
         studyFocusSensitivity: state.studyFocusSensitivity,
-        studyFocusMLEnabled: state.studyFocusMLEnabled,
+        studyFocusVisionMode: state.studyFocusVisionMode,
       }),
     }
   )

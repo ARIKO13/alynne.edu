@@ -73,6 +73,7 @@ import {
   isFaceMeshAvailable,
   resetFaceMesh,
   getDetectorSync,
+  setRefineLandmarks,
 } from '@/lib/face-mesh';
 import { computeHeadPose, type HeadPose } from '@/lib/head-pose';
 import { useAppStore } from '@/lib/store';
@@ -105,11 +106,11 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   const [quickNote, setQuickNote] = useState('');
   const [examOpen, setExamOpen] = useState(false);
 
-  // v24: ML toggle from persisted store (default OFF — pixel path is lighter).
-  // When OFF, we never call isFaceMeshAvailable() so no 5MB model download
-  // happens. When toggled OFF mid-session, resetFaceMesh() disposes the
-  // loaded model to free ~50MB RAM.
-  const { studyFocusMLEnabled, setStudyFocusMLEnabled } = useAppStore();
+  // v25: Vision mode picker (3 presets). User picks BEFORE session starts.
+  //   'ringan' = pixel path only, no ML (default, safe for low-end devices)
+  //   'stabil' = FaceMesh without iris refinement (~30MB RAM, no gaze-down)
+  //   'akurat' = FaceMesh + iris refinement (~50MB RAM, full v22+v23+v24)
+  const { studyFocusVisionMode, setStudyFocusVisionMode } = useAppStore();
 
   // ── Pomodoro + Focus state (inline, not separate component) ──
   const [timerTotal, setTimerTotal] = useState(25 * 60);
@@ -142,21 +143,27 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   const isRunningRef = useRef(false);  // v6: ref untuk avoid stale closure
   const focusEnabledRef = useRef(true);  // v6: same
   const showWarningRef = useRef(false);  // v6: same
-  const studyFocusMLEnabledRef = useRef(studyFocusMLEnabled);  // v24: same pattern
+  const studyFocusVisionModeRef = useRef(studyFocusVisionMode);  // v25
   const distractedStartRef = useRef<number>(0);
 
   // Sync refs with state
   useEffect(() => { isRunningRef.current = isRunning; }, [isRunning]);
   useEffect(() => { focusEnabledRef.current = focusEnabled; }, [focusEnabled]);
   useEffect(() => { showWarningRef.current = showWarning; }, [showWarning]);
-  // v24: when ML toggle flips OFF mid-session, dispose the loaded model so
-  // ~50MB of RAM is freed immediately. The check() loop will see
-  // studyFocusMLEnabledRef.current = false on the next frame and skip the
-  // FaceMesh branch entirely (getDetectorSync() returns null).
+  // v25: on vision mode change:
+  //   1. Update ref so detectFocus()'s check() loop sees the new mode
+  //      on the next frame (skip ML when 'ringan', load ML otherwise).
+  //   2. Set iris refinement preference BEFORE any model load happens.
+  //      'akurat' = iris on (full gaze detection), 'stabil' = iris off
+  //      (smaller model, no gaze detection but ML still active).
+  //   3. resetFaceMesh() to dispose any loaded model — the new mode may
+  //      have different refineLandmarks setting, so the old loaded model
+  //      is invalid. Also frees ~30-50MB RAM when switching to 'ringan'.
   useEffect(() => {
-    studyFocusMLEnabledRef.current = studyFocusMLEnabled;
-    if (!studyFocusMLEnabled) resetFaceMesh();
-  }, [studyFocusMLEnabled]);
+    studyFocusVisionModeRef.current = studyFocusVisionMode;
+    setRefineLandmarks(studyFocusVisionMode === 'akurat');
+    resetFaceMesh();
+  }, [studyFocusVisionMode]);
 
   // Auto-start pipeline when opened
   useEffect(() => {
@@ -282,11 +289,13 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     }
 
     // Trigger async load of Face Mesh (lazy)
-    // v24: only trigger ML model load if user has opted in. When OFF,
-    // we skip the async isFaceMeshAvailable() call entirely — no network
-    // request for the ~5MB model. The check() loop will also skip the
-    // FaceMesh branch (getDetectorSync() returns null when ML disabled).
-    if (studyFocusMLEnabledRef.current) {
+    // v25: only trigger ML model load if vision mode is NOT 'ringan'.
+    // When 'ringan', we skip isFaceMeshAvailable() entirely — no network
+    // request, no model download, no RAM usage. The check() loop also
+    // short-circuits getDetectorSync() to null.
+    // 'stabil' and 'akurat' both load ML — difference is iris refinement,
+    // which is set via setRefineLandmarks() in the useEffect above.
+    if (studyFocusVisionModeRef.current !== 'ringan') {
       setFaceMeshLoading(true);
       isFaceMeshAvailable().then((available) => {
         setUsingFaceMesh(available);
@@ -417,10 +426,13 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           // head-pose.ts derives nunduk from face ASPECT RATIO (height/width)
           // and ngantuk from Eye Aspect Ratio (EAR) -- both are normalized
           // measurements, invariant to overall brightness.
-          // v24: short-circuit when ML toggle is OFF. getDetectorSync()
-          // returns null anyway (we never called isFaceMeshAvailable()), but
-          // the explicit check makes the intent clear and saves a function call.
-          const fmDetector = studyFocusMLEnabledRef.current ? getDetectorSync() : null;
+          // v25: short-circuit when vision mode is 'ringan' (pixel path only).
+          // For 'stabil' and 'akurat', getDetectorSync() returns the loaded
+          // model (or null while still loading). The iris refinement difference
+          // was already baked into the model at load time via setRefineLandmarks().
+          const fmDetector = studyFocusVisionModeRef.current !== 'ringan'
+            ? getDetectorSync()
+            : null;
           let faceMeshHandled = false;
 
           if (fmDetector && (now - lastFaceMeshCheck > 125)) {
@@ -1361,35 +1373,72 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                       Kalibrasi cahaya… jangan tutup kamera
                     </div>
                   )}
-                  {/* v24: ML toggle. Default OFF — pixel path is lighter and
-                      works without downloading any model. ON loads MediaPipe
-                      FaceMesh + iris refinement (~5MB first-time download,
-                      ~50MB RAM) for accurate head-pose + gaze detection. */}
-                  <div className="flex items-center justify-between gap-2 px-2.5 py-2 rounded-md border border-white/[0.06] bg-white/[0.02]">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[11px] font-medium text-zinc-200">Deteksi ML (akurat)</p>
-                      <p className="text-[9px] text-zinc-500 mt-0.5 leading-tight">
-                        {studyFocusMLEnabled
-                          ? 'FaceMesh + iris aktif. Deteksi kepala + mata ke HP. ~50MB RAM.'
-                          : 'OFF — pakai pixel path ringan. Aktifkan untuk akurasi lebih baik (download ~5MB sekali).'}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setStudyFocusMLEnabled(!studyFocusMLEnabled)}
-                      className={cn(
-                        'relative w-9 h-5 rounded-full transition-colors shrink-0',
-                        studyFocusMLEnabled ? 'bg-[#8B5CF6]' : 'bg-zinc-700'
-                      )}
-                      aria-label="Toggle ML face detection"
-                    >
-                      <span
+                  {/* v25: Vision mode picker — 3 presets, choose BEFORE start.
+                      Default 'ringan' (pixel path only, no ML download).
+                      'stabil' = ML without iris. 'akurat' = ML + iris (gaze). */}
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] font-medium text-zinc-400">Mode Vision</p>
+                    <div className="grid grid-cols-3 gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setStudyFocusVisionMode('ringan')}
                         className={cn(
-                          'absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform',
-                          studyFocusMLEnabled && 'translate-x-4'
+                          'rounded-md border px-1.5 py-1.5 text-center transition-colors',
+                          studyFocusVisionMode === 'ringan'
+                            ? 'border-green-400/60 bg-green-500/10'
+                            : 'border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05]'
                         )}
-                      />
-                    </button>
+                      >
+                        <div className={cn(
+                          'text-[10px] font-semibold',
+                          studyFocusVisionMode === 'ringan' ? 'text-green-300' : 'text-zinc-300'
+                        )}>
+                          Ringan
+                        </div>
+                        <div className="text-[8px] text-zinc-500 mt-0.5">5MB</div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setStudyFocusVisionMode('stabil')}
+                        className={cn(
+                          'rounded-md border px-1.5 py-1.5 text-center transition-colors',
+                          studyFocusVisionMode === 'stabil'
+                            ? 'border-blue-400/60 bg-blue-500/10'
+                            : 'border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05]'
+                        )}
+                      >
+                        <div className={cn(
+                          'text-[10px] font-semibold',
+                          studyFocusVisionMode === 'stabil' ? 'text-blue-300' : 'text-zinc-300'
+                        )}>
+                          Stabil
+                        </div>
+                        <div className="text-[8px] text-zinc-500 mt-0.5">30MB</div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setStudyFocusVisionMode('akurat')}
+                        className={cn(
+                          'rounded-md border px-1.5 py-1.5 text-center transition-colors',
+                          studyFocusVisionMode === 'akurat'
+                            ? 'border-purple-400/60 bg-purple-500/10'
+                            : 'border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05]'
+                        )}
+                      >
+                        <div className={cn(
+                          'text-[10px] font-semibold',
+                          studyFocusVisionMode === 'akurat' ? 'text-purple-300' : 'text-zinc-300'
+                        )}>
+                          Akurat
+                        </div>
+                        <div className="text-[8px] text-zinc-500 mt-0.5">50MB</div>
+                      </button>
+                    </div>
+                    <p className="text-[9px] text-zinc-500 leading-tight mt-1">
+                      {studyFocusVisionMode === 'ringan' && 'Pixel path. No download, no ML. Deteksi kulit + sclera yang sudah dinormalisasi anti-bias cahaya. Cocok device kentang.'}
+                      {studyFocusVisionMode === 'stabil' && 'FaceMesh tanpa iris. Deteksi kepala + mata tertutup. Tidak deteksi gaze (mata ke HP). Download ~5MB sekali.'}
+                      {studyFocusVisionMode === 'akurat' && 'FaceMesh + iris refinement. Deteksi kepala + gaze + mata ke HP (v23). Paling akurat, paling berat. Download ~8MB sekali.'}
+                    </p>
                   </div>
                   <video
                     ref={videoRef}

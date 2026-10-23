@@ -29,6 +29,20 @@ let lastSuccessfulResult: FaceMeshResult = {
 };
 let inferenceTimes: number[] = [];
 let tooSlow = false;
+// v25: configurable iris refinement. 'akurat' mode (default) enables iris
+// landmarks (468-477) for gaze-down detection. 'stabil' mode disables
+// refinement — model is smaller (~3-5MB vs ~5-8MB), inference is faster,
+// but computeHeadPose.gazeDown will always return false (graceful skip).
+// Must be set BEFORE getFaceMeshDetector() is called for the first time.
+let refineLandmarksEnabled = true;
+
+/** v25: Set iris refinement preference. Must be called before first
+ *  getFaceMeshDetector() call to take effect. If called after model is
+ *  already loaded, the change will only apply on next reload/reload-model
+ *  cycle (e.g., when resetFaceMesh() is called and model re-loads). */
+export function setRefineLandmarks(enabled: boolean): void {
+  refineLandmarksEnabled = enabled;
+}
 
 export async function getFaceMeshDetector(): Promise<any | null> {
   if (tooSlow) return null;
@@ -55,10 +69,11 @@ export async function getFaceMeshDetector(): Promise<any | null> {
           // v23: enable iris refinement. Adds 10 landmarks (468-477) for
           // iris/pupil position. Needed for gaze-down detection in head-pose.ts
           // to catch the "head upright but eyes looking down at phone" loophole.
-          // Trade-off: model slightly heavier (~5-10MB extra), inference a bit
-          // slower. If avg inference exceeds 300ms (tooSlow threshold), the
-          // detector auto-disables and falls back to pixel-based path.
-          refineLandmarks: true,
+          // v25: now configurable via setRefineLandmarks(). 'stabil' mode
+          // disables this to halve model size + speed up inference (at the
+          // cost of gaze detection — computeHeadPose gracefully skips iris
+          // logic when refineLandmarks is off).
+          refineLandmarks: refineLandmarksEnabled,
           maxFaces: 1,
         });
         loadedDetector = detector;
