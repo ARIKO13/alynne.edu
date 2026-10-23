@@ -52,7 +52,13 @@ export async function getFaceMeshDetector(): Promise<any | null> {
         const model = faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh;
         const detector = await faceLandmarksDetection.createDetector(model, {
           runtime: 'tfjs',
-          refineLandmarks: false,
+          // v23: enable iris refinement. Adds 10 landmarks (468-477) for
+          // iris/pupil position. Needed for gaze-down detection in head-pose.ts
+          // to catch the "head upright but eyes looking down at phone" loophole.
+          // Trade-off: model slightly heavier (~5-10MB extra), inference a bit
+          // slower. If avg inference exceeds 300ms (tooSlow threshold), the
+          // detector auto-disables and falls back to pixel-based path.
+          refineLandmarks: true,
           maxFaces: 1,
         });
         loadedDetector = detector;

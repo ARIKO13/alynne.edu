@@ -414,6 +414,14 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                 } else if (headPose.lookingDown) {
                   baseScore = 35;
                   currentPosture = 'nunduk';
+                } else if (headPose.gazeDown) {
+                  // v23: head upright (aspect ratio > 1.0) BUT eyes look down
+                  // at phone in lap. Closes the loophole where v22 classified
+                  // "sit-upright-eyes-down" as attentive (score 80). Score 45
+                  // = same as "face present but no sclera" — moderately
+                  // distracted but still at desk.
+                  baseScore = 45;
+                  currentPosture = 'nunduk';
                 } else {
                   // Face present but ambiguous -- slightly below attentive.
                   baseScore = 60;
@@ -423,6 +431,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                   `[FM] pitch:${headPose.pitch} ` +
                   `EAR L:${headPose.eyeOpenness.left.toFixed(2)} ` +
                   `R:${headPose.eyeOpenness.right.toFixed(2)} ` +
+                  `gaze↓:${headPose.gazeDown ? 'Y' : 'n'} ` +
                   `bright:${avgBrightness.toFixed(0)} ` +
                   `m:${diff.toFixed(1)} ` +
                   `| ${currentPosture}`
