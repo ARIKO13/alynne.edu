@@ -185,43 +185,10 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // ═══════════════════════════════════════════════════════
-    // PATH 1 (LEGACY): Multi-chunk Polyvor Gateway pipeline
-    // Kept as fallback when pi-bansos fails. Has ~65s TPM wait per chunk.
+    // v-cleanup: removed PATH 1 (multi-chunk Polyvor pipeline).
+    // pi-bansos + Nemotron 1M ctx can handle whole transcript in one call.
+    // No legacy fallback. If pi-bansos fails, return error.
     // ═══════════════════════════════════════════════════════
-    const chunks = splitTranscriptIntoChunks(transcript, CHUNK_SIZE);
-    const totalChunks = chunks.length;
-    console.log('[structure-fallback] transcript:' + transcript.length + ' chars -> ' + totalChunks + ' chunk(s)');
-
-    if (totalChunks === 1) {
-      const userPrompt = buildUserMessage(chunks[0], materialTexts || []);
-      const result = await tryModels(SYSTEM_PROMPT, userPrompt);
-      if (result?.title && Array.isArray(result.kegiatanPembelajaran) && result.kegiatanPembelajaran.length > 0) {
-        console.log('[structure-fallback] SUCCESS (' + result.kegiatanPembelajaran.length + ' kegiatan)');
-        return Response.json(result);
-      }
-      console.error('[structure-fallback] All models exhausted');
-      return Response.json({ error: 'fallback' });
-    }
-
-    console.log('[structure-fallback] Multi-chunk: ' + totalChunks + ' chunks, est time: ~' + Math.ceil(totalChunks * 65 / 60) + ' min');
-    const firstPrompt = buildUserMessage(chunks[0], materialTexts || []);
-    const firstResult = await tryModels(SYSTEM_PROMPT, firstPrompt);
-    if (!firstResult?.title || !Array.isArray(firstResult.kegiatanPembelajaran)) { console.error('[structure-fallback] First chunk failed'); return Response.json({ error: 'fallback' }); }
-    console.log('[structure-fallback] Chunk 1 OK: ' + firstResult.kegiatanPembelajaran.length + ' kegiatan');
-
-    const continuations: any[] = [];
-    for (let i = 1; i < totalChunks; i++) {
-      console.log('[structure-fallback] Waiting ' + (TPM_DELAY_MS / 1000) + 's for TPM reset before chunk ' + (i + 1) + '...');
-      await sleep(TPM_DELAY_MS);
-      console.log('[structure-fallback] Chunk ' + (i + 1) + '/' + totalChunks + ' (' + chunks[i].length + ' chars)...');
-      const contPrompt = '--- TRANSCRIPT AUDIO (lanjutan) ---\n' + chunks[i];
-      const contResult = await tryModels(SYSTEM_PROMPT_CONT, contPrompt);
-      if (contResult?.kegiatanPembelajaran?.length > 0) { continuations.push(contResult); console.log('[structure-fallback] Chunk ' + (i + 1) + ' OK: ' + contResult.kegiatanPembelajaran.length + ' kegiatan'); }
-      else { console.error('[structure-fallback] Chunk ' + (i + 1) + ' FAILED'); }
-    }
-
-    const merged = mergeResults(firstResult, continuations);
-    console.log('[structure-fallback] MERGED: ' + merged.kegiatanPembelajaran.length + ' kegiatan');
-    return Response.json(merged);
+    return Response.json({ error: 'pi-bansos gagal (semua 3 model gagal). Coba lagi.' });
   } catch (e) { console.error('[structure-fallback] Error:', e); return Response.json({ error: 'fallback' }); }
 };

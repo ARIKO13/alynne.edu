@@ -1,9 +1,6 @@
 import type { APIRoute } from 'astro';
 import { callLLM, extractJson } from '@/lib/gateway-client';
 
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODELS = ['llama-3.1-8b-instant', 'llama3-70b-8192'];
-
 const SYSTEM_PROMPT = `Kamu adalah AI ahli mind mapping. TUGASMU: analisa teks transcript dan buat struktur mind map dalam JSON.
 
 ATURAN:
@@ -21,59 +18,6 @@ Kembalikan HANYA JSON valid (tanpa markdown, tanpa penjelasan):
 Contoh output untuk transcript tentang fotosintesis:
 {"title":"Fotosintesis","branches":[{"label":"Faktor","subtopics":["Cahaya matahari","Air dan mineral","Klorofil"]},{"label":"Proses","subtopics":["Fotolisis","Siklus Calvin","Elektron transport"]},{"label":"Hasil","subtopics":["Glukosa","Oksigen","ATP"]},{"label":"Lokasi","subtopics":["Tilakoid","Stroma","Kloroplas"]}]}`;
 
-const GATEWAY_URL = 'https://gateway.polyvorlabs.com/v1/chat/completions';
-const GATEWAY_KEY = process.env.GATEWAY_API_KEY || '';
-const GATEWAY_MODEL = 'groq/llama-3.1-8b-instant';
-
-function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
-
-async function callGroq(systemPrompt: string, userPrompt: string): Promise<string | null> {
-  for (const model of GROQ_MODELS) {
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        if (attempt > 0) await sleep(15000);
-        const res = await fetch(GROQ_URL, {
-          method: 'POST',
-          headers: { Authorization: 'Bearer ' + (process.env.GROQ_API_KEY || ''), 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }], temperature: 0.3, max_tokens: 2048 }),
-          signal: AbortSignal.timeout(60000),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          return data.choices?.[0]?.message?.content || null;
-        }
-        const errBody = await res.text().catch(() => '');
-        console.error('[mindmap-gen] ' + model + ' HTTP ' + res.status + ': ' + errBody.slice(0, 150));
-        if ([401, 403].includes(res.status)) break;
-      } catch (e: any) {
-        console.error('[mindmap-gen] ' + model + ' exception:', e?.message);
-      }
-    }
-  }
-  return null;
-}
-
-async function callGateway(systemPrompt: string, userPrompt: string): Promise<{ content: string | null; source: string }> {
-  if (!GATEWAY_KEY) return { content: null, source: '' };
-  try {
-    const res = await fetch(GATEWAY_URL, {
-      method: 'POST',
-      headers: { Authorization: 'Bearer ' + GATEWAY_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: GATEWAY_MODEL, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }], temperature: 0.3, max_tokens: 2048 }),
-      signal: AbortSignal.timeout(60000),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return { content: data.choices?.[0]?.message?.content || null, source: 'gateway' };
-    }
-    const errBody = await res.text().catch(() => '');
-    console.error('[mindmap-gen] gateway HTTP ' + res.status + ': ' + errBody.slice(0, 150));
-  } catch (e: any) {
-    console.error('[mindmap-gen] gateway exception:', e?.message);
-  }
-  return { content: null, source: '' };
-}
-
 export const POST: APIRoute = async ({ request }) => {
   try {
     const { text } = await request.json();
@@ -86,42 +30,27 @@ export const POST: APIRoute = async ({ request }) => {
 
     const userPrompt = 'Analisa teks berikut dan buat mind map:\n\n' + inputText;
 
-    // ===== Step 1: pi-bansos primary (Cohere → Nemotron → Poolside via callLLM) =====
-    console.log('[mindmap-gen] Trying pi-bansos first...');
-    const piResult = await callLLM('structured-json', SYSTEM_PROMPT, userPrompt, {
+    // ===== pi-bansos ONLY (no Groq/Gateway fallback) =====
+    // callLLM('structured-json') → Cohere primary → Nemotron → Poolside.
+    // If all 3 fail, returns null → 500 error to client.
+    console.log('[mindmap-gen] Trying pi-bansos...');
+    const result = await callLLM('structured-json', SYSTEM_PROMPT, userPrompt, {
       maxTokens: 2048,
       timeout: 60_000,
       temperature: 0.3,
       endpoint: 'mindmaps/generate',
     });
-    let raw: string | null = piResult.content;
-    let source = 'pi-bansos';
 
-    // ===== Step 2: Fall back to Groq if pi-bansos fails =====
-    if (!raw) {
-      console.log('[mindmap-gen] pi-bansos failed, trying Groq...');
-      raw = await callGroq(SYSTEM_PROMPT, userPrompt);
-      if (raw) source = 'groq';
-    }
-
-    // ===== Step 3: Last resort — Gateway =====
-    if (!raw) {
-      console.log('[mindmap-gen] Groq failed, trying Gateway API...');
-      const gw = await callGateway(SYSTEM_PROMPT, userPrompt);
-      raw = gw.content;
-      if (raw) source = gw.source;
-    }
-
-    if (!raw) {
-      return Response.json({ error: 'Gagal menghasilkan mind map (pi-bansos + Groq + Gateway all failed). Coba lagi.' }, { status: 500 });
+    if (!result.content) {
+      return Response.json({ error: 'pi-bansos gagal (semua 3 model gagal). Coba lagi.' }, { status: 500 });
     }
 
     try {
-      const parsed = JSON.parse(extractJson(raw));
+      const parsed = JSON.parse(extractJson(result.content));
       if (!parsed.title || !Array.isArray(parsed.branches) || parsed.branches.length === 0) {
         throw new Error('Invalid structure');
       }
-      return Response.json({ ...parsed, source });
+      return Response.json({ ...parsed, source: 'pi-bansos', model: result.modelUsed });
     } catch (e) {
       console.error('[mindmap-gen] Parse error:', e);
       return Response.json({ error: 'Gagal memparse mind map' }, { status: 500 });

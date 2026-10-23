@@ -6,8 +6,7 @@ const PI_BANSOS_URL = process.env.PI_BANSOS_URL || 'http://127.0.0.1:18080/v1';
 export const GET: APIRoute = async () => {
   const providers: any[] = [];
 
-  // ── pi-bansos (PRIMARY — local proxy on VPS) ──
-  // Live probe + cross-reference with latest health-check log
+  // ── pi-bansos (PRIMARY + ONLY LLM provider for chat/mindmap/flashcard/structure) ──
   let piBansosAvailable = false;
   let piBansosLatency = 'unknown';
   let piBansosModels: string[] = [];
@@ -28,7 +27,7 @@ export const GET: APIRoute = async () => {
     }
   } catch {}
 
-  // Cross-reference with last cron health-check (may have more accurate alive status)
+  // Cross-reference with last cron health-check
   const latestHealth = getLatestHealth();
   if (latestHealth) {
     piBansosAvailable = piBansosAvailable && latestHealth.proxyReachable;
@@ -44,66 +43,47 @@ export const GET: APIRoute = async () => {
     lastHealthCheck: latestHealth?.checkedAt,
     lastAliveCount: latestHealth?.models.filter(m => m.alive).length ?? 0,
     lastTotalModels: latestHealth?.models.length ?? 0,
-    note: 'Free via KiloCode gateway. Fallback chain: Cohere → Nemotron → Poolside.',
+    note: 'ONLY LLM provider. Free via KiloCode gateway. Internal fallback chain: Cohere → Nemotron → Poolside. Used for chat, mindmap, flashcard, STT enhance, structure-module, structure-fallback, structure-direct.',
   });
 
-  // ── Groq (kept for Whisper audio + emergency fallback when pi-bansos down) ──
+  // ── Whisper (audio transcription only — separate concern, NOT chat LLM) ──
+  // Uses Groq Whisper. Not replaceable by pi-bansos (text-only chat models).
   if (process.env.GROQ_API_KEY) {
     providers.push({
-      name: 'groq',
-      type: 'external',
-      model: 'qwen/qwen3.8-27b + whisper-large-v3-turbo',
-      available: true,
-      latency: 'fast',
-      note: 'Used for audio transcription + emergency chat fallback when pi-bansos fails.',
-    });
-  }
-
-  // ── Qwen local (legacy — still used as last-resort fallback in some endpoints) ──
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-    const res = await fetch('http://localhost:8000/llm/health', {
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-    if (res.ok) {
-      const data = await res.json();
-      providers.push({
-        name: 'qwen-local',
-        type: 'local',
-        model: 'qwen2.5-3b-instruct',
-        available: data.available === true,
-        latency: 'slow',
-        note: 'Legacy fallback. CPU-only, slow.',
-      });
-    }
-  } catch {}
-
-  // ── Polyvor Gateway (legacy — used by callPolyvor when pi-bansos fails) ──
-  if (process.env.GATEWAY_API_KEY) {
-    providers.push({
-      name: 'polyvor-gateway',
-      type: 'external',
-      models: ['jr/gemini-3.1-pro', 'bb/gpt-5.4', 'bb/claude-sonnet-4.6', 'cx/gpt-5.6-sol'],
+      name: 'whisper-groq',
+      type: 'external-audio',
+      model: 'whisper-large-v3-turbo',
       available: true,
       latency: 'medium',
-      note: 'Legacy fallback when pi-bansos fails. callPolyvor routes through this.',
+      note: 'Audio transcription ONLY. Not a chat LLM — pi-bansos cannot do audio→text.',
     });
   }
 
-  // ── Client-side WebLLM (browser-only fallback for chat) ──
+  // ── OCR vision (separate concern, NOT chat LLM) ──
+  // Uses Polyvor vision models. Not replaceable by pi-bansos (text-only).
+  if (process.env.GATEWAY_API_KEY) {
+    providers.push({
+      name: 'ocr-vision',
+      type: 'external-vision',
+      models: ['th/gemini-3.7-flash', 'th/mimo-v2.5:free', 'vy/nemotron-vision'],
+      available: true,
+      latency: 'medium',
+      note: 'Vision-based OCR ONLY. Not a chat LLM — pi-bansos cannot do image→text.',
+    });
+  }
+
+  // ── Client-side WebLLM (browser-only, optional fallback for chat) ──
   providers.push({
     name: 'webllm',
     type: 'client-side',
     model: 'Qwen2.5-1.5B-Instruct-q4f32_1-MLC',
     available: 'browser-dependent',
     latency: 'fast-after-load',
-    note: 'Loaded in browser, no server cost. Last-resort for chat.',
+    note: 'Loaded in browser, no server cost. Optional client-side chat fallback.',
   });
 
   return Response.json({
     providers,
-    recommended: piBansosAvailable ? 'pi-bansos' : 'groq',
+    recommended: piBansosAvailable ? 'pi-bansos' : 'webllm',
   });
 };

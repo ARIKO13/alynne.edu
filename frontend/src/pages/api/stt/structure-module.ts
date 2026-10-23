@@ -242,30 +242,21 @@ export const POST: APIRoute = async ({ request }) => {
     if (!transcript?.trim()) return Response.json({ error: 'Transcript kosong' }, { status: 400 });
 
     // ═══════════════════════════════════════════════════════
-    // PATH 1: Gateway Pipeline (Polyvor)
+    // pi-bansos Pipeline (via callPolyvor → callLLM('long'))
+    // v-cleanup: removed PATH 2 (Groq chunk pipeline). No more legacy
+    // fallback. If pi-bansos fails (all 3 models), returns error.
+    // Nemotron's 1M context can absorb the full transcript (maxInput 200K).
     // ═══════════════════════════════════════════════════════
-    if (process.env.GATEWAY_API_KEY) {
-      console.log('[structure-module] Trying Gateway pipeline...');
-      try {
-        const result = await gatewayPipeline(transcript, materialTexts || []);
-        if (result?.kegiatanPembelajaran?.length > 0) {
-          console.log('[structure-module] Gateway SUCCESS (' + result.kegiatanPembelajaran.length + ' kegiatan)');
-          return Response.json({ ...result, source: 'gateway' });
-        }
-      } catch (e) { console.error('[structure-module] Gateway error:', e); }
-      console.log('[structure-module] Gateway failed, falling back to Groq chunks...');
-    }
+    console.log('[structure-module] Trying pi-bansos pipeline...');
+    try {
+      const result = await gatewayPipeline(transcript, materialTexts || []);
+      if (result?.kegiatanPembelajaran?.length > 0) {
+        console.log('[structure-module] pi-bansos SUCCESS (' + result.kegiatanPembelajaran.length + ' kegiatan)');
+        return Response.json({ ...result, source: 'pi-bansos' });
+      }
+    } catch (e) { console.error('[structure-module] pi-bansos error:', e); }
 
-    // ═══════════════════════════════════════════════════════
-    // PATH 2: Groq Chunk Fallback
-    // ═══════════════════════════════════════════════════════
-    console.log('[structure-module] Using Groq chunk fallback...');
-    const result = await groqPipeline(transcript, materialTexts || []);
-    if (result) {
-      console.log('[structure-module] Groq SUCCESS (' + result.kegiatanPembelajaran.length + ' kegiatan)');
-      return Response.json({ ...result, source: 'groq' });
-    }
-    return Response.json({ error: 'fallback' });
+    return Response.json({ error: 'pi-bansos gagal (semua 3 model gagal). Coba lagi.' });
   } catch (e) {
     console.error('[structure-module] Unhandled:', e);
     return Response.json({ error: 'fallback' });

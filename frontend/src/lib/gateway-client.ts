@@ -1,17 +1,23 @@
 /**
- * Shared LLM client for Lina Learning.
+ * Shared LLM client for Lina Learning — pi-bansos only.
  *
- * Two helpers:
- *   - callLLM(task, system, user, opts)   — NEW (v-pi-bansos): routes to
+ * Two helpers (both route to pi-bansos local proxy):
+ *   - callLLM(task, system, user, opts) — primary helper. Routes to
  *     pi-bansos local proxy at 127.0.0.1:18080 with task-appropriate primary
- *     model + fallback chain (Poolside → Cohere → Nemotron or reverse).
+ *     model + fallback chain (Cohere → Nemotron → Poolside or reverse).
  *     Logs fallback events to llm-health-log.ts for admin panel visibility.
- *   - callPolyvor(model, system, user, opts) — LEGACY: still calls Polyvor
- *     Gateway directly. Kept for endpoints we haven't migrated yet (e.g.
- *     structure-module Tier-1 still uses MODELS.structure = polyvor id).
+ *   - callPolyvor(model, system, user, opts) — kept for backward-compat
+ *     with structure-module.ts callers. Internally just delegates to
+ *     callLLM('long'). The `model` arg is now just a label/tag — actual
+ *     model selection is by task type.
  *
- * Migration plan (when API architecture stabilizes): switch callPolyvor
- * callers to callLLM, delete callPolyvor.
+ * v-cleanup: removed all legacy fallback paths (Groq / Qwen local /
+ * Polyvor Gateway). pi-bansos + its internal fallback chain is the ONLY
+ * LLM path. If all 3 pi-bansos models fail, returns null — caller
+ * handles null as needed.
+ *
+ * Note: OCR (vision) + Whisper (audio) endpoints still use their own
+ * direct fetches — those need capabilities pi-bansos doesn't have.
  */
 
 import {
@@ -34,7 +40,7 @@ export const PI_BANSOS_MODELS = {
   poolside: 'poolside/laguna-s-2.1:free',
 } as const;
 
-// Task type → primary model + fallback order.
+// ── Task type → primary model + fallback order ────────────────────
 // User spec: "Poolside error → retry Cohere; Cohere error → retry Nemotron".
 // For code tasks we use Poolside first (specialized), fallback Cohere → Nemotron.
 // For long/reasoning tasks we use Nemotron first, fallback Cohere → Poolside.
@@ -49,21 +55,17 @@ const TASK_MODEL_CHAIN: Record<LLMTask, readonly string[]> = {
   code:            [PI_BANSOS_MODELS.poolside, PI_BANSOS_MODELS.cohere,   PI_BANSOS_MODELS.nemotron],
 };
 
-// ── LEGACY: Polyvor Gateway (kept for un-migrated endpoints) ──────
-const GATEWAY_URL = 'https://gateway.polyvorlabs.com/v1/chat/completions';
-
-// Model assignments per user spec — unchanged, still points at Polyvor IDs.
-// (callLLM uses PI_BANSOS_MODELS instead — task-based routing.)
+// ── MODELS — kept as LABEL constants for backward-compat ──────────
+// structure-module.ts calls `callPolyvor(MODELS.structure, ...)` etc.
+// callPolyvor now ignores the model arg (delegates to callLLM), so these
+// are just labels used in logs/endpoint-tag.
 export const MODELS = {
-  structure: 'jr/gemini-3.1-pro' as const,
-  structureAlt: 'bb/gpt-5.4' as const,
-  summary: 'bb/claude-sonnet-4.6' as const,
+  structure: 'jr/gemini-3.1-pro' as const,    // legacy label, used as endpoint tag
+  structureAlt: 'bb/gpt-5.4' as const,         // legacy label
+  summary: 'bb/claude-sonnet-4.6' as const,    // legacy label
 } as const;
 
-const MAX_RETRIES = 2;
-const RETRY_DELAYS = [5000, 15000]; // ms
-
-// ── callLLM: pi-bansos with fallback chain ──────────────────────────
+// ── callLLM options + result ──────────────────────────────────────
 export interface CallLLMOpts {
   maxTokens?: number;
   timeout?: number;
@@ -82,7 +84,7 @@ export interface CallLLMResult {
  * callLLM — try primary model first, fall back to other 2 in chain on error.
  * Logs each fallback event to llm-health-log for admin panel visibility.
  *
- * Returns null content if ALL 3 models fail.
+ * Returns null content if ALL 3 pi-bansos models fail (no legacy fallback).
  */
 export async function callLLM(
   task: LLMTask,
@@ -99,12 +101,6 @@ export async function callLLM(
 
   for (let i = 0; i < chain.length; i++) {
     const model = chain[i];
-    const isPrimary = i === 0;
-    if (!isPrimary) {
-      // We're in fallback territory — log that we're about to try this model
-      // (actual event logged after we know the result of the previous attempt)
-    }
-
     const t0 = Date.now();
     try {
       const res = await fetch(`${PI_BANSOS_URL}/chat/completions`, {
@@ -131,7 +127,6 @@ export async function callLLM(
         const errorType = `HTTP_${res.status}`;
         const errorMessage = errBody.slice(0, 200) || res.statusText;
 
-        // Log fallback event (if there's a next model to try)
         if (i + 1 < chain.length) {
           const event: FallbackEvent = {
             timestamp: new Date().toISOString(),
@@ -206,101 +201,17 @@ export async function callLLM(
   return { content: null, modelUsed: null, fallbacksTriggered };
 }
 
-// ── LEGACY: callPolyvor — now routes through callLLM (pi-bansos) first ──
-// Updated v-pi-bansos-migration: try pi-bansos callLLM('long') first; only
-// fall through to Polyvor gateway if pi-bansos fails. This auto-migrates
-// call sites J, K (structure-module Tier-1) + any other callPolyvor caller
-// without needing per-caller code changes.
+// ── callPolyvor — PURE pi-bansos wrapper (legacy compat) ──────────
+// v-cleanup: removed Polyvor Gateway fallback entirely. Now just delegates
+// to callLLM('long'). Kept as a separate function for backward-compat with
+// structure-module.ts callers (which pass MODELS.structure / MODELS.summary
+// as the model arg — that arg is now just a label/tag, ignored at runtime).
 export async function callPolyvor(model: string, systemPrompt: string, userContent: string, opts?: { maxTokens?: number; timeout?: number }): Promise<string | null> {
-  // ── Step 1: try pi-bansos first (task='long' → Nemotron primary 1M ctx) ──
-  const piResult = await callLLM('long', systemPrompt, userContent, {
+  return (await callLLM('long', systemPrompt, userContent, {
     maxTokens: opts?.maxTokens ?? 4096,
     timeout: opts?.timeout ?? 120_000,
     endpoint: `callPolyvor/${model}`,
-  });
-  if (piResult.content) {
-    return piResult.content;
-  }
-  console.warn(`[gateway] pi-bansos failed for ${model}, falling back to Polyvor Gateway...`);
-
-  // ── Step 2: Polyvor Gateway (legacy path, kept as ultimate fallback) ──
-  const maxTokens = opts?.maxTokens ?? 4096;
-  const timeout = opts?.timeout ?? 120_000;
-  const key = process.env.GATEWAY_API_KEY || '';
-
-  if (!key) {
-    console.error('[gateway] No GATEWAY_API_KEY set (and pi-bansos already failed)');
-    return null;
-  }
-
-  let lastError = '';
-
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    if (attempt > 0) {
-      const delay = RETRY_DELAYS[attempt - 1] || 15000;
-      console.log('[gateway] ' + model + ' retry ' + attempt + '/' + MAX_RETRIES + ', waiting ' + (delay/1000) + 's...');
-      await new Promise(r => setTimeout(r, delay));
-    }
-
-    try {
-      const res = await fetch(GATEWAY_URL, {
-        method: 'POST',
-        headers: {
-          Authorization: 'Bearer ' + key,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userContent },
-          ],
-          temperature: 0.2,
-          max_tokens: maxTokens,
-          stream: false,
-        }),
-        signal: AbortSignal.timeout(timeout),
-      });
-
-      if (res.status === 429) {
-        lastError = 'Rate limited (429)';
-        const errBody = await res.text().catch(() => '');
-        console.error('[gateway] ' + model + ' HTTP 429: ' + errBody.slice(0, 100));
-        continue; // retry
-      }
-
-      if (res.status === 401) {
-        const errBody = await res.text().catch(() => '');
-        console.error('[gateway] ' + model + ' HTTP 401: ' + errBody.slice(0, 100));
-        return null; // don't retry auth errors
-      }
-
-      if (res.ok) {
-        const data = await res.json();
-        const content = data.choices?.[0]?.message?.content || null;
-        if (content) {
-          console.log('[gateway] ' + model + ' success (' + (data.usage?.total_tokens ?? '?') + ' tokens)');
-          return content;
-        }
-        lastError = 'Empty response content';
-        console.error('[gateway] ' + model + ' empty content');
-        continue;
-      }
-
-      const errBody = await res.text().catch(() => '');
-      lastError = 'HTTP ' + res.status;
-      console.error('[gateway] ' + model + ' HTTP ' + res.status + ': ' + errBody.slice(0, 150));
-      return null;
-    } catch (e: any) {
-      lastError = e?.message || 'unknown';
-      console.error('[gateway] ' + model + ' fail: ' + lastError);
-      if (lastError.includes('timeout') || lastError.includes('abort')) return null;
-      continue;
-    }
-  }
-
-  console.error('[gateway] ' + model + ' all retries failed: ' + lastError);
-  return null;
+  })).content;
 }
 
 export function extractJson(text: string): string {
