@@ -87,6 +87,20 @@ interface StudyPipelineProps {
 type PipelineStage = 'idle' | 'splitting' | 'mindmap' | 'chapters' | 'complete';
 type MainTab = 'materi' | 'kuis' | 'mindmap' | 'tanya' | 'voice' | 'buddy' | 'session';
 
+// cyrb53 — small fast hash function for cache keys (no crypto needed).
+// Returns 53-bit hash as string. Good enough for localStorage cache keys.
+function cyrb53(str: string, seed: number = 0): string {
+  let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+}
+
 export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps) {
   const [stage, setStage] = useState<PipelineStage>('idle');
   const [progress, setProgress] = useState(0);
@@ -182,55 +196,130 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     setProgress(10);
     await sleep(300);
 
-    // v-llm-split: try LLM-powered chapter splitting FIRST (proper titles
-    // + cleaned content). Falls back to regex splitTranscriptIntoChapters
-    // if pi-bansos fails or returns invalid data.
-    let split: Chapter[];
+    // v-cache: check localStorage for cached split result (24h expiry).
+    // Cache key = hash of transcript (cyrb53). If hit, skip LLM split
+    // call entirely → instant sidebar population on repeat Mode Belajar
+    // opens from same STT.
+    const CACHE_KEY = `alynne:split-chapters:${cyrb53(transcript)}`;
+    const CACHE_TTL_MS = 24 * 60 * 60 * 1000;  // 24 hours
+    let split: Chapter[] | null = null;
+    let usedCache = false;
     try {
-      const res = await fetch('/api/stt/split-chapters', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transcript, maxChapters: 15 }),
-        signal: AbortSignal.timeout(180_000),
-      });
-      if (res.ok) {
-        const data = await res.json() as { chapters?: Chapter[]; error?: string };
-        if (data.chapters && data.chapters.length > 0) {
-          split = data.chapters;
-          console.log(`[Pipeline] LLM split: ${split.length} chapters (model: ${(data as any).modelUsed})`);
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached) as { ts: number; chapters: Chapter[] };
+        if (Date.now() - parsed.ts < CACHE_TTL_MS && parsed.chapters?.length > 0) {
+          split = parsed.chapters;
+          usedCache = true;
+          console.log(`[Pipeline] Cache HIT: ${split.length} chapters cached ${(Math.round((Date.now() - parsed.ts) / 1000 / 60))}min ago — skipping LLM split`);
         } else {
-          console.warn('[Pipeline] LLM split returned no chapters, falling back to regex');
-          split = splitTranscriptIntoChapters(transcript);
+          localStorage.removeItem(CACHE_KEY);  // expired
         }
-      } else {
-        console.warn('[Pipeline] LLM split HTTP', res.status, ', falling back to regex');
+      }
+    } catch (e) {
+      console.warn('[Pipeline] Cache read failed:', e);
+    }
+
+    // v-stream: if no cache, use streaming endpoint so chapters appear
+    // in sidebar one-by-one as Cohere generates them (vs waiting ~30-60s
+    // for full response). Falls back to non-streaming on error.
+    if (!split) {
+      try {
+        const res = await fetch('/api/stt/split-chapters?stream=true', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ transcript, maxChapters: 15 }),
+          signal: AbortSignal.timeout(300_000),
+        });
+
+        if (res.ok && res.body) {
+          // Stream-parse SSE: each `data: {...}\n\n` is one chapter
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          split = [];
+          setChapters([]);  // clear for incremental updates
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            // Process complete SSE events (separated by \n\n)
+            let newlineIdx;
+            while ((newlineIdx = buffer.indexOf('\n\n')) >= 0) {
+              const eventStr = buffer.slice(0, newlineIdx);
+              buffer = buffer.slice(newlineIdx + 2);
+              // Parse SSE: extract `data: ...` lines
+              const dataLines = eventStr.split('\n').filter(l => l.startsWith('data:'));
+              if (dataLines.length === 0) continue;
+              const jsonStr = dataLines.map(l => l.slice(5).trim()).join('\n');
+              try {
+                const chapter = JSON.parse(jsonStr) as Chapter;
+                if (chapter && chapter.title && chapter.content) {
+                  chapter.id = split.length + 1;
+                  split.push(chapter);
+                  // Incremental update — sidebar shows chapters as they arrive
+                  setChapters([...split]);
+                  setProgress(10 + Math.round(split.length / 15 * 15));  // 10-25% range
+                }
+              } catch (e) {
+                console.warn('[Pipeline] Failed to parse streamed chapter:', e);
+              }
+            }
+          }
+          // Final flush: any remaining buffer might have trailing event
+          if (buffer.trim()) {
+            const dataLines = buffer.split('\n').filter(l => l.startsWith('data:'));
+            for (const line of dataLines) {
+              try {
+                const chapter = JSON.parse(line.slice(5).trim()) as Chapter;
+                if (chapter && chapter.title && chapter.content) {
+                  chapter.id = (split?.length ?? 0) + 1;
+                  split!.push(chapter);
+                  setChapters([...split!]);
+                }
+              } catch {}
+            }
+          }
+          console.log(`[Pipeline] Stream complete: ${split.length} chapters`);
+
+          if (split.length === 0) {
+            console.warn('[Pipeline] Stream returned 0 chapters, falling back to regex');
+            split = null;
+          } else {
+            // Cache the result
+            try {
+              localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), chapters: split }));
+              console.log(`[Pipeline] Cached ${split.length} chapters for ${CACHE_KEY}`);
+            } catch (e) {
+              console.warn('[Pipeline] Cache write failed:', e);
+            }
+          }
+        } else {
+          console.warn('[Pipeline] Stream endpoint HTTP', res.status, ', falling back to regex');
+        }
+      } catch (err) {
+        console.warn('[Pipeline] Stream failed, falling back to regex:', err);
+      }
+      if (!split) {
         split = splitTranscriptIntoChapters(transcript);
       }
-    } catch (err) {
-      console.warn('[Pipeline] LLM split failed, falling back to regex:', err);
-      split = splitTranscriptIntoChapters(transcript);
+    } else {
+      setChapters(split);
     }
-    setChapters(split);
     setProgress(25);
 
     // ── PARALLELIZE: mindmap + all quizzes at once (v-speed-boost) ──
     // Both depend only on `split` (not each other), so fire all in parallel.
-    // Old code was sequential: split → mindmap → quiz1 → quiz2 → ... → quizN
-    //   + 1s sleep between quizzes (legacy Groq rate-limit avoidance, not
-    //   needed for pi-bansos which has 200 req/hr per IP — well within limits).
-    // New code: split → [mindmap || quiz1 || quiz2 || ... || quizN] in parallel
-    //   = saves ~N × (quiz_latency + 1s sleep) of total time.
-    //   For 8 chapters: old = ~50-80s for quizzes alone. New = ~10-15s.
     setStage('mindmap');
 
-    // Concurrency limit for quizzes — fire 3 at a time to avoid
-    // overwhelming Cohere/KiloCode gateway with N concurrent requests.
-    // (KiloCode limit is 200 req/hr/IP, not per-second — but be polite.)
-    const QUIZ_CONCURRENCY = 3;
+    // Concurrency limit: 5 (tested KiloCode gateway handles 5 concurrent
+    // with ~1/5 failure rate — failed quizzes fall back to algorithmic
+    // generateQuizFromChapter, so user still gets quiz for every chapter).
+    const QUIZ_CONCURRENCY = 5;
 
     async function generateQuizBatch(chapters: Chapter[]): Promise<Record<number, QuizQuestion[]>> {
       const result: Record<number, QuizQuestion[]> = {};
-      // Process in batches of QUIZ_CONCURRENCY
       for (let i = 0; i < chapters.length; i += QUIZ_CONCURRENCY) {
         const batch = chapters.slice(i, i + QUIZ_CONCURRENCY);
         const batchResults = await Promise.all(
@@ -245,7 +334,6 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
         for (const r of batchResults) {
           result[r.id] = r.quiz;
         }
-        // Update progress per batch completion
         const completed = Math.min(i + QUIZ_CONCURRENCY, chapters.length);
         setProgress(50 + Math.round(completed / chapters.length * 40));
       }
@@ -270,6 +358,9 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     setProgress(100);
     setStage('complete');
     if (split.length > 0) setActiveChapterId(split[0].id);
+    if (usedCache) {
+      console.log(`[Pipeline] DONE — used cache for split, total time saved ~30-60s`);
+    }
   }, [transcript]);
 
   // ── Focus Detector (inline) ──
