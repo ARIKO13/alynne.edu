@@ -372,7 +372,7 @@ export const POST: APIRoute = async ({ request }) => {
     // (no timeout/truncation). Chunks processed 3-at-a-time for speed.
     
     const CHUNK_SIZE = 8000; // ~2K tokens per chunk — reliable for LLM
-    const CHUNK_CONCURRENCY = 3; // 3 chunks in parallel
+    const CHUNK_CONCURRENCY = 5; // 5 chunks in parallel — 1/5 may fail, others compensate
     
     function splitIntoChunks(text: string, maxChars: number): string[] {
       if (text.length <= maxChars) return [text];
