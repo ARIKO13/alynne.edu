@@ -31,6 +31,15 @@ import {
 const PI_BANSOS_URL = process.env.PI_BANSOS_URL || 'http://127.0.0.1:18080/v1';
 const PI_BANSOS_KEY = 'placeholder'; // pi-bansos doesn't check auth header
 
+// ── Cloudflare Worker relays (fallback IPs for >200 req/hr) ────────
+// Each Worker runs on a different CF edge node → different IP → its own
+// 200 req/hr KiloCode quota. Comma-separated URLs in CF_RELAY_URLS env.
+// Example: CF_RELAY_URLS="https://relay1.workers.dev,https://relay2.workers.dev"
+const CF_RELAY_URLS = (process.env.CF_RELAY_URLS || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
 // ── Model IDs (pi-bansos allowlist — 3 verified-working KiloCode models) ─
 export const PI_BANSOS_MODELS = {
   // Fast, structured JSON, short text correction
@@ -199,7 +208,60 @@ export async function callLLM(
     }
   }
 
-  console.error(`[callLLM] ${endpoint} all ${chain.length} pi-bansos models failed`);
+  console.error(`[callLLM] ${endpoint} all ${chain.length} pi-bansos models failed, trying CF relay fallback...`);
+
+  // ── CF WORKER RELAY FALLBACK ──────────────────────────────────────
+  // Each Worker proxies to KiloCode from a DIFFERENT CF edge IP.
+  // 200 req/hr applies to the Worker's IP, not VPS IP → more capacity.
+  for (const relayUrl of CF_RELAY_URLS) {
+    // Try the PRIMARY model via this CF relay
+    const model = chain[0];
+    try {
+      const res = await fetch(`${relayUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${PI_BANSOS_KEY}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userContent },
+          ],
+          temperature,
+          max_tokens: maxTokens,
+          stream: false,
+        }),
+        signal: AbortSignal.timeout(timeout),
+      });
+
+      if (res.ok) {
+        const data = await res.json() as any;
+        const content = data.choices?.[0]?.message?.content || data.choices?.[0]?.message?.reasoning || null;
+        if (content) {
+          const event: FallbackEvent = {
+            timestamp: new Date().toISOString(),
+            fromModel: 'pi-bansos-all-failed',
+            toModel: `cf-relay/${model}`,
+            task,
+            errorType: 'PiBansosAllDown',
+            errorMessage: `pi-bansos failed → CF relay ${relayUrl}`,
+            endpoint,
+          };
+          logFallbackEvent(event);
+          fallbacksTriggered.push(event);
+          incrementUsage();
+          console.warn(`[callLLM] ${endpoint} CF relay SUCCESS (${relayUrl}) with ${model}`);
+          return { content, modelUsed: `cf-relay/${model}`, fallbacksTriggered };
+        }
+      }
+      console.warn(`[callLLM] ${endpoint} CF relay ${relayUrl} failed (HTTP ${res.status})`);
+    } catch (e: any) {
+      console.warn(`[callLLM] ${endpoint} CF relay ${relayUrl} error:`, e?.message);
+    }
+  }
+
   return { content: null, modelUsed: null, fallbacksTriggered };
 }
 
