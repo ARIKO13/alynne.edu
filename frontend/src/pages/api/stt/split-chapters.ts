@@ -366,43 +366,112 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    // ── NON-STREAMING PATH: original JSON response ──
-    const result = await callLLM('structured-json', SYSTEM_PROMPT, userPrompt, {
-      maxTokens: 30000,  // bumped: full content per chapter can be long
-      timeout: 300_000,  // 5 min — long content takes longer
-      temperature: 0.2,
-      endpoint: 'stt/split-chapters',
-    });
-
-    if (!result.content) {
-      console.error('[split-chapters] callLLM returned null (all 3 pi-bansos models failed)');
-      return Response.json({ error: 'all-failed' }, { status: 200 });
+    // ── NON-STREAMING PATH ──
+    // v-chunked: for long transcripts, split into chunks and process
+    // in PARALLEL. Each chunk is small enough for LLM to handle reliably
+    // (no timeout/truncation). Chunks processed 3-at-a-time for speed.
+    
+    const CHUNK_SIZE = 8000; // ~2K tokens per chunk — reliable for LLM
+    const CHUNK_CONCURRENCY = 3; // 3 chunks in parallel
+    
+    function splitIntoChunks(text: string, maxChars: number): string[] {
+      if (text.length <= maxChars) return [text];
+      const chunks: string[] = [];
+      // Split by sentence boundary
+      const sentences = text.split(/(?<=[.!?])\s+/);
+      let current = '';
+      for (const s of sentences) {
+        if (current.length + s.length > maxChars && current.length > 200) {
+          chunks.push(current.trim());
+          current = s;
+        } else {
+          current += (current ? ' ' : '') + s;
+        }
+      }
+      if (current.trim()) chunks.push(current.trim());
+      return chunks;
     }
-
-    // Parse JSON — be defensive about LLM output quirks
-    let parsed: { chapters?: { title?: string; content?: string }[] } = {};
-    try {
-      parsed = JSON.parse(extractJson(result.content));
-    } catch (e) {
-      // Try regex extract as last resort
-      const match = result.content.match(/"chapters"\s*:\s*\[([\s\S]*?)\]\s*\}?$/);
-      if (match) {
-        try {
-          parsed = JSON.parse('{"chapters":[' + match[1] + ']}');
-        } catch { /* leave parsed = {} */ }
+    
+    async function processChunk(chunk: string, chunkIdx: number): Promise<{ title?: string; content?: string }[]> {
+      const chunkPrompt = `Split this lecture transcript SEGMENT into 2-5 chapters. This is segment ${chunkIdx + 1} of a longer transcript.\n\nTRANSCRIPT SEGMENT:\n${chunk}\n\nOutput JSON only.`;
+      
+      const result = await callLLM('structured-json', SYSTEM_PROMPT, chunkPrompt, {
+        maxTokens: 8000,  // smaller per chunk — faster + no truncation
+        timeout: 120_000, // 2 min per chunk (enough for small input)
+        temperature: 0.2,
+        endpoint: `stt/split-chapters/chunk-${chunkIdx}`,
+      });
+      
+      if (!result.content) return [];
+      
+      try {
+        const parsed = JSON.parse(extractJson(result.content));
+        return parsed.chapters || [];
+      } catch {
+        const match = result.content.match(/"chapters"\s*:\s*\[([\s\S]*?)\]/);
+        if (match) {
+          try { return JSON.parse('{"chapters":[' + match[1] + ']}').chapters || []; } catch { return []; }
+        }
+        return [];
       }
     }
-
-    const rawChapters = parsed.chapters || [];
+    
+    // Check if transcript needs chunking
+    const needsChunking = transcript.length > CHUNK_SIZE * 2; // > 16K chars
+    let rawChapters: { title?: string; content?: string }[] = [];
+    
+    if (needsChunking) {
+      // CHUNKED PARALLEL PATH — for long transcripts
+      const chunks = splitIntoChunks(transcript, CHUNK_SIZE);
+      console.log(`[split-chapters] Long transcript (${transcript.length} chars) → ${chunks.length} chunks, processing ${CHUNK_CONCURRENCY} at a time`);
+      
+      // Process chunks in batches of CHUNK_CONCURRENCY
+      for (let i = 0; i < chunks.length; i += CHUNK_CONCURRENCY) {
+        const batch = chunks.slice(i, i + CHUNK_CONCURRENCY);
+        const batchResults = await Promise.all(
+          batch.map((chunk, j) => processChunk(chunk, i + j))
+        );
+        for (const chapters of batchResults) {
+          rawChapters.push(...chapters);
+        }
+        console.log(`[split-chapters] Batch ${Math.floor(i / CHUNK_CONCURRENCY) + 1}/${Math.ceil(chunks.length / CHUNK_CONCURRENCY)} done — ${rawChapters.length} chapters total so far`);
+      }
+      
+      console.log(`[split-chapters] All chunks done: ${rawChapters.length} raw chapters`);
+    } else {
+      // SINGLE CALL PATH — for short transcripts (original approach)
+      const result = await callLLM('structured-json', SYSTEM_PROMPT, userPrompt, {
+        maxTokens: 30000,
+        timeout: 300_000,
+        temperature: 0.2,
+        endpoint: 'stt/split-chapters',
+      });
+      
+      if (!result.content) {
+        console.error('[split-chapters] callLLM returned null');
+        return Response.json({ error: 'all-failed' }, { status: 200 });
+      }
+      
+      try {
+        const parsed = JSON.parse(extractJson(result.content));
+        rawChapters = parsed.chapters || [];
+      } catch {
+        const match = result.content.match(/"chapters"\s*:\s*\[([\s\S]*?)\]/);
+        if (match) {
+          try { rawChapters = JSON.parse('{"chapters":[' + match[1] + ']}').chapters || []; } catch {}
+        }
+      }
+    }
+    
     if (rawChapters.length === 0) {
-      console.error('[split-chapters] LLM returned 0 chapters');
+      console.error('[split-chapters] 0 chapters from LLM');
       return Response.json({ error: 'no-chapters' }, { status: 200 });
     }
 
     // Normalize + assign IDs + strip greetings + dedup
     const seenTitles = new Set<string>();
     const chapters = rawChapters
-      .slice(0, maxChapters)
+      .slice(0, maxChapters * 3) // allow more before dedup filtering
       .map((c, i) => {
         const title = String(c.title || '').trim().slice(0, 100) || `Bab ${i + 1}`;
         const content = stripGreetings(String(c.content || ''));
@@ -411,10 +480,11 @@ export const POST: APIRoute = async ({ request }) => {
       .filter(c => {
         if (c.content.length < 20) return false;
         const key = c.title.toLowerCase();
-        if (seenTitles.has(key)) return false;  // dedup
+        if (seenTitles.has(key)) return false;
         seenTitles.add(key);
         return true;
       })
+      .slice(0, maxChapters)
       .map((c, i) => ({ id: i + 1, ...c }));
 
     if (chapters.length === 0) {
@@ -422,15 +492,11 @@ export const POST: APIRoute = async ({ request }) => {
       return Response.json({ error: 'no-valid-chapters' }, { status: 200 });
     }
 
-    // Renumber IDs after filter
-    chapters.forEach((c, i) => { c.id = i + 1; });
-
-    console.log(`[split-chapters] SUCCESS: ${chapters.length} chapters (model: ${result.modelUsed}, fallbacks: ${result.fallbacksTriggered.length})`);
+    console.log(`[split-chapters] SUCCESS: ${chapters.length} chapters from ${rawChapters.length} raw`);
 
     return Response.json({
       chapters,
-      modelUsed: result.modelUsed,
-      fallbacksTriggered: result.fallbacksTriggered.length,
+      chunked: needsChunking,
     });
   } catch (e: any) {
     console.error('[split-chapters] fatal:', e);
