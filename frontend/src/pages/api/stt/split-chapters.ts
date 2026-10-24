@@ -193,7 +193,10 @@ export const POST: APIRoute = async ({ request }) => {
             while (true) {
               const { done, value } = await reader.read();
               if (done) break;
-              buffer += decoder.decode(value, { stream: true });
+              // Normalize line endings: pi-bansos may use \r\n\r\n for SSE
+              // event boundaries (standard HTTP). Convert to \n so our
+              // indexOf('\n\n') search works correctly.
+              buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n');
 
               // pi-bansos streams OpenAI-format chunks: each chunk is
               // `data: {"choices":[{"delta":{"content":"..."}}]}\n\n`
@@ -212,13 +215,13 @@ export const POST: APIRoute = async ({ request }) => {
 
                 try {
                   const chunk = JSON.parse(jsonStr);
-                  // v-cohere-fix: Cohere North Mini Code emits output via
-                  // delta.reasoning (chain-of-thought visible) instead of
-                  // delta.content. Capture BOTH so we don't miss the actual
-                  // NDJSON output.
-                  const delta = chunk.choices?.[0]?.delta?.content
-                    || chunk.choices?.[0]?.delta?.reasoning
-                    || '';
+                  // Capture ONLY delta.content (not delta.reasoning).
+                  // Reasoning is Cohere's internal chain-of-thought — it
+                  // ALSO contains the NDJSON (model "writes" output in
+                  // reasoning, then outputs it in content). If we capture
+                  // both, we'd get DUPLICATE chapters. Content-only is
+                  // correct + deduplicates automatically.
+                  const delta = chunk.choices?.[0]?.delta?.content || '';
                   if (!delta) continue;
 
                   // delta is a fragment of LLM output (NDJSON text).
