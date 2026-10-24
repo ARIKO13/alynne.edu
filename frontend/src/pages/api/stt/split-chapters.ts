@@ -396,7 +396,7 @@ export const POST: APIRoute = async ({ request }) => {
       const chunkPrompt = `Split this lecture transcript SEGMENT into 2-5 chapters. This is segment ${chunkIdx + 1} of a longer transcript.\n\nTRANSCRIPT SEGMENT:\n${chunk}\n\nOutput JSON only.`;
       
       const result = await callLLM('structured-json', SYSTEM_PROMPT, chunkPrompt, {
-        maxTokens: 4000,  // reduced from 8000 — prevents Cohere timeout (50 tok/s × 4000 = 80s < 120s)
+        maxTokens: 4000,
         timeout: 120_000,
         temperature: 0.2,
         endpoint: `stt/split-chapters/chunk-${chunkIdx}`,
@@ -404,16 +404,60 @@ export const POST: APIRoute = async ({ request }) => {
       
       if (!result.content) return [];
       
+      const raw = result.content;
+      
+      // v-robust-parse: try multiple strategies to extract chapters from
+      // Cohere's response (which may mix reasoning text with JSON).
+      
+      // Strategy 1: Direct JSON parse (fastest, works if content is clean JSON)
       try {
-        const parsed = JSON.parse(extractJson(result.content));
-        return parsed.chapters || [];
-      } catch {
-        const match = result.content.match(/"chapters"\s*:\s*\[([\s\S]*?)\]/);
-        if (match) {
-          try { return JSON.parse('{"chapters":[' + match[1] + ']}').chapters || []; } catch { return []; }
-        }
-        return [];
+        const parsed = JSON.parse(raw);
+        if (parsed.chapters && Array.isArray(parsed.chapters)) return parsed.chapters;
+      } catch {}
+      
+      // Strategy 2: Extract from markdown code block
+      const cb = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (cb) {
+        try {
+          const parsed = JSON.parse(cb[1].trim());
+          if (parsed.chapters) return parsed.chapters;
+        } catch {}
       }
+      
+      // Strategy 3: Find {"chapters":[...]} specifically (not greedy)
+      // This handles Cohere reasoning text mixed with JSON:
+      // "I think {"title":"x"} is good. Final: {"chapters":[...]}"
+      // The greedy \{[\s\S]*\} would capture from first { to last },
+      // including non-JSON text. This regex targets the chapters array.
+      const chaptersMatch = raw.match(/"chapters"\s*:\s*\[([\s\S]*?)\]\s*\}/);
+      if (chaptersMatch) {
+        try {
+          const parsed = JSON.parse('{"chapters":[' + chaptersMatch[1] + ']}');
+          if (parsed.chapters) return parsed.chapters;
+        } catch {}
+      }
+      
+      // Strategy 4: Find individual {"title":"...","content":"..."} objects
+      // Handles NDJSON or mixed format where chapters are separate JSON objects
+      const titleContentMatches = raw.matchAll(/\{"title"\s*:\s*"([^"]+)"\s*,\s*"content"\s*:\s*"((?:[^"\\]|\\.)*)"\s*\}/g);
+      const chapters: { title?: string; content?: string }[] = [];
+      for (const m of titleContentMatches) {
+        chapters.push({ title: m[1], content: m[2].replace(/\\n/g, '\n').replace(/\\"/g, '"') });
+      }
+      if (chapters.length > 0) {
+        console.log(`[split-chapters] chunk-${chunkIdx}: extracted ${chapters.length} chapters via Strategy 4 (regex)`);
+        return chapters;
+      }
+      
+      // Strategy 5: Last resort — try extractJson (greedy, might work for clean responses)
+      try {
+        const jsonStr = extractJson(raw);
+        const parsed = JSON.parse(jsonStr);
+        if (parsed.chapters) return parsed.chapters;
+      } catch {}
+      
+      console.error(`[split-chapters] chunk-${chunkIdx}: ALL parse strategies failed. Response length=${raw.length}, first 200 chars:`, raw.slice(0, 200));
+      return [];
     }
     
     // Check if transcript needs chunking
