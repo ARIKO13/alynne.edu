@@ -117,6 +117,32 @@ CRITICAL: Output ONE JSON object per line. Each line must be parseable independe
 
 REMEMBER: Content = FULL transcript text per topic (greetings/intermezzo STRIPPED), NOT a summary.`;
 
+// ── Server-side greeting/intermezzo strip — safety net for when LLM
+// doesn't follow prompt instructions. Removes patterns that should
+// never appear in clean materi content.
+function stripGreetings(text: string): string {
+  let r = text;
+  // Remove bracketed stage directions: [tertawa], [terkesiap], [tawa], [musik], etc.
+  r = r.replace(/\[(?:tertawa|terkesiap|tawa|klik|musik|iringan|suara|background|aksi|tepuk tangan)\]/gi, '');
+  // Remove greetings at start of content
+  r = r.replace(/^(?:Selamat\s+(?:pagi|siang|sore|malam)|Halo+|Assalamualaikum|Pagi|Sore|Malam)[,!]?\.?\s*/i, '');
+  // Remove audience address (anywhere in text)
+  r = r.replace(/(?:warga\s+CPL(?:\s+sekalian)?|teman-teman|rekan-rekan|bapak(?:-?ibu)?|guys|everybody|semua)[,!]?\.?\s*/gi, '');
+  // Remove "Breaking news" / "Berita terkini" intermezzo at start
+  r = r.replace(/^(?:Breaking\s+news|Berita\s+terkini|Kabar\s+terbaru)[,!]?\.?\s*/i, '');
+  // Remove "Oke, jadi" / "Jadi gini" / "Nah, jadi" meta-commentary at start
+  r = r.replace(/^(?:Oke,?\s*(?:jadi|guar|lanjut)?|Jadi\s+gini|Nah,?\s*jadi?|Ya\s+jadi|Eh,?|Iya,?|Ya,?|Oke\s+jadi|Gini,?)[,!]?\.?\s*/i, '');
+  // Remove "gua mau bahas" / "gua bilang" / "kayak gua bilang"
+  r = r.replace(/(?:gua\s+mau\s+bahas|gua\s+bilang|kayak\s+gua\s+bilang|gua\s+jelasin)[,!]?\.?\s*/gi, '');
+  // Remove pure filler phrases
+  r = r.replace(/\b(?:gitu|ya\s+gitu|kan\s+gitu|nah\s+gitu)\b[,.!?]?\s*/gi, '');
+  // Clean up double spaces + leading/trailing whitespace
+  r = r.replace(/\s{2,}/g, ' ').trim();
+  // Capitalize first letter
+  if (r.length > 0) r = r.charAt(0).toUpperCase() + r.slice(1);
+  return r;
+}
+
 export const POST: APIRoute = async ({ request }) => {
   try {
     const session = await getSession(request);
@@ -153,6 +179,7 @@ export const POST: APIRoute = async ({ request }) => {
       const piBansosUrl = (process.env.PI_BANSOS_URL || 'http://127.0.0.1:18080/v1');
       const encoder = new TextEncoder();
       let streamLineBuffer = '';  // declared BEFORE ReadableStream (TS strict mode)
+      const emittedTitles = new Set<string>();  // dedup: skip chapters with same title
 
       const stream = new ReadableStream({
         async start(controller) {
@@ -243,13 +270,22 @@ export const POST: APIRoute = async ({ request }) => {
                     try {
                       const chapter = JSON.parse(line);
                       if (chapter && chapter.title && chapter.content) {
+                        const title = String(chapter.title).trim().slice(0, 100);
+                        // Dedup: skip if we already emitted a chapter with this title
+                        if (emittedTitles.has(title.toLowerCase())) {
+                          console.log(`[split-chapters stream] SKIP duplicate: "${title}"`);
+                          continue;
+                        }
+                        emittedTitles.add(title.toLowerCase());
+                        // Strip greetings/intermezzo that LLM may have missed
+                        const cleanContent = stripGreetings(String(chapter.content));
+                        if (cleanContent.length < 20) continue;  // skip if too short after stripping
                         chapterIdx++;
-                        // Emit as SSE event to client
                         const chapterOut = {
                           id: chapterIdx,
-                          title: String(chapter.title).slice(0, 100),
-                          content: String(chapter.content),
-                          wordCount: String(chapter.content).split(/\s+/).filter(Boolean).length,
+                          title,
+                          content: cleanContent,
+                          wordCount: cleanContent.split(/\s+/).filter(Boolean).length,
                         };
                         controller.enqueue(encoder.encode(`data: ${JSON.stringify(chapterOut)}\n\n`));
                       }
@@ -272,12 +308,17 @@ export const POST: APIRoute = async ({ request }) => {
                 try {
                   const chapter = JSON.parse(trimmed);
                   if (chapter && chapter.title && chapter.content) {
+                    const title = String(chapter.title).trim().slice(0, 100);
+                    if (emittedTitles.has(title.toLowerCase())) continue;
+                    emittedTitles.add(title.toLowerCase());
+                    const cleanContent = stripGreetings(String(chapter.content));
+                    if (cleanContent.length < 20) continue;
                     chapterIdx++;
                     const chapterOut = {
                       id: chapterIdx,
-                      title: String(chapter.title).slice(0, 100),
-                      content: String(chapter.content),
-                      wordCount: String(chapter.content).split(/\s+/).filter(Boolean).length,
+                      title,
+                      content: cleanContent,
+                      wordCount: cleanContent.split(/\s+/).filter(Boolean).length,
                     };
                     controller.enqueue(encoder.encode(`data: ${JSON.stringify(chapterOut)}\n\n`));
                   }
@@ -342,20 +383,23 @@ export const POST: APIRoute = async ({ request }) => {
       return Response.json({ error: 'no-chapters' }, { status: 200 });
     }
 
-    // Normalize + assign IDs
+    // Normalize + assign IDs + strip greetings + dedup
+    const seenTitles = new Set<string>();
     const chapters = rawChapters
       .slice(0, maxChapters)
       .map((c, i) => {
         const title = String(c.title || '').trim().slice(0, 100) || `Bab ${i + 1}`;
-        const content = String(c.content || '').trim();
-        return {
-          id: i + 1,
-          title,
-          content,
-          wordCount: content.split(/\s+/).filter(Boolean).length,
-        };
+        const content = stripGreetings(String(c.content || ''));
+        return { title, content, wordCount: content.split(/\s+/).filter(Boolean).length };
       })
-      .filter(c => c.content.length > 20);  // skip empty/too-short chapters
+      .filter(c => {
+        if (c.content.length < 20) return false;
+        const key = c.title.toLowerCase();
+        if (seenTitles.has(key)) return false;  // dedup
+        seenTitles.add(key);
+        return true;
+      })
+      .map((c, i) => ({ id: i + 1, ...c }));
 
     if (chapters.length === 0) {
       console.error('[split-chapters] All chapters had empty content');

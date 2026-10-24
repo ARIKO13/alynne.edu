@@ -200,10 +200,9 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     // Cache key = hash of transcript (cyrb53). If hit, skip LLM split
     // call entirely → instant sidebar population on repeat Mode Belajar
     // opens from same STT.
-    // Bumped to v3: streaming bug fixed (line-ending normalization +
-    // content-only delta capture). Old cached entries from broken stream
-    // (0 chapters) must be evicted.
-    const CACHE_KEY = `alynne:split-chapters-v3:${cyrb53(transcript)}`;
+    // Bumped to v4: dedup + stripGreetings server-side. Old cached entries
+    // with duplicate chapters + "Halo warga CPL" greetings must be evicted.
+    const CACHE_KEY = `alynne:split-chapters-v4:${cyrb53(transcript)}`;
     const CACHE_TTL_MS = 24 * 60 * 60 * 1000;  // 24 hours
     let split: Chapter[] | null = null;
     let usedCache = false;
