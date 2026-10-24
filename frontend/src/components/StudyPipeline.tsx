@@ -200,9 +200,9 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     // Cache key = hash of transcript (cyrb53). If hit, skip LLM split
     // call entirely → instant sidebar population on repeat Mode Belajar
     // opens from same STT.
-    // Bumped to v5: added explicit LANGUAGE instruction (Bahasa Indonesia only,
-    // no English output). Old cached entries with English content must be evicted.
-    const CACHE_KEY = `alynne:split-chapters-v5:${cyrb53(transcript)}`;
+    // Bumped to v6: reverted to non-streaming (reliable). Old entries from
+    // broken streaming (0 chapters) must be evicted.
+    const CACHE_KEY = `alynne:split-chapters-v6:${cyrb53(transcript)}`;
     const CACHE_TTL_MS = 24 * 60 * 60 * 1000;  // 24 hours
     let split: Chapter[] | null = null;
     let usedCache = false;
@@ -222,89 +222,43 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
       console.warn('[Pipeline] Cache read failed:', e);
     }
 
-    // v-stream: if no cache, use streaming endpoint so chapters appear
-    // in sidebar one-by-one as Cohere generates them (vs waiting ~30-60s
-    // for full response). Falls back to non-streaming on error.
+    // v-reliable: use NON-STREAMING endpoint as PRIMARY (more reliable).
+    // Streaming was too fragile (SSE parsing + NDJSON buffering + line-ending
+    // normalization). If any step failed → 0 chapters. Non-streaming uses
+    // callLLM directly → returns full JSON → no parsing complexity.
+    // Falls back to regex only if both LLM + non-streaming fail.
     if (!split) {
       try {
-        const res = await fetch('/api/stt/split-chapters?stream=true', {
+        const res = await fetch('/api/stt/split-chapters', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ transcript, maxChapters: 15 }),
           signal: AbortSignal.timeout(300_000),
         });
-
-        if (res.ok && res.body) {
-          // Stream-parse SSE: each `data: {...}\n\n` is one chapter
-          const reader = res.body.getReader();
-          const decoder = new TextDecoder();
-          let buffer = '';
-          split = [];
-          setChapters([]);  // clear for incremental updates
-
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-            // Process complete SSE events (separated by \n\n)
-            let newlineIdx;
-            while ((newlineIdx = buffer.indexOf('\n\n')) >= 0) {
-              const eventStr = buffer.slice(0, newlineIdx);
-              buffer = buffer.slice(newlineIdx + 2);
-              // Parse SSE: extract `data: ...` lines
-              const dataLines = eventStr.split('\n').filter(l => l.startsWith('data:'));
-              if (dataLines.length === 0) continue;
-              const jsonStr = dataLines.map(l => l.slice(5).trim()).join('\n');
-              try {
-                const chapter = JSON.parse(jsonStr) as Chapter;
-                if (chapter && chapter.title && chapter.content) {
-                  chapter.id = split.length + 1;
-                  split.push(chapter);
-                  // Incremental update — sidebar shows chapters as they arrive
-                  setChapters([...split]);
-                  setProgress(10 + Math.round(split.length / 15 * 15));  // 10-25% range
-                }
-              } catch (e) {
-                console.warn('[Pipeline] Failed to parse streamed chapter:', e);
-              }
-            }
-          }
-          // Final flush: any remaining buffer might have trailing event
-          if (buffer.trim()) {
-            const dataLines = buffer.split('\n').filter(l => l.startsWith('data:'));
-            for (const line of dataLines) {
-              try {
-                const chapter = JSON.parse(line.slice(5).trim()) as Chapter;
-                if (chapter && chapter.title && chapter.content) {
-                  chapter.id = (split?.length ?? 0) + 1;
-                  split!.push(chapter);
-                  setChapters([...split!]);
-                }
-              } catch {}
-            }
-          }
-          console.log(`[Pipeline] Stream complete: ${split.length} chapters`);
-
-          if (split.length === 0) {
-            console.warn('[Pipeline] Stream returned 0 chapters, falling back to regex');
-            split = null;
+        if (res.ok) {
+          const data = await res.json() as { chapters?: Chapter[]; error?: string };
+          if (data.chapters && data.chapters.length > 0) {
+            split = data.chapters;
+            console.log(`[Pipeline] LLM split: ${split.length} chapters`);
           } else {
-            // Cache the result
-            try {
-              localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), chapters: split }));
-              console.log(`[Pipeline] Cached ${split.length} chapters for ${CACHE_KEY}`);
-            } catch (e) {
-              console.warn('[Pipeline] Cache write failed:', e);
-            }
+            console.warn('[Pipeline] LLM split returned', data.error || 'no chapters', ', falling back to regex');
           }
         } else {
-          console.warn('[Pipeline] Stream endpoint HTTP', res.status, ', falling back to regex');
+          console.warn('[Pipeline] LLM split HTTP', res.status, ', falling back to regex');
         }
       } catch (err) {
-        console.warn('[Pipeline] Stream failed, falling back to regex:', err);
+        console.warn('[Pipeline] LLM split failed, falling back to regex:', err);
       }
       if (!split) {
         split = splitTranscriptIntoChapters(transcript);
+      } else {
+        // Cache the result
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), chapters: split }));
+          console.log(`[Pipeline] Cached ${split.length} chapters`);
+        } catch (e) {
+          console.warn('[Pipeline] Cache write failed:', e);
+        }
       }
     } else {
       setChapters(split);
