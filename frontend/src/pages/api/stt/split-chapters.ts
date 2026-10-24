@@ -22,12 +22,16 @@ import { callLLM, extractJson } from '@/lib/gateway-client';
  * No legacy fallback — pi-bansos only (per user explicit requirement).
  */
 
-const MAX_TRANSCRIPT_CHARS = 200000;  // bumped: Cohere 256K ctx, 200K chars safe
+// v8: 500K char cap. User minta support transcript panjang (e.g. 500K char)
+// TAPI tiap chunk tetap diproses sesuai kapasitas token model (CHUNK_SIZE kecil).
+// 500K char ≈ 125K input tokens — dipecah ke chunk 4000 char (~1K token each).
+// 500K / 4000 = 125 chunks × ~30s/concurrent-batch(8) ≈ 8-10 min. OK untuk one-shot.
+const MAX_TRANSCRIPT_CHARS = 500000;
 
 // ── Non-streaming prompt: output single JSON object with chapters array ──
 const SYSTEM_PROMPT = `You are an educational content splitter for Indonesian lecture transcripts.
 
-TASK: Given a raw STT transcript, split it into 5-15 chapters based on TOPIC changes. DO NOT summarize. DO NOT abbreviate. STRIP greetings + intermezzo.
+TASK: Given a raw STT transcript SEGMENT (part of a longer lecture), split it into 2-3 chapters based on TOPIC changes. DO NOT summarize. DO NOT abbreviate. STRIP greetings + intermezzo.
 
 LANGUAGE — CRITICAL:
 - The transcript is in BAHASA INDONESIA (Indonesian)
@@ -40,9 +44,10 @@ LANGUAGE — CRITICAL:
 CRITICAL — DO NOT SUMMARIZE:
 - Content of each chapter MUST be the FULL transcript text for that topic, word-for-word
 - DO NOT condense, paraphrase, shorten, or summarize
-- EVERY substantive sentence in the transcript MUST appear in some chapter
-- A chapter with only 2-3 sentences is WRONG
-- Expected content length: 200-2000 words per chapter
+- EVERY substantive sentence in the segment MUST appear in some chapter
+- DO NOT aim for any specific word count per chapter — just preserve what's actually in the segment
+- If a segment only has 2-3 substantive sentences for a topic, that's fine — put them in one chapter as-is
+- A chapter with only 2-3 sentences is WRONG only if MORE sentences exist in the segment for that topic
 
 STRIP GREETINGS + INTERMEZZO (CRITICAL):
 - REMOVE greetings: "Selamat pagi", "Selamat siang", "Selamat malam", "Halo", "Assalamualaikum"
@@ -215,7 +220,7 @@ export const POST: APIRoute = async ({ request }) => {
                   { role: 'user', content: userPrompt },
                 ],
                 temperature: 0.2,
-                max_tokens: 30000,
+                max_tokens: 4000,  // v8: safe under Cohere free cap (~4K). Jangan maksa 30000 — model truncate.
                 stream: true,  // KEY: ask pi-bansos to stream
               }),
               signal: AbortSignal.timeout(300_000),
@@ -371,9 +376,18 @@ export const POST: APIRoute = async ({ request }) => {
     // in PARALLEL. Each chunk is small enough for LLM to handle reliably
     // (no timeout/truncation). Chunks processed 3-at-a-time for speed.
     
-    const CHUNK_SIZE = 8000; // ~2K tokens per chunk — reliable for LLM
-    const CHUNK_CONCURRENCY = 5; // 5 chunks in parallel — 1/5 may fail, others compensate
-    
+    // v8: token-budget-aware. Jangan maksa LLM keluarin lebih dari kapasitasnya.
+    // Model free (Cohere ~4K, Nemotron ~8K, Poolside ~8K output cap). Chunk 4K chars
+    // × 2-3 chapters × full content ≈ 1.5K-2.5K output tokens — fit dengan aman di
+    // maxTokens=3000 (margin 500 tokens untuk JSON wrapping).
+    //
+    // Support 500K char transcript: 500K / 4K = 125 chunks. Adaptive concurrency:
+    // - <10 chunks: 6 parallel (default, safe under KiloCode 200 req/hr)
+    // - 10-30 chunks: 8 parallel (more throughput, still under 200/hr)
+    // - >30 chunks: 10 parallel (max throughput, ~125 chunks / 10 = 13 batches × 30s = ~7 min)
+    // 200 req/hr cap: 125 chunks well under cap, no rate limit issue.
+    const CHUNK_SIZE = 4000; // ~1K tokens input — safe for any model context window
+
     function splitIntoChunks(text: string, maxChars: number): string[] {
       if (text.length <= maxChars) return [text];
       const chunks: string[] = [];
@@ -393,10 +407,12 @@ export const POST: APIRoute = async ({ request }) => {
     }
     
     async function processChunk(chunk: string, chunkIdx: number): Promise<{ title?: string; content?: string }[]> {
-      const chunkPrompt = `Split this lecture transcript SEGMENT into 2-5 chapters. This is segment ${chunkIdx + 1} of a longer transcript.\n\nTRANSCRIPT SEGMENT:\n${chunk}\n\nOutput JSON only.`;
+      // v8: prompt minta 2-3 chapters (realistic untuk chunk 4000 char).
+      // Jangan maksa 5 chapters — output akan melebihi maxTokens & truncate JSON.
+      const chunkPrompt = `Split this lecture transcript SEGMENT into 2-3 chapters. This is segment ${chunkIdx + 1} of a longer transcript. Output ONLY strict JSON: {"chapters":[{"title":"...","content":"..."}]}\n\nTRANSCRIPT SEGMENT:\n${chunk}\n\nOutput JSON only.`;
       
       const result = await callLLM('structured-json', SYSTEM_PROMPT, chunkPrompt, {
-        maxTokens: 4000,
+        maxTokens: 3000,  // v8: safe under all model caps (~4-8K). Margin untuk JSON wrapping.
         timeout: 120_000,
         temperature: 0.2,
         endpoint: `stt/split-chapters/chunk-${chunkIdx}`,
@@ -461,12 +477,14 @@ export const POST: APIRoute = async ({ request }) => {
     }
     
     // Check if transcript needs chunking
-    const needsChunking = transcript.length > CHUNK_SIZE * 2; // > 16K chars
+    const needsChunking = transcript.length > CHUNK_SIZE * 2; // > 8K chars (chunk_size=4K)
     let rawChapters: { title?: string; content?: string }[] = [];
     
     if (needsChunking) {
       // CHUNKED PARALLEL PATH — for long transcripts
       const chunks = splitIntoChunks(transcript, CHUNK_SIZE);
+      // v8: adaptive concurrency — more chunks = more parallel (bounded by KiloCode 200 req/hr)
+      const CHUNK_CONCURRENCY = chunks.length > 30 ? 10 : chunks.length > 10 ? 8 : 6;
       console.log(`[split-chapters] Long transcript (${transcript.length} chars) → ${chunks.length} chunks, processing ${CHUNK_CONCURRENCY} at a time`);
       
       // Process chunks in batches of CHUNK_CONCURRENCY
@@ -484,8 +502,10 @@ export const POST: APIRoute = async ({ request }) => {
       console.log(`[split-chapters] All chunks done: ${rawChapters.length} raw chapters`);
     } else {
       // SINGLE CALL PATH — for short transcripts (original approach)
+      // v8: maxTokens=6000 (aman untuk Cohere ~4-8K, Nemotron ~8-16K, Poolside ~8K).
+      // Jangan maksa 30000 — model free bakal truncate atau reject.
       const result = await callLLM('structured-json', SYSTEM_PROMPT, userPrompt, {
-        maxTokens: 30000,
+        maxTokens: 6000,
         timeout: 300_000,
         temperature: 0.2,
         endpoint: 'stt/split-chapters',

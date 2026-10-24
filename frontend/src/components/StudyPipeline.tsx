@@ -200,9 +200,10 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     // Cache key = hash of transcript (cyrb53). If hit, skip LLM split
     // call entirely → instant sidebar population on repeat Mode Belajar
     // opens from same STT.
-    // Bumped to v7: chunked parallel processing for long transcripts.
-    // Old entries from single-call (failed on long transcripts) must be evicted.
-    const CACHE_KEY = `alynne:split-chapters-v7:${cyrb53(transcript)}`;
+    // v8: token-budget-aware chunking (CHUNK_SIZE 8K→4K, maxTokens 4K→3K,
+    // adaptive concurrency 6/8/10). Old v7 caches may have 0 Bab from
+    // maxTokens=4000 overflow → must evict.
+    const CACHE_KEY = `alynne:split-chapters-v8:${cyrb53(transcript)}`;
     const CACHE_TTL_MS = 24 * 60 * 60 * 1000;  // 24 hours
     let split: Chapter[] | null = null;
     let usedCache = false;
