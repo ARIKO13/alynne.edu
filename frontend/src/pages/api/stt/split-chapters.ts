@@ -29,6 +29,14 @@ const SYSTEM_PROMPT = `You are an educational content splitter for Indonesian le
 
 TASK: Given a raw STT transcript, split it into 5-15 chapters based on TOPIC changes. DO NOT summarize. DO NOT abbreviate. STRIP greetings + intermezzo.
 
+LANGUAGE — CRITICAL:
+- The transcript is in BAHASA INDONESIA (Indonesian)
+- ALL chapter content MUST be in Bahasa Indonesia
+- DO NOT translate to English
+- DO NOT output any content in English (except technical terms that are already English in the original, like "MSCI", "free float", "emerging market")
+- Chapter titles MUST be in Bahasa Indonesia
+- Keep the same Indonesian words/phrases from the original transcript — do not paraphrase into English
+
 CRITICAL — DO NOT SUMMARIZE:
 - Content of each chapter MUST be the FULL transcript text for that topic, word-for-word
 - DO NOT condense, paraphrase, shorten, or summarize
@@ -80,6 +88,14 @@ REMEMBER: Content = FULL transcript text per topic (greetings/intermezzo STRIPPE
 const STREAM_SYSTEM_PROMPT = `You are an educational content splitter for Indonesian lecture transcripts.
 
 TASK: Split the transcript into 5-15 chapters based on TOPIC changes. DO NOT summarize. DO NOT abbreviate. STRIP greetings + intermezzo.
+
+LANGUAGE — CRITICAL:
+- The transcript is in BAHASA INDONESIA (Indonesian)
+- ALL chapter content MUST be in Bahasa Indonesia
+- DO NOT translate to English
+- DO NOT output any content in English (except technical terms that are already English in the original, like "MSCI", "free float", "emerging market")
+- Chapter titles MUST be in Bahasa Indonesia
+- Keep the same Indonesian words/phrases from the original transcript — do not paraphrase into English
 
 CRITICAL — DO NOT SUMMARIZE:
 - Content of each chapter MUST be the FULL transcript text for that topic, word-for-word
