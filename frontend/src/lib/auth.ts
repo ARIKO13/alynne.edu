@@ -114,7 +114,7 @@ export function getGoogleAuthUrl(baseUrl?: string): string {
     redirect_uri: `${base}/api/auth/callback`,
     response_type: 'code',
     scope: 'openid email profile',
-    prompt: 'consent',
+    prompt: 'select_account', // show account picker but don't force consent every time
     access_type: 'offline',
   });
   return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
