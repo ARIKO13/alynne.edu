@@ -483,6 +483,13 @@ interface LlmHealthResponse {
   }[];
   fallbackCount24h: number;
   piBansosUrl: string;
+  usageInfo?: {
+    requestsThisHour: number;
+    hourlyLimit: number;
+    remaining: number;
+    lastRequestAt: string;
+    resetsAt: string;
+  };
 }
 
 function modelShortName(id: string): string {
@@ -537,7 +544,7 @@ function LlmHealthView() {
     return <p className="text-xs text-zinc-500 text-center py-8">Gagal memuat data LLM health.</p>;
   }
 
-  const { latest, fallbackEvents, fallbackCount24h, piBansosUrl } = data;
+  const { latest, fallbackEvents, fallbackCount24h, piBansosUrl, usageInfo } = data;
   const allAlive = latest?.models?.every(m => m.alive) ?? false;
   const anyAlive = latest?.models?.some(m => m.alive) ?? false;
 
@@ -588,6 +595,56 @@ function LlmHealthView() {
         {latest && latest.proxyReachable && !allAlive && anyAlive && `⚠️ ${latest.models.filter(m => m.alive).length}/${latest.models.length} model sehat — beberapa fallback aktif`}
         {latest && latest.proxyReachable && !anyAlive && '✗ Semua model mati. Cek pi-bansos logs: pm2 logs pi-bansos'}
       </div>
+
+      {/* KiloCode usage counter */}
+      {usageInfo && (
+        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-xs font-medium text-zinc-200 flex items-center gap-1.5">
+              <Activity className="h-3 w-3 text-emerald-400" />
+              KiloCode Usage (200 req/jam)
+            </h4>
+            <Badge variant="outline" className={cn(
+              'text-[10px]',
+              usageInfo.remaining > 50
+                ? 'border-emerald-500/30 text-emerald-400'
+                : usageInfo.remaining > 10
+                  ? 'border-amber-500/30 text-amber-400'
+                  : 'border-red-500/30 text-red-400'
+            )}>
+              {usageInfo.remaining} tersisa
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="flex-1 h-2 rounded-full bg-white/[0.04] overflow-hidden">
+              <div
+                className={cn(
+                  'h-full transition-all',
+                  usageInfo.remaining > 50
+                    ? 'bg-emerald-500'
+                    : usageInfo.remaining > 10
+                      ? 'bg-amber-500'
+                      : 'bg-red-500'
+                )}
+                style={{ width: `${(usageInfo.requestsThisHour / usageInfo.hourlyLimit) * 100}%` }}
+              />
+            </div>
+            <span className="text-[10px] text-zinc-500 shrink-0 tabular-nums">
+              {usageInfo.requestsThisHour}/{usageInfo.hourlyLimit}
+            </span>
+          </div>
+          <div className="flex items-center justify-between text-[9px] text-zinc-600">
+            <span>
+              Last: {usageInfo.lastRequestAt
+                ? new Date(usageInfo.lastRequestAt).toLocaleString('id-ID', { timeStyle: 'medium' })
+                : '—'}
+            </span>
+            <span>
+              Reset: {new Date(usageInfo.resetsAt).toLocaleString('id-ID', { timeStyle: 'short' })}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Model status cards */}
       {latest && (

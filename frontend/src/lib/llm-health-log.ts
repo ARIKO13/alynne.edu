@@ -121,3 +121,80 @@ export function getFallbackCount24h(): number {
     return 0;
   }
 }
+
+// ── Usage counter (KiloCode 200 req/hr per IP) ──────────────────────
+const USAGE_FILE = path.join(DATA_DIR, 'usage-counter.json');
+const HOURLY_LIMIT = 200; // KiloCode free tier: 200 req/hr per IP
+
+export interface UsageInfo {
+  currentHour: string;        // e.g. "2026-10-24T03" (UTC hour)
+  requestsThisHour: number;
+  hourlyLimit: number;
+  remaining: number;
+  lastRequestAt: string;
+  resetsAt: string;           // ISO timestamp when counter resets
+}
+
+function getCurrentHour(): string {
+  const now = new Date();
+  return now.toISOString().slice(0, 13); // "2026-10-24T03"
+}
+
+function getResetTime(): string {
+  const now = new Date();
+  const next = new Date(now);
+  next.setUTCHours(now.getUTCHours() + 1, 0, 0, 0); // top of next hour
+  return next.toISOString();
+}
+
+/** Increment usage counter — called by callLLM on each successful request */
+export function incrementUsage(): void {
+  ensureDataDir();
+  const currentHour = getCurrentHour();
+  try {
+    let data: { hour: string; count: number; lastRequest: string };
+    try {
+      const raw = fs.readFileSync(USAGE_FILE, 'utf-8');
+      data = JSON.parse(raw);
+    } catch {
+      data = { hour: '', count: 0, lastRequest: '' };
+    }
+    // Reset if new hour
+    if (data.hour !== currentHour) {
+      data = { hour: currentHour, count: 0, lastRequest: '' };
+    }
+    data.count++;
+    data.lastRequest = new Date().toISOString();
+    fs.writeFileSync(USAGE_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (e) {
+    console.error('[llm-health] failed to write usage counter:', e);
+  }
+}
+
+/** Read current usage info for admin panel */
+export function getUsageInfo(): UsageInfo {
+  const currentHour = getCurrentHour();
+  try {
+    const raw = fs.readFileSync(USAGE_FILE, 'utf-8');
+    const data = JSON.parse(raw) as { hour: string; count: number; lastRequest: string };
+    // If stale (different hour), report 0
+    const count = data.hour === currentHour ? data.count : 0;
+    return {
+      currentHour,
+      requestsThisHour: count,
+      hourlyLimit: HOURLY_LIMIT,
+      remaining: Math.max(0, HOURLY_LIMIT - count),
+      lastRequestAt: data.lastRequest || '',
+      resetsAt: getResetTime(),
+    };
+  } catch {
+    return {
+      currentHour,
+      requestsThisHour: 0,
+      hourlyLimit: HOURLY_LIMIT,
+      remaining: HOURLY_LIMIT,
+      lastRequestAt: '',
+      resetsAt: getResetTime(),
+    };
+  }
+}

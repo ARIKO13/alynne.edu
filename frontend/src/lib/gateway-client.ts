@@ -22,6 +22,7 @@
 
 import {
   logFallbackEvent,
+  incrementUsage,
   type FallbackEvent,
 } from '@/lib/llm-health-log';
 
@@ -171,6 +172,7 @@ export async function callLLM(
 
       const elapsedMs = Date.now() - t0;
       console.log(`[callLLM] ${endpoint} ${model} success (${elapsedMs}ms, ${data.usage?.total_tokens ?? '?'} tokens)${i > 0 ? ` after ${i} fallback` : ''}`);
+      incrementUsage(); // Track KiloCode 200 req/hr limit for admin panel
       return { content, modelUsed: model, fallbacksTriggered };
     } catch (e: any) {
       const errorType = e?.name === 'TimeoutError' || e?.message?.includes('timeout') || e?.message?.includes('abort')

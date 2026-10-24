@@ -5,6 +5,7 @@ import {
   getLatestHealth,
   getRecentFallbackEvents,
   getFallbackCount24h,
+  getUsageInfo,
   recordHealthCheck,
   type HealthCheckResult,
   type ModelHealth,
@@ -123,11 +124,13 @@ export const GET: APIRoute = async ({ request }) => {
     const latest = getLatestHealth();
     const fallbackEvents = getRecentFallbackEvents(50);
     const fallbackCount24h = getFallbackCount24h();
+    const usageInfo = getUsageInfo();
 
     return Response.json({
       latest,
       fallbackEvents,
       fallbackCount24h,
+      usageInfo,
       piBansosUrl: PI_BANSOS_URL,
     });
   } catch (e) {
