@@ -10,24 +10,63 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Extract video ID from various YouTube URL formats
     let videoId = '';
-    const patterns = [
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/,
-      /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/,
-    ];
-    for (const pattern of patterns) {
-      const match = url.match(pattern);
-      if (match) {
-        videoId = match[1];
-        break;
+    
+    // Method 1: Use URL parsing (most robust)
+    try {
+      const parsed = new URL(url);
+      const host = parsed.hostname.toLowerCase();
+      
+      if (host.includes('youtube.com')) {
+        if (parsed.pathname === '/watch') {
+          // Standard: youtube.com/watch?v=XXXXX
+          videoId = parsed.searchParams.get('v') || '';
+        } else if (parsed.pathname.startsWith('/embed/')) {
+          // Embed: youtube.com/embed/XXXXX
+          videoId = parsed.pathname.split('/')[2] || '';
+        } else if (parsed.pathname.startsWith('/shorts/')) {
+          // Shorts: youtube.com/shorts/XXXXX
+          videoId = parsed.pathname.split('/')[2] || '';
+        } else if (parsed.pathname.startsWith('/v/')) {
+          // Old embed: youtube.com/v/XXXXX
+          videoId = parsed.pathname.split('/')[2] || '';
+        } else if (parsed.pathname.startsWith('/live/')) {
+          // Live: youtube.com/live/XXXXX
+          videoId = parsed.pathname.split('/')[2] || '';
+        }
+        // Handle &v= in query (e.g., youtube.com/watch?app=desktop&v=XXXXX)
+        if (!videoId) {
+          videoId = parsed.searchParams.get('v') || '';
+        }
+      } else if (host === 'youtu.be' || host === 'www.youtu.be') {
+        // Short: youtu.be/XXXXX
+        videoId = parsed.pathname.slice(1).split('/')[0] || '';
+      }
+    } catch {
+      // Not a valid URL — will try regex + raw ID below
+    }
+    
+    // Method 2: Regex fallback (for edge cases URL parsing misses)
+    if (!videoId) {
+      const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/|youtube\.com\/live\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/,
+        /[?&]v=([a-zA-Z0-9_-]{11})/,
+      ];
+      for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match) {
+          videoId = match[1];
+          break;
+        }
       }
     }
+    
+    // Method 3: Maybe user pasted just the video ID (11 chars)
+    if (!videoId && /^[a-zA-Z0-9_-]{11}$/.test(url.trim())) {
+      videoId = url.trim();
+    }
+    
     if (!videoId) {
-      // Maybe user pasted just the video ID
-      if (/^[a-zA-Z0-9_-]{11}$/.test(url.trim())) {
-        videoId = url.trim();
-      } else {
-        return Response.json({ error: 'URL YouTube tidak valid. Contoh: https://youtube.com/watch?v=XXXXX' }, { status: 400 });
-      }
+      return Response.json({ error: 'URL YouTube tidak valid. Contoh: https://youtube.com/watch?v=XXXXX atau https://youtu.be/XXXXX' }, { status: 400 });
     }
 
     console.log(`[youtube] Fetching transcript for video: ${videoId}`);
