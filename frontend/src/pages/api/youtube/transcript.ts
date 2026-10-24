@@ -71,48 +71,37 @@ export const POST: APIRoute = async ({ request }) => {
 
     console.log(`[youtube] Fetching transcript for video: ${videoId}`);
 
-    // Fetch transcript from YouTube (no LLM, no whisper - just YouTube captions)
-    const transcript = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'id' });
+    // v-any-lang: bebas bahasa apapun. Strategi:
+    // 1. Coba 'id' (Bahasa Indonesia — preferred untuk user ID)
+    // 2. Kalau throw error, parse pesan error untuk ambil daftar bahasa available
+    //    Library ngasih tau: "Available languages: en, en, es, fr"
+    // 3. Coba tiap bahasa available sampai dapet (skip duplikat)
+    // 4. Kalau semua gagal, coba fetch TANPA lang param (default/first available)
+    // 5. Kalau masih gagal, baru return error ke user
+    const result = await fetchTranscriptAnyLang(videoId);
 
-    if (!transcript || transcript.length === 0) {
-      // Try English fallback
-      console.log('[youtube] No Indonesian captions, trying English...');
-      const enTranscript = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'en' });
-      if (!enTranscript || enTranscript.length === 0) {
-        return Response.json({
-          error: 'Video ini tidak memiliki caption/subtitle. YouTube transkrip hanya bisa untuk video yang memiliki subtitle.',
-          videoId,
-        }, { status: 404 });
-      }
-      // Return English transcript
-      const fullText = enTranscript.map(t => t.text).join(' ');
-      const totalDuration = enTranscript[enTranscript.length - 1]?.offset + enTranscript[enTranscript.length - 1]?.duration || 0;
+    if (!result || !result.transcript || result.transcript.length === 0) {
       return Response.json({
-        text: fullText,
+        error: 'Video ini tidak memiliki caption/subtitle. YouTube transkrip hanya bisa untuk video yang memiliki subtitle.',
         videoId,
-        language: 'en',
-        segments: enTranscript.length,
-        duration: Math.round(totalDuration),
-        duration_min: Math.round(totalDuration / 60),
-      });
+      }, { status: 404 });
     }
 
-    // Build full text + timestamped entries
+    const transcript = result.transcript;
+    const language = result.language;
     const fullText = transcript.map(t => t.text).join(' ');
     const totalDuration = transcript[transcript.length - 1]?.offset + transcript[transcript.length - 1]?.duration || 0;
-
-    // Also return timestamped entries for UI
     const entries = transcript.map(t => ({
       time: formatTime(t.offset),
       text: t.text,
     }));
 
-    console.log(`[youtube] Success: ${fullText.length} chars, ${transcript.length} segments, ${Math.round(totalDuration/60)}min`);
+    console.log(`[youtube] Success: ${fullText.length} chars, ${transcript.length} segments, ${Math.round(totalDuration/60)}min, lang=${language}`);
 
     return Response.json({
       text: fullText,
       videoId,
-      language: 'id',
+      language,
       segments: transcript.length,
       duration: Math.round(totalDuration),
       duration_min: Math.round(totalDuration / 60),
@@ -126,6 +115,77 @@ export const POST: APIRoute = async ({ request }) => {
     }, { status: 500 });
   }
 };
+
+// ── Helper: fetch transcript dengan fallback bahasa apapun ──
+// Library youtube-transcript THROW error kalau lang yang diminta gak available,
+// bukan return empty array. Error message-nya ngasih tau bahasa yang available,
+// jadi kita parse itu + coba satu-satu.
+async function fetchTranscriptAnyLang(videoId: string): Promise<{ transcript: any[]; language: string } | null> {
+  // Bahasa prioritas (urutan coba):
+  // 1. id — Bahasa Indonesia (preferred user)
+  // 2. en, en-US, en-GB — English variants
+  // 3. Sisa bahasa yang tersedia di video (dari error message)
+  const preferredLangs = ['id', 'en', 'en-US', 'en-GB'];
+  const triedLangs = new Set<string>();
+
+  // Tahap 1: Coba bahasa prioritas satu-satu
+  for (const lang of preferredLangs) {
+    try {
+      const t = await YoutubeTranscript.fetchTranscript(videoId, { lang });
+      if (t && t.length > 0) {
+        console.log(`[youtube] Got transcript in '${lang}': ${t.length} segments`);
+        return { transcript: t, language: lang };
+      }
+    } catch (e: any) {
+      // Parse error message untuk ambil daftar bahasa available
+      // Format: "🚨 No transcripts are available in id this video (XXX). Available languages: en, en, es"
+      const msg = e?.message || '';
+      const match = msg.match(/Available languages?:\s*([^\n]+)/i);
+      if (match) {
+        const availableLangs = match[1]
+          .split(',')
+          .map(s => s.trim())
+          .filter(Boolean);
+        console.log(`[youtube] '${lang}' not available. Found available langs from error: ${availableLangs.join(', ')}`);
+
+        // Tahap 2: Coba tiap bahasa yang available (skip yang udah dicoba + skip duplikat)
+        for (const availLang of availableLangs) {
+          if (triedLangs.has(availLang) || preferredLangs.includes(availLang)) {
+            triedLangs.add(availLang);
+            continue;
+          }
+          triedLangs.add(availLang);
+          try {
+            const t = await YoutubeTranscript.fetchTranscript(videoId, { lang: availLang });
+            if (t && t.length > 0) {
+              console.log(`[youtube] Got transcript in '${availLang}': ${t.length} segments`);
+              return { transcript: t, language: availLang };
+            }
+          } catch {
+            // Bahasa ini juga gagal, lanjut ke berikutnya
+          }
+        }
+
+        // Sudah coba semua bahasa available dari error message, berhenti coba preferred
+        break;
+      }
+    }
+  }
+
+  // Tahap 3: Coba TANPA lang param — ambil default/first available
+  console.log('[youtube] All lang attempts failed, trying default (no lang param)...');
+  try {
+    const t = await YoutubeTranscript.fetchTranscript(videoId);
+    if (t && t.length > 0) {
+      console.log(`[youtube] Got transcript (default/any lang): ${t.length} segments`);
+      return { transcript: t, language: 'auto' };
+    }
+  } catch (e) {
+    console.error('[youtube] Default fetch also failed:', e);
+  }
+
+  return null;
+}
 
 function formatTime(seconds: number): string {
   const h = Math.floor(seconds / 3600);
