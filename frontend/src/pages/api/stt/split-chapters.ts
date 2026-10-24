@@ -27,20 +27,39 @@ const MAX_TRANSCRIPT_CHARS = 200000;  // bumped: Cohere 256K ctx, 200K chars saf
 // ── Non-streaming prompt: output single JSON object with chapters array ──
 const SYSTEM_PROMPT = `You are an educational content splitter for Indonesian lecture transcripts.
 
-TASK: Given a raw STT transcript, split it into 5-15 chapters based on TOPIC changes. DO NOT summarize. DO NOT abbreviate.
+TASK: Given a raw STT transcript, split it into 5-15 chapters based on TOPIC changes. DO NOT summarize. DO NOT abbreviate. STRIP greetings + intermezzo.
 
 CRITICAL — DO NOT SUMMARIZE:
 - Content of each chapter MUST be the FULL transcript text for that topic, word-for-word
 - DO NOT condense, paraphrase, shorten, or summarize
-- EVERY sentence in the transcript MUST appear in some chapter
+- EVERY substantive sentence in the transcript MUST appear in some chapter
 - A chapter with only 2-3 sentences is WRONG
 - Expected content length: 200-2000 words per chapter
 
+STRIP GREETINGS + INTERMEZZO (CRITICAL):
+- REMOVE greetings: "Selamat pagi", "Selamat siang", "Selamat malam", "Halo", "Assalamualaikum"
+- REMOVE audience address: "warga CPL", "teman-teman", "rekan-rekan", "bapak/ibu", "guys"
+- REMOVE intermezzo/chit-chat: jokes, personal stories unrelated to topic, casual asides
+- REMOVE meta-commentary: "ok kita lanjut", "jadi gini", "gua mau bahas", "yang penting", "intinya"
+- REMOVE pure filler phrases: "eh", "ya", "kan", "gitu", "oke", "nah", "anu", "jadi gini", "gua bilang", "kayak"
+- If a sentence is PURELY greeting/intermezzo (no educational content), SKIP IT entirely
+- If a sentence has greeting + content mixed (e.g. "Selamat pagi, MSCI mengumumkan..."), KEEP ONLY THE CONTENT PART ("MSCI mengumumkan...")
+- Example BAD: "Selamat pagi, warga CPL. Berita terkini, MSCI mengumumkan pertimbangan..."
+- Example GOOD: "Berita terkini, MSCI mengumumkan pertimbangan untuk memindahkan klasifikasi pasar Indonesia..."
+- Goal: chapter content = PURE MATERI (educational substance), no chatting/greeting fluff
+
 WHAT YOU CAN DO (only these):
-1. Remove filler words: "eh", "ya", "kan", "gitu", "oke", "nah", "anu"
+1. Remove filler words + greetings + intermezzo (per rules above)
 2. Fix obvious STT typos
 3. Fix basic punctuation
 4. Group consecutive sentences about same topic into one chapter
+
+WHAT YOU CANNOT DO:
+- DO NOT rewrite sentences to be more formal — keep spoken tone (minus greetings)
+- DO NOT merge multiple sentences into one shorter summary
+- DO NOT skip substantive educational sentences
+- DO NOT add information not in the original
+- DO NOT paraphrase materi content
 
 CHAPTER TITLE:
 - Concise (max 8 words), describes the topic — like textbook table of contents
@@ -49,27 +68,39 @@ CHAPTER TITLE:
 OUTPUT STRICT JSON ONLY (no markdown fences, no prose, no explanation):
 {
   "chapters": [
-    {"title": "Pengertian MSCI", "content": "[FULL transcript text for this topic, ALL sentences preserved, only filler removed]"},
-    {"title": "Sejarah MSCI", "content": "[FULL transcript text for this topic, ALL sentences preserved, only filler removed]"}
+    {"title": "Pengertian MSCI", "content": "[FULL transcript text for this topic, ALL substantive sentences preserved, greetings/intermezzo stripped]"},
+    {"title": "Sejarah MSCI", "content": "[FULL transcript text for this topic, ALL substantive sentences preserved, greetings/intermezzo stripped]"}
   ]
 }
 
-REMEMBER: Content = FULL transcript text per topic (cleaned of filler), NOT a summary.`;
+REMEMBER: Content = FULL transcript text per topic (greetings/intermezzo STRIPPED), NOT a summary.`;
 
 // ── Streaming prompt: output NDJSON (one chapter per line) ──
 // Each line is a complete JSON object. Client can render chapters as they arrive.
 const STREAM_SYSTEM_PROMPT = `You are an educational content splitter for Indonesian lecture transcripts.
 
-TASK: Split the transcript into 5-15 chapters based on TOPIC changes. DO NOT summarize. DO NOT abbreviate.
+TASK: Split the transcript into 5-15 chapters based on TOPIC changes. DO NOT summarize. DO NOT abbreviate. STRIP greetings + intermezzo.
 
 CRITICAL — DO NOT SUMMARIZE:
 - Content of each chapter MUST be the FULL transcript text for that topic, word-for-word
 - DO NOT condense, paraphrase, shorten, or summarize
-- EVERY sentence in the transcript MUST appear in some chapter
+- EVERY substantive sentence in the transcript MUST appear in some chapter
 - Expected content length: 200-2000 words per chapter
 
+STRIP GREETINGS + INTERMEZZO (CRITICAL):
+- REMOVE greetings: "Selamat pagi", "Selamat siang", "Selamat malam", "Halo", "Assalamualaikum"
+- REMOVE audience address: "warga CPL", "teman-teman", "rekan-rekan", "bapak/ibu", "guys"
+- REMOVE intermezzo/chit-chat: jokes, personal stories unrelated to topic, casual asides
+- REMOVE meta-commentary: "ok kita lanjut", "jadi gini", "gua mau bahas", "yang penting", "intinya"
+- REMOVE pure filler phrases: "eh", "ya", "kan", "gitu", "oke", "nah", "anu", "jadi gini", "gua bilang", "kayak"
+- If a sentence is PURELY greeting/intermezzo (no educational content), SKIP IT entirely
+- If a sentence has greeting + content mixed (e.g. "Selamat pagi, MSCI mengumumkan..."), KEEP ONLY THE CONTENT PART ("MSCI mengumumkan...")
+- Example BAD: "Selamat pagi, warga CPL. Berita terkini, MSCI mengumumkan pertimbangan..."
+- Example GOOD: "Berita terkini, MSCI mengumumkan pertimbangan untuk memindahkan klasifikasi pasar Indonesia..."
+- Goal: chapter content = PURE MATERI (educational substance), no chatting/greeting fluff
+
 WHAT YOU CAN DO (only these):
-1. Remove filler words: "eh", "ya", "kan", "gitu", "oke", "nah", "anu"
+1. Remove filler words + greetings + intermezzo (per rules above)
 2. Fix obvious STT typos
 3. Fix basic punctuation
 4. Group consecutive sentences about same topic into one chapter
@@ -78,13 +109,13 @@ OUTPUT FORMAT — STRICT NDJSON (one chapter per line, JSON per line):
 Each line is a complete JSON object representing ONE chapter. NO array wrapper. NO markdown fences. NO explanation.
 
 Output format:
-{"title": "Pengertian MSCI", "content": "Full transcript text for this topic..."}
-{"title": "Sejarah MSCI", "content": "Full transcript text for this topic..."}
-{"title": "Cara Hitung Free Float", "content": "Full transcript text for this topic..."}
+{"title": "Pengertian MSCI", "content": "Full transcript text for this topic, greetings stripped..."}
+{"title": "Sejarah MSCI", "content": "Full transcript text for this topic, greetings stripped..."}
+{"title": "Cara Hitung Free Float", "content": "Full transcript text for this topic, greetings stripped..."}
 
 CRITICAL: Output ONE JSON object per line. Each line must be parseable independently. After the last chapter, output a single line "DONE" on its own line.
 
-REMEMBER: Content = FULL transcript text per topic (cleaned of filler), NOT a summary.`;
+REMEMBER: Content = FULL transcript text per topic (greetings/intermezzo STRIPPED), NOT a summary.`;
 
 export const POST: APIRoute = async ({ request }) => {
   try {
