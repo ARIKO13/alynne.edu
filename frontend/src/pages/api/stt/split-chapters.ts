@@ -396,8 +396,8 @@ export const POST: APIRoute = async ({ request }) => {
       const chunkPrompt = `Split this lecture transcript SEGMENT into 2-5 chapters. This is segment ${chunkIdx + 1} of a longer transcript.\n\nTRANSCRIPT SEGMENT:\n${chunk}\n\nOutput JSON only.`;
       
       const result = await callLLM('structured-json', SYSTEM_PROMPT, chunkPrompt, {
-        maxTokens: 8000,  // smaller per chunk — faster + no truncation
-        timeout: 120_000, // 2 min per chunk (enough for small input)
+        maxTokens: 4000,  // reduced from 8000 — prevents Cohere timeout (50 tok/s × 4000 = 80s < 120s)
+        timeout: 120_000,
         temperature: 0.2,
         endpoint: `stt/split-chapters/chunk-${chunkIdx}`,
       });

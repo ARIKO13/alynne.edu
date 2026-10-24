@@ -265,50 +265,22 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     }
     setProgress(25);
 
-    // ── PARALLELIZE: mindmap + all quizzes at once (v-speed-boost) ──
-    // Both depend only on `split` (not each other), so fire all in parallel.
+    // v-lazy-quiz: skip quiz generation during initial pipeline.
+    // Generate quizzes ON-DEMAND when user clicks "Kuis" tab instead.
+    // This removes N LLM calls from pipeline → much faster initial load.
+    // Quizzes will be generated lazily in handleSelectChapter or tab switch.
     setStage('mindmap');
 
-    // Concurrency limit: 5 (tested KiloCode gateway handles 5 concurrent
-    // with ~1/5 failure rate — failed quizzes fall back to algorithmic
-    // generateQuizFromChapter, so user still gets quiz for every chapter).
-    const QUIZ_CONCURRENCY = 5;
-
-    async function generateQuizBatch(chapters: Chapter[]): Promise<Record<number, QuizQuestion[]>> {
-      const result: Record<number, QuizQuestion[]> = {};
-      for (let i = 0; i < chapters.length; i += QUIZ_CONCURRENCY) {
-        const batch = chapters.slice(i, i + QUIZ_CONCURRENCY);
-        const batchResults = await Promise.all(
-          batch.map(async (ch) => {
-            try {
-              return { id: ch.id, quiz: await generateLLMQuiz(ch) };
-            } catch {
-              return { id: ch.id, quiz: generateQuizFromChapter(ch, 3) };
-            }
-          })
-        );
-        for (const r of batchResults) {
-          result[r.id] = r.quiz;
-        }
-        const completed = Math.min(i + QUIZ_CONCURRENCY, chapters.length);
-        setProgress(50 + Math.round(completed / chapters.length * 40));
-      }
-      return result;
+    // Only generate mindmap (1 LLM call) — skip all quiz generation
+    try {
+      const mindmapData = await generateLLMMindmap(split);
+      if (mindmapData) setLLMMindmap(mindmapData);
+    } catch (err) {
+      console.warn('[Mindmap] LLM failed:', err);
     }
 
-    // Fire mindmap + quizzes in parallel
-    const [mindmapResult, quizMap] = await Promise.allSettled([
-      generateLLMMindmap(split).catch((err) => {
-        console.warn('[Mindmap] LLM failed, using fallback:', err);
-        return null;
-      }),
-      generateQuizBatch(split),
-    ]);
-
-    if (mindmapResult.status === 'fulfilled' && mindmapResult.value) {
-      setLLMMindmap(mindmapResult.value);
-    }
-    const quizResult = quizMap.status === 'fulfilled' ? quizMap.value : {};
+    // Initialize empty quiz map — will be populated on-demand
+    const quizResult: Record<number, QuizQuestion[]> = {};
     setQuizzes(quizResult);
 
     setProgress(100);
