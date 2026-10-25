@@ -112,7 +112,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set(['root']));
   const [mainTab, setMainTab] = useState<MainTab>('materi');
   const [llmMindmap, setLLMMindmap] = useState<LLMMindmapNode | null>(null);
-  // v-visualisasi: array visualisasi dari mega-generate response. Di-filter per bab_id
+  // v-visualisasi: array visualisasi dari chunked-generate response. Di-filter per bab_id
   // saat dirender di tab Materi (VisualisasiPanel). 0 request tambahan — visualisasi
   // sudah digenerate Phase 2 GLM bersamaan dengan bab/kuis/mindmap.
   const [visualisasi, setVisualisasi] = useState<any[]>([]);
@@ -201,13 +201,13 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     setProgress(10);
     await sleep(300);
 
-    // v-mega: cache check localStorage untuk hasil mega-generate (7 hari).
+    // v-chunked: cache check (renamed from chunked-generate) localStorage untuk hasil chunked-generate (7 hari).
     // Cache key = hash of transcript (cyrb53). Kalau HIT, skip 1 LLM call
     // besar sama sekali → sidebar instant di Mode Belajar berikutnya.
-    // NOTE: server-side mega-generate juga punya cache D1 7 hari (lihat
-    // mega-generate.ts), tapi cache lokal ini lebih cepat lagi karena
+    // NOTE: server-side chunked-generate juga punya cache D1 7 hari (lihat
+    // chunked-generate.ts), tapi cache lokal ini lebih cepat lagi karena
     // skip network round-trip.
-    const CACHE_KEY = `alynne:mega-v5-vis:${cyrb53(transcript)}`;
+    const CACHE_KEY = `alynne:chunked-v5-vis:${cyrb53(transcript)}`;
     const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;  // 7 days
     let split: Chapter[] | null = null;
     let quizMap: Record<number, QuizQuestion[]> = {};
@@ -239,8 +239,8 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
       console.warn('[Pipeline] Cache read failed:', e);
     }
 
-    // v-mega: PANGGIL /api/stt/mega-generate (1 request LLM, NO split, NO 55-chunk loop).
-    // Mega-generate sudah balik: modul.bab + kuis + mindmap + visualisasi + glosarium
+    // v-mega: PANGGIL /api/stt/chunked-generate (1 request LLM, NO split, NO 55-chunk loop).
+    // Chunked-generate sudah balik: modul.bab + kuis + mindmap + visualisasi + glosarium
     // dalam 1 JSON. Default level: L3 (65K ringkas_lengkap, ~5-8 menit, stabil).
     //
     // SEBELUM (lama, bermasalah):
@@ -248,20 +248,20 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     //   → 55 LLM call paralel → sering timeout → fallback regex → kualitas bab buruk
     //
     // SESUDAH (baru, stabil):
-    //   fetch('/api/stt/mega-generate') → 1 LLM call dengan transcript utuh (700K char max)
+    //   fetch('/api/stt/chunked-generate') → 1 LLM call dengan transcript utuh (700K char max)
     //   → LLM yang memecah jadi bab di dalam output JSON → tanpa split, tanpa regex fallback
     if (!split) {
-      // v-robust (2026-10-25): retry mega-generate 1x kalau attempt pertama gagal (transient).
+      // v-robust (2026-10-25): retry chunked-generate 1x kalau attempt pertama gagal (transient).
       // Sesuai spec user: "Kalau validasi gagal, retry dengan model lain—bukan fallback ke regex."
       // Strategi: 2 attempt (initial + 1 retry), 10s backoff antar attempt.
       // Kalau 2 attempt gagal total, regex fallback terakhir (degraded mode) supaya UI gak blank.
       for (let attempt = 1; attempt <= 2; attempt++) {
-        console.log(`[Pipeline] mega-generate attempt ${attempt}/2${attempt === 1 ? '' : ' (retry after 10s backoff)'}`);
+        console.log(`[Pipeline] chunked-generate attempt ${attempt}/2${attempt === 1 ? '' : ' (retry after 10s backoff)'}`);
         if (attempt > 1) {
           await sleep(10_000);  // 10s backoff sebelum retry
         }
         try {
-          const res = await fetch('/api/stt/mega-generate', {
+          const res = await fetch('/api/stt/chunked-generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ transcript, title: 'Materi Belajar', maxChapters: 15 }),
@@ -322,21 +322,21 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               // Visualisasi sudah digenerate Phase 2 GLM bersama bab/kuis/mindmap — 0 request tambahan.
               visualisasiArr = Array.isArray(mega.visualisasi) ? mega.visualisasi : [];
 
-              console.log(`[Pipeline] mega-generate attempt ${attempt} OK: ${split.length} bab, ${Object.keys(quizMap).length} bab dengan kuis, mindmap ${mindmapNode ? 'OK' : 'null'}, visualisasi ${visualisasiArr.length} item (level: ${mega.levelUsed || '?'}${mega.cached ? ', server-cache HIT' : ''})`);
+              console.log(`[Pipeline] chunked-generate attempt ${attempt} OK: ${split.length} bab, ${Object.keys(quizMap).length} bab dengan kuis, mindmap ${mindmapNode ? 'OK' : 'null'}, visualisasi ${visualisasiArr.length} item (level: ${mega.levelUsed || '?'}${mega.cached ? ', server-cache HIT' : ''})`);
               break;  // sukses, keluar dari retry loop
             } else {
-              console.warn(`[Pipeline] mega-generate attempt ${attempt} returned:`, mega.error || 'no bab', attempt === 1 ? '— will retry in 10s' : '— no more retry, regex fallback');
+              console.warn(`[Pipeline] chunked-generate attempt ${attempt} returned:`, mega.error || 'no bab', attempt === 1 ? '— will retry in 10s' : '— no more retry, regex fallback');
             }
           } else {
-            console.warn(`[Pipeline] mega-generate attempt ${attempt} HTTP ${res.status}`, attempt === 1 ? '— will retry in 10s' : '— no more retry, regex fallback');
+            console.warn(`[Pipeline] chunked-generate attempt ${attempt} HTTP ${res.status}`, attempt === 1 ? '— will retry in 10s' : '— no more retry, regex fallback');
           }
         } catch (err) {
-          console.warn(`[Pipeline] mega-generate attempt ${attempt} exception:`, err, attempt === 1 ? '— will retry in 10s' : '— no more retry, regex fallback');
+          console.warn(`[Pipeline] chunked-generate attempt ${attempt} exception:`, err, attempt === 1 ? '— will retry in 10s' : '— no more retry, regex fallback');
         }
       }  // end retry loop
 
       // Fallback terakhir: regex split (instant, 0 LLM call). Kualitas bab
-      // nggak sebagus mega-generate, tapi setidaknya UI bisa lanjut.
+      // nggak sebagus chunked-generate, tapi setidaknya UI bisa lanjut.
       // Quiz, mindmap, dan visualisasi akan kosong → generateLLMMindmap dipanggil di bawah
       // untuk mindmap, quiz bisa diisi on-demand (tapi generateLLMQuiz
       // sekarang sudah deprecated, lebih baik tunggu user re-upload).
@@ -363,7 +363,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
       }
     }
 
-    // Set state untuk SEMUA path (cache HIT, mega-generate OK, atau regex fallback).
+    // Set state untuk SEMUA path (cache HIT, chunked-generate OK, atau regex fallback).
     // Bug fix: sebelumnya setChapters(split) hanya dipanggil di cache HIT branch,
     // sehingga path cache MISS + fetch OK nggak pernah update state chapters →
     // UI nampil "Bab: 0" walau data sebenarnya ada. Sekarang set di sini untuk
@@ -376,7 +376,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
 
     setStage('mindmap');
 
-    // Kalau mega-generate nggak balik mindmap (jarang, tapi mungkin terjadi
+    // Kalau chunked-generate nggak balik mindmap (jarang, tapi mungkin terjadi
     // kalau LLM skip field itu), generate via LLM call terpisah (1 request).
     // Ini fallback lembut, bukan 55-chunk loop.
     if (!mindmapNode && split.length > 0) {

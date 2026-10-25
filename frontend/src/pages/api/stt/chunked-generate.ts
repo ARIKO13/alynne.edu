@@ -4,7 +4,7 @@ import { callLLM, extractJson, safeParseJson } from '@/lib/gateway-client';
 import { d1 } from '@/lib/d1-client';
 
 /**
- * POST /api/stt/mega-generate
+ * POST /api/stt/chunked-generate  (route renamed from mega-generate, internal algo tetap 2-phase hybrid DeepSeek+GLM)
  *
  * MEGA-REQUEST: 1 LLM call → semua artefak belajar (modul + kuis + visualisasi +
  * mindmap + glosarium + coverage_checklist). Routes to Polyvor phala GLM-5.3-Flash.
@@ -250,7 +250,7 @@ export const POST: APIRoute = async ({ request }) => {
         if (ageHours < 7 * 24) {
           try {
             const megaData = JSON.parse(row.materi_data);
-            console.log(`[mega-generate] CACHE HIT hash=${materiHash.slice(0, 12)}... (age: ${ageHours.toFixed(1)}h) — 0 LLM call`);
+            console.log(`[chunked-generate] CACHE HIT hash=${materiHash.slice(0, 12)}... (age: ${ageHours.toFixed(1)}h) — 0 LLM call`);
             return Response.json({
               cached: true,
               ...megaData,
@@ -261,10 +261,10 @@ export const POST: APIRoute = async ({ request }) => {
           }
         }
       } else {
-        console.log(`[mega-generate] Cache MISS hash=${materiHash.slice(0, 12)}...`);
+        console.log(`[chunked-generate] Cache MISS hash=${materiHash.slice(0, 12)}...`);
       }
     } catch (cacheErr) {
-      console.warn('[mega-generate] Cache lookup failed (non-fatal):', (cacheErr as Error).message?.slice(0, 100));
+      console.warn('[chunked-generate] Cache lookup failed (non-fatal):', (cacheErr as Error).message?.slice(0, 100));
     }
 
     // ── v-chunked (2026-10-25): adaptive chunking berbasis token budget per model ──
@@ -287,7 +287,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Phase 2 CONSTANT 3 sections karena output target (15 bab ringkas JSON ~10K tok)
     // gak berubah dengan input size. Cuma Phase 1 yang adaptive.
     const lembar = Math.ceil(transcript.length / 1400);
-    console.log(`[mega-generate] START: transcript ${transcript.length} chars, ~${lembar} lembar`);
+    console.log(`[chunked-generate] START: transcript ${transcript.length} chars, ~${lembar} lembar`);
 
     const MAX_TRANSCRIPT_CHARS_V2 = 600000;  // >430 lembar = reject
     if (transcript.length > MAX_TRANSCRIPT_CHARS_V2) {
@@ -315,9 +315,9 @@ export const POST: APIRoute = async ({ request }) => {
     if (chunks.length === 0) {
       // Skip Phase 1: transcript ≤ 30K char, langsung pakai sebagai ringkasan untuk Phase 2
       ringkasan = transcript;
-      console.log(`[mega-generate] Phase 1 SKIPPED: transcript ${transcript.length} chars ≤ ${SKIP_PHASE1_THRESHOLD}K threshold — use as-is, 0 LLM call`);
+      console.log(`[chunked-generate] Phase 1 SKIPPED: transcript ${transcript.length} chars ≤ ${SKIP_PHASE1_THRESHOLD}K threshold — use as-is, 0 LLM call`);
     } else {
-      console.log(`[mega-generate] Phase 1: DeepSeek ${chunks.length} chunk(s) paralel (max 6K tok each, pLimit(3))`);
+      console.log(`[chunked-generate] Phase 1: DeepSeek ${chunks.length} chunk(s) paralel (max 6K tok each, pLimit(3))`);
       const phase1Limiter = makeConcurrencyLimiter(3);
       const deepseekResults = await Promise.all(
         chunks.map((chunk, i) => phase1Limiter(() =>
@@ -328,7 +328,7 @@ export const POST: APIRoute = async ({ request }) => {
             timeout: 90_000,
             temperature: 0.2,
             jsonMode: false,
-            endpoint: `mega-generate/p1-chunk-${i + 1}-of-${chunks.length}`,
+            endpoint: `chunked-generate/p1-chunk-${i + 1}-of-${chunks.length}`,
           })
         ))
       );
@@ -337,7 +337,7 @@ export const POST: APIRoute = async ({ request }) => {
       phase1SuccessCount = summaries.length;
       phase1FailCount = chunks.length - phase1SuccessCount;
       if (summaries.length === 0) {
-        console.error(`[mega-generate] Phase 1 ALL FAILED — all ${chunks.length} chunks failed`);
+        console.error(`[chunked-generate] Phase 1 ALL FAILED — all ${chunks.length} chunks failed`);
         return Response.json({
           error: 'phase1_all_failed',
           message: `Semua ${chunks.length} chunk DeepSeek gagal. Coba lagi.`,
@@ -346,7 +346,7 @@ export const POST: APIRoute = async ({ request }) => {
         });
       }
       ringkasan = summaries.join('\n\n---\n\n');
-      console.log(`[mega-generate] Phase 1 done: ${phase1SuccessCount}/${chunks.length} chunks OK, ${phase1FailCount} failed, ringkasan ${ringkasan.length} chars`);
+      console.log(`[chunked-generate] Phase 1 done: ${phase1SuccessCount}/${chunks.length} chunks OK, ${phase1FailCount} failed, ringkasan ${ringkasan.length} chars`);
     }
 
     // ── PHASE 2: GLM strukturkan (CONSTANT 3 sections atau 1 compact) ──
@@ -369,7 +369,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const totalReq = chunks.length + sections.length;
-    console.log(`[mega-generate] Phase 2: GLM ${sections.length} section(s) paralel (max 5K tok each, pLimit(3)) — total req this call: ${totalReq} (${chunks.length} DeepSeek + ${sections.length} GLM)`);
+    console.log(`[chunked-generate] Phase 2: GLM ${sections.length} section(s) paralel (max 5K tok each, pLimit(3)) — total req this call: ${totalReq} (${chunks.length} DeepSeek + ${sections.length} GLM)`);
 
     const phase2Limiter = makeConcurrencyLimiter(3);
     const glmResults = await Promise.all(
@@ -381,7 +381,7 @@ export const POST: APIRoute = async ({ request }) => {
           timeout: 90_000,
           temperature: 0.3,
           jsonMode: true,
-          endpoint: `mega-generate/p2-${s.name}`,
+          endpoint: `chunked-generate/p2-${s.name}`,
         })
       ))
     );
@@ -389,7 +389,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Merge section results
     const merged = mergeGLMSections(glmResults, title);
     if (!merged || !merged.modul?.bab?.length) {
-      console.error(`[mega-generate] Phase 2 ALL FAILED — no valid JSON from any GLM section`);
+      console.error(`[chunked-generate] Phase 2 ALL FAILED — no valid JSON from any GLM section`);
       return Response.json({
         error: 'phase2_all_failed',
         message: 'Semua section GLM gagal parse. Coba lagi atau kurangi ukuran materi.',
@@ -412,12 +412,12 @@ export const POST: APIRoute = async ({ request }) => {
     const expectedBab = lembar <= 20 ? 5 : 15;
     const validation = validateMegaResult(merged, expectedBab);
     if (validation.warnings.length > 0) {
-      console.warn(`[mega-generate] VALIDATION WARNINGS: ${validation.warnings.join('; ')}`);
+      console.warn(`[chunked-generate] VALIDATION WARNINGS: ${validation.warnings.join('; ')}`);
     } else {
-      console.log(`[mega-generate] VALIDATION OK: ${babCount} bab (expected ≥${Math.floor(expectedBab * 0.8)}), coverage ${coverageCount}, kuis ${kuisCount}`);
+      console.log(`[chunked-generate] VALIDATION OK: ${babCount} bab (expected ≥${Math.floor(expectedBab * 0.8)}), coverage ${coverageCount}, kuis ${kuisCount}`);
     }
 
-    console.log(`[mega-generate] FINAL: ${babCount} bab, ${kuisCount} kuis, ${visualisasiCount} visualisasi, ${glosariumCount} glosarium, ${coverageCount} coverage (DeepSeek ${phase1SuccessCount}/${chunks.length} + GLM ${glmResults.filter(r => r.content).length}/${sections.length})`);
+    console.log(`[chunked-generate] FINAL: ${babCount} bab, ${kuisCount} kuis, ${visualisasiCount} visualisasi, ${glosariumCount} glosarium, ${coverageCount} coverage (DeepSeek ${phase1SuccessCount}/${chunks.length} + GLM ${glmResults.filter(r => r.content).length}/${sections.length})`);
 
     // ── SAVE TO D1 CACHE ──
     const megaResponse = {
@@ -445,14 +445,14 @@ export const POST: APIRoute = async ({ request }) => {
          VALUES (?, ?, ?, ?, ?, datetime('now'))`,
         [materiHash, materiDataStr, transcript.length, megaResponse.modelUsed, session.user.email]
       );
-      console.log(`[mega-generate] SAVED to cache hash=${materiHash.slice(0, 12)}... (${materiDataStr.length} chars, level=${megaResponse.levelUsed})`);
+      console.log(`[chunked-generate] SAVED to cache hash=${materiHash.slice(0, 12)}... (${materiDataStr.length} chars, level=${megaResponse.levelUsed})`);
     } catch (saveErr) {
-      console.warn('[mega-generate] Cache save failed (non-fatal):', (saveErr as Error).message?.slice(0, 100));
+      console.warn('[chunked-generate] Cache save failed (non-fatal):', (saveErr as Error).message?.slice(0, 100));
     }
 
     return Response.json({ ...megaResponse, cached: false });
   } catch (e: any) {
-    console.error('[mega-generate] fatal:', e);
+    console.error('[chunked-generate] fatal:', e);
     return Response.json({ error: 'Generation failed', message: e?.message }, { status: 500 });
   }
 };
@@ -709,7 +709,7 @@ function mergeGLMSections(
 // markdown strip, balanced-brace extraction).
 
 /**
- * v-robust (2026-10-25): Validasi output mega-generate.
+ * v-robust (2026-10-25): Validasi output chunked-generate.
  *
  * Cek struktur minimum yang menentukan kualitas hasil:
  * - modul.bab array non-empty
