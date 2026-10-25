@@ -29,7 +29,36 @@ export interface PreSummarizeResult {
 export async function preSummarize(transcript: string): Promise<PreSummarizeResult> {
   const originalLength = transcript.length;
 
-  // Strategy 1: Chrome Summarizer API (on-device, free, no rate limit)
+  // Strategy 1: PDFSummarizer.net API (server-side, free, no signup, handle 50MB)
+  // API: ai-services.formatech.io → upload to S3 → initialize → poll status → summary
+  try {
+    const res = await fetch('/api/stt/pre-summarize-web', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: transcript }),
+      signal: AbortSignal.timeout(150_000),  // 2.5 min — API processing can take 60-120s
+    });
+    if (res.ok) {
+      const data = await res.json() as { summary?: string; method?: string; error?: string };
+      if (data.summary && data.summary.length > 50) {
+        console.log(`[pre-summarize] PDFSummarizer.net API: ${originalLength} → ${data.summary.length} chars (method: ${data.method})`);
+        return {
+          summary: data.summary,
+          method: 'pdfsummarizer-net-api',
+          originalLength,
+          summaryLength: data.summary.length,
+          chunkCount: 1,
+        };
+      }
+      console.log(`[pre-summarize] PDFSummarizer.net API returned: ${data.error || 'no summary'}`);
+    } else {
+      console.log(`[pre-summarize] PDFSummarizer.net API HTTP ${res.status}`);
+    }
+  } catch (err) {
+    console.log(`[pre-summarize] PDFSummarizer.net API failed:`, err);
+  }
+
+  // Strategy 2: Chrome Summarizer API (on-device, free, Chrome 127+)
   const chromeResult = await chromeSummarizeChunked(transcript);
   if (chromeResult) {
     console.log(`[pre-summarize] Chrome Summarizer API: ${originalLength} → ${chromeResult.summary.length} chars (${chromeResult.chunkCount} chunks, method: on-device)`);
