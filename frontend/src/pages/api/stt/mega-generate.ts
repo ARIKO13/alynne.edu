@@ -595,7 +595,11 @@ VISUALISASI RULES (CRITICAL):
 - Contoh data untuk rumus_latex: {"persamaan":"E = mc^2","deskripsi":"Energi = massa × kecepatan cahaya kuadrat"}
 - Contoh data untuk diagram_alur: {"node":["Mulai","Input","Proses","Output"],"edge":[["Mulai","Input"],["Input","Proses"]]}
 - Contoh data untuk tabel_data: {"headers":["Kolom1","Kolom2"],"rows":[["val1","val2"]]}
-- Contoh data untuk grafik_batang: {"categories":["A","B","C"],"values":[10,20,15]}`;
+- Contoh data untuk grafik_batang: {"categories":["A","B","C"],"values":[10,20,15]}
+- Contoh data untuk struktur_molekul: {"smiles":"CCO","nama":"Etanol","deskripsi":"Struktur molekul etanol (C2H6O)"}
+- Contoh data untuk diagram_gaya: {"vektor":[{"label":"F1","magnitude":5,"angle":30,"color":"#ef4444"},{"label":"F2","magnitude":3,"angle":-45,"color":"#3b82f6"}],"resultan":{"magnitude":6.6,"angle":15}}
+- Contoh data untuk diagram_sel: {"organel":[{"nama":"Membran Sel","tipe":"rect","warna":"#10b981","posisi":[10,10,90,90]},{"nama":"Inti Sel","tipe":"lingkaran","warna":"#3b82f6","posisi":[50,50,15]},{"nama":"Mitokondria","tipe":"oval","warna":"#ef4444","posisi":[30,70,10,6]},{"nama":"Ribosom","tipe":"titik","warna":"#f59e0b","posisi":[20,30,2]}]}
+- Contoh data untuk rangkaian_listrik: {"komponen":[{"tipe":"resistor","label":"R1","value":"10Ω","pos":[10,30]},{"tipe":"kapasitor","label":"C1","value":"100µF","pos":[40,30]},{"tipe":"induktor","label":"L1","value":"10mH","pos":[70,30]},{"tipe":"battery","label":"V1","value":"9V","pos":[40,70]}],"koneksi":[[0,1],[1,2],[2,3],[3,0]]}`;
 
 function buildGLMCompactPrompt(ringkasan: string, title: string, targetBab: number): string {
   return `Dari ringkasan berikut, susun SATU JSON modul belajar lengkap dengan ${targetBab} bab + kuis + visualisasi + mindmap + glosarium + coverage.
