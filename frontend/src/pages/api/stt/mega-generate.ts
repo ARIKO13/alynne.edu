@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getSession } from '@/lib/auth';
-import { callLLM, extractJson } from '@/lib/gateway-client';
+import { callLLM, extractJson, safeParseJson } from '@/lib/gateway-client';
 import { d1 } from '@/lib/d1-client';
 
 /**
@@ -198,35 +198,12 @@ function cyrb53(str: string, seed = 0): string {
   return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
 }
 
-// Balanced bracket matching — handles spurious `{` prefix
-function extractBalancedJson(raw: string): any {
-  for (let i = 0; i < raw.length; i++) {
-    if (raw[i] !== '{') continue;
-    let depth = 1;
-    let inString = false;
-    let escape = false;
-    let jsonEnd = -1;
-    for (let j = i + 1; j < raw.length; j++) {
-      const c = raw[j];
-      if (escape) { escape = false; continue; }
-      if (c === '\\') { escape = true; continue; }
-      if (c === '"') { inString = !inString; continue; }
-      if (inString) continue;
-      if (c === '{') depth++;
-      else if (c === '}') {
-        depth--;
-        if (depth === 0) { jsonEnd = j; break; }
-      }
-    }
-    if (jsonEnd > 0) {
-      try {
-        const result = JSON.parse(raw.slice(i, jsonEnd + 1));
-        if (result && result.modul && Array.isArray(result.modul.bab)) return result;
-      } catch { continue; }
-    }
-  }
-  return null;
-}
+// NOTE: extractBalancedJson + tryJsonParse dihapus di v-robust (2026-10-25).
+// Sekarang pakai safeParseJson unified parser dari gateway-client.ts yang:
+//   1. Direct JSON.parse
+//   2. Strip markdown fence ```json ... ```
+//   3. Balanced-brace extraction dengan escape handling
+// Lebih robust dari implementasi lama + dipakai konsisten di seluruh codebase.
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -316,6 +293,9 @@ export const POST: APIRoute = async ({ request }) => {
       chunks.map((chunk, i) => phase1Limiter(() =>
         callLLM('long', DEEPSEEK_SUMMARY_PROMPT, chunk, {
           model: 'phala/deepseek/deepseek-v4-flash-0731',
+          // v-robust: per-request fallback chain. Kalau DeepSeek down/timeout,
+          // coba GLM (lebih lambat tapi bisa ringkas), lalu gemini-lite (tercepat).
+          fallbackModels: ['phala/z-ai/glm-5.3-flash', 'jr/gemini-3.5-flash-lite'],
           maxTokens: 6000,
           timeout: 90_000,
           temperature: 0.2,
@@ -373,6 +353,9 @@ export const POST: APIRoute = async ({ request }) => {
       sections.map(s => phase2Limiter(() =>
         callLLM('long', GLM_STRUCTURE_SYSTEM_PROMPT, s.userPrompt, {
           model: 'phala/z-ai/glm-5.3-flash',
+          // v-robust: per-request fallback chain. Kalau GLM down/timeout,
+          // coba DeepSeek (bisa JSON tapi struktur kurang konsisten), lalu gemini-lite.
+          fallbackModels: ['phala/deepseek/deepseek-v4-flash-0731', 'jr/gemini-3.5-flash-lite'],
           maxTokens: 5000,
           timeout: 90_000,
           temperature: 0.3,
@@ -400,6 +383,18 @@ export const POST: APIRoute = async ({ request }) => {
     const visualisasiCount = merged.visualisasi?.length ?? 0;
     const glosariumCount = merged.glosarium?.length ?? 0;
     const coverageCount = merged.coverage_checklist?.length ?? 0;
+
+    // v-robust: validasi output — cek struktur minimum + coverage checklist non-empty.
+    // Bukan fallback ke regex (yang user bilang "sumber hasil buruk"), tapi log warning
+    // supaya monitoring kelihatan kalau LLM sering balik hasil nggak lengkap.
+    // Expected bab: ≤20 lembar = 5 bab, 20-100 = 15 bab, 100-300 = 15 bab.
+    const expectedBab = lembar <= 20 ? 5 : 15;
+    const validation = validateMegaResult(merged, expectedBab);
+    if (validation.warnings.length > 0) {
+      console.warn(`[mega-generate] VALIDATION WARNINGS: ${validation.warnings.join('; ')}`);
+    } else {
+      console.log(`[mega-generate] VALIDATION OK: ${babCount} bab (expected ≥${Math.floor(expectedBab * 0.8)}), coverage ${coverageCount}, kuis ${kuisCount}`);
+    }
 
     console.log(`[mega-generate] FINAL: ${babCount} bab, ${kuisCount} kuis, ${visualisasiCount} visualisasi, ${glosariumCount} glosarium, ${coverageCount} coverage (DeepSeek ${phase1SuccessCount}/${chunks.length} + GLM ${glmResults.filter(r => r.content).length}/${sections.length})`);
 
@@ -641,7 +636,10 @@ function mergeGLMSections(
 
   for (const r of results) {
     if (!r.content) continue;
-    const parsed = extractBalancedJson(r.content) || tryJsonParse(r.content);
+    // v-robust: pakai safeParseJson (unified parser) — tahan terhadap output kotor
+    // (markdown fence, text sebelum/sesudah JSON, escape character, dll).
+    // Ganti extractBalancedJson + tryJsonParse yang lama.
+    const parsed = safeParseJson(r.content);
     if (!parsed) continue;
     if (Array.isArray(parsed.modul?.bab)) allBab.push(...parsed.modul.bab);
     if (Array.isArray(parsed.kuis)) allKuis.push(...parsed.kuis);
@@ -681,14 +679,73 @@ function mergeGLMSections(
   };
 }
 
-function tryJsonParse(raw: string): any | null {
-  try { return JSON.parse(raw); } catch {}
-  const cb = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (cb) { try { return JSON.parse(cb[1].trim()); } catch {} }
-  const firstBrace = raw.indexOf('{');
-  const lastBrace = raw.lastIndexOf('}');
-  if (firstBrace >= 0 && lastBrace > firstBrace) {
-    try { return JSON.parse(raw.slice(firstBrace, lastBrace + 1)); } catch {}
+// tryJsonParse dihapus di v-robust (2026-10-25) — fungsinya sudah di-subsume
+// oleh safeParseJson di gateway-client.ts (strategi 1+2+3: direct parse,
+// markdown strip, balanced-brace extraction).
+
+/**
+ * v-robust (2026-10-25): Validasi output mega-generate.
+ *
+ * Cek struktur minimum yang menentukan kualitas hasil:
+ * - modul.bab array non-empty
+ * - jumlah bab >= 80% expected (toleransi 20% loss)
+ * - coverage_checklist non-empty (bukti coverage materi)
+ * - minimal 1 kuis per bab (kalau expected bab >= 5)
+ *
+ * Return: { valid, warnings, missingBab }.
+ * - valid = true kalau semua cek lolos
+ * - warnings = array pesan warning untuk log
+ * - missingBab = array bab id yang hilang (1..expectedBab yang gak ada di result)
+ *
+ * Bukan fallback ke regex (sumber hasil buruk), tapi log warning supaya
+ * monitoring kelihatan pola kegagalan LLM. Caller tetap return result partial
+ * — keputusan retry/user-notice di client.
+ */
+function validateMegaResult(merged: any, expectedBab: number): {
+  valid: boolean;
+  warnings: string[];
+  missingBab: number[];
+} {
+  const warnings: string[] = [];
+  const missingBab: number[] = [];
+
+  if (!merged?.modul?.bab || !Array.isArray(merged.modul.bab) || merged.modul.bab.length === 0) {
+    warnings.push('no bab in modul (severe)');
+    return { valid: false, warnings, missingBab: [] };
   }
-  return null;
+
+  const actualBab = merged.modul.bab.length;
+  const minBab = Math.floor(expectedBab * 0.8);  // 80% threshold
+  if (actualBab < minBab) {
+    warnings.push(`bab count ${actualBab} < expected ${minBab} (80% of ${expectedBab})`);
+  }
+
+  // Cek bab id 1..expectedBab yang hilang
+  const presentIds = new Set(merged.modul.bab.map((b: any) => Number(b.id)).filter((n: number) => !isNaN(n)));
+  for (let i = 1; i <= expectedBab; i++) {
+    if (!presentIds.has(i)) missingBab.push(i);
+  }
+  if (missingBab.length > 0) {
+    warnings.push(`missing bab id: ${missingBab.slice(0, 10).join(', ')}${missingBab.length > 10 ? ` (+${missingBab.length - 10} more)` : ''}`);
+  }
+
+  if (!Array.isArray(merged.coverage_checklist) || merged.coverage_checklist.length === 0) {
+    warnings.push('coverage_checklist missing/empty — no proof of material coverage');
+  }
+
+  if (!Array.isArray(merged.kuis) || merged.kuis.length === 0) {
+    warnings.push('kuis array empty — no quiz questions generated');
+  } else if (expectedBab >= 5 && merged.kuis.length < expectedBab) {
+    warnings.push(`kuis count ${merged.kuis.length} < 1 per bab (${expectedBab})`);
+  }
+
+  if (!merged.mindmap || !merged.mindmap.cabang || merged.mindmap.cabang.length === 0) {
+    warnings.push('mindmap.cabang empty — no mindmap structure');
+  }
+
+  if (!Array.isArray(merged.glosarium) || merged.glosarium.length === 0) {
+    warnings.push('glosarium empty — no glossary terms');
+  }
+
+  return { valid: warnings.length === 0, warnings, missingBab };
 }

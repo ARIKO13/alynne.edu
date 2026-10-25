@@ -251,78 +251,89 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     //   fetch('/api/stt/mega-generate') → 1 LLM call dengan transcript utuh (700K char max)
     //   → LLM yang memecah jadi bab di dalam output JSON → tanpa split, tanpa regex fallback
     if (!split) {
-      try {
-        const res = await fetch('/api/stt/mega-generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ transcript, title: 'Materi Belajar', maxChapters: 15 }),
-          signal: AbortSignal.timeout(320_000),  // 5 menit 20 detik — match server-side 300s + buffer
-        });
-        if (res.ok) {
-          const mega = await res.json() as {
-            modul?: { bab?: any[] };
-            kuis?: any[];
-            mindmap?: { root?: string; cabang?: { nama?: string; sub?: string[] }[] };
-            error?: string;
-            cached?: boolean;
-            levelUsed?: string;
-          };
-          if (mega.modul?.bab?.length && !mega.error) {
-            // Map modul.bab → Chapter[] (existing interface: id, title, content, wordCount)
-            split = mega.modul.bab.map((b: any) => {
-              const content = String(b.penjelasan || b.uraian || '').trim();
-              return {
-                id: Number(b.id) || 0,
-                title: String(b.judul || '').slice(0, 100),
-                content,
-                wordCount: content.split(/\s+/).filter(Boolean).length,
-              };
-            }).filter((c: Chapter) => c.id > 0 && c.content.length > 20);
-
-            // Map kuis → quizzes record (per bab_id). Mega-generate sudah generate kuis
-            // 15-20 soal total, jadi TIDAK PERLU panggil generateLLMQuiz per bab lagi.
-            if (Array.isArray(mega.kuis)) {
-              for (const k of mega.kuis) {
-                const babId = Number(k.bab_id ?? k.bab ?? 0);
-                if (!babId) continue;
-                if (!quizMap[babId]) quizMap[babId] = [];
-                quizMap[babId].push({
-                  id: Number(k.id) || quizMap[babId].length + 1,
-                  type: 'multiple-choice' as const,
-                  question: String(k.soal || ''),
-                  options: Array.isArray(k.opsi) ? k.opsi.map(String) : [],
-                  correctAnswer: String(k.jawaban || ''),
-                  explanation: String(k.pembahasan || ''),
-                });
-              }
-            }
-
-            // Map mindmap {root, cabang:[{nama, sub}]} → LLMMindmapNode {label, children}
-            if (mega.mindmap?.root) {
-              mindmapNode = {
-                label: String(mega.mindmap.root),
-                children: (mega.mindmap.cabang || []).map((c: any) => ({
-                  label: String(c.nama || ''),
-                  children: (c.sub || []).map((s: string) => ({ label: String(s) })),
-                })),
-              };
-            }
-
-            // v-visualisasi: simpan array visualisasi untuk render di tab Materi per bab.
-            // Visualisasi sudah digenerate Phase 2 GLM bersama bab/kuis/mindmap — 0 request tambahan.
-            const visualisasiArr = Array.isArray(mega.visualisasi) ? mega.visualisasi : [];
-            setVisualisasi(visualisasiArr);
-
-            console.log(`[Pipeline] mega-generate OK: ${split.length} bab, ${Object.keys(quizMap).length} bab dengan kuis, mindmap ${mindmapNode ? 'OK' : 'null'} (level: ${mega.levelUsed || '?'}${mega.cached ? ', server-cache HIT' : ''})`);
-          } else {
-            console.warn('[Pipeline] mega-generate returned:', mega.error || 'no bab', '— falling back to regex split');
-          }
-        } else {
-          console.warn('[Pipeline] mega-generate HTTP', res.status, '— falling back to regex split');
+      // v-robust (2026-10-25): retry mega-generate 1x kalau attempt pertama gagal (transient).
+      // Sesuai spec user: "Kalau validasi gagal, retry dengan model lain—bukan fallback ke regex."
+      // Strategi: 2 attempt (initial + 1 retry), 10s backoff antar attempt.
+      // Kalau 2 attempt gagal total, regex fallback terakhir (degraded mode) supaya UI gak blank.
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        console.log(`[Pipeline] mega-generate attempt ${attempt}/2${attempt === 1 ? '' : ' (retry after 10s backoff)'}`);
+        if (attempt > 1) {
+          await sleep(10_000);  // 10s backoff sebelum retry
         }
-      } catch (err) {
-        console.warn('[Pipeline] mega-generate failed, falling back to regex split:', err);
-      }
+        try {
+          const res = await fetch('/api/stt/mega-generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ transcript, title: 'Materi Belajar', maxChapters: 15 }),
+            signal: AbortSignal.timeout(320_000),  // 5 menit 20 detik — match server-side 300s + buffer
+          });
+          if (res.ok) {
+            const mega = await res.json() as {
+              modul?: { bab?: any[] };
+              kuis?: any[];
+              mindmap?: { root?: string; cabang?: { nama?: string; sub?: string[] }[] };
+              visualisasi?: any[];
+              error?: string;
+              cached?: boolean;
+              levelUsed?: string;
+            };
+            if (mega.modul?.bab?.length && !mega.error) {
+              // Map modul.bab → Chapter[] (existing interface: id, title, content, wordCount)
+              split = mega.modul.bab.map((b: any) => {
+                const content = String(b.penjelasan || b.uraian || '').trim();
+                return {
+                  id: Number(b.id) || 0,
+                  title: String(b.judul || '').slice(0, 100),
+                  content,
+                  wordCount: content.split(/\s+/).filter(Boolean).length,
+                };
+              }).filter((c: Chapter) => c.id > 0 && c.content.length > 20);
+
+              // Map kuis → quizzes record (per bab_id). Mega-generate sudah generate kuis
+              // 15-20 soal total, jadi TIDAK PERLU panggil generateLLMQuiz per bab lagi.
+              if (Array.isArray(mega.kuis)) {
+                for (const k of mega.kuis) {
+                  const babId = Number(k.bab_id ?? k.bab ?? 0);
+                  if (!babId) continue;
+                  if (!quizMap[babId]) quizMap[babId] = [];
+                  quizMap[babId].push({
+                    id: Number(k.id) || quizMap[babId].length + 1,
+                    type: 'multiple-choice' as const,
+                    question: String(k.soal || ''),
+                    options: Array.isArray(k.opsi) ? k.opsi.map(String) : [],
+                    correctAnswer: String(k.jawaban || ''),
+                    explanation: String(k.pembahasan || ''),
+                  });
+                }
+              }
+
+              // Map mindmap {root, cabang:[{nama, sub}]} → LLMMindmapNode {label, children}
+              if (mega.mindmap?.root) {
+                mindmapNode = {
+                  label: String(mega.mindmap.root),
+                  children: (mega.mindmap.cabang || []).map((c: any) => ({
+                    label: String(c.nama || ''),
+                    children: (c.sub || []).map((s: string) => ({ label: String(s) })),
+                  })),
+                };
+              }
+
+              // v-visualisasi: simpan array visualisasi untuk render di tab Materi per bab.
+              // Visualisasi sudah digenerate Phase 2 GLM bersama bab/kuis/mindmap — 0 request tambahan.
+              visualisasiArr = Array.isArray(mega.visualisasi) ? mega.visualisasi : [];
+
+              console.log(`[Pipeline] mega-generate attempt ${attempt} OK: ${split.length} bab, ${Object.keys(quizMap).length} bab dengan kuis, mindmap ${mindmapNode ? 'OK' : 'null'}, visualisasi ${visualisasiArr.length} item (level: ${mega.levelUsed || '?'}${mega.cached ? ', server-cache HIT' : ''})`);
+              break;  // sukses, keluar dari retry loop
+            } else {
+              console.warn(`[Pipeline] mega-generate attempt ${attempt} returned:`, mega.error || 'no bab', attempt === 1 ? '— will retry in 10s' : '— no more retry, regex fallback');
+            }
+          } else {
+            console.warn(`[Pipeline] mega-generate attempt ${attempt} HTTP ${res.status}`, attempt === 1 ? '— will retry in 10s' : '— no more retry, regex fallback');
+          }
+        } catch (err) {
+          console.warn(`[Pipeline] mega-generate attempt ${attempt} exception:`, err, attempt === 1 ? '— will retry in 10s' : '— no more retry, regex fallback');
+        }
+      }  // end retry loop
 
       // Fallback terakhir: regex split (instant, 0 LLM call). Kualitas bab
       // nggak sebagus mega-generate, tapi setidaknya UI bisa lanjut.

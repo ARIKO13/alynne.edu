@@ -73,6 +73,91 @@ export interface CallLLMOpts {
    * Contoh: { model: 'phala/deepseek/deepseek-v4-flash-0731' } → cuma DeepSeek.
    */
   model?: string;
+  /**
+   * v-robust (2026-10-25): Fallback chain per-request. Kalau opts.model gagal
+   * (timeout/error/parse-fail), coba tiap model di array ini secara berurutan.
+   * Hanya aktif kalau opts.model diisi. Tujuan: hilangkan phase2_all_failed.
+   * Contoh untuk Phase 1 (DeepSeek primary): ['phala/z-ai/glm-5.3-flash', 'jr/gemini-3.5-flash-lite']
+   * Contoh untuk Phase 2 (GLM primary): ['phala/deepseek/deepseek-v4-flash-0731', 'jr/gemini-3.5-flash-lite']
+   */
+  fallbackModels?: string[];
+}
+
+/**
+ * v-robust (2026-10-25): Unified JSON parser — tahan terhadap output kotor dari LLM.
+ *
+ * Strategi (3 lapis):
+ * 1. Direct JSON.parse — kalau model balik JSON bersih, langsung sukses.
+ * 2. Strip markdown fence ```json ... ``` — kalau model bungkus JSON di code block.
+ * 3. Balanced-brace extraction — scan dari setiap `{` untuk nemuin JSON object yang valid.
+ *    Handles: text sebelum JSON, nested objects, string dengan escape, multiple JSON candidates.
+ *
+ * Return: parsed object (any shape) atau null kalau semua strategi gagal.
+ * Caller yang validasi struktur (e.g., cek modul.bab.length).
+ *
+ * Ganti SEMUA JSON.parse(response) di codebase dengan safeParseJson(content) supaya
+ * error "Unexpected non-whitespace character" gak muncul lagi.
+ */
+export function safeParseJson(raw: string | null | undefined): any | null {
+  if (!raw || typeof raw !== 'string') return null;
+
+  // Trim whitespace di awal/akhir
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+
+  // Strategy 1: direct JSON.parse
+  try {
+    const result = JSON.parse(trimmed);
+    if (result && typeof result === 'object') return result;
+  } catch { /* continue to next strategy */ }
+
+  // Strategy 2: strip markdown fence ```json ... ``` atau ``` ... ```
+  const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenceMatch) {
+    try {
+      const result = JSON.parse(fenceMatch[1].trim());
+      if (result && typeof result === 'object') return result;
+    } catch { /* continue */ }
+    // Kalau fence ada tapi parse gagal, coba balanced-brace di dalam fence
+    const inner = fenceMatch[1].trim();
+    const balanced = extractBalancedObject(inner);
+    if (balanced) return balanced;
+  }
+
+  // Strategy 3: balanced-brace extraction (handles text before/after JSON,
+  // nested objects, string dengan escape character)
+  return extractBalancedObject(trimmed);
+}
+
+/**
+ * Helper: extract first valid JSON object dari text menggunakan balanced-brace matching.
+ * Handles escape sequences (\\, \", dll) dan string literals dengan benar.
+ */
+function extractBalancedObject(text: string): any | null {
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== '{') continue;
+    let depth = 1;
+    let inString = false;
+    let escape = false;
+    for (let j = i + 1; j < text.length; j++) {
+      const c = text[j];
+      if (escape) { escape = false; continue; }
+      if (c === '\\') { escape = true; continue; }
+      if (c === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (c === '{') depth++;
+      else if (c === '}') {
+        depth--;
+        if (depth === 0) {
+          try {
+            const result = JSON.parse(text.slice(i, j + 1));
+            if (result && typeof result === 'object') return result;
+          } catch { break; }  // `{` ini bukan JSON valid, coba `{` berikutnya
+        }
+      }
+    }
+  }
+  return null;
 }
 
 export interface CallLLMResult {
@@ -95,9 +180,13 @@ export async function callLLM(
   const fallbacksTriggered: FallbackEvent[] = [];
 
   // ── PHASE 1: Polyvor (try phala GLM-5.3-Flash first, then DeepSeek V4) ─
-  // v-hybrid: kalau opts.model diisi, cuma coba model itu (skip fallback chain).
+  // v-hybrid: kalau opts.model diisi, coba model itu + opts.fallbackModels (per-request fallback chain).
+  // v-robust: per-request fallback eliminate phase2_all_failed — kalau GLM down, otomatis coba DeepSeek,
+  // kalau DeepSeek down, coba gemini-3.5-flash-lite, dst.
   if (POLYVOR_API_KEY) {
-    const polyvorModels = opts.model ? [opts.model] : [POLYVOR_MODEL, POLYVOR_FALLBACK_MODEL];
+    const polyvorModels = opts.model
+      ? [opts.model, ...(opts.fallbackModels || [])]
+      : [POLYVOR_MODEL, POLYVOR_FALLBACK_MODEL];
     for (let pi = 0; pi < polyvorModels.length; pi++) {
       const polyvorModel = polyvorModels[pi];
       const t0 = Date.now();
@@ -140,10 +229,15 @@ export async function callLLM(
         const errorType = `Polyvor_${modelShort}_HTTP_${res.status}`;
         const errorMessage = errBody.slice(0, 200) || res.statusText;
 
-        // v-hybrid: kalau opts.model diisi, jangan lanjut ke fallback chain. Return gagal.
+        // v-robust: kalau opts.model + opts.fallbackModels diisi (per-request fallback chain),
+        // coba next model di chain sebelum return null.
+        if (opts.model && pi + 1 < polyvorModels.length) {
+          console.warn(`[callLLM] ${endpoint} Polyvor/${polyvorModel} ${errorType}: ${errorMessage.slice(0, 100)} → fallback ${polyvorModels[pi + 1]}`);
+          continue;
+        }
+        // v-hybrid: kalau cuma opts.model (no fallbackModels), return null segera
         if (opts.model) {
-          console.warn(`[callLLM] ${endpoint} Polyvor/${polyvorModel} (model locked) failed: ${errorType} ${errorMessage}`);
-          // Lewati pi-bansos fallback juga — caller yang handle retry/skip
+          console.warn(`[callLLM] ${endpoint} Polyvor/${polyvorModel} (model locked, no fallback) failed: ${errorType} ${errorMessage}`);
           return { content: null, modelUsed: `polyvor/${polyvorModel}`, fallbacksTriggered };
         }
 
@@ -175,10 +269,15 @@ export async function callLLM(
           ? `Polyvor_${modelShort}_Timeout` : `Polyvor_${modelShort}_NetworkError`;
         const errorMessage = (e?.message || 'unknown').slice(0, 200);
 
-        // v-hybrid: kalau opts.model diisi (model locked), jangan lanjut ke fallback.
-        // Caller (mega-generate.ts) yang handle retry dengan max_tokens lebih rendah.
+        // v-robust: per-request fallback chain. Kalau opts.model + opts.fallbackModels diisi,
+        // coba next model sebelum return null.
+        if (opts.model && pi + 1 < polyvorModels.length) {
+          console.warn(`[callLLM] ${endpoint} Polyvor/${polyvorModel} ${errorType}: ${errorMessage.slice(0, 100)} → fallback ${polyvorModels[pi + 1]}`);
+          continue;
+        }
+        // v-hybrid: kalau cuma opts.model (no fallbackModels), return null segera
         if (opts.model) {
-          console.warn(`[callLLM] ${endpoint} Polyvor/${polyvorModel} (model locked) ${errorType}: ${errorMessage}`);
+          console.warn(`[callLLM] ${endpoint} Polyvor/${polyvorModel} (model locked, no fallback) ${errorType}: ${errorMessage}`);
           return { content: null, modelUsed: `polyvor/${polyvorModel}`, fallbacksTriggered };
         }
 
