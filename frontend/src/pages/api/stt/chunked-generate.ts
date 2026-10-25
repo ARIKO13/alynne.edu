@@ -228,7 +228,10 @@ export const POST: APIRoute = async ({ request }) => {
     // v8-no-error-2026-10-25 = hard deadline per phase.
     // v9-fast-2026-10-25 = pLimit 2→5, Phase 2 model GLM→DeepSeek, hapus retry,
     // hapus regex fallback, friendly error UI. Total target 66-100s (was 350s).
-    const ALGORITHM_VERSION = 'v9-fast-2026-10-25';
+    // v10-bagi-tugas-2026-10-25: auto-detect GLM health. Kalau hidup → bagi tugas
+    // (GLM modul+vis, DeepSeek kuis+extras, 2 paralel). Kalau mati → DeepSeek-only
+    // (4 sections, v9-fast fallback). Bump cache version supaya cache lama invalid.
+    const ALGORITHM_VERSION = 'v10-bagi-tugas-2026-10-25';
     const materiHash = cyrb53(`${ALGORITHM_VERSION}:${transcript}`);
     try {
       await d1.execute(`
@@ -352,50 +355,94 @@ export const POST: APIRoute = async ({ request }) => {
       }
     }
 
-    // ── PHASE 2: GLM strukturkan (CONSTANT 4 sections atau 1 compact) ──
-    // Output target ~10K tok JSON (15 bab + visualisasi + kuis + mindmap + glosarium + coverage)
-    // 4 sections × 5K tok = 20K budget (margin 10K — aman dari kepotong).
+    // ── PHASE 2: Strukturkan ringkasan → JSON modul lengkap ──
+    // v10-bagi-tugas (per user spec 2026-10-25):
+    //   - Auto-detect GLM health (ping 10s). Kalau hidup → bagi tugas (GLM modul+vis, DeepSeek kuis+extras)
+    //   - Kalau GLM mati → DeepSeek everything (4 sections, v9-fast fallback)
+    //   - Kalau ≤21 lembar → 1 compact section (hemat request untuk materi pendek)
     //
-    // v6 (2026-10-25): naik dari 3 → 4 sections karena user report "ada bab kelewat
-    // gara-gara visualisasi". Visualisasi sekarang 1 per bab (~200 tok × 15 = 3K)
-    // bikin total output ~10K (vs sebelumnya ~7K tanpa visualisasi). 3 sections × 5K = 15K
-    // budget kurang aman, GLM kadang overflow → bab kepotong. 4 sections × 5K = 20K = aman.
-    let sections: Array<{ name: string; userPrompt: string }>;
+    // Bagi tugas = 2 request paralel:
+    //   GLM: modul (15 bab + visualisasi), max_tokens=8000, timeout=110s (fit 120s gateway limit @ 71 tok/s)
+    //   DeepSeek: kuis + mindmap + glosarium + coverage, max_tokens=10000, timeout=70s (fit @ 150 tok/s)
+    //   Wall time: max(113s, 67s) = ~113s ≈ 2 menit
+    //
+    // DeepSeek fallback = 4 request paralel (pLimit 5):
+    //   4 × max_tokens=5000, timeout=60s. Wall time: ~33s (1 gelombang)
+    
+    // v10: GLM health check
+    const glmAlive = await isGLMAlive();
+    console.log(`[chunked-generate] GLM health: ${glmAlive ? 'ALIVE → bagi tugas (GLM modul + DeepSeek kuis)' : 'DEAD → DeepSeek everything (4 sections)'}`);
+
+    interface Phase2Section {
+      name: string;
+      userPrompt: string;
+      model: string;
+      fallbackModels: string[];
+      maxTokens: number;
+      timeout: number;
+    }
+
+    let sections: Phase2Section[];
+    const DS = 'phala/deepseek/deepseek-v4-flash-0731';
+    const GLM = 'phala/z-ai/glm-5.3-flash';
+    const GEMINI = 'jr/gemini-3.5-flash-lite';
+    const DS_FALLBACK = [GLM, GEMINI] as const;
+    const GLM_FALLBACK = [DS, GEMINI] as const;
+
     if (lembar <= 21) {
-      // Compact: 1 section, target 5 bab (lebih hemat untuk materi pendek)
+      // Compact: 1 section, target 5 bab (hemat untuk materi pendek)
       sections = [{
         name: 'modul-compact',
         userPrompt: buildGLMCompactPrompt(ringkasan, title, 5),
+        model: DS,
+        fallbackModels: [...DS_FALLBACK],
+        maxTokens: 5000,
+        timeout: 60_000,
       }];
-    } else {
-      // 4 sections: bab 1-4, 5-8, 9-12, 13-15+extras. Visualisasi per bab di tiap section.
+    } else if (glmAlive) {
+      // v10-bagi-tugas: 2 paralel — GLM modul+vis, DeepSeek kuis+extras
       sections = [
-        { name: 'bab-1-4', userPrompt: buildGLMBabPrompt(ringkasan, title, 1, 4) },
-        { name: 'bab-5-8', userPrompt: buildGLMBabPrompt(ringkasan, title, 5, 8) },
-        { name: 'bab-9-12', userPrompt: buildGLMBabPrompt(ringkasan, title, 9, 12) },
-        { name: 'bab-13-15-extras', userPrompt: buildGLMBabAndExtrasPrompt(ringkasan, title, 13, 15) },
+        {
+          name: 'glm-modul-vis',
+          userPrompt: buildGLMModulPrompt(ringkasan, title),
+          model: GLM,
+          fallbackModels: [...GLM_FALLBACK],
+          maxTokens: 8000,   // 8K / 71 tok/s = 113s < 120s gateway limit ✓
+          timeout: 110_000,  // just under 120s gateway limit
+        },
+        {
+          name: 'deepseek-kuis-extras',
+          userPrompt: buildGLMKuisExtrasPrompt(ringkasan, title),
+          model: DS,
+          fallbackModels: [...DS_FALLBACK],
+          maxTokens: 10000,  // 10K / 150 tok/s = 67s < 120s ✓
+          timeout: 70_000,
+        },
+      ];
+    } else {
+      // GLM dead: 4 sections DeepSeek (v9-fast fallback)
+      sections = [
+        { name: 'bab-1-4', userPrompt: buildGLMBabPrompt(ringkasan, title, 1, 4), model: DS, fallbackModels: [...DS_FALLBACK], maxTokens: 5000, timeout: 60_000 },
+        { name: 'bab-5-8', userPrompt: buildGLMBabPrompt(ringkasan, title, 5, 8), model: DS, fallbackModels: [...DS_FALLBACK], maxTokens: 5000, timeout: 60_000 },
+        { name: 'bab-9-12', userPrompt: buildGLMBabPrompt(ringkasan, title, 9, 12), model: DS, fallbackModels: [...DS_FALLBACK], maxTokens: 5000, timeout: 60_000 },
+        { name: 'bab-13-15-extras', userPrompt: buildGLMBabAndExtrasPrompt(ringkasan, title, 13, 15), model: DS, fallbackModels: [...DS_FALLBACK], maxTokens: 5000, timeout: 60_000 },
       ];
     }
 
     const totalReq = chunks.length + sections.length;
-    // v9-fast (per user spec 2026-10-25): pLimit 5 (was 2), Phase 2 model DeepSeek (was GLM).
-    // Reason: GLM kadang timeout, DeepSeek terbukti hidup di benchmark. Kualitas JSON
-    // DeepSeek slightly lower (Intelligence Index 50 vs GLM 57), tapi lebih reliable.
-    console.log(`[chunked-generate] Phase 2: DeepSeek ${sections.length} section(s) paralel (max 5K tok each, pLimit(5), no retry) — total req this call: ${totalReq} (${chunks.length} DeepSeek p1 + ${sections.length} DeepSeek p2)`);
+    const modeLabel = glmAlive && lembar > 21 ? 'BAGI TUGAS (GLM+DeepSeek)' : 'DEEPSEEK-ONLY';
+    console.log(`[chunked-generate] Phase 2: ${modeLabel} ${sections.length} section(s) paralel — total req this call: ${totalReq} (${chunks.length} DeepSeek p1 + ${sections.length} p2)`);
 
-    const phase2Limiter = makeConcurrencyLimiter(5);  // v9-fast: pLimit 5 (was 2)
     const glmResults = await Promise.all(
-      sections.map(s => phase2Limiter(() =>
-        callLLM('long', GLM_STRUCTURE_SYSTEM_PROMPT, s.userPrompt, {
-          model: 'phala/deepseek/deepseek-v4-flash-0731',  // v9-fast: was glm-5.3-flash
-          fallbackModels: ['phala/z-ai/glm-5.3-flash', 'jr/gemini-3.5-flash-lite'],
-          maxTokens: 5000,
-          timeout: 60_000,  // v9-fast: 60s (was 90s)
-          temperature: 0.3,
-          jsonMode: true,
-          endpoint: `chunked-generate/p2-${s.name}`,
-        })
-      ))
+      sections.map(s => callLLM('long', GLM_STRUCTURE_SYSTEM_PROMPT, s.userPrompt, {
+        model: s.model,
+        fallbackModels: s.fallbackModels,
+        maxTokens: s.maxTokens,
+        timeout: s.timeout,
+        temperature: 0.3,
+        jsonMode: true,
+        endpoint: `chunked-generate/p2-${s.name}`,
+      }))
     );
 
     // Merge section results
@@ -587,6 +634,37 @@ function makeConcurrencyLimiter(concurrency: number) {
 // Sesuai spec user: no retry, single attempt, fail fast. pLimit 5 parallel bukan
 // pLimit 2 sequential. 9 request selesai dalam 2 gelombang (~66-100s) bukan 5
 // gelombang (~350s). Tanpa retry, gateway rate-limit gak ter-trigger lagi.
+
+// v10-bagi-tugas: GLM health check — ping GLM dengan request kecil (max_tokens=10, timeout=10s).
+// Kalau GLM balik content/reasoning → alive. Kalau null/timeout → dead.
+// Digunakan untuk auto-switch antara "bagi tugas" (GLM+DeepSeek) vs "DeepSeek-only".
+async function isGLMAlive(): Promise<boolean> {
+  try {
+    const result = await callLLM('fast', 'Balas dengan satu kata: OK', 'Health check', {
+      model: 'phala/z-ai/glm-5.3-flash',
+      maxTokens: 10,
+      timeout: 10_000,
+      endpoint: 'chunked-generate/glm-health-check',
+    });
+    return result.content !== null && result.content.trim().length > 0;
+  } catch {
+    return false;
+  }
+}
+
+// v10-bagi-tugas: prompt untuk GLM yang minta SEMUA 15 bab + visualisasi dalam 1 request.
+// max_tokens=8000 (fit 120s gateway limit @ 71 tok/s = 113s).
+// Output: {"modul":{"judul":"...","bab":[15 bab]},"visualisasi":[1 per bab maks]}
+function buildGLMModulPrompt(ringkasan: string, title: string): string {
+  return `Dari ringkasan berikut, susun JSON berisi modul lengkap (15 bab) + visualisasi per bab.
+
+RINGKASAN:
+${ringkasan.slice(0, 50000)}
+
+Output JSON valid. Format: {"modul":{"judul":"${title}","bab":[{"id":1,"judul":"...","tujuan":"...","konsep_kunci":["...","...","..."],"penjelasan":"80-120 kata","contoh":"contoh konkret"}]},"visualisasi":[{"id":"vis-001","bab_id":1,"subjek":"Matematika|Fisika|Kimia|Biologi|Umum","judul":"...","tipe":"grafik_fungsi|diagram_alur|rumus_latex|tabel_data|grafik_batang|struktur_molekul|diagram_gaya|diagram_sel|rangkaian_listrik","deskripsi":"...","data":{...},"render_hint":"plotly|mermaid_flowchart|katex|html_table|chartjs|smiles|svg_diagram"}]}.
+15 bab total (id 1-15), uraian 80-120 kata per bab, 1 contoh per bab.
+Visualisasi maks 1 per bab, hanya untuk konsep STEM yang butuh gambar. Materi non-STEM = array kosong.`;
+}
 
 // ── DeepSeek summarization prompt (Phase 1) ──
 const DEEPSEEK_SUMMARY_PROMPT = `Kamu adalah peringkas transkrip kuliah Bahasa Indonesia.
