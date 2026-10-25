@@ -221,12 +221,12 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // ── SERVER-SIDE CACHE LOOKUP (D1) ──
-    // v-hybrid: cache key include version prefix supaya cache lama (algo lama)
-    // gak di-return. v3 = DeepSeek ringkasan → GLM strukturkan hybrid.
-    // v5-visualisasi-2026-10-25 = bump version supaya cache lama (yang gak punya
-    // visualisasi array, atau punya level=hybrid-Nd-4g format lama) gak di-return.
-    // User report "mode belajar ga ada visual samsek" — karena cache HIT return old result.
-    const ALGORITHM_VERSION = 'v5-visualisasi-2026-10-25';
+    // v-chunked: cache key include version prefix supaya cache lama (algo lama)
+    // gak di-return. v5 = DeepSeek ringkas → GLM strukturkan hybrid.
+    // v6-4sec-2026-10-25 = bump dari v5: tambah Phase 2 jadi 4 sections (was 3)
+    // supaya visualisasi gak makan token bab. buildGLMBabPrompt juga minta
+    // visualisasi per bab (sebelumnya cuma di section extras).
+    const ALGORITHM_VERSION = 'v6-4sec-2026-10-25';
     const materiHash = cyrb53(`${ALGORITHM_VERSION}:${transcript}`);
     try {
       await d1.execute(`
@@ -349,22 +349,28 @@ export const POST: APIRoute = async ({ request }) => {
       console.log(`[chunked-generate] Phase 1 done: ${phase1SuccessCount}/${chunks.length} chunks OK, ${phase1FailCount} failed, ringkasan ${ringkasan.length} chars`);
     }
 
-    // ── PHASE 2: GLM strukturkan (CONSTANT 3 sections atau 1 compact) ──
-    // Output target ~10K tok JSON (15 bab + kuis + mindmap + glosarium + coverage + visualisasi)
-    // 3 sections × 5K tok = 15K budget (aman, < 120s gateway limit per section)
+    // ── PHASE 2: GLM strukturkan (CONSTANT 4 sections atau 1 compact) ──
+    // Output target ~10K tok JSON (15 bab + visualisasi + kuis + mindmap + glosarium + coverage)
+    // 4 sections × 5K tok = 20K budget (margin 10K — aman dari kepotong).
+    //
+    // v6 (2026-10-25): naik dari 3 → 4 sections karena user report "ada bab kelewat
+    // gara-gara visualisasi". Visualisasi sekarang 1 per bab (~200 tok × 15 = 3K)
+    // bikin total output ~10K (vs sebelumnya ~7K tanpa visualisasi). 3 sections × 5K = 15K
+    // budget kurang aman, GLM kadang overflow → bab kepotong. 4 sections × 5K = 20K = aman.
     let sections: Array<{ name: string; userPrompt: string }>;
     if (lembar <= 21) {
-      // Compact: 1 section, target 5 bab
+      // Compact: 1 section, target 5 bab (lebih hemat untuk materi pendek)
       sections = [{
         name: 'modul-compact',
         userPrompt: buildGLMCompactPrompt(ringkasan, title, 5),
       }];
     } else {
-      // 3 sections: bab 1-5, 6-10, 11-15+extras
+      // 4 sections: bab 1-4, 5-8, 9-12, 13-15+extras. Visualisasi per bab di tiap section.
       sections = [
-        { name: 'bab-1-5', userPrompt: buildGLMBabPrompt(ringkasan, title, 1, 5) },
-        { name: 'bab-6-10', userPrompt: buildGLMBabPrompt(ringkasan, title, 6, 10) },
-        { name: 'bab-11-15-extras', userPrompt: buildGLMBabAndExtrasPrompt(ringkasan, title, 11, 15) },
+        { name: 'bab-1-4', userPrompt: buildGLMBabPrompt(ringkasan, title, 1, 4) },
+        { name: 'bab-5-8', userPrompt: buildGLMBabPrompt(ringkasan, title, 5, 8) },
+        { name: 'bab-9-12', userPrompt: buildGLMBabPrompt(ringkasan, title, 9, 12) },
+        { name: 'bab-13-15-extras', userPrompt: buildGLMBabAndExtrasPrompt(ringkasan, title, 13, 15) },
       ];
     }
 
@@ -614,13 +620,14 @@ Output JSON valid. Setiap bab: uraian 80-120 kata, 1 contoh. Kuis 1 per bab mini
 }
 
 function buildGLMBabPrompt(ringkasan: string, title: string, startBab: number, endBab: number): string {
-  return `Dari ringkasan berikut, susun JSON berisi BAB ${startBab} sampai ${endBab} saja (dari total 15 bab).
+  return `Dari ringkasan berikut, susun JSON berisi BAB ${startBab} sampai ${endBab} saja (dari total 15 bab) + visualisasi untuk tiap bab.
 
 RINGKASAN:
 ${ringkasan.slice(0, 30000)}
 
-Output JSON valid. Format: {"modul":{"judul":"${title}","bab":[{"id":${startBab},"judul":"...","tujuan":"...","konsep_kunci":["...","...","..."],"penjelasan":"80-120 kata","contoh":"contoh konkret"}]}}.
-Setiap bab: uraian 80-120 kata, 1 contoh konkret. ID bab mulai dari ${startBab} sampai ${endBab}, total ${endBab - startBab + 1} bab.`;
+Output JSON valid. Format: {"modul":{"judul":"${title}","bab":[{"id":${startBab},"judul":"...","tujuan":"...","konsep_kunci":["...","...","..."],"penjelasan":"80-120 kata","contoh":"contoh konkret"}]},"visualisasi":[{"id":"vis-${startBab}","bab_id":${startBab},"subjek":"Matematika|Fisika|Kimia|Biologi|Umum","judul":"...","tipe":"grafik_fungsi|diagram_alur|rumus_latex|tabel_data|grafik_batang|struktur_molekul|diagram_gaya|diagram_sel|rangkaian_listrik","deskripsi":"...","data":{...},"render_hint":"plotly|mermaid_flowchart|katex|html_table|chartjs|smiles|svg_diagram"}]}.
+Setiap bab: uraian 80-120 kata, 1 contoh konkret. ID bab mulai dari ${startBab} sampai ${endBab}, total ${endBab - startBab + 1} bab.
+Visualisasi: MAKSIMAL 1 per bab, hanya untuk konsep STEM yang benar-benar butuh gambar. Materi non-STEM = array kosong.`;
 }
 
 function buildGLMBabAndExtrasPrompt(ringkasan: string, title: string, startBab: number, endBab: number): string {

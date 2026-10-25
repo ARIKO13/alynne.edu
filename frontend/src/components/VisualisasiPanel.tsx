@@ -41,7 +41,7 @@ export function VisualisasiPanel({ items }: { items: VisualisasiItem[] | undefin
   }
   return (
     <div className="space-y-3 mt-4">
-      <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+      <h3 className="text-sm font-semibold text-zinc-200 flex items-center gap-1.5">
         <span className="text-base">📊</span> Visualisasi ({items.length})
       </h3>
       <div className="grid gap-3">
@@ -55,16 +55,16 @@ export function VisualisasiPanel({ items }: { items: VisualisasiItem[] | undefin
 
 function VisualisasiCard({ item }: { item: VisualisasiItem }) {
   return (
-    <div className="border border-slate-200 rounded-lg p-3 bg-slate-50/50">
+    <div className="border border-zinc-700/60 rounded-lg p-3 bg-zinc-800/40">
       {item.judul && (
-        <h4 className="font-medium text-sm text-slate-800 mb-1">{item.judul}</h4>
+        <h4 className="font-medium text-sm text-zinc-100 mb-1">{item.judul}</h4>
       )}
       {item.deskripsi && (
-        <p className="text-xs text-slate-500 mb-2">{item.deskripsi}</p>
+        <p className="text-xs text-zinc-400 mb-2">{item.deskripsi}</p>
       )}
       <VisualisasiRenderer item={item} />
       {item.subjek && (
-        <p className="text-[10px] text-slate-400 mt-2 uppercase tracking-wide">{item.subjek} · {item.tipe}</p>
+        <p className="text-[10px] text-zinc-500 mt-2 uppercase tracking-wide">{item.subjek} · {item.tipe}</p>
       )}
     </div>
   );
@@ -100,15 +100,15 @@ function VisualisasiRenderer({ item }: { item: VisualisasiItem }) {
     if (tipe === 'rangkaian_listrik') return <CircuitRenderer data={data} />;
     // ── Fallback ──
     return (
-      <pre className="text-[10px] bg-slate-100 p-2 rounded overflow-x-auto max-h-40">
+      <pre className="text-[10px] bg-zinc-900/60 border border-zinc-700/50 p-2 rounded overflow-x-auto max-h-40 text-zinc-300">
         {JSON.stringify(data, null, 2)}
       </pre>
     );
   } catch (e: any) {
     return (
-      <div className="text-xs text-red-600 p-2 bg-red-50 rounded">
+      <div className="text-xs text-red-400 p-2 bg-red-950/30 border border-red-800/50 rounded">
         Render error: {e?.message || 'unknown'}
-        <pre className="text-[10px] mt-1 bg-white p-1 rounded">{JSON.stringify(data, null, 2).slice(0, 500)}</pre>
+        <pre className="text-[10px] mt-1 bg-zinc-900/60 p-1 rounded text-zinc-300">{JSON.stringify(data, null, 2).slice(0, 500)}</pre>
       </div>
     );
   }
@@ -127,7 +127,7 @@ function MermaidRenderer({ tipe, hint, data }: { tipe: string; hint: string; dat
     (async () => {
       try {
         const mermaid = (await import('mermaid')).default;
-        mermaid.initialize({ startOnLoad: false, theme: 'default' });
+        mermaid.initialize({ startOnLoad: false, theme: 'dark' });  // dark theme match StudyPipeline
         const code = buildMermaidCode(tipe, hint, data);
         const { svg } = await mermaid.render(idRef.current, code);
         if (!cancelled) { setSvg(svg); setError(''); }
@@ -138,9 +138,9 @@ function MermaidRenderer({ tipe, hint, data }: { tipe: string; hint: string; dat
     return () => { cancelled = true; };
   }, [tipe, hint, data]);
 
-  if (error) return <div className="text-xs text-red-600 p-2 bg-red-50 rounded">Mermaid error: {error}</div>;
-  if (!svg) return <div className="text-xs text-slate-400 p-2">Loading diagram…</div>;
-  return <div className="bg-white rounded p-2 overflow-x-auto" dangerouslySetInnerHTML={{ __html: svg }} />;
+  if (error) return <div className="text-xs text-red-400 p-2 bg-red-950/30 border border-red-800/50 rounded">Mermaid error: {error}</div>;
+  if (!svg) return <div className="text-xs text-zinc-500 p-2">Loading diagram…</div>;
+  return <div className="bg-zinc-900 border border-zinc-700/50 rounded p-2 overflow-x-auto" dangerouslySetInnerHTML={{ __html: svg }} />;
 }
 
 function buildMermaidCode(tipe: string, hint: string, data: any): string {
@@ -178,11 +178,11 @@ function BarChartRenderer({ data }: { data: any }) {
   return (
     <ResponsiveContainer width="100%" height={200}>
       <BarChart data={chartData}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-        <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-        <YAxis tick={{ fontSize: 11 }} />
-        <Tooltip />
-        <Bar dataKey="value" fill="#3b82f6" />
+        <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />  {/* zinc-700 */}
+        <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#a1a1aa' }} stroke="#52525b" />
+        <YAxis tick={{ fontSize: 11, fill: '#a1a1aa' }} stroke="#52525b" />
+        <Tooltip contentStyle={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 6, color: '#e4e4e7' }} />
+        <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -197,11 +197,11 @@ function LineChartRenderer({ data }: { data: any }) {
   return (
     <ResponsiveContainer width="100%" height={200}>
       <LineChart data={chartData}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-        <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-        <YAxis tick={{ fontSize: 11 }} />
-        <Tooltip />
-        <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
+        <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
+        <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#a1a1aa' }} stroke="#52525b" />
+        <YAxis tick={{ fontSize: 11, fill: '#a1a1aa' }} stroke="#52525b" />
+        <Tooltip contentStyle={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 6, color: '#e4e4e7' }} />
+        <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3, fill: '#3b82f6' }} />
       </LineChart>
     </ResponsiveContainer>
   );
@@ -216,10 +216,10 @@ function PieChartRenderer({ data }: { data: any }) {
   return (
     <ResponsiveContainer width="100%" height={200}>
       <PieChart>
-        <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label>
+        <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label={{ fill: '#a1a1aa', fontSize: 11 }}>
           {chartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
         </Pie>
-        <Tooltip />
+        <Tooltip contentStyle={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 6, color: '#e4e4e7' }} />
       </PieChart>
     </ResponsiveContainer>
   );
@@ -244,17 +244,17 @@ function FunctionGraphRenderer({ tipe, data }: { tipe: string; data: any }) {
     if (points.length === 0) return <InvalidDataRenderer data={data} expected="function that returns finite numbers" />;
     return (
       <div>
-        <div className="text-xs font-mono bg-slate-100 px-2 py-1 rounded inline-block mb-2">{persamaan}</div>
+        <div className="text-xs font-mono bg-zinc-900/60 border border-zinc-700/50 px-2 py-1 rounded inline-block mb-2 text-zinc-300">{persamaan}</div>
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={points}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-            <YAxis tick={{ fontSize: 10 }} />
-            <Tooltip />
+            <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
+            <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#a1a1aa' }} stroke="#52525b" />
+            <YAxis tick={{ fontSize: 10, fill: '#a1a1aa' }} stroke="#52525b" />
+            <Tooltip contentStyle={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 6, color: '#e4e4e7' }} />
             <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} dot={false} />
           </LineChart>
         </ResponsiveContainer>
-        {tipe === 'grafik_gerak' && <p className="text-[10px] text-slate-500 mt-1">Grafik gerak: y = posisi/kecepatan/percepatan vs waktu</p>}
+        {tipe === 'grafik_gerak' && <p className="text-[10px] text-zinc-500 mt-1">Grafik gerak: y = posisi/kecepatan/percepatan vs waktu</p>}
       </div>
     );
   } catch (e: any) {
@@ -288,7 +288,7 @@ function TableRenderer({ data }: { data: any }) {
         <thead>
           <tr>
             {headers.map((h: string, i: number) => (
-              <th key={i} className="border border-slate-300 bg-slate-100 px-2 py-1 text-left font-semibold">{h}</th>
+              <th key={i} className="border border-zinc-700 bg-zinc-800/60 px-2 py-1 text-left font-semibold text-zinc-200">{h}</th>
             ))}
           </tr>
         </thead>
@@ -296,7 +296,7 @@ function TableRenderer({ data }: { data: any }) {
           {rows.map((row: any[], i: number) => (
             <tr key={i}>
               {(Array.isArray(row) ? row : [row]).map((cell, j) => (
-                <td key={j} className="border border-slate-200 px-2 py-1">{String(cell ?? '')}</td>
+                <td key={j} className="border border-zinc-700/60 px-2 py-1 text-zinc-300">{String(cell ?? '')}</td>
               ))}
             </tr>
           ))}
@@ -320,8 +320,10 @@ function LatexRenderer({ data }: { data: any }) {
     if (!persamaan) { setError('persamaan kosong'); return; }
     (async () => {
       try {
+        // Load KaTeX CSS on-demand (only when actually rendering LaTeX)
+        // supaya gak berat initial bundle untuk user yang gak punya visualisasi LaTeX
+        await import('katex/dist/katex.min.css').catch(() => {});
         const katex = (await import('katex')).default;
-        // Render ke HTML string dengan opsi displayMode (centered, larger)
         const rendered = katex.renderToString(persamaan, {
           displayMode: true,
           throwOnError: false,
@@ -337,18 +339,18 @@ function LatexRenderer({ data }: { data: any }) {
 
   if (error) {
     return (
-      <div className="bg-white border border-amber-300 rounded p-3">
-        <div className="text-center text-base font-mono text-slate-800">{persamaan}</div>
-        {deskripsi && <p className="text-xs text-slate-500 mt-2 text-center">{deskripsi}</p>}
-        <p className="text-[10px] text-amber-600 mt-1 text-center">KaTeX error: {error}</p>
+      <div className="bg-zinc-900/60 border border-amber-700/50 rounded p-3">
+        <div className="text-center text-base font-mono text-zinc-200">{persamaan}</div>
+        {deskripsi && <p className="text-xs text-zinc-400 mt-2 text-center">{deskripsi}</p>}
+        <p className="text-[10px] text-amber-400 mt-1 text-center">KaTeX error: {error}</p>
       </div>
     );
   }
-  if (!html) return <div className="text-xs text-slate-400 p-2">Memuat rumus…</div>;
+  if (!html) return <div className="text-xs text-zinc-500 p-2">Memuat rumus…</div>;
   return (
-    <div className="bg-white border border-slate-200 rounded p-3">
-      <div className="text-center overflow-x-auto" dangerouslySetInnerHTML={{ __html: html }} />
-      {deskripsi && <p className="text-xs text-slate-500 mt-2 text-center">{deskripsi}</p>}
+    <div className="bg-zinc-900/60 border border-zinc-700/50 rounded p-3">
+      <div className="text-center overflow-x-auto text-zinc-100" dangerouslySetInnerHTML={{ __html: html }} />
+      {deskripsi && <p className="text-xs text-zinc-400 mt-2 text-center">{deskripsi}</p>}
     </div>
   );
 }
@@ -388,18 +390,18 @@ function MoleculeRenderer({ data }: { data: any }) {
 
   if (error) {
     return (
-      <div className="bg-white border border-amber-300 rounded p-3">
-        <div className="text-center font-mono text-sm text-slate-800">SMILES: {smiles}</div>
-        {nama && <p className="text-xs text-slate-500 mt-1 text-center">{nama}</p>}
-        <p className="text-[10px] text-amber-600 mt-1 text-center">SmilesDrawer error: {error}</p>
+      <div className="bg-zinc-900/60 border border-amber-700/50 rounded p-3">
+        <div className="text-center font-mono text-sm text-zinc-200">SMILES: {smiles}</div>
+        {nama && <p className="text-xs text-zinc-400 mt-1 text-center">{nama}</p>}
+        <p className="text-[10px] text-amber-400 mt-1 text-center">SmilesDrawer error: {error}</p>
       </div>
     );
   }
   return (
-    <div className="bg-white border border-slate-200 rounded p-3 flex flex-col items-center">
+    <div className="bg-zinc-900/60 border border-zinc-700/50 rounded p-3 flex flex-col items-center">
       <canvas ref={canvasRef} width={300} height={200} className="max-w-full" />
-      {nama && <p className="text-xs text-slate-700 mt-2 text-center font-medium">{nama}</p>}
-      <p className="text-[10px] text-slate-400 mt-1 font-mono">SMILES: {smiles}</p>
+      {nama && <p className="text-xs text-zinc-200 mt-2 text-center font-medium">{nama}</p>}
+      <p className="text-[10px] text-zinc-500 mt-1 font-mono">SMILES: {smiles}</p>
     </div>
   );
 }
@@ -457,7 +459,7 @@ function GayaVectorRenderer({ data }: { data: any }) {
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded p-3">
+    <div className="bg-zinc-900/60 border border-zinc-700/50 rounded p-3">
       <svg viewBox="0 0 200 200" className="w-full max-w-[300px] mx-auto" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
@@ -465,16 +467,16 @@ function GayaVectorRenderer({ data }: { data: any }) {
           </marker>
         </defs>
         {/* Axes (faint) */}
-        <line x1={0} y1={ORIGIN_Y} x2={200} y2={ORIGIN_Y} stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="2,2" />
-        <line x1={ORIGIN_X} y1={0} x2={ORIGIN_X} y2={200} stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="2,2" />
+        <line x1={0} y1={ORIGIN_Y} x2={200} y2={ORIGIN_Y} stroke="#3f3f46" strokeWidth="0.5" strokeDasharray="2,2" />
+        <line x1={ORIGIN_X} y1={0} x2={ORIGIN_X} y2={200} stroke="#3f3f46" strokeWidth="0.5" strokeDasharray="2,2" />
         {/* Origin dot */}
-        <circle cx={ORIGIN_X} cy={ORIGIN_Y} r="3" fill="#1e293b" />
+        <circle cx={ORIGIN_X} cy={ORIGIN_Y} r="3" fill="#e4e4e7" />
         {/* Vectors */}
         {vektor.map((v: any) => buildArrow(v, false))}
         {/* Resultant (if provided) */}
-        {resultan && buildArrow({ ...resultan, label: resultan.label || 'R', color: '#000' }, true)}
+        {resultan && buildArrow({ ...resultan, label: resultan.label || 'R', color: '#e4e4e7' }, true)}
       </svg>
-      <p className="text-[10px] text-slate-500 mt-1 text-center">
+      <p className="text-[10px] text-zinc-500 mt-1 text-center">
         Skala: 1 unit = {SCALE}px · Sudut: 0°=timur, positif=CCW
       </p>
     </div>
@@ -493,7 +495,7 @@ function CellRenderer({ data }: { data: any }) {
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded p-3">
+    <div className="bg-zinc-900/60 border border-zinc-700/50 rounded p-3">
       <svg viewBox="0 0 200 200" className="w-full max-w-[300px] mx-auto" xmlns="http://www.w3.org/2000/svg">
         {organel.map((o: any, i: number) => {
           const nama = o.nama || `Organel ${i + 1}`;
@@ -518,20 +520,19 @@ function CellRenderer({ data }: { data: any }) {
             const r = Number(posisi[2]) || 2;
             shape = <circle cx={cx} cy={cy} r={r} fill={warna} />;
           } else {
-            // fallback: lingkaran kecil
             shape = <circle cx={cx} cy={cy} r={5} fill={warna} fillOpacity={0.4} />;
           }
           return (
             <g key={i}>
               {shape}
-              <text x={cx} y={cy + (Number(posisi[2]) || 10) + 8} fontSize="7" textAnchor="middle" fill="#475569">{nama}</text>
+              <text x={cx} y={cy + (Number(posisi[2]) || 10) + 8} fontSize="7" textAnchor="middle" fill="#d4d4d8">{nama}</text>
             </g>
           );
         })}
       </svg>
       <div className="flex flex-wrap gap-1 mt-2 justify-center">
         {organel.map((o: any, i: number) => (
-          <span key={i} className="text-[9px] px-1.5 py-0.5 rounded" style={{ backgroundColor: (o.warna || '#3b82f6') + '20', color: o.warna || '#3b82f6' }}>
+          <span key={i} className="text-[9px] px-1.5 py-0.5 rounded" style={{ backgroundColor: (o.warna || '#3b82f6') + '30', color: o.warna || '#3b82f6' }}>
             ● {o.nama || `Organel ${i + 1}`}
           </span>
         ))}
@@ -574,11 +575,11 @@ function CircuitRenderer({ data }: { data: any }) {
       // Zigzag pattern (4 teeth)
       const teeth = 4;
       const path = `M ${x},${py} L ${x + 3},${py - 4} ${x + 6},${py + 4} ${x + 9},${py - 4} ${x + 12},${py + 4} ${x + 15},${py - 4} ${x + 18},${py + 4} ${x + SYMBOL_W},${py}`;
-      symbol = <path d={path} stroke="#1e293b" strokeWidth={1.5} fill="none" />;
+      symbol = <path d={path} stroke="#e4e4e7" strokeWidth={1.5} fill="none" />;
     } else if (tipe === 'kapasitor') {
       // Two parallel vertical lines with horizontal leads
       symbol = (
-        <g stroke="#1e293b" strokeWidth={1.5} fill="none">
+        <g stroke="#e4e4e7" strokeWidth={1.5} fill="none">
           <line x1={x} y1={py} x2={px - 2} y2={py} />
           <line x1={px - 2} y1={y} x2={px - 2} y2={y + SYMBOL_H} />
           <line x1={px + 2} y1={y} x2={px + 2} y2={y + SYMBOL_H} />
@@ -590,36 +591,36 @@ function CircuitRenderer({ data }: { data: any }) {
       const arcs = [];
       for (let a = 0; a < 3; a++) {
         const cx = x + 4 + a * 8;
-        arcs.push(<path key={a} d={`M ${cx - 4},${py} A 4 4 0 0 1 ${cx + 4},${py}`} stroke="#1e293b" strokeWidth={1.5} fill="none" />);
+        arcs.push(<path key={a} d={`M ${cx - 4},${py} A 4 4 0 0 1 ${cx + 4},${py}`} stroke="#e4e4e7" strokeWidth={1.5} fill="none" />);
       }
       symbol = (
         <g>
-          <line x1={x} y1={py} x2={x + 4} y2={py} stroke="#1e293b" strokeWidth={1.5} />
+          <line x1={x} y1={py} x2={x + 4} y2={py} stroke="#e4e4e7" strokeWidth={1.5} />
           {arcs}
-          <line x1={x + SYMBOL_W - 4} y1={py} x2={x + SYMBOL_W} y2={py} stroke="#1e293b" strokeWidth={1.5} />
+          <line x1={x + SYMBOL_W - 4} y1={py} x2={x + SYMBOL_W} y2={py} stroke="#e4e4e7" strokeWidth={1.5} />
         </g>
       );
     } else if (tipe === 'battery') {
       // Long line + short line (cell), repeat for battery
       symbol = (
-        <g stroke="#1e293b" strokeWidth={1.5} fill="none">
+        <g stroke="#e4e4e7" strokeWidth={1.5} fill="none">  {/* light color for dark theme */}
           <line x1={x} y1={py} x2={px - 4} y2={py} />
-          <line x1={px - 4} y1={y - 4} x2={px - 4} y2={y + SYMBOL_H + 4} />  {/* long */}
-          <line x1={px - 2} y1={y} x2={px - 2} y2={y + SYMBOL_H} />  {/* short */}
-          <line x1={px + 2} y1={y - 4} x2={px + 2} y2={y + SYMBOL_H + 4} />  {/* long */}
-          <line x1={px + 4} y1={y} x2={px + 4} y2={y + SYMBOL_H} />  {/* short */}
+          <line x1={px - 4} y1={y - 4} x2={px - 4} y2={y + SYMBOL_H + 4} />
+          <line x1={px - 2} y1={y} x2={px - 2} y2={y + SYMBOL_H} />
+          <line x1={px + 2} y1={y - 4} x2={px + 2} y2={y + SYMBOL_H + 4} />
+          <line x1={px + 4} y1={y} x2={px + 4} y2={y + SYMBOL_H} />
           <line x1={px + 4} y1={py} x2={x + SYMBOL_W} y2={py} />
         </g>
       );
     } else {
       // Fallback: box
-      symbol = <rect x={x} y={y} width={SYMBOL_W} height={SYMBOL_H} stroke="#1e293b" strokeWidth={1} fill="none" />;
+      symbol = <rect x={x} y={y} width={SYMBOL_W} height={SYMBOL_H} stroke="#e4e4e7" strokeWidth={1} fill="none" />;
     }
     return (
       <g key={i}>
         {symbol}
-        <text x={px} y={y - 4} fontSize="8" textAnchor="middle" fontWeight="bold" fill="#1e293b">{label}</text>
-        {value && <text x={px} y={y + SYMBOL_H + 8} fontSize="7" textAnchor="middle" fill="#64748b">{value}</text>}
+        <text x={px} y={y - 4} fontSize="8" textAnchor="middle" fontWeight="bold" fill="#e4e4e7">{label}</text>
+        {value && <text x={px} y={y + SYMBOL_H + 8} fontSize="7" textAnchor="middle" fill="#a1a1aa">{value}</text>}
       </g>
     );
   };
@@ -638,18 +639,18 @@ function CircuitRenderer({ data }: { data: any }) {
     const midX = ax;
     return (
       <g key={`wire-${i}`}>
-        <polyline points={`${ax},${ay} ${midX},${by} ${bx},${by}`} stroke="#94a3b8" strokeWidth={1} fill="none" strokeDasharray="2,2" />
+        <polyline points={`${ax},${ay} ${midX},${by} ${bx},${by}`} stroke="#71717a" strokeWidth={1} fill="none" strokeDasharray="2,2" />
       </g>
     );
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded p-3">
+    <div className="bg-zinc-900/60 border border-zinc-700/50 rounded p-3">
       <svg viewBox="0 0 200 100" className="w-full max-w-[400px] mx-auto" xmlns="http://www.w3.org/2000/svg">
         {koneksi.map((c: any, i: number) => renderWire(c, i))}
         {komponen.map((k: any, i: number) => renderComponent(k, i))}
       </svg>
-      <p className="text-[10px] text-slate-500 mt-1 text-center">
+      <p className="text-[10px] text-zinc-500 mt-1 text-center">
         Komponen: {komponen.length} · Koneksi: {koneksi.length}
       </p>
     </div>
@@ -658,11 +659,11 @@ function CircuitRenderer({ data }: { data: any }) {
 
 function InvalidDataRenderer({ data, expected, error }: { data: any; expected: string; error?: string }) {
   return (
-    <div className="text-xs text-amber-700 p-2 bg-amber-50 rounded">
+    <div className="text-xs text-amber-400 p-2 bg-amber-950/30 border border-amber-800/50 rounded">
       <p className="font-medium">⚠️ Struktur data tidak sesuai</p>
-      <p className="text-[11px] mt-1">Expected: <code className="text-[10px]">{expected}</code></p>
-      {error && <p className="text-[11px] mt-1 text-red-600">Error: {error}</p>}
-      <pre className="text-[10px] mt-2 bg-white p-1 rounded overflow-x-auto">
+      <p className="text-[11px] mt-1">Expected: <code className="text-[10px] text-amber-300">{expected}</code></p>
+      {error && <p className="text-[11px] mt-1 text-red-400">Error: {error}</p>}
+      <pre className="text-[10px] mt-2 bg-zinc-900/60 p-1 rounded overflow-x-auto text-zinc-300">
         {JSON.stringify(data, null, 2).slice(0, 300)}
       </pre>
     </div>
