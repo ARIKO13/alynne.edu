@@ -207,7 +207,10 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     // NOTE: server-side chunked-generate juga punya cache D1 7 hari (lihat
     // chunked-generate.ts), tapi cache lokal ini lebih cepat lagi karena
     // skip network round-trip.
-    const CACHE_KEY = `alynne:chunked-v5-vis:${cyrb53(transcript)}`;
+    // v-chunked-v6-4sec: bump localStorage cache key supaya entry lama (3 sections,
+    // visualisasi light theme, bab kepotong) gak di-return. Match ALGORITHM_VERSION
+    // 'v6-4sec-2026-10-25' di chunked-generate.ts (server-side D1 cache).
+    const CACHE_KEY = `alynne:chunked-v6-4sec:${cyrb53(transcript)}`;
     const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;  // 7 days
     let split: Chapter[] | null = null;
     let quizMap: Record<number, QuizQuestion[]> = {};
