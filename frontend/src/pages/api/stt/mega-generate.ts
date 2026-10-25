@@ -108,12 +108,22 @@ VISUALISASI RULES (CRITICAL):
 
 REMEMBER: Output JSON ONLY. First char = '{'. Last char = '}'. No prose.`;
 
-// ── Tiered max_tokens strategy (per user spec 2026-10-25) ──────────
+// ── Tiered max_tokens strategy (per user spec 2026-10-25, revised) ──────────
+// v-stabil: L3 (ringkas_lengkap, 65K) sekarang DEFAULT.
+// Alasan user: L1 131K terlalu berat (~15 menit, rawan timeout), output 60-90K
+// token sering truncated di provider free-tier. L3 (65K) → output ~35K token,
+// waktu ~5-8 menit, risiko terpotong rendah. Semua bab tetap ada (80-120 kata/bab),
+// kuis 15-20 soal, visualisasi esensial saja.
+//
+// Urutan baru: L3 → L4 → L2 → L1 (naik kapasitas hanya kalau L3 & L4 gagal).
+// L4 (32K sangat_ringkas) jadi fallback utama (lebih cepat lagi, ~4 menit).
+// L2 (100K) dan L1 (131K) sebagai last-resort untuk materi sangat panjang yang
+// LLM tetap nggak bisa muat dalam 65K output.
 const MEGA_LEVELS = [
-  { maxTokens: 131072, mode: 'lengkap' as const, label: 'L1-131K-lengkap' },
-  { maxTokens: 100000, mode: 'lengkap' as const, label: 'L2-100K-lengkap' },
-  { maxTokens: 65536, mode: 'ringkas_lengkap' as const, label: 'L3-65K-ringkas' },
+  { maxTokens: 65536, mode: 'ringkas_lengkap' as const, label: 'L3-65K-ringkas-DEFAULT' },
   { maxTokens: 32768, mode: 'sangat_ringkas' as const, label: 'L4-32K-sangat-ringkas' },
+  { maxTokens: 100000, mode: 'lengkap' as const, label: 'L2-100K-lengkap' },
+  { maxTokens: 131072, mode: 'lengkap' as const, label: 'L1-131K-lengkap' },
 ];
 
 function buildMegaPrompt(mode: 'lengkap' | 'ringkas_lengkap' | 'sangat_ringkas'): string {
@@ -289,7 +299,7 @@ ${truncated}
 
 Output STRICT JSON only. First character MUST be '{'. No prose, no reasoning, no markdown fences.`;
 
-    console.log(`[mega-generate] START: transcript ${transcript.length} chars, target ${maxChapters} chapters → tiered max_tokens (131K→100K→65K→32K)`);
+    console.log(`[mega-generate] START: transcript ${transcript.length} chars, target ${maxChapters} chapters → tiered max_tokens (65K ringkas DEFAULT → 32K → 100K → 131K last-resort)`);
 
     // ── TIERED MAX_TOKENS LOOP ──
     let successResult: { parsed: any; modelUsed: string | null; levelLabel: string } | null = null;

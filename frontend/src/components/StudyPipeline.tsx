@@ -196,25 +196,33 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     setProgress(10);
     await sleep(300);
 
-    // v-cache: check localStorage for cached split result (24h expiry).
-    // Cache key = hash of transcript (cyrb53). If hit, skip LLM split
-    // call entirely → instant sidebar population on repeat Mode Belajar
-    // opens from same STT.
-    // v8: token-budget-aware chunking (CHUNK_SIZE 8K→4K, maxTokens 4K→3K,
-    // adaptive concurrency 6/8/10). Old v7 caches may have 0 Bab from
-    // maxTokens=4000 overflow → must evict.
-    const CACHE_KEY = `alynne:split-chapters-v8:${cyrb53(transcript)}`;
-    const CACHE_TTL_MS = 24 * 60 * 60 * 1000;  // 24 hours
+    // v-mega: cache check localStorage untuk hasil mega-generate (7 hari).
+    // Cache key = hash of transcript (cyrb53). Kalau HIT, skip 1 LLM call
+    // besar sama sekali → sidebar instant di Mode Belajar berikutnya.
+    // NOTE: server-side mega-generate juga punya cache D1 7 hari (lihat
+    // mega-generate.ts), tapi cache lokal ini lebih cepat lagi karena
+    // skip network round-trip.
+    const CACHE_KEY = `alynne:mega-v1:${cyrb53(transcript)}`;
+    const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;  // 7 days
     let split: Chapter[] | null = null;
+    let quizMap: Record<number, QuizQuestion[]> = {};
+    let mindmapNode: LLMMindmapNode | null = null;
     let usedCache = false;
     try {
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) {
-        const parsed = JSON.parse(cached) as { ts: number; chapters: Chapter[] };
+        const parsed = JSON.parse(cached) as {
+          ts: number;
+          chapters: Chapter[];
+          quizzes: Record<number, QuizQuestion[]>;
+          mindmap: LLMMindmapNode | null;
+        };
         if (Date.now() - parsed.ts < CACHE_TTL_MS && parsed.chapters?.length > 0) {
           split = parsed.chapters;
+          quizMap = parsed.quizzes || {};
+          mindmapNode = parsed.mindmap;
           usedCache = true;
-          console.log(`[Pipeline] Cache HIT: ${split.length} chapters cached ${(Math.round((Date.now() - parsed.ts) / 1000 / 60))}min ago — skipping LLM split`);
+          console.log(`[Pipeline] Cache HIT: ${split.length} chapters cached ${Math.round((Date.now() - parsed.ts) / 1000 / 60)}min ago — 0 LLM call (mega)`);
         } else {
           localStorage.removeItem(CACHE_KEY);  // expired
         }
@@ -223,72 +231,141 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
       console.warn('[Pipeline] Cache read failed:', e);
     }
 
-    // v-reliable: use NON-STREAMING endpoint as PRIMARY (more reliable).
-    // Streaming was too fragile (SSE parsing + NDJSON buffering + line-ending
-    // normalization). If any step failed → 0 chapters. Non-streaming uses
-    // callLLM directly → returns full JSON → no parsing complexity.
-    // Falls back to regex only if both LLM + non-streaming fail.
+    // v-mega: PANGGIL /api/stt/mega-generate (1 request LLM, NO split, NO 55-chunk loop).
+    // Mega-generate sudah balik: modul.bab + kuis + mindmap + visualisasi + glosarium
+    // dalam 1 JSON. Default level: L3 (65K ringkas_lengkap, ~5-8 menit, stabil).
+    //
+    // SEBELUM (lama, bermasalah):
+    //   fetch('/api/stt/split-chapters') → server-side potong 4K char × ~55 chunk
+    //   → 55 LLM call paralel → sering timeout → fallback regex → kualitas bab buruk
+    //
+    // SESUDAH (baru, stabil):
+    //   fetch('/api/stt/mega-generate') → 1 LLM call dengan transcript utuh (700K char max)
+    //   → LLM yang memecah jadi bab di dalam output JSON → tanpa split, tanpa regex fallback
     if (!split) {
       try {
-        const res = await fetch('/api/stt/split-chapters', {
+        const res = await fetch('/api/stt/mega-generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ transcript, maxChapters: 15 }),
-          signal: AbortSignal.timeout(300_000),
+          body: JSON.stringify({ transcript, title: 'Materi Belajar', maxChapters: 15 }),
+          signal: AbortSignal.timeout(540_000),  // 9 menit — cukup untuk L3 default (~5-8 menit)
         });
         if (res.ok) {
-          const data = await res.json() as { chapters?: Chapter[]; error?: string };
-          if (data.chapters && data.chapters.length > 0) {
-            split = data.chapters;
-            console.log(`[Pipeline] LLM split: ${split.length} chapters`);
+          const mega = await res.json() as {
+            modul?: { bab?: any[] };
+            kuis?: any[];
+            mindmap?: { root?: string; cabang?: { nama?: string; sub?: string[] }[] };
+            error?: string;
+            cached?: boolean;
+            levelUsed?: string;
+          };
+          if (mega.modul?.bab?.length && !mega.error) {
+            // Map modul.bab → Chapter[] (existing interface: id, title, content, wordCount)
+            split = mega.modul.bab.map((b: any) => {
+              const content = String(b.penjelasan || b.uraian || '').trim();
+              return {
+                id: Number(b.id) || 0,
+                title: String(b.judul || '').slice(0, 100),
+                content,
+                wordCount: content.split(/\s+/).filter(Boolean).length,
+              };
+            }).filter((c: Chapter) => c.id > 0 && c.content.length > 20);
+
+            // Map kuis → quizzes record (per bab_id). Mega-generate sudah generate kuis
+            // 15-20 soal total, jadi TIDAK PERLU panggil generateLLMQuiz per bab lagi.
+            if (Array.isArray(mega.kuis)) {
+              for (const k of mega.kuis) {
+                const babId = Number(k.bab_id ?? k.bab ?? 0);
+                if (!babId) continue;
+                if (!quizMap[babId]) quizMap[babId] = [];
+                quizMap[babId].push({
+                  id: Number(k.id) || quizMap[babId].length + 1,
+                  type: 'multiple-choice' as const,
+                  question: String(k.soal || ''),
+                  options: Array.isArray(k.opsi) ? k.opsi.map(String) : [],
+                  correctAnswer: String(k.jawaban || ''),
+                  explanation: String(k.pembahasan || ''),
+                });
+              }
+            }
+
+            // Map mindmap {root, cabang:[{nama, sub}]} → LLMMindmapNode {label, children}
+            if (mega.mindmap?.root) {
+              mindmapNode = {
+                label: String(mega.mindmap.root),
+                children: (mega.mindmap.cabang || []).map((c: any) => ({
+                  label: String(c.nama || ''),
+                  children: (c.sub || []).map((s: string) => ({ label: String(s) })),
+                })),
+              };
+            }
+
+            console.log(`[Pipeline] mega-generate OK: ${split.length} bab, ${Object.keys(quizMap).length} bab dengan kuis, mindmap ${mindmapNode ? 'OK' : 'null'} (level: ${mega.levelUsed || '?'}${mega.cached ? ', server-cache HIT' : ''})`);
           } else {
-            console.warn('[Pipeline] LLM split returned', data.error || 'no chapters', ', falling back to regex');
+            console.warn('[Pipeline] mega-generate returned:', mega.error || 'no bab', '— falling back to regex split');
           }
         } else {
-          console.warn('[Pipeline] LLM split HTTP', res.status, ', falling back to regex');
+          console.warn('[Pipeline] mega-generate HTTP', res.status, '— falling back to regex split');
         }
       } catch (err) {
-        console.warn('[Pipeline] LLM split failed, falling back to regex:', err);
+        console.warn('[Pipeline] mega-generate failed, falling back to regex split:', err);
       }
-      if (!split) {
+
+      // Fallback terakhir: regex split (instant, 0 LLM call). Kualitas bab
+      // nggak sebagus mega-generate, tapi setidaknya UI bisa lanjut.
+      // Quiz & mindmap akan kosong → generateLLMMindmap dipanggil di bawah
+      // untuk mindmap, quiz bisa diisi on-demand (tapi generateLLMQuiz
+      // sekarang sudah deprecated, lebih baik tunggu user re-upload).
+      if (!split || split.length === 0) {
         split = splitTranscriptIntoChapters(transcript);
+        quizMap = {};
+        mindmapNode = null;
       } else {
-        // Cache the result
+        // Cache hasil mega (chapters + quizzes + mindmap). Visualisasi &
+        // glosarium nggak di-cache di sini karena StudyPipeline nggak pakai.
         try {
-          localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), chapters: split }));
-          console.log(`[Pipeline] Cached ${split.length} chapters`);
+          localStorage.setItem(CACHE_KEY, JSON.stringify({
+            ts: Date.now(),
+            chapters: split,
+            quizzes: quizMap,
+            mindmap: mindmapNode,
+          }));
+          console.log(`[Pipeline] Cached ${split.length} chapters + mega result`);
         } catch (e) {
           console.warn('[Pipeline] Cache write failed:', e);
         }
       }
-    } else {
-      setChapters(split);
     }
+
+    // Set state untuk SEMUA path (cache HIT, mega-generate OK, atau regex fallback).
+    // Bug fix: sebelumnya setChapters(split) hanya dipanggil di cache HIT branch,
+    // sehingga path cache MISS + fetch OK nggak pernah update state chapters →
+    // UI nampil "Bab: 0" walau data sebenarnya ada. Sekarang set di sini untuk
+    // semua path supaya konsisten.
+    setChapters(split);
+    setQuizzes(quizMap);
+    if (mindmapNode) setLLMMindmap(mindmapNode);
     setProgress(25);
 
-    // v-lazy-quiz: skip quiz generation during initial pipeline.
-    // Generate quizzes ON-DEMAND when user clicks "Kuis" tab instead.
-    // This removes N LLM calls from pipeline → much faster initial load.
-    // Quizzes will be generated lazily in handleSelectChapter or tab switch.
     setStage('mindmap');
 
-    // Only generate mindmap (1 LLM call) — skip all quiz generation
-    try {
-      const mindmapData = await generateLLMMindmap(split);
-      if (mindmapData) setLLMMindmap(mindmapData);
-    } catch (err) {
-      console.warn('[Mindmap] LLM failed:', err);
+    // Kalau mega-generate nggak balik mindmap (jarang, tapi mungkin terjadi
+    // kalau LLM skip field itu), generate via LLM call terpisah (1 request).
+    // Ini fallback lembut, bukan 55-chunk loop.
+    if (!mindmapNode && split.length > 0) {
+      try {
+        const mindmapData = await generateLLMMindmap(split);
+        if (mindmapData) setLLMMindmap(mindmapData);
+      } catch (err) {
+        console.warn('[Mindmap] LLM failed:', err);
+      }
     }
-
-    // Initialize empty quiz map — will be populated on-demand
-    const quizResult: Record<number, QuizQuestion[]> = {};
-    setQuizzes(quizResult);
 
     setProgress(100);
     setStage('complete');
     if (split.length > 0) setActiveChapterId(split[0].id);
     if (usedCache) {
-      console.log(`[Pipeline] DONE — used cache for split, total time saved ~30-60s`);
+      console.log(`[Pipeline] DONE — used cache for mega, total time saved ~5-10min`);
     }
   }, [transcript]);
 
