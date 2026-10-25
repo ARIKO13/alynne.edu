@@ -67,6 +67,7 @@ import { cn } from '@/lib/utils';
 import { speak, stop as ttsStop, isSpeaking, pause as ttsPause, resume as ttsResume } from '@/lib/text-to-speech';
 import { VoiceTutor } from '@/components/VoiceTutor';
 import { StudyBuddy } from '@/components/StudyBuddy';
+import { VisualisasiPanel } from '@/components/VisualisasiPanel';
 import { ExamSimulator } from '@/components/ExamSimulator';
 import {
   detectFace,
@@ -111,6 +112,10 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set(['root']));
   const [mainTab, setMainTab] = useState<MainTab>('materi');
   const [llmMindmap, setLLMMindmap] = useState<LLMMindmapNode | null>(null);
+  // v-visualisasi: array visualisasi dari mega-generate response. Di-filter per bab_id
+  // saat dirender di tab Materi (VisualisasiPanel). 0 request tambahan — visualisasi
+  // sudah digenerate Phase 2 GLM bersamaan dengan bab/kuis/mindmap.
+  const [visualisasi, setVisualisasi] = useState<any[]>([]);
   const [quizBattleOpen, setQuizBattleOpen] = useState(false);
   const [slideExporterOpen, setSlideExporterOpen] = useState(false);
   const [ttsPlaying, setTtsPlaying] = useState(false);
@@ -207,6 +212,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     let split: Chapter[] | null = null;
     let quizMap: Record<number, QuizQuestion[]> = {};
     let mindmapNode: LLMMindmapNode | null = null;
+    let visualisasiArr: any[] = [];  // v-visualisasi: akan di-populate dari cache atau mega response
     let usedCache = false;
     try {
       const cached = localStorage.getItem(CACHE_KEY);
@@ -216,11 +222,13 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           chapters: Chapter[];
           quizzes: Record<number, QuizQuestion[]>;
           mindmap: LLMMindmapNode | null;
+          visualisasi?: any[];  // v-visualisasi: ikut di-cache lokal supaya repeat upload = 0 LLM call
         };
         if (Date.now() - parsed.ts < CACHE_TTL_MS && parsed.chapters?.length > 0) {
           split = parsed.chapters;
           quizMap = parsed.quizzes || {};
           mindmapNode = parsed.mindmap;
+          visualisasiArr = parsed.visualisasi || [];  // populate dari cache
           usedCache = true;
           console.log(`[Pipeline] Cache HIT: ${split.length} chapters cached ${Math.round((Date.now() - parsed.ts) / 1000 / 60)}min ago — 0 LLM call (mega)`);
         } else {
@@ -300,6 +308,11 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               };
             }
 
+            // v-visualisasi: simpan array visualisasi untuk render di tab Materi per bab.
+            // Visualisasi sudah digenerate Phase 2 GLM bersama bab/kuis/mindmap — 0 request tambahan.
+            const visualisasiArr = Array.isArray(mega.visualisasi) ? mega.visualisasi : [];
+            setVisualisasi(visualisasiArr);
+
             console.log(`[Pipeline] mega-generate OK: ${split.length} bab, ${Object.keys(quizMap).length} bab dengan kuis, mindmap ${mindmapNode ? 'OK' : 'null'} (level: ${mega.levelUsed || '?'}${mega.cached ? ', server-cache HIT' : ''})`);
           } else {
             console.warn('[Pipeline] mega-generate returned:', mega.error || 'no bab', '— falling back to regex split');
@@ -313,15 +326,16 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
 
       // Fallback terakhir: regex split (instant, 0 LLM call). Kualitas bab
       // nggak sebagus mega-generate, tapi setidaknya UI bisa lanjut.
-      // Quiz & mindmap akan kosong → generateLLMMindmap dipanggil di bawah
+      // Quiz, mindmap, dan visualisasi akan kosong → generateLLMMindmap dipanggil di bawah
       // untuk mindmap, quiz bisa diisi on-demand (tapi generateLLMQuiz
       // sekarang sudah deprecated, lebih baik tunggu user re-upload).
       if (!split || split.length === 0) {
         split = splitTranscriptIntoChapters(transcript);
         quizMap = {};
         mindmapNode = null;
+        visualisasiArr = [];  // fallback: kosong, gak ada visualisasi
       } else {
-        // Cache hasil mega (chapters + quizzes + mindmap). Visualisasi &
+        // Cache hasil mega (chapters + quizzes + mindmap + visualisasi). Visualisasi &
         // glosarium nggak di-cache di sini karena StudyPipeline nggak pakai.
         try {
           localStorage.setItem(CACHE_KEY, JSON.stringify({
@@ -329,6 +343,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
             chapters: split,
             quizzes: quizMap,
             mindmap: mindmapNode,
+            visualisasi: visualisasiArr,
           }));
           console.log(`[Pipeline] Cached ${split.length} chapters + mega result`);
         } catch (e) {
@@ -345,6 +360,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     setChapters(split);
     setQuizzes(quizMap);
     if (mindmapNode) setLLMMindmap(mindmapNode);
+    setVisualisasi(visualisasiArr);  // v-visualisasi: set di semua path (kosong jika fallback)
     setProgress(25);
 
     setStage('mindmap');
@@ -1259,6 +1275,11 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
             <div className="rounded-lg border border-blue-500/10 bg-blue-500/[0.02] p-5">
               <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{activeChapter.content}</p>
             </div>
+
+            {/* v-visualisasi: render visualisasi untuk bab yang sedang aktif.
+                GLM generate JSON data (~150-200 tok per item), frontend render pakai
+                Recharts/Mermaid/HTML table — 0 request API tambahan. */}
+            <VisualisasiPanel items={visualisasi.filter(v => Number(v.bab_id) === Number(activeChapter.id))} />
 
             {/* Actions: TTS + Focus + PDF */}
             <div className="flex flex-wrap gap-2">

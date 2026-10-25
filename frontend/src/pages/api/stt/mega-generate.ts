@@ -550,18 +550,47 @@ STRUKTUR JSON (template):
 {
   "modul": { "judul": "...", "bab": [{"id":1,"judul":"...","tujuan":"...","konsep_kunci":["..."],"penjelasan":"...","contoh":"..."}] },
   "kuis": [{"id":1,"bab_id":1,"soal":"...","opsi":["A. ...","B. ...","C. ...","D. ..."],"jawaban":"A","pembahasan":"..."}],
+  "visualisasi": [
+    {
+      "id": "vis-001",
+      "bab_id": 1,
+      "subjek": "Matematika|Fisika|Kimia|Biologi|Umum",
+      "judul": "Judul Visualisasi (max 8 kata)",
+      "tipe": "grafik_fungsi|diagram_gaya|diagram_alur|diagram_konsep|grafik_gerak|grafik_batang|grafik_garis|grafik_pie|tabel_data|rumus_latex",
+      "deskripsi": "Deskripsi singkat 1-2 kalimat untuk konteks",
+      "data": { ... },
+      "render_hint": "plotly|mermaid_flowchart|mermaid_mindmap|svg_diagram|chartjs|katex|html_table|smiles"
+    }
+  ],
   "mindmap": {"root":"...","cabang":[{"nama":"Bab 1","sub":["..."]}]},
   "glosarium": [{"istilah":"...","definisi":"..."}],
   "coverage_checklist": [{"bagian_transkrip":"...","masuk_ke_modul":"bab 1"}]
-}`;
+}
+
+VISUALISASI RULES (CRITICAL):
+- JANGAN tulis SVG, HTML, atau JavaScript langsung di field "data".
+- Output HANYA JSON terstruktur (data terstruktur) yang mendeskripsikan APA yang
+  harus digambar, BUKAN BAGAIMANA menggambarnya.
+- Pilih "tipe" dan "render_hint" dari daftar di atas.
+- Untuk persamaan matematika, gunakan format LaTeX di field "data.persamaan"
+  (contoh: "y = x^2 - 4x + 3", "E = mc^2", "\\\\frac{1}{2}mv^2").
+- Batasi MAKSIMAL 1 visualisasi per bab, hanya untuk konsep yang BENAR-BENAR
+  butuh representasi visual (grafik fungsi, diagram alur, persamaan, tabel data).
+- Kalau materi gak butuh visualisasi (sejarah, bahasa, sosiologi, ekonomi naratif)
+  → array kosong "visualisasi": []
+- Contoh data untuk grafik_fungsi: {"persamaan":"y = x^2 - 4x + 3","domain":[-2,6],"titik_kritis":[2,-1]}
+- Contoh data untuk rumus_latex: {"persamaan":"E = mc^2","deskripsi":"Energi = massa × kecepatan cahaya kuadrat"}
+- Contoh data untuk diagram_alur: {"node":["Mulai","Input","Proses","Output"],"edge":[["Mulai","Input"],["Input","Proses"]]}
+- Contoh data untuk tabel_data: {"headers":["Kolom1","Kolom2"],"rows":[["val1","val2"]]}
+- Contoh data untuk grafik_batang: {"categories":["A","B","C"],"values":[10,20,15]}`;
 
 function buildGLMCompactPrompt(ringkasan: string, title: string, targetBab: number): string {
-  return `Dari ringkasan berikut, susun SATU JSON modul belajar lengkap dengan ${targetBab} bab + kuis + mindmap + glosarium + coverage.
+  return `Dari ringkasan berikut, susun SATU JSON modul belajar lengkap dengan ${targetBab} bab + kuis + visualisasi + mindmap + glosarium + coverage.
 
 RINGKASAN:
 ${ringkasan.slice(0, 30000)}
 
-Output JSON valid. Setiap bab: uraian 80-120 kata, 1 contoh. Kuis 1 per bab minimal. Glosarium 5-10 istilah. Coverage checklist wajib lengkap.`;
+Output JSON valid. Setiap bab: uraian 80-120 kata, 1 contoh. Kuis 1 per bab minimal. Visualisasi maks 1 per bab (hanya STEM, materi non-STEM = array kosong). Glosarium 5-10 istilah. Coverage checklist wajib lengkap.`;
 }
 
 function buildGLMBabPrompt(ringkasan: string, title: string, startBab: number, endBab: number): string {
@@ -578,24 +607,25 @@ function buildGLMBabAndExtrasPrompt(ringkasan: string, title: string, startBab: 
   return `Dari ringkasan berikut, susun JSON berisi:
 1. BAB ${startBab} sampai ${endBab} (uraian 80-120 kata per bab, 1 contoh per bab)
 2. Kuis 15-20 soal total (bab_id menunjuk bab 1-${endBab}, pembahasan 1 kalimat)
-3. Mindmap (cabang utama total 15 + sub maks 3 per cabang)
-4. Glosarium 10-15 istilah inti
-5. Coverage checklist lengkap (petakan setiap bagian ringkasan ke bab)
+3. Visualisasi maks 1 per bab (untuk bab ${startBab}-${endBab}, hanya STEM — sejarah/bahasa = array kosong)
+4. Mindmap (cabang utama total 15 + sub maks 3 per cabang)
+5. Glosarium 10-15 istilah inti
+6. Coverage checklist lengkap (petakan setiap bagian ringkasan ke bab)
 
 RINGKASAN:
 ${ringkasan.slice(0, 30000)}
 
-Output JSON valid. Format lengkap: {"modul":{"judul":"${title}","bab":[{"id":${startBab},"judul":"...","tujuan":"...","konsep_kunci":[...],"penjelasan":"...","contoh":"..."}]},"kuis":[...],"mindmap":{...},"glosarium":[...],"coverage_checklist":[...]}.`;
+Output JSON valid. Format lengkap: {"modul":{"judul":"${title}","bab":[{"id":${startBab},"judul":"...","tujuan":"...","konsep_kunci":[...],"penjelasan":"...","contoh":"..."}]},"kuis":[...],"visualisasi":[{"id":"vis-001","bab_id":${startBab},"subjek":"...","judul":"...","tipe":"grafik_fungsi|diagram_alur|rumus_latex|...","deskripsi":"...","data":{...},"render_hint":"plotly|mermaid_flowchart|katex|..."}],"mindmap":{...},"glosarium":[...],"coverage_checklist":[...]}.`;
 }
 
 function buildGLMKuisExtrasPrompt(ringkasan: string, title: string): string {
-  return `Dari ringkasan berikut, susun JSON berisi HANYA kuis + mindmap + glosarium + coverage_checklist (bab sudah ada di section lain).
+  return `Dari ringkasan berikut, susun JSON berisi HANYA kuis + visualisasi + mindmap + glosarium + coverage_checklist (bab sudah ada di section lain).
 
 RINGKASAN:
 ${ringkasan.slice(0, 30000)}
 
-Output JSON valid. Format: {"kuis":[{"id":1,"bab_id":1,"soal":"...","opsi":["A. ...","B. ...","C. ...","D. ..."],"jawaban":"A","pembahasan":"..."}],"mindmap":{"root":"${title}","cabang":[{"nama":"Bab 1","sub":["sub 1","sub 2","sub 3"]}]},"glosarium":[{"istilah":"...","definisi":"..."}],"coverage_checklist":[{"bagian_transkrip":"...","masuk_ke_modul":"bab 1"}]}.
-Kuis 15-20 soal, mindmap 15 cabang utama, glosarium 10-15 istilah, coverage wajib lengkap.`;
+Output JSON valid. Format: {"kuis":[{"id":1,"bab_id":1,"soal":"...","opsi":["A. ...","B. ...","C. ...","D. ..."],"jawaban":"A","pembahasan":"..."}],"visualisasi":[{"id":"vis-001","bab_id":1,"subjek":"...","judul":"...","tipe":"grafik_fungsi|diagram_alur|rumus_latex|...","deskripsi":"...","data":{...},"render_hint":"plotly|mermaid_flowchart|katex|..."}],"mindmap":{"root":"${title}","cabang":[{"nama":"Bab 1","sub":["sub 1","sub 2","sub 3"]}]},"glosarium":[{"istilah":"...","definisi":"..."}],"coverage_checklist":[{"bagian_transkrip":"...","masuk_ke_modul":"bab 1"}]}.
+Kuis 15-20 soal, visualisasi maks 1 per bab (hanya STEM), mindmap 15 cabang utama, glosarium 10-15 istilah, coverage wajib lengkap.`;
 }
 
 function mergeGLMSections(
