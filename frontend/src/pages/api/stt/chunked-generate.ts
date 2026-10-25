@@ -228,10 +228,11 @@ export const POST: APIRoute = async ({ request }) => {
     // v8-no-error-2026-10-25 = hard deadline per phase.
     // v9-fast-2026-10-25 = pLimit 2→5, Phase 2 model GLM→DeepSeek, hapus retry,
     // hapus regex fallback, friendly error UI. Total target 66-100s (was 350s).
-    // v10-bagi-tugas-2026-10-25: auto-detect GLM health. Kalau hidup → bagi tugas
-    // (GLM modul+vis, DeepSeek kuis+extras, 2 paralel). Kalau mati → DeepSeek-only
-    // (4 sections, v9-fast fallback). Bump cache version supaya cache lama invalid.
-    const ALGORITHM_VERSION = 'v10-bagi-tugas-2026-10-25';
+    // v10-pre-summarize-2026-10-25: client-side pre-summarize (Chrome Summarizer API)
+    // SEBELUM kirim ke server. Kalau Chrome API available: 219K → 40-60K char ringkasan
+    // → server skip Phase 1 (DeepSeek, 0 LLM req) → langsung Phase 2 (GLM/DeepSeek bagi tugas, 2 LLM req).
+    // Kalau Chrome API gak available: raw transcript → Phase 1 DeepSeek (5 LLM req) → Phase 2 (2-4 LLM req).
+    const ALGORITHM_VERSION = 'v10-pre-summarize-2026-10-25';
     const materiHash = cyrb53(`${ALGORITHM_VERSION}:${transcript}`);
     try {
       await d1.execute(`

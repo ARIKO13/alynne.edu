@@ -68,6 +68,7 @@ import { speak, stop as ttsStop, isSpeaking, pause as ttsPause, resume as ttsRes
 import { VoiceTutor } from '@/components/VoiceTutor';
 import { StudyBuddy } from '@/components/StudyBuddy';
 import { VisualisasiPanel } from '@/components/VisualisasiPanel';
+import { preSummarize } from '@/lib/pre-summarize';
 import { ExamSimulator } from '@/components/ExamSimulator';
 import {
   detectFace,
@@ -253,7 +254,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     // v-chunked-v6-4sec: bump localStorage cache key supaya entry lama (3 sections,
     // visualisasi light theme, bab kepotong) gak di-return. Match ALGORITHM_VERSION
     // 'v6-4sec-2026-10-25' di chunked-generate.ts (server-side D1 cache).
-    const CACHE_KEY = `alynne:chunked-v10-bt:${cyrb53(transcript)}`;
+    const CACHE_KEY = `alynne:chunked-v10-ps:${cyrb53(transcript)}`;
     const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;  // 7 days
     let split: Chapter[] | null = null;
     let quizMap: Record<number, QuizQuestion[]> = {};
@@ -297,15 +298,19 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     //   fetch('/api/stt/chunked-generate') → 1 LLM call dengan transcript utuh (700K char max)
     //   → LLM yang memecah jadi bab di dalam output JSON → tanpa split, tanpa regex fallback
     if (!split) {
-      // v9-fast (per user spec 2026-10-25): single fetch, NO retry, NO regex fallback.
-      // Server always returns 200 (even on error, with friendly message).
-      // pLimit 5 + DeepSeek-everywhere = ~66-100s total, well under 180s client timeout.
+      // v10-bagi-tugas + pre-summarize: Chrome Summarizer API (gratis, on-device)
+      // pre-summarize transcript SEBELUM kirim ke server. Kalau Chrome API available,
+      // 219K char → ~40-60K char ringkasan → server skip Phase 1 (DeepSeek) → langsung
+      // Phase 2 (GLM/DeepSeek bagi tugas). Total: 0 LLM request untuk Phase 1, 2 untuk Phase 2.
+      const preSummarized = await preSummarize(transcript);
+      const inputText = preSummarized.summary;  // ringkasan (atau raw transcript kalau Chrome API gak ada)
+
       try {
         const res = await fetch('/api/stt/chunked-generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ transcript, title: 'Materi Belajar', maxChapters: 15 }),
-          signal: AbortSignal.timeout(180_000),  // 3 min — server responds in 66-100s, 180s plenty
+          body: JSON.stringify({ transcript: inputText, title: 'Materi Belajar', maxChapters: 15 }),
+          signal: AbortSignal.timeout(180_000),
         });
         if (res.ok) {
           const mega = await res.json() as {
