@@ -116,6 +116,10 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   // saat dirender di tab Materi (VisualisasiPanel). 0 request tambahan — visualisasi
   // sudah digenerate Phase 2 GLM bersamaan dengan bab/kuis/mindmap.
   const [visualisasi, setVisualisasi] = useState<any[]>([]);
+  // v-stable: estimasi info untuk UI progress bar
+  const [estimatedLabel, setEstimatedLabel] = useState('');
+  const [estimatedLembar, setEstimatedLembar] = useState(0);
+  const [phaseInfo, setPhaseInfo] = useState('');  // e.g., "3 DeepSeek + 4 GLM"
   const [quizBattleOpen, setQuizBattleOpen] = useState(false);
   const [slideExporterOpen, setSlideExporterOpen] = useState(false);
   const [ttsPlaying, setTtsPlaying] = useState(false);
@@ -199,6 +203,41 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   const runPipeline = useCallback(async () => {
     setStage('splitting');
     setProgress(10);
+
+    // v-stable: estimasi waktu berdasarkan chunk count + section count.
+    // Phase 1: ceil(N/2) gelombang × 40s (pLimit 2, DeepSeek ~150 tok/s × 6K tok = 40s)
+    // Phase 2: ceil(M/2) gelombang × 70s (GLM ~71 tok/s × 5K tok = 70s)
+    // Beri user informasi progress real-time, gak stuck di 10%.
+    const estimatedLembar = Math.ceil(transcript.length / 1400);
+    const estPhase1Chunks = transcript.length > 30000 ? Math.ceil(transcript.length / 50000) : 0;
+    const estPhase2Sections = estimatedLembar <= 21 ? 1 : 4;
+    const estimatedPhase1Ms = estPhase1Chunks > 0 ? Math.ceil(estPhase1Chunks / 2) * 40_000 : 0;
+    const estimatedPhase2Ms = Math.ceil(estPhase2Sections / 2) * 70_000;
+    const estimatedMs = estimatedPhase1Ms + estimatedPhase2Ms + 10_000;
+    const estimatedLabel = estimatedMs >= 60_000
+      ? `~${Math.ceil(estimatedMs / 60_000)} menit`
+      : `~${Math.ceil(estimatedMs / 1000)} detik`;
+    setEstimatedLabel(estimatedLabel);
+    setEstimatedLembar(estimatedLembar);
+    setPhaseInfo(`${estPhase1Chunks} DeepSeek + ${estPhase2Sections} GLM (pLimit 2)`);
+    console.log(`[Pipeline] estimated: ${estimatedLabel} (${estPhase1Chunks} DeepSeek + ${estPhase2Sections} GLM, pLimit 2)`);
+
+    // v-stable: animasi progress 10% → 90% over estimatedMs, supaya progress bar
+    // gak stuck di 10% selama request berlangsung. Kalau response lebih cepat dari
+    // estimasi → langsung 100%. Kalau lebih lama → hold di 90% dengan label "masih diproses".
+    const progressStartTime = Date.now();
+    const progressIntervalMs = 1000;  // update tiap 1 detik
+    const progressTimer = setInterval(() => {
+      const elapsed = Date.now() - progressStartTime;
+      if (elapsed < estimatedMs) {
+        // Animate 10% → 90% over estimated time
+        const pct = 10 + Math.min(80, (elapsed / estimatedMs) * 80);
+        setProgress(Math.floor(pct));
+      } else {
+        // Exceeded estimate — hold at 90% (will jump to 100% when response arrives)
+        setProgress(90);
+      }
+    }, progressIntervalMs);
     await sleep(300);
 
     // v-chunked: cache check (renamed from chunked-generate) localStorage untuk hasil chunked-generate (7 hari).
@@ -210,7 +249,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     // v-chunked-v6-4sec: bump localStorage cache key supaya entry lama (3 sections,
     // visualisasi light theme, bab kepotong) gak di-return. Match ALGORITHM_VERSION
     // 'v6-4sec-2026-10-25' di chunked-generate.ts (server-side D1 cache).
-    const CACHE_KEY = `alynne:chunked-v6-4sec:${cyrb53(transcript)}`;
+    const CACHE_KEY = `alynne:chunked-v7-stable:${cyrb53(transcript)}`;
     const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;  // 7 days
     let split: Chapter[] | null = null;
     let quizMap: Record<number, QuizQuestion[]> = {};
@@ -377,6 +416,11 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     setVisualisasi(visualisasiArr);  // v-visualisasi: set di semua path (kosong jika fallback)
     setProgress(25);
 
+    // v-stable: clear progress timer (Phase 1 done, Phase 2 starting)
+    // Progress akan di-set ke 100 di akhir.
+    // Catatan: timer tetap jalan selama Phase 2 untuk animasi 10%→90%,
+    // tapi akan di-clear saat setProgress(100) atau stage='complete'.
+
     setStage('mindmap');
 
     // Kalau chunked-generate nggak balik mindmap (jarang, tapi mungkin terjadi
@@ -392,6 +436,8 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     }
 
     setProgress(100);
+    // v-stable: clear progress timer, request selesai
+    clearInterval(progressTimer);
     setStage('complete');
     if (split.length > 0) setActiveChapterId(split[0].id);
     if (usedCache) {
@@ -1010,6 +1056,12 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               <span className="text-zinc-500">{progress}%</span>
             </div>
             <Progress value={progress} className="h-1" />
+            {estimatedLabel && (
+              <div className="flex items-center justify-between text-[10px] text-zinc-500 mt-1">
+                <span>Estimasi: <span className="text-zinc-300 font-medium">{estimatedLabel}</span></span>
+                {phaseInfo && <span className="text-zinc-500">{phaseInfo}</span>}
+              </div>
+            )}
           </div>
         )}
 
