@@ -31,6 +31,7 @@ import type { Chapter } from '@/lib/stt-chapter-splitter';
 interface StudyBuddyProps {
   chapter: Chapter;
   transcript: string;
+  allChapters?: Chapter[];  // NEW: full materi context (gabung dari Tanya AI)
 }
 
 interface ChatMessage {
@@ -41,12 +42,45 @@ interface ChatMessage {
 type BuddyMode = 'diskusi' | 'challenge' | 'jelaskan';
 
 const MODE_PROMPTS: Record<BuddyMode, string> = {
-  diskusi: 'Kamu adalah teman belajar. Diskusikan materi dengan santai. Tanya pendapat user, kasih analogi, dan explore ide bersama.',
+  diskusi: 'Kamu adalah teman belajar. Diskusikan materi dengan santai. Tanya pendapat user, kasih analogi, dan explore ide bersama. Jawab pertanyaan user berdasarkan materi di bawah.',
   challenge: 'Kamu adalah teman yang lagi nguji pemahaman. Ajukan 1 pertanyaan tentang materi, tunggu jawaban user, lalu beri feedback singkat. Jangan kasih jawaban sebelum user jawab.',
   jelaskan: 'Kamu adalah teman yang minta dijelasin. Minta user jelasin konsep dari materi dengan bahasa sendiri. Setelah user jelasin, beri feedback: apa yang benar, apa yang kurang, apa yang salah.',
 };
 
-export function StudyBuddy({ chapter, transcript }: StudyBuddyProps) {
+// Build system prompt dengan FULL context (semua bab + transcript) per user spec
+// — gabung fungsionalitas Tanya AI (full context) ke Study Buddy (modes).
+function buildSystemPrompt(mode: BuddyMode, chapter: Chapter, transcript: string, allChapters?: Chapter[]): string {
+  const modePrompt = MODE_PROMPTS[mode];
+
+  // Bab aktif — full content (bukan 800 char truncated)
+  const activeBabText = `MATERI BAB ${chapter.id} (SEDANG DIBACA):\n${chapter.title}\n${chapter.content}`;
+
+  // Semua bab context (3K chars limit biar gak kebanyakan token)
+  const allChaptersText = allChapters && allChapters.length > 0
+    ? allChapters
+        .filter(ch => ch.id !== chapter.id)  // exclude active bab (sudah di atas)
+        .map(ch => `BAB ${ch.id}: ${ch.title}\n${ch.content.substring(0, 200)}`)
+        .join('\n\n---\n\n')
+        .substring(0, 3000)
+    : '';
+
+  // Transcript original (2K chars limit)
+  const transcriptSnippet = transcript ? `\n\nTRANSCRIPT ASLI:\n${transcript.substring(0, 2000)}` : '';
+
+  return `${modePrompt}
+
+${activeBabText}
+
+${allChaptersText ? `SEMUA BAB (${allChapters.length} total):\n${allChaptersText}\n` : ''}${transcriptSnippet}
+
+PETUNJUK:
+- Jawab berdasarkan materi di atas
+- Kalau user tanya tentang bab lain, tetap jawab dari konteks yang ada
+- Jelaskan dengan analogi sederhana kalau perlu
+- Jawab dengan bahasa Indonesia${mode === 'diskusi' ? ' santai' : ''}`;
+}
+
+export function StudyBuddy({ chapter, transcript, allChapters }: StudyBuddyProps) {
   const [mode, setMode] = useState<BuddyMode>('diskusi');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -65,14 +99,9 @@ export function StudyBuddy({ chapter, transcript }: StudyBuddyProps) {
     setMode(newMode);
     setLoading(true);
 
-    const systemPrompt = `${MODE_PROMPTS[newMode]}
+    const systemPrompt = `${buildSystemPrompt(newMode, chapter, transcript, allChapters)}
 
-MATERI BAB ${chapter.id}: ${chapter.title}
-${chapter.content.substring(0, 800)}
-
-TRANSCRIPT: ${transcript.substring(0, 500)}
-
-Mulai percakapan dengan 1 pesan pembuka yang sesuai dengan mode. Singkat (2-3 kalimat). Bahasa Indonesia santai.`;
+Mulai percakapan dengan 1 pesan pembuka yang sesuai dengan mode. Singkat (2-3 kalimat). Bahasa Indonesia${newMode === 'diskusi' ? ' santai' : ''}.`;
 
     try {
       const res = await fetch('/api/ai/chat', {
@@ -92,10 +121,10 @@ Mulai percakapan dengan 1 pesan pembuka yang sesuai dengan mode. Singkat (2-3 ka
 
       setMessages([{ role: 'assistant', content: reply }]);
     } catch {
-      setMessages([{ role: 'assistant', content: 'Halo! Aku siap belajar bareng. Mulai ngobung yuk!' }]);
+      setMessages([{ role: 'assistant', content: 'Halo! Aku siap belajar bareng. Mulai ngobrol yuk!' }]);
     }
     setLoading(false);
-  }, [chapter, transcript]);
+  }, [chapter, transcript, allChapters]);
 
   // Auto-start diskusi mode
   useEffect(() => {
@@ -114,12 +143,9 @@ Mulai percakapan dengan 1 pesan pembuka yang sesuai dengan mode. Singkat (2-3 ka
     setLoading(true);
 
     try {
-      const systemPrompt = `${MODE_PROMPTS[mode]}
+      const systemPrompt = `${buildSystemPrompt(mode, chapter, transcript, allChapters)}
 
-MATERI: ${chapter.title}
-${chapter.content.substring(0, 800)}
-
-Instruksi: Lanjutkan percakapan sebagai teman belajar. Singkat (2-3 kalimat). Santai. Bahasa Indonesia.`;
+Instruksi: Lanjutkan percakapan sebagai teman belajar. Singkat (2-3 kalimat).${mode === 'diskusi' ? ' Santai.' : ''} Bahasa Indonesia.`;
 
       const res = await fetch('/api/ai/chat', {
         method: 'POST',
@@ -144,7 +170,7 @@ Instruksi: Lanjutkan percakapan sebagai teman belajar. Singkat (2-3 kalimat). Sa
       setMessages(prev => [...prev, { role: 'assistant', content: 'Maaf, aku ga bisa jawab sekarang.' }]);
     }
     setLoading(false);
-  }, [input, loading, mode, chapter]);
+  }, [input, loading, mode, chapter, transcript, allChapters]);
 
   return (
     <div className="flex flex-col h-full">

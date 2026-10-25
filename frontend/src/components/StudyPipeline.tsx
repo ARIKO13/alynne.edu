@@ -85,7 +85,7 @@ interface StudyPipelineProps {
 }
 
 type PipelineStage = 'idle' | 'splitting' | 'mindmap' | 'chapters' | 'complete';
-type MainTab = 'materi' | 'kuis' | 'mindmap' | 'tanya' | 'voice' | 'buddy' | 'session';
+type MainTab = 'materi' | 'kuis' | 'mindmap' | 'buddy' | 'voice' | 'session';
 
 // cyrb53 — small fast hash function for cache keys (no crypto needed).
 // Returns 53-bit hash as string. Good enough for localStorage cache keys.
@@ -1080,11 +1080,14 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               <Brain className="h-3 w-3 inline mr-1" />
               Mindmap
             </button>
+            {/* v11-combine: Tanya AI + Study Buddy digabung jadi 1 tab.
+                StudyBuddy component sekarang punya full context (semua bab + transcript)
+                + 3 mode (diskusi/challenge/jelaskan). Tanya AI inline dihapus. */}
             <button
-              onClick={() => setMainTab('tanya')}
+              onClick={() => setMainTab('buddy')}
               className={cn(
                 'px-3 py-1 rounded text-xs font-medium transition-colors',
-                mainTab === 'tanya' ? 'bg-[#8B5CF6] text-white' : 'text-zinc-500 hover:text-zinc-300'
+                mainTab === 'buddy' ? 'bg-[#8B5CF6] text-white' : 'text-zinc-500 hover:text-zinc-300'
               )}
             >
               <MessageCircle className="h-3 w-3 inline mr-1" />
@@ -1100,16 +1103,9 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               <Mic className="h-3 w-3 inline mr-1" />
               Voice Tutor
             </button>
-            <button
-              onClick={() => setMainTab('buddy')}
-              className={cn(
-                'px-3 py-1 rounded text-xs font-medium transition-colors',
-                mainTab === 'buddy' ? 'bg-orange-600 text-white' : 'text-zinc-500 hover:text-zinc-300'
-              )}
-            >
-              <Sparkles className="h-3 w-3 inline mr-1" />
-              Study Buddy
-            </button>
+            {/* v11-combine: tab "Study Buddy" dihapus (duplikat dengan "Tanya AI" di atas).
+                Tab "Tanya AI" (mainTab === 'buddy') sekarang handle semua — pakai
+                StudyBuddy component dengan 3 mode (diskusi/challenge/jelaskan). */}
             <button
               onClick={() => setMainTab('session')}
               className={cn(
@@ -1338,24 +1334,20 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           </div>
         )}
 
-        {/* TANYA AI TAB: chat with AI about current chapter */}
-        {mainTab === 'tanya' && stage === 'complete' && activeChapter && (
-          <TanyaAI
+        {/* TANYA AI TAB (v11-combine) — sekarang handle semua chat.
+            StudyBuddy component punya 3 mode (diskusi/challenge/jelaskan)
+            + full context (semua bab + transcript). Inline TanyaAI dihapus. */}
+        {mainTab === 'buddy' && stage === 'complete' && activeChapter && (
+          <StudyBuddy
             chapter={activeChapter}
             transcript={transcript}
             allChapters={chapters}
-            quizzes={quizzes}
           />
         )}
 
         {/* VOICE TUTOR TAB */}
         {mainTab === 'voice' && stage === 'complete' && activeChapter && (
           <VoiceTutor chapter={activeChapter} transcript={transcript} />
-        )}
-
-        {/* STUDY BUDDY TAB */}
-        {mainTab === 'buddy' && stage === 'complete' && activeChapter && (
-          <StudyBuddy chapter={activeChapter} transcript={transcript} />
         )}
 
         {/* SESSION TAB: Pomodoro + Focus + Ambient */}
@@ -1749,214 +1741,6 @@ JSON (tanpa markdown):
     }
   }
   throw new Error('Failed after retries');
-}
-
-// ── TanyaAI: Chat dengan AI tentang bab yang sedang dibaca ──
-
-interface TanyaAIProps {
-  chapter: Chapter;
-  transcript: string;
-  allChapters: Chapter[];
-  quizzes: Record<number, QuizQuestion[]>;
-}
-
-function TanyaAI({ chapter, transcript, allChapters, quizzes }: TanyaAIProps) {
-  const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
-    {
-      role: 'assistant',
-      content: `Halo! Saya AI Assistant. Kamu lagi baca Bab ${chapter.id}: "${chapter.title}".\n\nTanya apa saja tentang materi ini, saya bantu jawab!`,
-    },
-  ]);
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
-
-  const handleSend = async () => {
-    if (!input.trim() || loading) return;
-
-    const userMsg = { role: 'user' as const, content: input.trim() };
-    setMessages((m) => [...m, userMsg]);
-    setInput('');
-    setLoading(true);
-
-    try {
-      // Build full context: all chapters + quizzes + current bab highlight
-      const allChaptersText = allChapters
-        .map((ch) => `BAB ${ch.id}: ${ch.title}\n${ch.content}`)
-        .join('\n\n---\n\n');
-
-      const allQuizText = Object.entries(quizzes)
-        .map(([chId, qs]) => {
-          const quizStr = qs.map((q, i) => `${i + 1}. ${q.question} (Jawaban: ${q.correctAnswer})`).join('\n');
-          return `KUIS BAB ${chId}:\n${quizStr}`;
-        })
-        .join('\n\n');
-
-      const systemPrompt = `Kamu adalah asisten AI ALYNNE.EDU. User sedang belajar dari materi STT. User saat ini membaca Bab ${chapter.id}. Jawab pertanyaan user berdasarkan konteks materi di bawah. Jelaskan dengan bahasa Indonesia yang jelas dan mudah dipahami.
-
-MATERI BAB ${chapter.id} (SEDANG DIBACA):
-${chapter.title}
-${chapter.content}
-
-SEMUA BAB (${allChapters.length} total):
-${allChaptersText.substring(0, 3000)}
-
-KUIS:
-${allQuizText.substring(0, 1000)}
-
-TRANSCRIPT ASLI:
-${transcript.substring(0, 2000)}
-
-PETUNJUK:
-- Jawab berdasarkan materi di atas
-- Kalau user tanya tentang bab lain, tetap jawab dari konteks yang ada
-- Jelaskan dengan analogi sederhana kalau perlu
-- Jawab dengan bahasa Indonesia`;
-
-      const res = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userMsg.content },
-          ],
-          model: 'qwen/qwen3.8-27b',
-        }),
-      });
-
-      const data = await res.json();
-      let reply = '';
-      if (data.choices?.[0]?.message?.content) {
-        reply = data.choices[0].message.content;
-      } else if (data.content) {
-        reply = data.content;
-      } else if (data.error) {
-        reply = 'Maaf: ' + data.error;
-      } else {
-        reply = 'Maaf, tidak ada respon dari AI.';
-      }
-
-      setMessages((m) => [...m, { role: 'assistant', content: reply }]);
-    } catch (err) {
-      setMessages((m) => [
-        ...m,
-        { role: 'assistant', content: 'Maaf, gagal terhubung ke server. Coba lagi.' },
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="p-6 max-w-3xl mx-auto h-full flex flex-col">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-full bg-[#8B5CF6]/10 flex items-center justify-center">
-          <Bot className="h-5 w-5 text-[#8B5CF6]" />
-        </div>
-        <div className="flex-1">
-          <h2 className="text-lg font-semibold text-white">Tanya AI</h2>
-          <p className="text-[10px] text-zinc-500">
-            Tanya apa saja tentang Bab {chapter.id}: {chapter.title.substring(0, 40)}...
-          </p>
-        </div>
-      </div>
-
-      {/* Messages */}
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto space-y-3 mb-4 rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 min-h-[300px]"
-      >
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={cn('flex gap-2', msg.role === 'user' ? 'justify-end' : 'justify-start')}
-          >
-            {msg.role === 'assistant' && (
-              <div className="w-6 h-6 rounded-full bg-[#8B5CF6]/10 flex items-center justify-center shrink-0">
-                <Bot className="h-3 w-3 text-[#8B5CF6]" />
-              </div>
-            )}
-            <div
-              className={cn(
-                'rounded-lg px-3 py-2 max-w-[80%] text-sm',
-                msg.role === 'user'
-                  ? 'bg-[#8B5CF6] text-white'
-                  : 'bg-white/[0.04] text-zinc-200'
-              )}
-            >
-              <p className="whitespace-pre-wrap">{msg.content}</p>
-            </div>
-            {msg.role === 'user' && (
-              <div className="w-6 h-6 rounded-full bg-white/[0.04] flex items-center justify-center shrink-0">
-                <User className="h-3 w-3 text-zinc-400" />
-              </div>
-            )}
-          </div>
-        ))}
-        {loading && (
-          <div className="flex gap-2">
-            <div className="w-6 h-6 rounded-full bg-[#8B5CF6]/10 flex items-center justify-center shrink-0">
-              <Bot className="h-3 w-3 text-[#8B5CF6]" />
-            </div>
-            <div className="rounded-lg px-3 py-2 bg-white/[0.04] text-zinc-400 text-sm">
-              <Loader2 className="h-3 w-3 animate-spin inline mr-1" />
-              Mengetik...
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Input */}
-      <div className="flex gap-2">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="Tanya tentang materi ini..."
-          className="flex-1 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-[#8B5CF6]/50"
-          disabled={loading}
-        />
-        <Button
-          onClick={handleSend}
-          disabled={loading || !input.trim()}
-          className="bg-[#8B5CF6] hover:bg-[#7C3AED]"
-          size="sm"
-        >
-          <Send className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {/* Quick questions */}
-      {messages.length <= 1 && (
-        <div className="flex flex-wrap gap-2 mt-3">
-          {[
-            'Jelaskan singkat materi ini',
-            'Apa poin utama dari bab ini?',
-            'Beri contoh dari materi ini',
-            'Buat rangkuman 3 poin',
-          ].map((q) => (
-            <button
-              key={q}
-              onClick={() => {
-                setInput(q);
-              }}
-              className="px-2 py-1 rounded text-[10px] border border-white/[0.06] text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-300 transition-colors"
-            >
-              {q}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
 }
 
 // ── LLMMindmapView: Visual tree dari LLM-generated mindmap ──
