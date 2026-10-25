@@ -264,97 +264,115 @@ export const POST: APIRoute = async ({ request }) => {
       console.warn('[mega-generate] Cache lookup failed (non-fatal):', (cacheErr as Error).message?.slice(0, 100));
     }
 
-    // ── v-hybrid (2026-10-25): 2-phase DeepSeek (ringkas) → GLM (strukturkan) ──
-    // Adaptive chunking based on transcript size.
-    // 1 lembar A4 Bahasa Indonesia ≈ 1400 char (700 token @ ~2 char/token untuk BI)
+    // ── v-chunked (2026-10-25): adaptive chunking berbasis token budget per model ──
+    // Token math (BI ~2.5 char/token):
+    //   DeepSeek V4 input context = 128K → safe 12K tok/chunk = 50K char/chunk
+    //   DeepSeek V4 throughput = 150 tok/s → output 6K tok = ~40s (under 120s gateway limit)
+    //   GLM-5.3-Flash throughput = 71 tok/s → output 5K tok = ~70s (under 120s gateway limit)
+    //   Output target 15 bab ringkas = ~10K tok → muat di 3 sections × 5K tok
+    //
+    // Total req (chunk = req):
+    //   ≤21 lembar (≤30K char):  1 req   (Phase 1 skip, Phase 2 = 1 compact)
+    //   21-35 lembar:             4 req   (Phase 1 = 1, Phase 2 = 3)
+    //   35-70 lembar:             5 req   (Phase 1 = 2, Phase 2 = 3)
+    //   70-140 lembar:            6 req   (Phase 1 = 3, Phase 2 = 3)
+    //   140-210 lembar:           7 req   (Phase 1 = 4, Phase 2 = 3)
+    //   210-300 lembar:           8 req   (Phase 1 = 5, Phase 2 = 3)
+    //   300-430 lembar:           9 req   (Phase 1 = 6, Phase 2 = 3)
+    //   >430 lembar:              reject  (minta user pecah upload)
+    //
+    // Phase 2 CONSTANT 3 sections karena output target (15 bab ringkas JSON ~10K tok)
+    // gak berubah dengan input size. Cuma Phase 1 yang adaptive.
     const lembar = Math.ceil(transcript.length / 1400);
     console.log(`[mega-generate] START: transcript ${transcript.length} chars, ~${lembar} lembar`);
 
-    if (lembar > 300) {
-      // >300 lembar: reject, minta user pecah jadi multiple upload
+    const MAX_TRANSCRIPT_CHARS_V2 = 600000;  // >430 lembar = reject
+    if (transcript.length > MAX_TRANSCRIPT_CHARS_V2) {
       return Response.json({
         error: 'transcript_too_long',
-        message: `Transcript ~${lembar} lembar (>300 batas). Pecah jadi beberapa upload (max 200 lembar per upload).`,
-        maxLembar: 300,
+        message: `Transcript ${transcript.length} chars (~${lembar} lembar) > batas 600K char (~430 lembar). Pecah jadi beberapa upload.`,
+        maxChars: MAX_TRANSCRIPT_CHARS_V2,
+        currentChars: transcript.length,
         currentLembar: lembar,
-        transcriptChars: transcript.length,
       }, { status: 400 });
     }
 
-    // ── PHASE 1: DeepSeek ringkasan (parallel chunks) ──
-    // DeepSeek V4 Flash throughput ~150 tok/s. Max output 6K tok per chunk → ~40s (safe under 120s gateway limit).
-    // Input context DeepSeek ~128K token. Chunk 50K char ≈ 12K input token, safe.
-    const MAX_DEEPSEEK_CHUNK_CHARS = 50000;
-    const chunks = splitTranscriptByParagraph(transcript, MAX_DEEPSEEK_CHUNK_CHARS);
-    console.log(`[mega-generate] Phase 1: DeepSeek ${chunks.length} chunk(s) paralel (max 6K tok each, pLimit(3))`);
+    // ── PHASE 1: DeepSeek ringkasan (adaptive chunks paralel) ──
+    // Skip Phase 1 kalau transcript ≤ 30K char (sudah pendek, langsung ke Phase 2)
+    const SKIP_PHASE1_THRESHOLD = 30000;
+    const MAX_DEEPSEEK_CHUNK_CHARS = 50000;  // 50K char ≈ 12K input tok (safe under 128K context)
+    const chunks = transcript.length > SKIP_PHASE1_THRESHOLD
+      ? splitTranscriptByParagraph(transcript, MAX_DEEPSEEK_CHUNK_CHARS)
+      : [];  // empty = skip Phase 1
 
-    const phase1Limiter = makeConcurrencyLimiter(3);
-    const deepseekResults = await Promise.all(
-      chunks.map((chunk, i) => phase1Limiter(() =>
-        callLLM('long', DEEPSEEK_SUMMARY_PROMPT, chunk, {
-          model: 'phala/deepseek/deepseek-v4-flash-0731',
-          // v-robust: per-request fallback chain. Kalau DeepSeek down/timeout,
-          // coba GLM (lebih lambat tapi bisa ringkas), lalu gemini-lite (tercepat).
-          fallbackModels: ['phala/z-ai/glm-5.3-flash', 'jr/gemini-3.5-flash-lite'],
-          maxTokens: 6000,
-          timeout: 90_000,
-          temperature: 0.2,
-          jsonMode: false,
-          endpoint: `mega-generate/p1-chunk-${i + 1}-of-${chunks.length}`,
-        })
-      ))
-    );
+    let ringkasan: string;
+    let phase1SuccessCount = 0;
+    let phase1FailCount = 0;
 
-    const summaries = deepseekResults.filter(r => r.content).map(r => r.content!);
-    const phase1SuccessCount = summaries.length;
-    const phase1FailCount = chunks.length - phase1SuccessCount;
-    if (summaries.length === 0) {
-      console.error(`[mega-generate] Phase 1 ALL FAILED — all ${chunks.length} chunks failed`);
-      return Response.json({
-        error: 'phase1_all_failed',
-        message: `Semua ${chunks.length} chunk DeepSeek gagal. Coba lagi.`,
-        chunkCount: chunks.length,
-        failCount: phase1FailCount,
-      });
+    if (chunks.length === 0) {
+      // Skip Phase 1: transcript ≤ 30K char, langsung pakai sebagai ringkasan untuk Phase 2
+      ringkasan = transcript;
+      console.log(`[mega-generate] Phase 1 SKIPPED: transcript ${transcript.length} chars ≤ ${SKIP_PHASE1_THRESHOLD}K threshold — use as-is, 0 LLM call`);
+    } else {
+      console.log(`[mega-generate] Phase 1: DeepSeek ${chunks.length} chunk(s) paralel (max 6K tok each, pLimit(3))`);
+      const phase1Limiter = makeConcurrencyLimiter(3);
+      const deepseekResults = await Promise.all(
+        chunks.map((chunk, i) => phase1Limiter(() =>
+          callLLM('long', DEEPSEEK_SUMMARY_PROMPT, chunk, {
+            model: 'phala/deepseek/deepseek-v4-flash-0731',
+            fallbackModels: ['phala/z-ai/glm-5.3-flash', 'jr/gemini-3.5-flash-lite'],
+            maxTokens: 6000,
+            timeout: 90_000,
+            temperature: 0.2,
+            jsonMode: false,
+            endpoint: `mega-generate/p1-chunk-${i + 1}-of-${chunks.length}`,
+          })
+        ))
+      );
+
+      const summaries = deepseekResults.filter(r => r.content).map(r => r.content!);
+      phase1SuccessCount = summaries.length;
+      phase1FailCount = chunks.length - phase1SuccessCount;
+      if (summaries.length === 0) {
+        console.error(`[mega-generate] Phase 1 ALL FAILED — all ${chunks.length} chunks failed`);
+        return Response.json({
+          error: 'phase1_all_failed',
+          message: `Semua ${chunks.length} chunk DeepSeek gagal. Coba lagi.`,
+          chunkCount: chunks.length,
+          failCount: phase1FailCount,
+        });
+      }
+      ringkasan = summaries.join('\n\n---\n\n');
+      console.log(`[mega-generate] Phase 1 done: ${phase1SuccessCount}/${chunks.length} chunks OK, ${phase1FailCount} failed, ringkasan ${ringkasan.length} chars`);
     }
-    const ringkasan = summaries.join('\n\n---\n\n');
-    console.log(`[mega-generate] Phase 1 done: ${phase1SuccessCount}/${chunks.length} chunks OK, ${phase1FailCount} failed, ringkasan ${ringkasan.length} chars`);
 
-    // ── PHASE 2: GLM strukturkan (parallel sections) ──
-    // GLM-5.3-Flash throughput ~71 tok/s. Max output 5K tok per section → ~70s (safe under 120s gateway limit).
-    // GLM Intelligence Index 57, kepatuhan JSON 97.5-100% — cocok untuk output terstruktur.
-    let sections: Array<{ name: string; userPrompt: string }> = [];
-    if (lembar <= 20) {
-      // ≤20 lembar: 1 section compact (target 5 bab)
+    // ── PHASE 2: GLM strukturkan (CONSTANT 3 sections atau 1 compact) ──
+    // Output target ~10K tok JSON (15 bab + kuis + mindmap + glosarium + coverage + visualisasi)
+    // 3 sections × 5K tok = 15K budget (aman, < 120s gateway limit per section)
+    let sections: Array<{ name: string; userPrompt: string }>;
+    if (lembar <= 21) {
+      // Compact: 1 section, target 5 bab
       sections = [{
         name: 'modul-compact',
         userPrompt: buildGLMCompactPrompt(ringkasan, title, 5),
       }];
-    } else if (lembar <= 100) {
-      // 20-100 lembar: 2 sections (bab 1-8 + bab 9-15 + kuis + extras)
-      sections = [
-        { name: 'bab-1-8', userPrompt: buildGLMBabPrompt(ringkasan, title, 1, 8) },
-        { name: 'bab-9-15-kuis-extras', userPrompt: buildGLMBabAndExtrasPrompt(ringkasan, title, 9, 15) },
-      ];
     } else {
-      // 100-300 lembar: 4 sections paralel
+      // 3 sections: bab 1-5, 6-10, 11-15+extras
       sections = [
         { name: 'bab-1-5', userPrompt: buildGLMBabPrompt(ringkasan, title, 1, 5) },
         { name: 'bab-6-10', userPrompt: buildGLMBabPrompt(ringkasan, title, 6, 10) },
-        { name: 'bab-11-15', userPrompt: buildGLMBabPrompt(ringkasan, title, 11, 15) },
-        { name: 'kuis-extras', userPrompt: buildGLMKuisExtrasPrompt(ringkasan, title) },
+        { name: 'bab-11-15-extras', userPrompt: buildGLMBabAndExtrasPrompt(ringkasan, title, 11, 15) },
       ];
     }
 
-    console.log(`[mega-generate] Phase 2: GLM ${sections.length} section(s) paralel (max 5K tok each, pLimit(3))`);
+    const totalReq = chunks.length + sections.length;
+    console.log(`[mega-generate] Phase 2: GLM ${sections.length} section(s) paralel (max 5K tok each, pLimit(3)) — total req this call: ${totalReq} (${chunks.length} DeepSeek + ${sections.length} GLM)`);
 
     const phase2Limiter = makeConcurrencyLimiter(3);
     const glmResults = await Promise.all(
       sections.map(s => phase2Limiter(() =>
         callLLM('long', GLM_STRUCTURE_SYSTEM_PROMPT, s.userPrompt, {
           model: 'phala/z-ai/glm-5.3-flash',
-          // v-robust: per-request fallback chain. Kalau GLM down/timeout,
-          // coba DeepSeek (bisa JSON tapi struktur kurang konsisten), lalu gemini-lite.
           fallbackModels: ['phala/deepseek/deepseek-v4-flash-0731', 'jr/gemini-3.5-flash-lite'],
           maxTokens: 5000,
           timeout: 90_000,
