@@ -311,7 +311,11 @@ Output STRICT JSON only. First character MUST be '{'. No prose, no reasoning, no
       const systemPrompt = buildMegaPrompt(level.mode);
       const result = await callLLM('long', systemPrompt, userPrompt, {
         maxTokens: level.maxTokens,
-        timeout: 600_000,
+        // v-fast: 300s (5 menit) per level. Sebelumnya 600s (10 menit) — terlalu lama.
+        // Kalau model belum selesai dalam 5 menit, fail dan coba level berikutnya.
+        // Untuk L3 (65K) di claude-opus ~140 tok/s, 35K output butuh ~250s — cukup.
+        // Untuk L1 (131K) butuh lebih, tapi L1 cuma last-resort (jarang dipakai).
+        timeout: 300_000,
         temperature: 0.3,
         endpoint: `stt/mega-generate/${level.label}`,
       });

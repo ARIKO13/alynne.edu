@@ -248,7 +248,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ transcript, title: 'Materi Belajar', maxChapters: 15 }),
-          signal: AbortSignal.timeout(540_000),  // 9 menit — cukup untuk L3 default (~5-8 menit)
+          signal: AbortSignal.timeout(320_000),  // 5 menit 20 detik — match server-side 300s + buffer
         });
         if (res.ok) {
           const mega = await res.json() as {

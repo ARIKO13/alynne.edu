@@ -20,7 +20,13 @@ import {
 
 const POLYVOR_URL = process.env.POLYVOR_URL || 'https://gateway.polyvorlabs.com/v1';
 const POLYVOR_API_KEY = process.env.POLYVOR_API_KEY || '';
-const POLYVOR_MODEL = process.env.POLYVOR_MODEL || 'phala/z-ai/glm-5.3-flash';
+// v-fast (2026-10-25): default ganti phala/z-ai/glm-5.3-flash → ag/claude-opus-4-6-thinking(xhigh).
+// Benchmark di VPS: glm-5.3-flash throughput 28 tok/s + sering error 54s internal gateway.
+// claude-opus throughput 140 tok/s (5x lebih cepat), reliable.
+// Untuk L3 mega-generate target ~35K output: glm-5.3-flash 21 menit, claude-opus 4 menit.
+// Polyvor gateway status: hanya 4 model yang alive (claude-opus, glm-5.3, glm-5.3-flash,
+// deepseek-v4-flash). Semua model jr/* lagi outage. claude-opus adalah pilihan tercepat.
+const POLYVOR_MODEL = process.env.POLYVOR_MODEL || 'ag/claude-opus-4-6-thinking(xhigh)';
 const POLYVOR_FALLBACK_MODEL = process.env.POLYVOR_FALLBACK_MODEL || 'phala/deepseek/deepseek-v4-flash-0731';
 
 const PI_BANSOS_URL = process.env.PI_BANSOS_URL || 'http://127.0.0.1:18080/v1';
