@@ -244,7 +244,10 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // ── SERVER-SIDE CACHE LOOKUP (D1) ──
-    const materiHash = cyrb53(transcript);
+    // v-hybrid: cache key include version prefix supaya cache lama (algo lama)
+    // gak di-return. v3 = DeepSeek ringkasan → GLM strukturkan hybrid.
+    const ALGORITHM_VERSION = 'v3-hybrid-2026-10-25';
+    const materiHash = cyrb53(`${ALGORITHM_VERSION}:${transcript}`);
     try {
       await d1.execute(`
         CREATE TABLE IF NOT EXISTS mega_cache (
@@ -284,125 +287,138 @@ export const POST: APIRoute = async ({ request }) => {
       console.warn('[mega-generate] Cache lookup failed (non-fatal):', (cacheErr as Error).message?.slice(0, 100));
     }
 
-    const truncated = transcript.length > MAX_TRANSCRIPT_CHARS
-      ? transcript.slice(0, MAX_TRANSCRIPT_CHARS * 0.7) + '\n\n[...bagian tengah dipotong...]\n\n' + transcript.slice(-MAX_TRANSCRIPT_CHARS * 0.3)
-      : transcript;
+    // ── v-hybrid (2026-10-25): 2-phase DeepSeek (ringkas) → GLM (strukturkan) ──
+    // Adaptive chunking based on transcript size.
+    // 1 lembar A4 Bahasa Indonesia ≈ 1400 char (700 token @ ~2 char/token untuk BI)
+    const lembar = Math.ceil(transcript.length / 1400);
+    console.log(`[mega-generate] START: transcript ${transcript.length} chars, ~${lembar} lembar`);
 
-    const maxChapters = Math.min(15, Math.max(5, body.maxChapters ?? 10));
+    if (lembar > 300) {
+      // >300 lembar: reject, minta user pecah jadi multiple upload
+      return Response.json({
+        error: 'transcript_too_long',
+        message: `Transcript ~${lembar} lembar (>300 batas). Pecah jadi beberapa upload (max 200 lembar per upload).`,
+        maxLembar: 300,
+        currentLembar: lembar,
+        transcriptChars: transcript.length,
+      }, { status: 400 });
+    }
 
-    const userPrompt = `Generate ALL learning artifacts from this lecture transcript. Target: ${maxChapters} chapters.
+    // ── PHASE 1: DeepSeek ringkasan (parallel chunks) ──
+    // DeepSeek V4 Flash throughput ~150 tok/s. Max output 6K tok per chunk → ~40s (safe under 120s gateway limit).
+    // Input context DeepSeek ~128K token. Chunk 50K char ≈ 12K input token, safe.
+    const MAX_DEEPSEEK_CHUNK_CHARS = 50000;
+    const chunks = splitTranscriptByParagraph(transcript, MAX_DEEPSEEK_CHUNK_CHARS);
+    console.log(`[mega-generate] Phase 1: DeepSeek ${chunks.length} chunk(s) paralel (max 6K tok each, pLimit(3))`);
 
-TITLE: ${title}
+    const phase1Limiter = makeConcurrencyLimiter(3);
+    const deepseekResults = await Promise.all(
+      chunks.map((chunk, i) => phase1Limiter(() =>
+        callLLM('long', DEEPSEEK_SUMMARY_PROMPT, chunk, {
+          model: 'phala/deepseek/deepseek-v4-flash-0731',
+          maxTokens: 6000,
+          timeout: 90_000,
+          temperature: 0.2,
+          jsonMode: false,
+          endpoint: `mega-generate/p1-chunk-${i + 1}-of-${chunks.length}`,
+        })
+      ))
+    );
 
-TRANSCRIPT:
-${truncated}
-
-Output STRICT JSON only. First character MUST be '{'. No prose, no reasoning, no markdown fences.`;
-
-    console.log(`[mega-generate] START: transcript ${transcript.length} chars, target ${maxChapters} chapters → tiered max_tokens (65K ringkas DEFAULT → 32K → 100K → 131K last-resort)`);
-
-    // ── TIERED MAX_TOKENS LOOP ──
-    let successResult: { parsed: any; modelUsed: string | null; levelLabel: string } | null = null;
-    let lastError: string = '';
-
-    for (const level of MEGA_LEVELS) {
-      console.log(`[mega-generate] Trying ${level.label} (maxTokens=${level.maxTokens}, mode=${level.mode})...`);
-
-      const systemPrompt = buildMegaPrompt(level.mode);
-      const result = await callLLM('long', systemPrompt, userPrompt, {
-        maxTokens: level.maxTokens,
-        // v-fast: 300s (5 menit) per level. Sebelumnya 600s (10 menit) — terlalu lama.
-        // Kalau model belum selesai dalam 5 menit, fail dan coba level berikutnya.
-        // Untuk L3 (65K) di claude-opus ~140 tok/s, 35K output butuh ~250s — cukup.
-        // Untuk L1 (131K) butuh lebih, tapi L1 cuma last-resort (jarang dipakai).
-        timeout: 300_000,
-        temperature: 0.3,
-        endpoint: `stt/mega-generate/${level.label}`,
+    const summaries = deepseekResults.filter(r => r.content).map(r => r.content!);
+    const phase1SuccessCount = summaries.length;
+    const phase1FailCount = chunks.length - phase1SuccessCount;
+    if (summaries.length === 0) {
+      console.error(`[mega-generate] Phase 1 ALL FAILED — all ${chunks.length} chunks failed`);
+      return Response.json({
+        error: 'phase1_all_failed',
+        message: `Semua ${chunks.length} chunk DeepSeek gagal. Coba lagi.`,
+        chunkCount: chunks.length,
+        failCount: phase1FailCount,
       });
+    }
+    const ringkasan = summaries.join('\n\n---\n\n');
+    console.log(`[mega-generate] Phase 1 done: ${phase1SuccessCount}/${chunks.length} chunks OK, ${phase1FailCount} failed, ringkasan ${ringkasan.length} chars`);
 
-      if (!result.content) {
-        lastError = 'all-gateways-failed';
-        console.warn(`[mega-generate] ${level.label}: callLLM null → try next level`);
-        continue;
-      }
-
-      const raw = result.content;
-      let parsed: any = null;
-
-      // 5 parse strategies
-      try { parsed = JSON.parse(raw); } catch {}
-      if (!parsed) {
-        const cb = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
-        if (cb) { try { parsed = JSON.parse(cb[1].trim()); } catch {} }
-      }
-      if (!parsed) {
-        const firstBrace = raw.indexOf('{');
-        const lastBrace = raw.lastIndexOf('}');
-        if (firstBrace >= 0 && lastBrace > firstBrace) {
-          try { parsed = JSON.parse(raw.slice(firstBrace, lastBrace + 1)); } catch {}
-        }
-      }
-      if (!parsed) parsed = extractBalancedJson(raw);
-      if (!parsed) { try { parsed = JSON.parse(extractJson(raw)); } catch {} }
-
-      if (!parsed) {
-        lastError = `parse-failed (raw ${raw.length} chars)`;
-        console.warn(`[mega-generate] ${level.label}: parse failed → try next level`);
-        continue;
-      }
-
-      if (!parsed.modul || !Array.isArray(parsed.modul.bab)) {
-        lastError = `invalid-structure (keys: ${Object.keys(parsed).join(',')})`;
-        console.warn(`[mega-generate] ${level.label}: invalid structure → try next level`);
-        continue;
-      }
-
-      const babCount = parsed.modul.bab.length;
-      const minBab = Math.max(3, Math.floor(maxChapters / 3));
-      if (babCount < minBab) {
-        lastError = `truncated-bab (got ${babCount}, min ${minBab})`;
-        console.warn(`[mega-generate] ${level.label}: truncated bab → try next level`);
-        continue;
-      }
-
-      // Validasi 2: coverage_checklist WAJIB ada dan tidak kosong
-      const coverageChecklist = parsed.coverage_checklist;
-      if (!Array.isArray(coverageChecklist) || coverageChecklist.length === 0) {
-        lastError = 'missing-coverage-checklist';
-        console.warn(`[mega-generate] ${level.label}: coverage_checklist missing → try next level`);
-        continue;
-      }
-
-      // SUCCESS
-      successResult = { parsed, modelUsed: result.modelUsed, levelLabel: level.label };
-      console.log(`[mega-generate] SUCCESS at ${level.label}: ${babCount} bab, ${parsed.kuis?.length ?? 0} kuis, ${parsed.visualisasi?.length ?? 0} visualisasi, ${parsed.glosarium?.length ?? 0} glosarium, ${coverageChecklist.length} coverage`);
-      break;
+    // ── PHASE 2: GLM strukturkan (parallel sections) ──
+    // GLM-5.3-Flash throughput ~71 tok/s. Max output 5K tok per section → ~70s (safe under 120s gateway limit).
+    // GLM Intelligence Index 57, kepatuhan JSON 97.5-100% — cocok untuk output terstruktur.
+    let sections: Array<{ name: string; userPrompt: string }> = [];
+    if (lembar <= 20) {
+      // ≤20 lembar: 1 section compact (target 5 bab)
+      sections = [{
+        name: 'modul-compact',
+        userPrompt: buildGLMCompactPrompt(ringkasan, title, 5),
+      }];
+    } else if (lembar <= 100) {
+      // 20-100 lembar: 2 sections (bab 1-8 + bab 9-15 + kuis + extras)
+      sections = [
+        { name: 'bab-1-8', userPrompt: buildGLMBabPrompt(ringkasan, title, 1, 8) },
+        { name: 'bab-9-15-kuis-extras', userPrompt: buildGLMBabAndExtrasPrompt(ringkasan, title, 9, 15) },
+      ];
+    } else {
+      // 100-300 lembar: 4 sections paralel
+      sections = [
+        { name: 'bab-1-5', userPrompt: buildGLMBabPrompt(ringkasan, title, 1, 5) },
+        { name: 'bab-6-10', userPrompt: buildGLMBabPrompt(ringkasan, title, 6, 10) },
+        { name: 'bab-11-15', userPrompt: buildGLMBabPrompt(ringkasan, title, 11, 15) },
+        { name: 'kuis-extras', userPrompt: buildGLMKuisExtrasPrompt(ringkasan, title) },
+      ];
     }
 
-    if (!successResult) {
-      console.error(`[mega-generate] ALL LEVELS FAILED. Last error: ${lastError}`);
-      return Response.json({ error: 'all-levels-failed', lastError }, { status: 200 });
+    console.log(`[mega-generate] Phase 2: GLM ${sections.length} section(s) paralel (max 5K tok each, pLimit(3))`);
+
+    const phase2Limiter = makeConcurrencyLimiter(3);
+    const glmResults = await Promise.all(
+      sections.map(s => phase2Limiter(() =>
+        callLLM('long', GLM_STRUCTURE_SYSTEM_PROMPT, s.userPrompt, {
+          model: 'phala/z-ai/glm-5.3-flash',
+          maxTokens: 5000,
+          timeout: 90_000,
+          temperature: 0.3,
+          jsonMode: true,
+          endpoint: `mega-generate/p2-${s.name}`,
+        })
+      ))
+    );
+
+    // Merge section results
+    const merged = mergeGLMSections(glmResults, title);
+    if (!merged || !merged.modul?.bab?.length) {
+      console.error(`[mega-generate] Phase 2 ALL FAILED — no valid JSON from any GLM section`);
+      return Response.json({
+        error: 'phase2_all_failed',
+        message: 'Semua section GLM gagal parse. Coba lagi atau kurangi ukuran materi.',
+        phase1SuccessCount,
+        phase2SectionCount: sections.length,
+        phase2SuccessCount: glmResults.filter(r => r.content).length,
+      });
     }
 
-    const { parsed: successParsed, modelUsed: successModel, levelLabel: successLabel } = successResult;
-    const babCount = successParsed.modul.bab.length;
-    const kuisCount = successParsed.kuis?.length ?? 0;
-    const visualisasiCount = successParsed.visualisasi?.length ?? 0;
-    const glosariumCount = successParsed.glosarium?.length ?? 0;
+    const babCount = merged.modul.bab.length;
+    const kuisCount = merged.kuis?.length ?? 0;
+    const visualisasiCount = merged.visualisasi?.length ?? 0;
+    const glosariumCount = merged.glosarium?.length ?? 0;
+    const coverageCount = merged.coverage_checklist?.length ?? 0;
 
-    console.log(`[mega-generate] FINAL SUCCESS via ${successModel} at ${successLabel}: ${babCount} bab, ${kuisCount} kuis, ${visualisasiCount} visualisasi, ${glosariumCount} glosarium`);
+    console.log(`[mega-generate] FINAL: ${babCount} bab, ${kuisCount} kuis, ${visualisasiCount} visualisasi, ${glosariumCount} glosarium, ${coverageCount} coverage (DeepSeek ${phase1SuccessCount}/${chunks.length} + GLM ${glmResults.filter(r => r.content).length}/${sections.length})`);
 
     // ── SAVE TO D1 CACHE ──
     const megaResponse = {
-      modul: successParsed.modul,
-      kuis: successParsed.kuis || [],
-      visualisasi: successParsed.visualisasi || [],
-      mindmap: successParsed.mindmap || { root: title, cabang: [] },
-      glosarium: successParsed.glosarium || [],
-      coverage_checklist: successParsed.coverage_checklist || [],
-      modelUsed: successModel,
-      levelUsed: successLabel,
-      stats: { babCount, kuisCount, visualisasiCount, glosariumCount, transcriptChars: transcript.length },
+      modul: merged.modul,
+      kuis: merged.kuis || [],
+      visualisasi: merged.visualisasi || [],
+      mindmap: merged.mindmap || { root: title, cabang: [] },
+      glosarium: merged.glosarium || [],
+      coverage_checklist: merged.coverage_checklist || [],
+      modelUsed: 'hybrid:deepseek-v4-flash→glm-5.3-flash',
+      levelUsed: `hybrid-${chunks.length}d-${sections.length}g`,
+      stats: {
+        babCount, kuisCount, visualisasiCount, glosariumCount,
+        coverageCount, transcriptChars: transcript.length,
+        lembar, phase1SuccessCount, phase1FailCount,
+        phase2SectionCount: sections.length,
+      },
     };
 
     try {
@@ -411,9 +427,9 @@ Output STRICT JSON only. First character MUST be '{'. No prose, no reasoning, no
         `INSERT OR REPLACE INTO mega_cache
          (materi_hash, materi_data, transcript_chars, model_used, user_email, created_at)
          VALUES (?, ?, ?, ?, ?, datetime('now'))`,
-        [materiHash, materiDataStr, transcript.length, successModel, session.user.email]
+        [materiHash, materiDataStr, transcript.length, megaResponse.modelUsed, session.user.email]
       );
-      console.log(`[mega-generate] SAVED to cache hash=${materiHash.slice(0, 12)}... (${materiDataStr.length} chars, level=${successLabel})`);
+      console.log(`[mega-generate] SAVED to cache hash=${materiHash.slice(0, 12)}... (${materiDataStr.length} chars, level=${megaResponse.levelUsed})`);
     } catch (saveErr) {
       console.warn('[mega-generate] Cache save failed (non-fatal):', (saveErr as Error).message?.slice(0, 100));
     }
@@ -424,3 +440,225 @@ Output STRICT JSON only. First character MUST be '{'. No prose, no reasoning, no
     return Response.json({ error: 'Generation failed', message: e?.message }, { status: 500 });
   }
 };
+
+// ═══════════════════════════════════════════════════════════════════════
+// v-hybrid helper functions (2026-10-25)
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * Split transcript by paragraph boundaries first, fallback to sentence split
+ * if a single paragraph exceeds maxChars × 1.5.
+ */
+function splitTranscriptByParagraph(text: string, maxChars: number): string[] {
+  if (text.length <= maxChars) return [text];
+  const chunks: string[] = [];
+  const paragraphs = text.split(/\n\s*\n/);
+  let current = '';
+  for (const p of paragraphs) {
+    if (current.length + p.length > maxChars && current.length > 0) {
+      chunks.push(current);
+      current = p;
+    } else {
+      current += (current ? '\n\n' : '') + p;
+    }
+  }
+  if (current) chunks.push(current);
+
+  // Fallback: if any chunk is too big (one giant paragraph), split by sentence
+  const finalChunks: string[] = [];
+  for (const c of chunks) {
+    if (c.length > maxChars * 1.5) {
+      const sentences = c.match(/[^.!?]+[.!?]+/g) || [c];
+      let cur = '';
+      for (const s of sentences) {
+        if (cur.length + s.length > maxChars && cur.length > 0) {
+          finalChunks.push(cur);
+          cur = s;
+        } else {
+          cur += s;
+        }
+      }
+      if (cur) finalChunks.push(cur);
+    } else {
+      finalChunks.push(c);
+    }
+  }
+  return finalChunks;
+}
+
+/**
+ * Simple concurrency limiter (pLimit-style).
+ * Limits number of in-flight async operations to `concurrency`.
+ */
+function makeConcurrencyLimiter(concurrency: number) {
+  let active = 0;
+  const queue: Array<() => void> = [];
+  const next = () => {
+    if (active >= concurrency || queue.length === 0) return;
+    active++;
+    const task = queue.shift()!;
+    task();
+  };
+  return function<T>(fn: () => Promise<T>): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      const run = async () => {
+        try {
+          const r = await fn();
+          resolve(r);
+        } catch (e) {
+          reject(e);
+        } finally {
+          active--;
+          next();
+        }
+      };
+      queue.push(run);
+      next();
+    });
+  };
+}
+
+// ── DeepSeek summarization prompt (Phase 1) ──
+const DEEPSEEK_SUMMARY_PROMPT = `Kamu adalah peringkas transkrip kuliah Bahasa Indonesia.
+
+TUGAS: Ringkas transkrip berikut tanpa kehilangan:
+- Semua poin penting, angka, nama, definisi
+- Struktur bab/section (kalau ada di source)
+- Konteks penting
+
+ATURAN:
+- Output 3.000-5.000 token
+- Pertahankan SEMUA istilah teknis asli (bahasa Inggris/Indonesia)
+- Jangan hilangkan bab (kalau ada di source)
+- Buang filler words, greetings, intermezzo, pengulangan
+- Tetap dalam Bahasa Indonesia
+
+Output HANYA teks ringkasan, tanpa JSON, tanpa markdown fence, tanpa header tambahan.`;
+
+// ── GLM structure system prompt (Phase 2) ──
+const GLM_STRUCTURE_SYSTEM_PROMPT = `Kamu generator modul belajar Bahasa Indonesia. Output HANYA JSON valid.
+
+ATURAN OUTPUT:
+- First character WAJIB '{', last character WAJIB '}'
+- NO markdown fences, NO prose, NO reasoning text before/after JSON
+- Use \\n for newlines inside string values
+- Jika output truncated, ALL artifacts lost — stay within budget
+
+LANGUAGE: SEMUA output Bahasa Indonesia (kecuali istilah teknis Inggris di source).
+
+STRUKTUR JSON (template):
+{
+  "modul": { "judul": "...", "bab": [{"id":1,"judul":"...","tujuan":"...","konsep_kunci":["..."],"penjelasan":"...","contoh":"..."}] },
+  "kuis": [{"id":1,"bab_id":1,"soal":"...","opsi":["A. ...","B. ...","C. ...","D. ..."],"jawaban":"A","pembahasan":"..."}],
+  "mindmap": {"root":"...","cabang":[{"nama":"Bab 1","sub":["..."]}]},
+  "glosarium": [{"istilah":"...","definisi":"..."}],
+  "coverage_checklist": [{"bagian_transkrip":"...","masuk_ke_modul":"bab 1"}]
+}`;
+
+function buildGLMCompactPrompt(ringkasan: string, title: string, targetBab: number): string {
+  return `Dari ringkasan berikut, susun SATU JSON modul belajar lengkap dengan ${targetBab} bab + kuis + mindmap + glosarium + coverage.
+
+RINGKASAN:
+${ringkasan.slice(0, 30000)}
+
+Output JSON valid. Setiap bab: uraian 80-120 kata, 1 contoh. Kuis 1 per bab minimal. Glosarium 5-10 istilah. Coverage checklist wajib lengkap.`;
+}
+
+function buildGLMBabPrompt(ringkasan: string, title: string, startBab: number, endBab: number): string {
+  return `Dari ringkasan berikut, susun JSON berisi BAB ${startBab} sampai ${endBab} saja (dari total 15 bab).
+
+RINGKASAN:
+${ringkasan.slice(0, 30000)}
+
+Output JSON valid. Format: {"modul":{"judul":"${title}","bab":[{"id":${startBab},"judul":"...","tujuan":"...","konsep_kunci":["...","...","..."],"penjelasan":"80-120 kata","contoh":"contoh konkret"}]}}.
+Setiap bab: uraian 80-120 kata, 1 contoh konkret. ID bab mulai dari ${startBab} sampai ${endBab}, total ${endBab - startBab + 1} bab.`;
+}
+
+function buildGLMBabAndExtrasPrompt(ringkasan: string, title: string, startBab: number, endBab: number): string {
+  return `Dari ringkasan berikut, susun JSON berisi:
+1. BAB ${startBab} sampai ${endBab} (uraian 80-120 kata per bab, 1 contoh per bab)
+2. Kuis 15-20 soal total (bab_id menunjuk bab 1-${endBab}, pembahasan 1 kalimat)
+3. Mindmap (cabang utama total 15 + sub maks 3 per cabang)
+4. Glosarium 10-15 istilah inti
+5. Coverage checklist lengkap (petakan setiap bagian ringkasan ke bab)
+
+RINGKASAN:
+${ringkasan.slice(0, 30000)}
+
+Output JSON valid. Format lengkap: {"modul":{"judul":"${title}","bab":[{"id":${startBab},"judul":"...","tujuan":"...","konsep_kunci":[...],"penjelasan":"...","contoh":"..."}]},"kuis":[...],"mindmap":{...},"glosarium":[...],"coverage_checklist":[...]}.`;
+}
+
+function buildGLMKuisExtrasPrompt(ringkasan: string, title: string): string {
+  return `Dari ringkasan berikut, susun JSON berisi HANYA kuis + mindmap + glosarium + coverage_checklist (bab sudah ada di section lain).
+
+RINGKASAN:
+${ringkasan.slice(0, 30000)}
+
+Output JSON valid. Format: {"kuis":[{"id":1,"bab_id":1,"soal":"...","opsi":["A. ...","B. ...","C. ...","D. ..."],"jawaban":"A","pembahasan":"..."}],"mindmap":{"root":"${title}","cabang":[{"nama":"Bab 1","sub":["sub 1","sub 2","sub 3"]}]},"glosarium":[{"istilah":"...","definisi":"..."}],"coverage_checklist":[{"bagian_transkrip":"...","masuk_ke_modul":"bab 1"}]}.
+Kuis 15-20 soal, mindmap 15 cabang utama, glosarium 10-15 istilah, coverage wajib lengkap.`;
+}
+
+function mergeGLMSections(
+  results: Array<{ content: string | null; modelUsed: string | null }>,
+  title: string
+): any | null {
+  const allBab: any[] = [];
+  let allKuis: any[] = [];
+  let mindmap: any = null;
+  let allGlosarium: any[] = [];
+  let allCoverage: any[] = [];
+  let allVisualisasi: any[] = [];
+
+  for (const r of results) {
+    if (!r.content) continue;
+    const parsed = extractBalancedJson(r.content) || tryJsonParse(r.content);
+    if (!parsed) continue;
+    if (Array.isArray(parsed.modul?.bab)) allBab.push(...parsed.modul.bab);
+    if (Array.isArray(parsed.kuis)) allKuis.push(...parsed.kuis);
+    if (parsed.mindmap) mindmap = parsed.mindmap;
+    if (Array.isArray(parsed.glosarium)) allGlosarium.push(...parsed.glosarium);
+    if (Array.isArray(parsed.coverage_checklist)) allCoverage.push(...parsed.coverage_checklist);
+    if (Array.isArray(parsed.visualisasi)) allVisualisasi.push(...parsed.visualisasi);
+  }
+
+  if (allBab.length === 0) return null;
+
+  // Dedup bab by id (keep first occurrence), sort by id ascending
+  const seenIds = new Set<number>();
+  const dedupedBab = allBab.filter((b: any) => {
+    const id = Number(b.id);
+    if (seenIds.has(id)) return false;
+    seenIds.add(id);
+    return true;
+  }).sort((a: any, b: any) => Number(a.id) - Number(b.id));
+
+  // Dedup kuis by id
+  const seenKuisIds = new Set<number>();
+  const dedupedKuis = allKuis.filter((k: any) => {
+    const id = Number(k.id);
+    if (seenKuisIds.has(id)) return false;
+    seenKuisIds.add(id);
+    return true;
+  });
+
+  return {
+    modul: { judul: title, bab: dedupedBab },
+    kuis: dedupedKuis,
+    mindmap: mindmap || { root: title, cabang: [] },
+    glosarium: allGlosarium,
+    coverage_checklist: allCoverage,
+    visualisasi: allVisualisasi,
+  };
+}
+
+function tryJsonParse(raw: string): any | null {
+  try { return JSON.parse(raw); } catch {}
+  const cb = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (cb) { try { return JSON.parse(cb[1].trim()); } catch {} }
+  const firstBrace = raw.indexOf('{');
+  const lastBrace = raw.lastIndexOf('}');
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    try { return JSON.parse(raw.slice(firstBrace, lastBrace + 1)); } catch {}
+  }
+  return null;
+}

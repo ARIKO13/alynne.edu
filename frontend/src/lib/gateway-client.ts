@@ -65,6 +65,14 @@ export interface CallLLMOpts {
   temperature?: number;
   endpoint?: string;
   jsonMode?: boolean;
+  /**
+   * v-hybrid (2026-10-25): Override model spesifik untuk Polyvor gateway.
+   * Kalau diisi, callLLM cuma akan coba model ini (skip POLYVOR_MODEL/POLYVOR_FALLBACK
+   * fallback chain + skip pi-bansos fallback). Dipakai di mega-generate.ts Phase 1
+   * (DeepSeek untuk ringkas) dan Phase 2 (GLM untuk struktur).
+   * Contoh: { model: 'phala/deepseek/deepseek-v4-flash-0731' } → cuma DeepSeek.
+   */
+  model?: string;
 }
 
 export interface CallLLMResult {
@@ -87,8 +95,9 @@ export async function callLLM(
   const fallbacksTriggered: FallbackEvent[] = [];
 
   // ── PHASE 1: Polyvor (try phala GLM-5.3-Flash first, then DeepSeek V4) ─
+  // v-hybrid: kalau opts.model diisi, cuma coba model itu (skip fallback chain).
   if (POLYVOR_API_KEY) {
-    const polyvorModels = [POLYVOR_MODEL, POLYVOR_FALLBACK_MODEL];
+    const polyvorModels = opts.model ? [opts.model] : [POLYVOR_MODEL, POLYVOR_FALLBACK_MODEL];
     for (let pi = 0; pi < polyvorModels.length; pi++) {
       const polyvorModel = polyvorModels[pi];
       const t0 = Date.now();
@@ -131,6 +140,13 @@ export async function callLLM(
         const errorType = `Polyvor_${modelShort}_HTTP_${res.status}`;
         const errorMessage = errBody.slice(0, 200) || res.statusText;
 
+        // v-hybrid: kalau opts.model diisi, jangan lanjut ke fallback chain. Return gagal.
+        if (opts.model) {
+          console.warn(`[callLLM] ${endpoint} Polyvor/${polyvorModel} (model locked) failed: ${errorType} ${errorMessage}`);
+          // Lewati pi-bansos fallback juga — caller yang handle retry/skip
+          return { content: null, modelUsed: `polyvor/${polyvorModel}`, fallbacksTriggered };
+        }
+
         if (pi + 1 < polyvorModels.length) {
           const event: FallbackEvent = {
             timestamp: new Date().toISOString(),
@@ -158,6 +174,13 @@ export async function callLLM(
         const errorType = e?.name === 'TimeoutError' || e?.message?.includes('timeout') || e?.message?.includes('abort')
           ? `Polyvor_${modelShort}_Timeout` : `Polyvor_${modelShort}_NetworkError`;
         const errorMessage = (e?.message || 'unknown').slice(0, 200);
+
+        // v-hybrid: kalau opts.model diisi (model locked), jangan lanjut ke fallback.
+        // Caller (mega-generate.ts) yang handle retry dengan max_tokens lebih rendah.
+        if (opts.model) {
+          console.warn(`[callLLM] ${endpoint} Polyvor/${polyvorModel} (model locked) ${errorType}: ${errorMessage}`);
+          return { content: null, modelUsed: `polyvor/${polyvorModel}`, fallbacksTriggered };
+        }
 
         if (pi + 1 < polyvorModels.length) {
           const event: FallbackEvent = {
