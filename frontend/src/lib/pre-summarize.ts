@@ -41,14 +41,23 @@ export async function preSummarize(transcript: string): Promise<PreSummarizeResu
     if (res.ok) {
       const data = await res.json() as { summary?: string; method?: string; error?: string };
       if (data.summary && data.summary.length > 50) {
-        console.log(`[pre-summarize] PDFSummarizer.net API: ${originalLength} → ${data.summary.length} chars (method: ${data.method})`);
-        return {
-          summary: data.summary,
-          method: 'pdfsummarizer-net-api',
-          originalLength,
-          summaryLength: data.summary.length,
-          chunkCount: 1,
-        };
+        // v-fix: reject too-short summaries. PDFSummarizer.net kadang return hanya 350 char
+        // dari 219K input (99.8% hilang!). User complaint: "hasilnya ringkas banget,
+        // materinya ada yg ilang". Kalau input > 50K tapi summary < 5K, terlalu agresif.
+        // Threshold: summary harus >= 10% dari input (atau min 5000 char untuk input > 50K).
+        const minSummaryLength = originalLength > 50000 ? 5000 : Math.max(200, originalLength * 0.1);
+        if (data.summary.length < minSummaryLength) {
+          console.log(`[pre-summarize] PDFSummarizer.net summary too short: ${data.summary.length} chars from ${originalLength} input (min ${minSummaryLength}) — rejecting, too aggressive, falling back`);
+        } else {
+          console.log(`[pre-summarize] PDFSummarizer.net API: ${originalLength} → ${data.summary.length} chars (method: ${data.method})`);
+          return {
+            summary: data.summary,
+            method: 'pdfsummarizer-net-api',
+            originalLength,
+            summaryLength: data.summary.length,
+            chunkCount: 1,
+          };
+        }
       }
       console.log(`[pre-summarize] PDFSummarizer.net API returned: ${data.error || 'no summary'}`);
     } else {
