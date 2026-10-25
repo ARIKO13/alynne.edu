@@ -223,7 +223,10 @@ export const POST: APIRoute = async ({ request }) => {
     // ── SERVER-SIDE CACHE LOOKUP (D1) ──
     // v-hybrid: cache key include version prefix supaya cache lama (algo lama)
     // gak di-return. v3 = DeepSeek ringkasan → GLM strukturkan hybrid.
-    const ALGORITHM_VERSION = 'v3-hybrid-2026-10-25';
+    // v5-visualisasi-2026-10-25 = bump version supaya cache lama (yang gak punya
+    // visualisasi array, atau punya level=hybrid-Nd-4g format lama) gak di-return.
+    // User report "mode belajar ga ada visual samsek" — karena cache HIT return old result.
+    const ALGORITHM_VERSION = 'v5-visualisasi-2026-10-25';
     const materiHash = cyrb53(`${ALGORITHM_VERSION}:${transcript}`);
     try {
       await d1.execute(`

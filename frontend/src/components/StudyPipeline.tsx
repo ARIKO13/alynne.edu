@@ -207,7 +207,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     // NOTE: server-side mega-generate juga punya cache D1 7 hari (lihat
     // mega-generate.ts), tapi cache lokal ini lebih cepat lagi karena
     // skip network round-trip.
-    const CACHE_KEY = `alynne:mega-v1:${cyrb53(transcript)}`;
+    const CACHE_KEY = `alynne:mega-v5-vis:${cyrb53(transcript)}`;
     const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;  // 7 days
     let split: Chapter[] | null = null;
     let quizMap: Record<number, QuizQuestion[]> = {};
