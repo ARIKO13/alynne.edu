@@ -254,7 +254,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     // v-chunked-v6-4sec: bump localStorage cache key supaya entry lama (3 sections,
     // visualisasi light theme, bab kepotong) gak di-return. Match ALGORITHM_VERSION
     // 'v6-4sec-2026-10-25' di chunked-generate.ts (server-side D1 cache).
-    const CACHE_KEY = `alynne:chunked-v10-ps:${cyrb53(transcript)}`;
+    const CACHE_KEY = `alynne:chunked-v11-fix:${cyrb53(transcript)}`;
     const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;  // 7 days
     let split: Chapter[] | null = null;
     let quizMap: Record<number, QuizQuestion[]> = {};
