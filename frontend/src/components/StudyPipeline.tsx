@@ -85,7 +85,7 @@ interface StudyPipelineProps {
   transcript: string;
 }
 
-type PipelineStage = 'idle' | 'splitting' | 'mindmap' | 'chapters' | 'complete';
+type PipelineStage = 'idle' | 'splitting' | 'mindmap' | 'chapters' | 'complete' | 'error';
 type MainTab = 'materi' | 'kuis' | 'mindmap' | 'buddy' | 'voice' | 'session';
 
 // cyrb53 — small fast hash function for cache keys (no crypto needed).
@@ -120,6 +120,8 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   const [estimatedLabel, setEstimatedLabel] = useState('');
   const [estimatedLembar, setEstimatedLembar] = useState(0);
   const [phaseInfo, setPhaseInfo] = useState('');  // e.g., "3 DeepSeek + 4 GLM"
+  // v9-fast: error state untuk friendly UI — tidak ada regex fallback lagi
+  const [errorMessage, setErrorMessage] = useState('');
   const [quizBattleOpen, setQuizBattleOpen] = useState(false);
   const [slideExporterOpen, setSlideExporterOpen] = useState(false);
   const [ttsPlaying, setTtsPlaying] = useState(false);
@@ -211,16 +213,18 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     const estimatedLembar = Math.ceil(transcript.length / 1400);
     const estPhase1Chunks = transcript.length > 30000 ? Math.ceil(transcript.length / 50000) : 0;
     const estPhase2Sections = estimatedLembar <= 21 ? 1 : 4;
-    const estimatedPhase1Ms = estPhase1Chunks > 0 ? Math.ceil(estPhase1Chunks / 2) * 40_000 : 0;
-    const estimatedPhase2Ms = Math.ceil(estPhase2Sections / 2) * 70_000;
+    // v9-fast: pLimit 5 = mostly 1 gelombang, bukan ceil(N/2)
+    const estimatedPhase1Ms = estPhase1Chunks > 0 ? Math.ceil(estPhase1Chunks / 5) * 40_000 : 0;
+    const estimatedPhase2Ms = Math.ceil(estPhase2Sections / 5) * 33_000;
     const estimatedMs = estimatedPhase1Ms + estimatedPhase2Ms + 10_000;
     const estimatedLabel = estimatedMs >= 60_000
       ? `~${Math.ceil(estimatedMs / 60_000)} menit`
       : `~${Math.ceil(estimatedMs / 1000)} detik`;
     setEstimatedLabel(estimatedLabel);
     setEstimatedLembar(estimatedLembar);
-    setPhaseInfo(`${estPhase1Chunks} DeepSeek + ${estPhase2Sections} GLM (pLimit 2)`);
-    console.log(`[Pipeline] estimated: ${estimatedLabel} (${estPhase1Chunks} DeepSeek + ${estPhase2Sections} GLM, pLimit 2)`);
+    // v9-fast: hapus "pLimit 2" info — user gak mau lihat technical details
+    setPhaseInfo('');
+    console.log(`[Pipeline] estimated: ${estimatedLabel} (${estPhase1Chunks} DeepSeek + ${estPhase2Sections} GLM, pLimit 5)`);
 
     // v-stable: animasi progress 10% → 90% over estimatedMs, supaya progress bar
     // gak stuck di 10% selama request berlangsung. Kalau response lebih cepat dari
@@ -249,7 +253,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     // v-chunked-v6-4sec: bump localStorage cache key supaya entry lama (3 sections,
     // visualisasi light theme, bab kepotong) gak di-return. Match ALGORITHM_VERSION
     // 'v6-4sec-2026-10-25' di chunked-generate.ts (server-side D1 cache).
-    const CACHE_KEY = `alynne:chunked-v7-stable:${cyrb53(transcript)}`;
+    const CACHE_KEY = `alynne:chunked-v9-fast:${cyrb53(transcript)}`;
     const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;  // 7 days
     let split: Chapter[] | null = null;
     let quizMap: Record<number, QuizQuestion[]> = {};
@@ -293,115 +297,108 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     //   fetch('/api/stt/chunked-generate') → 1 LLM call dengan transcript utuh (700K char max)
     //   → LLM yang memecah jadi bab di dalam output JSON → tanpa split, tanpa regex fallback
     if (!split) {
-      // v-robust (2026-10-25): retry chunked-generate 1x kalau attempt pertama gagal (transient).
-      // Sesuai spec user: "Kalau validasi gagal, retry dengan model lain—bukan fallback ke regex."
-      // Strategi: 2 attempt (initial + 1 retry), 10s backoff antar attempt.
-      // Kalau 2 attempt gagal total, regex fallback terakhir (degraded mode) supaya UI gak blank.
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        console.log(`[Pipeline] chunked-generate attempt ${attempt}/2${attempt === 1 ? '' : ' (retry after 10s backoff)'}`);
-        if (attempt > 1) {
-          await sleep(10_000);  // 10s backoff sebelum retry
-        }
-        try {
-          const res = await fetch('/api/stt/chunked-generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ transcript, title: 'Materi Belajar', maxChapters: 15 }),
-            signal: AbortSignal.timeout(320_000),  // 5 menit 20 detik — match server-side 300s + buffer
-          });
-          if (res.ok) {
-            const mega = await res.json() as {
-              modul?: { bab?: any[] };
-              kuis?: any[];
-              mindmap?: { root?: string; cabang?: { nama?: string; sub?: string[] }[] };
-              visualisasi?: any[];
-              error?: string;
-              cached?: boolean;
-              levelUsed?: string;
-            };
-            if (mega.modul?.bab?.length && !mega.error) {
-              // Map modul.bab → Chapter[] (existing interface: id, title, content, wordCount)
-              split = mega.modul.bab.map((b: any) => {
-                const content = String(b.penjelasan || b.uraian || '').trim();
-                return {
-                  id: Number(b.id) || 0,
-                  title: String(b.judul || '').slice(0, 100),
-                  content,
-                  wordCount: content.split(/\s+/).filter(Boolean).length,
-                };
-              }).filter((c: Chapter) => c.id > 0 && c.content.length > 20);
+      // v9-fast (per user spec 2026-10-25): single fetch, NO retry, NO regex fallback.
+      // Server always returns 200 (even on error, with friendly message).
+      // pLimit 5 + DeepSeek-everywhere = ~66-100s total, well under 180s client timeout.
+      try {
+        const res = await fetch('/api/stt/chunked-generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ transcript, title: 'Materi Belajar', maxChapters: 15 }),
+          signal: AbortSignal.timeout(180_000),  // 3 min — server responds in 66-100s, 180s plenty
+        });
+        if (res.ok) {
+          const mega = await res.json() as {
+            modul?: { bab?: any[] };
+            kuis?: any[];
+            mindmap?: { root?: string; cabang?: { nama?: string; sub?: string[] }[] };
+            visualisasi?: any[];
+            error?: string;
+            message?: string;
+            cached?: boolean;
+            levelUsed?: string;
+          };
+          if (mega.error) {
+            // v9-fast: server returned friendly error (200 with error field) — show to user
+            clearInterval(progressTimer);
+            setErrorMessage(mega.message || 'Server sedang sibuk. Coba lagi dalam 1 menit.');
+            setStage('error');
+            return;
+          }
+          if (mega.modul?.bab?.length) {
+            split = mega.modul.bab.map((b: any) => {
+              const content = String(b.penjelasan || b.uraian || '').trim();
+              return {
+                id: Number(b.id) || 0,
+                title: String(b.judul || '').slice(0, 100),
+                content,
+                wordCount: content.split(/\s+/).filter(Boolean).length,
+              };
+            }).filter((c: Chapter) => c.id > 0 && c.content.length > 20);
 
-              // Map kuis → quizzes record (per bab_id). Mega-generate sudah generate kuis
-              // 15-20 soal total, jadi TIDAK PERLU panggil generateLLMQuiz per bab lagi.
-              if (Array.isArray(mega.kuis)) {
-                for (const k of mega.kuis) {
-                  const babId = Number(k.bab_id ?? k.bab ?? 0);
-                  if (!babId) continue;
-                  if (!quizMap[babId]) quizMap[babId] = [];
-                  quizMap[babId].push({
-                    id: Number(k.id) || quizMap[babId].length + 1,
-                    type: 'multiple-choice' as const,
-                    question: String(k.soal || ''),
-                    options: Array.isArray(k.opsi) ? k.opsi.map(String) : [],
-                    correctAnswer: String(k.jawaban || ''),
-                    explanation: String(k.pembahasan || ''),
-                  });
-                }
+            if (Array.isArray(mega.kuis)) {
+              for (const k of mega.kuis) {
+                const babId = Number(k.bab_id ?? k.bab ?? 0);
+                if (!babId) continue;
+                if (!quizMap[babId]) quizMap[babId] = [];
+                quizMap[babId].push({
+                  id: Number(k.id) || quizMap[babId].length + 1,
+                  type: 'multiple-choice' as const,
+                  question: String(k.soal || ''),
+                  options: Array.isArray(k.opsi) ? k.opsi.map(String) : [],
+                  correctAnswer: String(k.jawaban || ''),
+                  explanation: String(k.pembahasan || ''),
+                });
               }
+            }
 
-              // Map mindmap {root, cabang:[{nama, sub}]} → LLMMindmapNode {label, children}
-              if (mega.mindmap?.root) {
-                mindmapNode = {
-                  label: String(mega.mindmap.root),
-                  children: (mega.mindmap.cabang || []).map((c: any) => ({
-                    label: String(c.nama || ''),
-                    children: (c.sub || []).map((s: string) => ({ label: String(s) })),
-                  })),
-                };
-              }
+            if (mega.mindmap?.root) {
+              mindmapNode = {
+                label: String(mega.mindmap.root),
+                children: (mega.mindmap.cabang || []).map((c: any) => ({
+                  label: String(c.nama || ''),
+                  children: (c.sub || []).map((s: string) => ({ label: String(s) })),
+                })),
+              };
+            }
 
-              // v-visualisasi: simpan array visualisasi untuk render di tab Materi per bab.
-              // Visualisasi sudah digenerate Phase 2 GLM bersama bab/kuis/mindmap — 0 request tambahan.
-              visualisasiArr = Array.isArray(mega.visualisasi) ? mega.visualisasi : [];
+            visualisasiArr = Array.isArray(mega.visualisasi) ? mega.visualisasi : [];
 
-              console.log(`[Pipeline] chunked-generate attempt ${attempt} OK: ${split.length} bab, ${Object.keys(quizMap).length} bab dengan kuis, mindmap ${mindmapNode ? 'OK' : 'null'}, visualisasi ${visualisasiArr.length} item (level: ${mega.levelUsed || '?'}${mega.cached ? ', server-cache HIT' : ''})`);
-              break;  // sukses, keluar dari retry loop
-            } else {
-              console.warn(`[Pipeline] chunked-generate attempt ${attempt} returned:`, mega.error || 'no bab', attempt === 1 ? '— will retry in 10s' : '— no more retry, regex fallback');
+            console.log(`[Pipeline] chunked-generate OK: ${split.length} bab, ${Object.keys(quizMap).length} bab dengan kuis, mindmap ${mindmapNode ? 'OK' : 'null'}, visualisasi ${visualisasiArr.length} item (level: ${mega.levelUsed || '?'}${mega.cached ? ', server-cache HIT' : ''})`);
+
+            // Cache hasil (chapters + quizzes + mindmap + visualisasi)
+            try {
+              localStorage.setItem(CACHE_KEY, JSON.stringify({
+                ts: Date.now(),
+                chapters: split,
+                quizzes: quizMap,
+                mindmap: mindmapNode,
+                visualisasi: visualisasiArr,
+              }));
+              console.log(`[Pipeline] Cached ${split.length} chapters + mega result`);
+            } catch (e) {
+              console.log('[Pipeline] Cache write failed:', e);
             }
           } else {
-            console.warn(`[Pipeline] chunked-generate attempt ${attempt} HTTP ${res.status}`, attempt === 1 ? '— will retry in 10s' : '— no more retry, regex fallback');
+            // No bab in response — show friendly error
+            clearInterval(progressTimer);
+            setErrorMessage('Server sedang sibuk. Coba lagi dalam 1 menit.');
+            setStage('error');
+            return;
           }
-        } catch (err) {
-          console.warn(`[Pipeline] chunked-generate attempt ${attempt} exception:`, err, attempt === 1 ? '— will retry in 10s' : '— no more retry, regex fallback');
+        } else {
+          // HTTP error — show friendly error
+          clearInterval(progressTimer);
+          setErrorMessage('Server sedang sibuk. Coba lagi dalam 1 menit.');
+          setStage('error');
+          return;
         }
-      }  // end retry loop
-
-      // Fallback terakhir: regex split (instant, 0 LLM call). Kualitas bab
-      // nggak sebagus chunked-generate, tapi setidaknya UI bisa lanjut.
-      // Quiz, mindmap, dan visualisasi akan kosong → generateLLMMindmap dipanggil di bawah
-      // untuk mindmap, quiz bisa diisi on-demand (tapi generateLLMQuiz
-      // sekarang sudah deprecated, lebih baik tunggu user re-upload).
-      if (!split || split.length === 0) {
-        split = splitTranscriptIntoChapters(transcript);
-        quizMap = {};
-        mindmapNode = null;
-        visualisasiArr = [];  // fallback: kosong, gak ada visualisasi
-      } else {
-        // Cache hasil mega (chapters + quizzes + mindmap + visualisasi). Visualisasi &
-        // glosarium nggak di-cache di sini karena StudyPipeline nggak pakai.
-        try {
-          localStorage.setItem(CACHE_KEY, JSON.stringify({
-            ts: Date.now(),
-            chapters: split,
-            quizzes: quizMap,
-            mindmap: mindmapNode,
-            visualisasi: visualisasiArr,
-          }));
-          console.log(`[Pipeline] Cached ${split.length} chapters + mega result`);
-        } catch (e) {
-          console.warn('[Pipeline] Cache write failed:', e);
-        }
+      } catch (err) {
+        // Network/timeout — show friendly error (NO retry, NO regex fallback)
+        clearInterval(progressTimer);
+        setErrorMessage('Server sedang sibuk. Coba lagi dalam 1 menit.');
+        setStage('error');
+        return;
       }
     }
 
@@ -1043,23 +1040,36 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           </Button>
         </div>
 
+        {/* Error state — v9-fast: friendly error, NO stack trace */}
+        {stage === 'error' && (
+          <div className="p-6 text-center space-y-3">
+            <div className="text-4xl">⚠️</div>
+            <p className="text-sm text-zinc-300">{errorMessage}</p>
+            <Button
+              onClick={() => { setStage('idle'); setErrorMessage(''); }}
+              className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs px-4 py-2 rounded"
+            >
+              Coba lagi
+            </Button>
+          </div>
+        )}
+
         {/* Progress (during pipeline) */}
-        {stage !== 'complete' && stage !== 'idle' && (
+        {stage !== 'complete' && stage !== 'idle' && stage !== 'error' && (
           <div className="p-3 border-b border-white/[0.04]">
             <div className="flex items-center justify-between text-xs mb-1">
               <span className="text-[#8B5CF6] flex items-center gap-1">
                 <Loader2 className="h-3 w-3 animate-spin" />
-                {stage === 'splitting' && 'Memecah bab...'}
-                {stage === 'mindmap' && 'Mindmap...'}
-                {stage === 'chapters' && 'Buat kuis...'}
+                {stage === 'splitting' && 'Menyusun ringkasan...'}
+                {stage === 'mindmap' && 'Menyusun modul...'}
+                {stage === 'chapters' && 'Menyusun kuis...'}
               </span>
               <span className="text-zinc-500">{progress}%</span>
             </div>
             <Progress value={progress} className="h-1" />
             {estimatedLabel && (
-              <div className="flex items-center justify-between text-[10px] text-zinc-500 mt-1">
-                <span>Estimasi: <span className="text-zinc-300 font-medium">{estimatedLabel}</span></span>
-                {phaseInfo && <span className="text-zinc-500">{phaseInfo}</span>}
+              <div className="text-[10px] text-zinc-500 mt-1">
+                Estimasi: <span className="text-zinc-300 font-medium">{estimatedLabel}</span>
               </div>
             )}
           </div>
@@ -1284,9 +1294,9 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
             <div className="text-center">
               <Loader2 className="h-8 w-8 animate-spin text-[#8B5CF6] mx-auto mb-4" />
               <p className="text-sm text-zinc-400">
-                {stage === 'splitting' && 'Memecah transkrip jadi bab...'}
-                {stage === 'mindmap' && 'Membuat mindmap...'}
-                {stage === 'chapters' && 'Membuat kuis per bab...'}
+                {stage === 'splitting' && 'Menyusun ringkasan...'}
+                {stage === 'mindmap' && 'Menyusun modul...'}
+                {stage === 'chapters' && 'Menyusun kuis...'}
               </p>
             </div>
           </div>

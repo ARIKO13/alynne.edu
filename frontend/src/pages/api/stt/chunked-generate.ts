@@ -223,13 +223,12 @@ export const POST: APIRoute = async ({ request }) => {
     // ── SERVER-SIDE CACHE LOOKUP (D1) ──
     // v-chunked: cache key include version prefix supaya cache lama (algo lama)
     // gak di-return. v5 = DeepSeek ringkas → GLM strukturkan hybrid.
-    // v6-4sec-2026-10-25 = bump dari v5: tambah Phase 2 jadi 4 sections (was 3)
-    // supaya visualisasi gak makan token bab. buildGLMBabPrompt juga minta
-    // visualisasi per bab (sebelumnya cuma di section extras).
-    // v7-stable-2026-10-25 = bump dari v6: tambah per-chunk retry (max_tokens
-    // setengah kalau gagal) + per-section retry + minimal fallback + pLimit 3→2.
-    // Intrinsic cache invalidation supaya user dapat code baru (more reliable).
-    const ALGORITHM_VERSION = 'v7-stable-2026-10-25';
+    // v6-4sec-2026-10-25 = bump dari v5: tambah Phase 2 jadi 4 sections (was 3).
+    // v7-stable-2026-10-25 = per-chunk retry + minimal fallback + pLimit 2.
+    // v8-no-error-2026-10-25 = hard deadline per phase.
+    // v9-fast-2026-10-25 = pLimit 2→5, Phase 2 model GLM→DeepSeek, hapus retry,
+    // hapus regex fallback, friendly error UI. Total target 66-100s (was 350s).
+    const ALGORITHM_VERSION = 'v9-fast-2026-10-25';
     const materiHash = cyrb53(`${ALGORITHM_VERSION}:${transcript}`);
     try {
       await d1.execute(`
@@ -320,11 +319,22 @@ export const POST: APIRoute = async ({ request }) => {
       ringkasan = transcript;
       console.log(`[chunked-generate] Phase 1 SKIPPED: transcript ${transcript.length} chars ≤ ${SKIP_PHASE1_THRESHOLD}K threshold — use as-is, 0 LLM call`);
     } else {
-      console.log(`[chunked-generate] Phase 1: DeepSeek ${chunks.length} chunk(s) paralel (max 6K tok each, pLimit(2))`);
-      const phase1Limiter = makeConcurrencyLimiter(2);  // v-stable: pLimit 2 (was 3) — less rate-limit risk
+      // v9-fast (per user spec 2026-10-25): pLimit 5 (was 2), no retry, single attempt
+      // 9 chunks total (5 DeepSeek + 4 GLM) selesai dalam 2 gelombang (~66-100s) bukan 5 gelombang.
+      // Kalau gateway timeout/rate-limit, fail fast — Phase 2 minimal fallback ensure no crash.
+      console.log(`[chunked-generate] Phase 1: DeepSeek ${chunks.length} chunk(s) paralel (max 6K tok each, pLimit(5), no retry)`);
+      const phase1Limiter = makeConcurrencyLimiter(5);  // v9-fast: pLimit 5 (was 2)
       const deepseekResults = await Promise.all(
         chunks.map((chunk, i) => phase1Limiter(() =>
-          callDeepSeekChunkWithRetry(chunk, i, chunks.length)
+          callLLM('long', DEEPSEEK_SUMMARY_PROMPT, chunk, {
+            model: 'phala/deepseek/deepseek-v4-flash-0731',
+            fallbackModels: ['phala/z-ai/glm-5.3-flash', 'jr/gemini-3.5-flash-lite'],
+            maxTokens: 6000,
+            timeout: 60_000,  // v9-fast: 60s per attempt (was 90s)
+            temperature: 0.2,
+            jsonMode: false,
+            endpoint: `chunked-generate/p1-chunk-${i + 1}-of-${chunks.length}`,
+          })
         ))
       );
 
@@ -333,8 +343,8 @@ export const POST: APIRoute = async ({ request }) => {
       phase1FailCount = chunks.length - phase1SuccessCount;
       if (summaries.length === 0) {
         // v-stable: jangan crash kalau Phase 1 all failed. Lanjut ke Phase 2 dengan transcript utuh
-        // (kalau ≤ 600K char, muat di GLM context 1M token). Quality turun tapi gak crash.
-        console.error(`[chunked-generate] Phase 1 ALL FAILED — using raw transcript as ringkasan (degraded)`);
+        // (kalau ≤ 600K char, muat di DeepSeek context 128K token). Quality turun tapi gak crash.
+        console.log(`[chunked-generate] Phase 1 ALL FAILED — using raw transcript as ringkasan (degraded)`);
         ringkasan = transcript.slice(0, 100_000);  // cap at 100K to fit Phase 2 input
       } else {
         ringkasan = summaries.join('\n\n---\n\n');
@@ -368,12 +378,23 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const totalReq = chunks.length + sections.length;
-    console.log(`[chunked-generate] Phase 2: GLM ${sections.length} section(s) paralel (max 5K tok each, pLimit(2)) — total req this call: ${totalReq} (${chunks.length} DeepSeek + ${sections.length} GLM)`);
+    // v9-fast (per user spec 2026-10-25): pLimit 5 (was 2), Phase 2 model DeepSeek (was GLM).
+    // Reason: GLM kadang timeout, DeepSeek terbukti hidup di benchmark. Kualitas JSON
+    // DeepSeek slightly lower (Intelligence Index 50 vs GLM 57), tapi lebih reliable.
+    console.log(`[chunked-generate] Phase 2: DeepSeek ${sections.length} section(s) paralel (max 5K tok each, pLimit(5), no retry) — total req this call: ${totalReq} (${chunks.length} DeepSeek p1 + ${sections.length} DeepSeek p2)`);
 
-    const phase2Limiter = makeConcurrencyLimiter(2);  // v-stable: pLimit 2 (was 3)
+    const phase2Limiter = makeConcurrencyLimiter(5);  // v9-fast: pLimit 5 (was 2)
     const glmResults = await Promise.all(
       sections.map(s => phase2Limiter(() =>
-        callGLMSectionWithRetry(s)
+        callLLM('long', GLM_STRUCTURE_SYSTEM_PROMPT, s.userPrompt, {
+          model: 'phala/deepseek/deepseek-v4-flash-0731',  // v9-fast: was glm-5.3-flash
+          fallbackModels: ['phala/z-ai/glm-5.3-flash', 'jr/gemini-3.5-flash-lite'],
+          maxTokens: 5000,
+          timeout: 60_000,  // v9-fast: 60s (was 90s)
+          temperature: 0.3,
+          jsonMode: true,
+          endpoint: `chunked-generate/p2-${s.name}`,
+        })
       ))
     );
 
@@ -410,14 +431,14 @@ export const POST: APIRoute = async ({ request }) => {
     const glosariumCount = merged.glosarium?.length ?? 0;
     const coverageCount = merged.coverage_checklist?.length ?? 0;
 
-    // v-stable: estimasi waktu untuk client UI (progress bar). Berdasarkan chunk count
-    // + section count, dengan pLimit 2:
-    //   Phase 1: ceil(N/2) gelombang × 40s per gelombang (DeepSeek ~150 tok/s × 6K tok = 40s)
-    //   Phase 2: ceil(M/2) gelombang × 70s per gelombang (GLM ~71 tok/s × 5K tok = 70s)
+    // v9-fast: estimasi waktu untuk client UI (progress bar). pLimit 5 = mostly 1 wave:
+    //   Phase 1: 1 gelombang × ~40s (5 chunks parallel, DeepSeek 150 tok/s × 6K = 40s)
+    //   Phase 2: 1 gelombang × ~33s (4 sections parallel, DeepSeek 150 tok/s × 5K = 33s)
     //   + 10s buffer untuk network + parse
-    const estimatedPhase1Ms = chunks.length > 0 ? Math.ceil(chunks.length / 2) * 40_000 : 0;
-    const estimatedPhase2Ms = Math.ceil(sections.length / 2) * 70_000;
-    const estimatedTimeMs = estimatedPhase1Ms + estimatedPhase2Ms + 10_000;  // +10s buffer
+    // Total target: 66-100s (jauh di bawah client timeout 320s)
+    const estimatedPhase1Ms = chunks.length > 0 ? Math.ceil(chunks.length / 5) * 40_000 : 0;
+    const estimatedPhase2Ms = Math.ceil(sections.length / 5) * 33_000;
+    const estimatedTimeMs = estimatedPhase1Ms + estimatedPhase2Ms + 10_000;
 
     // v-robust: validasi output — cek struktur minimum + coverage checklist non-empty.
     // Bukan fallback ke regex (yang user bilang "sumber hasil buruk"), tapi log warning
@@ -472,8 +493,16 @@ export const POST: APIRoute = async ({ request }) => {
 
     return Response.json({ ...megaResponse, cached: false });
   } catch (e: any) {
-    console.error('[chunked-generate] fatal:', e);
-    return Response.json({ error: 'Generation failed', message: e?.message }, { status: 500 });
+    // v9-fast (per user spec): NEVER return 500. Selalu 200 dengan friendly error.
+    // User lihat "Coba lagi dalam 1 menit" di UI, bukan "TimeoutError: signal timed out".
+    // Server log untuk debugging, user gak pernah lihat stack trace.
+    console.log('[chunked-generate] caught error (returning friendly 200, not 500):', e?.message?.slice(0, 200));
+    return Response.json({
+      error: 'server_busy',
+      message: 'Server sedang sibuk. Coba lagi dalam 1 menit.',
+      retryAfterMs: 60_000,
+      // NOTE: NO bab/kuis/visualisasi fields — client will see error and show friendly UI
+    }, { status: 200 });  // 200 = soft error, client treats as data not network failure
   }
 };
 
@@ -554,91 +583,10 @@ function makeConcurrencyLimiter(concurrency: number) {
   };
 }
 
-/**
- * v-stable (2026-10-25): Per-chunk retry helper for DeepSeek Phase 1.
- *
- * Strategi: kalau chunk gagal dengan max_tokens=6000 (timeout/429/empty response
- * after fallback chain), retry dengan max_tokens=3000 (setengah budget). Model akan
- * selesai lebih cepat (~20s vs 40s), lebih kecil kemungkinan timeout di gateway 120s.
- *
- * Total maks 2 attempt per chunk. Kalau keduanya gagal, return null → caller skip chunk
- * (Phase 1 partial success, lanjut ke Phase 2 dengan ringkasan dari chunk yang OK).
- */
-async function callDeepSeekChunkWithRetry(
-  chunk: string, chunkIdx: number, chunksCount: number
-): Promise<{ content: string | null; modelUsed: string | null; fallbacksTriggered: any[] }> {
-  const attempts = [
-    { maxTokens: 6000, timeout: 90_000 },  // attempt 1: normal budget
-    { maxTokens: 3000, timeout: 60_000 },  // attempt 2: half budget, faster
-  ];
-  for (let a = 0; a < attempts.length; a++) {
-    const attempt = attempts[a];
-    const result = await callLLM('long', DEEPSEEK_SUMMARY_PROMPT, chunk, {
-      model: 'phala/deepseek/deepseek-v4-flash-0731',
-      fallbackModels: ['phala/z-ai/glm-5.3-flash', 'jr/gemini-3.5-flash-lite'],
-      maxTokens: attempt.maxTokens,
-      timeout: attempt.timeout,
-      temperature: 0.2,
-      jsonMode: false,
-      endpoint: `chunked-generate/p1-chunk-${chunkIdx + 1}-of-${chunksCount}${a > 0 ? `-retry${a + 1}` : ''}`,
-    });
-    if (result.content && result.content.trim().length > 50) {
-      if (a > 0) console.log(`[chunked-generate] Phase 1 chunk ${chunkIdx + 1}/${chunksCount} OK on retry ${a + 1} (max_tokens=${attempt.maxTokens})`);
-      return result;
-    }
-    if (a < attempts.length - 1) {
-      console.warn(`[chunked-generate] Phase 1 chunk ${chunkIdx + 1}/${chunksCount} attempt ${a + 1} failed (max_tokens=${attempt.maxTokens}) → retry ${a + 2}`);
-    }
-  }
-  console.error(`[chunked-generate] Phase 1 chunk ${chunkIdx + 1}/${chunksCount} ALL RETRIES FAILED — skipping chunk`);
-  return { content: null, modelUsed: null, fallbacksTriggered: [] };
-}
-
-/**
- * v-stable (2026-10-25): Per-section retry helper for GLM Phase 2.
- *
- * Strategi: kalau section gagal (timeout/429/empty/invalid JSON after fallback chain),
- * retry dengan max_tokens=3000 (setengah budget). Model lebih cepat selesai.
- *
- * Validasi: setiap response di-safeParseJson. Kalau parse gagal, retry.
- * Total maks 2 attempt per section. Kalau keduanya gagal, return null → caller
- * skip section (Phase 2 partial, mergeGLMSections tetap merge dari sections yang OK).
- */
-async function callGLMSectionWithRetry(
-  s: { name: string; userPrompt: string }
-): Promise<{ content: string | null; modelUsed: string | null; fallbacksTriggered: any[] }> {
-  const attempts = [
-    { maxTokens: 5000, timeout: 90_000 },  // attempt 1: normal
-    { maxTokens: 3000, timeout: 60_000 },  // attempt 2: half budget
-  ];
-  for (let a = 0; a < attempts.length; a++) {
-    const attempt = attempts[a];
-    const result = await callLLM('long', GLM_STRUCTURE_SYSTEM_PROMPT, s.userPrompt, {
-      model: 'phala/z-ai/glm-5.3-flash',
-      fallbackModels: ['phala/deepseek/deepseek-v4-flash-0731', 'jr/gemini-3.5-flash-lite'],
-      maxTokens: attempt.maxTokens,
-      timeout: attempt.timeout,
-      temperature: 0.3,
-      jsonMode: true,
-      endpoint: `chunked-generate/p2-${s.name}${a > 0 ? `-retry${a + 1}` : ''}`,
-    });
-    if (result.content) {
-      // Validate parseable JSON before accepting (avoid garbage responses)
-      const parsed = safeParseJson(result.content);
-      if (parsed) {
-        if (a > 0) console.log(`[chunked-generate] Phase 2 ${s.name} OK on retry ${a + 1} (max_tokens=${attempt.maxTokens})`);
-        return result;
-      }
-      console.warn(`[chunked-generate] Phase 2 ${s.name} attempt ${a + 1} returned non-JSON (${result.content.length} chars) → retry ${a + 2}`);
-    } else {
-      if (a < attempts.length - 1) {
-        console.warn(`[chunked-generate] Phase 2 ${s.name} attempt ${a + 1} returned null → retry ${a + 2}`);
-      }
-    }
-  }
-  console.error(`[chunked-generate] Phase 2 ${s.name} ALL RETRIES FAILED — skipping section`);
-  return { content: null, modelUsed: null, fallbacksTriggered: [] };
-}
+// v9-fast (2026-10-25): callDeepSeekChunkWithRetry + callGLMSectionWithRetry DIHAPUS.
+// Sesuai spec user: no retry, single attempt, fail fast. pLimit 5 parallel bukan
+// pLimit 2 sequential. 9 request selesai dalam 2 gelombang (~66-100s) bukan 5
+// gelombang (~350s). Tanpa retry, gateway rate-limit gak ter-trigger lagi.
 
 // ── DeepSeek summarization prompt (Phase 1) ──
 const DEEPSEEK_SUMMARY_PROMPT = `Kamu adalah peringkas transkrip kuliah Bahasa Indonesia.
