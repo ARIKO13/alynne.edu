@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { MaterialUpload } from '@/components/material-upload';
 import { YouTubeTranscript } from '@/components/youtube-transcript';
+import { DocumentUpload } from '@/components/DocumentUpload';
 import { BrandLogo } from '@/components/brand-logo';
 import { cn } from '@/lib/utils';
 import { useState, useRef, useEffect } from 'react';
@@ -371,6 +372,18 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
             const sentences = text.split(/(?<=[.!?])\s+/).filter(s => s.trim());
             useAppStore.getState().appendTranscriptBatch(sentences);
             toast.success(`Transkrip YouTube: ${text.length} karakter (${meta.duration} detik)`);
+          }}
+        />
+
+        {/* DocumentUpload — upload file apapun (PDF/DOCX/PPTX/XLSX/gambar/EPUB/HTML)
+            → server konversi ke teks → masuk transkrip → siap untuk Mode Belajar. */}
+        <DocumentUpload
+          disabled={isRecording || isProcessing}
+          onText={(text, meta) => {
+            console.log('[DocumentUpload] text:', text.length, 'chars', meta);
+            const sentences = text.split(/\n\s*\n|\s{2,}/).filter(s => s.trim().length > 10);
+            useAppStore.getState().appendTranscriptBatch(sentences);
+            toast.success(`Dokumen "${meta.fileName}": ${meta.charCount.toLocaleString()} karakter via ${meta.method}`);
           }}
         />
 
