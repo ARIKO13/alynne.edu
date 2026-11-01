@@ -17,15 +17,15 @@ import { toast } from 'sonner';
 import { indexTranscript, getRAGContext } from '@/lib/rag';
 
 const PROVIDER_COLORS: Record<string, string> = {
-  claude: 'border-zinc-500/30 text-zinc-400',
-  gemini: 'border-sky-500/30 text-sky-400',
+  claude: 'border-stone-500/30 text-stone-400',
+  gemini: 'border-teal-500/30 text-[var(--accent-soft)]',
   deepseek: 'border-[var(--accent)]/30 text-[var(--accent-soft)]',
   nvidia: 'border-emerald-500/30 text-emerald-400',
   minimax: 'border-pink-500/30 text-pink-400',
   openai: 'border-green-500/30 text-green-400',
   xai: 'border-orange-500/30 text-orange-300',
   zhipu: 'border-cyan-500/30 text-cyan-400',
-  other: 'border-zinc-500/30 text-zinc-400',
+  other: 'border-stone-500/30 text-stone-400',
 };
 
 export function AIAssistant() {
@@ -276,19 +276,19 @@ export function AIAssistant() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Bot className="h-4 w-4 text-[var(--accent-soft)]" />
-            <span className="text-sm font-medium text-zinc-200">AI Assistant</span>
-            <span className="flex items-center gap-1 text-[10px] text-zinc-500 bg-white/[0.04] px-1.5 py-0.5 rounded">
+            <span className="text-sm font-medium text-stone-200">AI Assistant</span>
+            <span className="flex items-center gap-1 text-[10px] text-stone-500 bg-white/[0.04] px-1.5 py-0.5 rounded">
               <Search className="h-2.5 w-2.5" /> Auto-Scrape
             </span>
           </div>
           <div className="flex items-center gap-2">
             {transcript && (
-              <button onClick={handleUseTranscript} className="flex items-center gap-1.5 text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors">
+              <button onClick={handleUseTranscript} className="flex items-center gap-1.5 text-[11px] text-stone-500 hover:text-stone-300 transition-colors">
                 <Sparkles className="h-3 w-3" />
                 Gunakan Transkrip
               </button>
             )}
-            <button onClick={clearAiMessages} disabled={aiMessages.length === 0} className="p-1.5 rounded-md hover:bg-white/[0.06] text-zinc-600 hover:text-zinc-300 transition-colors disabled:opacity-30">
+            <button onClick={clearAiMessages} disabled={aiMessages.length === 0} className="p-1.5 rounded-md hover:bg-white/[0.06] text-stone-600 hover:text-stone-300 transition-colors disabled:opacity-30">
               <Trash2 className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -296,17 +296,17 @@ export function AIAssistant() {
 
         <div className="flex flex-wrap items-center gap-2">
           <Select value={selectedModel} onValueChange={(v) => setSelectedModel(v as AIModel)}>
-            <SelectTrigger className="h-7 w-[220px] text-[11px] border-white/[0.08] bg-transparent text-zinc-300">
+            <SelectTrigger className="h-7 w-[220px] text-[11px] border-white/[0.08] bg-transparent text-stone-300">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="border-white/[0.08] bg-[#161618] max-h-[400px]">
+            <SelectContent className="border-white/[0.08] bg-[#171513] max-h-[400px]">
               {MODEL_GROUPS.map((group) => {
                 const groupModels = MODEL_LIST.filter((m) => m.group === group);
                 return (
                   <SelectGroup key={group}>
-                    <SelectLabel className="text-[11px] font-medium text-zinc-500">{group}</SelectLabel>
+                    <SelectLabel className="text-[11px] font-medium text-stone-500">{group}</SelectLabel>
                     {groupModels.map((model) => (
-                      <SelectItem key={model.id} value={model.id} className="text-xs text-zinc-300 focus:bg-white/[0.06] focus:text-white py-1.5">
+                      <SelectItem key={model.id} value={model.id} className="text-xs text-stone-300 focus:bg-white/[0.06] focus:text-white py-1.5">
                         <div className="flex items-center gap-1.5">
                           <span className="truncate">{model.name}</span>
                           {model.tier === 'pro' && (
@@ -352,9 +352,9 @@ export function AIAssistant() {
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4">
         {aiMessages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center py-8 text-center">
-            <Bot className="mb-2 h-10 w-10 text-zinc-800" />
-            <p className="text-sm font-medium text-zinc-600">AI Assistant siap membantu</p>
-            <p className="mt-1 text-xs text-zinc-700">Setiap pertanyaan otomatis mencari referensi web terlebih dahulu, lalu AI menjelaskannya.</p>
+            <Bot className="mb-2 h-10 w-10 text-stone-800" />
+            <p className="text-sm font-medium text-stone-600">AI Assistant siap membantu</p>
+            <p className="mt-1 text-xs text-stone-700">Setiap pertanyaan otomatis mencari referensi web terlebih dahulu, lalu AI menjelaskannya.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -370,7 +370,7 @@ export function AIAssistant() {
                     'max-w-[80%] rounded-lg px-3.5 py-2.5 text-sm',
                     msg.role === 'user'
                       ? 'bg-[var(--accent)] text-white'
-                      : 'bg-white/[0.06] text-zinc-200 border border-white/[0.06]'
+                      : 'bg-white/[0.06] text-stone-200 border border-white/[0.06]'
                   )}
                 >
                   <div className="whitespace-pre-wrap break-words">{msg.content}</div>
@@ -386,7 +386,7 @@ export function AIAssistant() {
                   {/* Sources - per message */}
                   {messageHasScrape[msg.id] && messageSources[msg.id] && (
                     <div className="mt-2 border-t border-white/[0.06] pt-2">
-                      <p className="text-[10px] font-medium text-zinc-500 mb-1">Sumber web:</p>
+                      <p className="text-[10px] font-medium text-stone-500 mb-1">Sumber web:</p>
                       {messageSources[msg.id].map((s, i) => (
                         <a key={i} href={s.url} target="_blank" rel="noopener noreferrer"
                           className="block text-[10px] text-[var(--accent-soft)] hover:underline truncate"
@@ -399,7 +399,7 @@ export function AIAssistant() {
                 </div>
                 {msg.role === 'user' && (
                   <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10">
-                    <User className="h-3.5 w-3.5 text-zinc-300" />
+                    <User className="h-3.5 w-3.5 text-stone-300" />
                   </div>
                 )}
               </div>
@@ -410,7 +410,7 @@ export function AIAssistant() {
                   <Bot className="h-3.5 w-3.5 text-[var(--accent-soft)]" />
                 </div>
                 <div className="rounded-lg bg-white/[0.06] border border-white/[0.06] px-3.5 py-2.5">
-                  <div className="flex items-center gap-2 text-xs text-zinc-500">
+                  <div className="flex items-center gap-2 text-xs text-stone-500">
                     {loadingPhase === 'scraping' ? (
                       <>
                         <Globe className="h-3.5 w-3.5" />
@@ -423,7 +423,7 @@ export function AIAssistant() {
                       </>
                     )}
                     {loadingElapsed > 5 && (
-                      <span className="flex items-center gap-1 text-[10px] text-zinc-600">
+                      <span className="flex items-center gap-1 text-[10px] text-stone-600">
                         <Timer className="h-3 w-3" />{loadingElapsed}s
                       </span>
                     )}
@@ -444,7 +444,7 @@ export function AIAssistant() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Tanyakan apa saja... (otomatis cari referensi web + AI jelaskan)"
-            className="min-h-[44px] max-h-[120px] resize-none border-white/[0.08] bg-[#111113] text-zinc-200 placeholder:text-zinc-600 focus-visible:ring-white/[0.08]"
+            className="min-h-[44px] max-h-[120px] resize-none border-white/[0.08] bg-[#161412] text-stone-200 placeholder:text-stone-600 focus-visible:ring-white/[0.08]"
             rows={1}
             disabled={isAiLoading}
           />

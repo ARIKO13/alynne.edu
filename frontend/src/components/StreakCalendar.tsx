@@ -105,8 +105,8 @@ export function StreakCalendar({ className }: StreakCalendarProps) {
     <div className={cn('rounded-lg border border-white/[0.06] bg-white/[0.02] p-4', className)}>
       <div className="flex items-center gap-2 mb-3">
         <Flame className="h-4 w-4 text-amber-400" />
-        <h3 className="text-sm font-medium text-zinc-200">Aktivitas Belajar</h3>
-        <span className="text-[10px] text-zinc-500 ml-auto">
+        <h3 className="text-sm font-medium text-stone-200">Aktivitas Belajar</h3>
+        <span className="text-[10px] text-stone-500 ml-auto">
           {activeDays} hari aktif | {Math.floor(totalMinutes / 60)}j {totalMinutes % 60}m total
         </span>
       </div>
@@ -139,7 +139,7 @@ export function StreakCalendar({ className }: StreakCalendarProps) {
         {weeks.map((_, wi) => {
           const label = monthLabels.find(m => m.week === wi);
           return (
-            <div key={wi} className="w-3 text-[8px] text-zinc-600">
+            <div key={wi} className="w-3 text-[8px] text-stone-600">
               {label?.label || ''}
             </div>
           );
@@ -148,11 +148,11 @@ export function StreakCalendar({ className }: StreakCalendarProps) {
 
       {/* Legend */}
       <div className="flex items-center gap-1 mt-3 justify-end">
-        <span className="text-[9px] text-zinc-600 mr-1">Less</span>
+        <span className="text-[9px] text-stone-600 mr-1">Less</span>
         {INTENSITY_COLORS.map((color, i) => (
           <div key={i} className={cn('w-2.5 h-2.5 rounded-sm', color)} />
         ))}
-        <span className="text-[9px] text-zinc-600 ml-1">More</span>
+        <span className="text-[9px] text-stone-600 ml-1">More</span>
       </div>
     </div>
   );

@@ -80,7 +80,7 @@ const C = {
 
   // Structural
   white: '#FFFFFF',
-  bg: '#FAFAFA',
+  bg: '#F5F2ED',
   border: '#E0E0E0',
   borderDark: '#BDBDBD',
   stickyBg: '#FFF9C4',

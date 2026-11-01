@@ -63,7 +63,7 @@ export function MindmapGraph({ chapters, activeChapterId, onSelectChapter }: Min
 
   if (chapters.length === 0) {
     return (
-      <div className="text-center py-8 text-sm text-zinc-500">
+      <div className="text-center py-8 text-sm text-stone-500">
         Belum ada bab
       </div>
     );
@@ -90,7 +90,7 @@ export function MindmapGraph({ chapters, activeChapterId, onSelectChapter }: Min
               y1={root.y}
               x2={node.x}
               y2={node.y}
-              stroke={isActive ? '#38BDF8' : '#3f3f46'}
+              stroke={isActive ? '#7FC4B8' : '#44403C'}
               strokeWidth={isActive ? 2 : 1}
               strokeDasharray={isActive ? '0' : '4'}
             />
@@ -115,7 +115,7 @@ export function MindmapGraph({ chapters, activeChapterId, onSelectChapter }: Min
                   cx={node.x}
                   cy={node.y}
                   r={r + 6}
-                  fill="#38BDF8"
+                  fill="#7FC4B8"
                   opacity={0.2}
                 />
               )}
@@ -123,8 +123,8 @@ export function MindmapGraph({ chapters, activeChapterId, onSelectChapter }: Min
                 cx={node.x}
                 cy={node.y}
                 r={r}
-                fill={isRoot ? '#38BDF8' : isActive ? '#38BDF8' : '#1f1f23'}
-                stroke={isRoot || isActive ? '#38BDF8' : '#3f3f46'}
+                fill={isRoot ? '#7FC4B8' : isActive ? '#7FC4B8' : '#25221E'}
+                stroke={isRoot || isActive ? '#7FC4B8' : '#44403C'}
                 strokeWidth={2}
               />
               <text
@@ -132,7 +132,7 @@ export function MindmapGraph({ chapters, activeChapterId, onSelectChapter }: Min
                 y={node.y}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                fill={isRoot || isActive ? 'white' : '#a1a1aa'}
+                fill={isRoot || isActive ? 'white' : '#ABA49A'}
                 fontSize={isRoot ? 11 : 10}
                 fontWeight={isRoot ? 'bold' : 'normal'}
               >
@@ -143,7 +143,7 @@ export function MindmapGraph({ chapters, activeChapterId, onSelectChapter }: Min
                   x={node.x}
                   y={node.y + 14}
                   textAnchor="middle"
-                  fill={isActive ? '#c4b5fd' : '#52525b'}
+                  fill={isActive ? '#7FC4B8' : '#57534E'}
                   fontSize={8}
                 >
                   {chapters.find((c) => c.id === node.id)?.wordCount || 0} kata

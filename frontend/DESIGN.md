@@ -79,23 +79,41 @@
 > Knowledge Hub, Scratchpad, Spaced repetition). **Bug produksi terpisah (bukan
 > desain): D1 API 401 Authentication error — `CF_API_TOKEN` di .env VPS invalid/
 > expired; semua fitur DB (demo-login, profil, langganan) 500. Perlu token
-> Cloudflare baru dari owner.**
+>
+> **Ronde 5 — 2026-11-01 (redam saturasi, membumi — arah owner):** owner
+> mengirim rulebook anti-slop: larang gradasi ungu→biru/cyan di bg gelap &
+> warna neon tanpa fungsi; pakai warna muted/membumi; batasi 1–2 aksen.
+> Dieksekusi: (1) netral dingin zinc → **stone hangat** (1.111 kelas di 62
+> file; token: --bg #0D0C0A, --surface #161412, --surface-2 #1E1B18,
+> --border #2B2723, --text #F5F2ED, --text-2 #ABA49A, --text-3 #8E8880 —
+> semua ≥ 5.5:1). (2) aksen sky → **teal-sage muted**: --accent #0F766E,
+> --accent-hover #115E59, --accent-soft #7FC4B8; saturasi aksen teks
+> 0.93 → 0.37; kelas sky → token/teal; hex ronde-4 #38BDF8/#0284C7/#075985
+> → padanan teal. (3) **gradasi teal→ungu + glow ungu** di quiz-panel (3
+> tombol) — pelanggaran langsung larangan owner — → flat + tanpa glow;
+> violet lolos #A57CE8 (indirect) & #C4B5FD (MindmapGraph aktif, panduan
+> h3) dimusnahkan. (4) Waiver baru: **LofiBackground** (ungu-navy sunset)
+> = fitur ambient sesi fokus (muncul hanya saat timer berjalan, intensity
+> 0.3–0.4, pointer-events-none) — fitur produk "belajar sambil main",
+> bukan dekorasi; kandidat review produk, tidak dihapus di sini. Warna
+> kategori data-viz (chart/mindmap/diagram) dipertahankan = encoding
+> konten, bukan ornamen. Statistik kontras dihitung via skrip (WCAG).
 
 ## 1. Arah (satu kalimat)
 
 Aplikasi belajar gelap yang tenang dan padat-fungsi: satu permukaan flat,
-satu aksen biru laut tenang, tipografi yang jelas, gerak yang beralasan — nol ornamen.
+satu aksen teal-sage membumi, tipografi yang jelas, gerak yang beralasan — nol ornamen.
 
 ## 2. Token (wajib lewat token, dilarang nilai literal baru)
 
 | Token | Nilai | Peran |
 |---|---|---|
-| `--bg` | `#09090B` | Satu-satunya latar. Tidak ada gradient atmosfer. |
+| `--bg` | `#0D0C0A` (warm) | Satu-satunya latar. Tidak ada gradient atmosfer. |
 | `--surface` | `#111113` | Kartu/panel, **opaque** (bukan blur, bukan alpha). |
 | `--surface-2` | `#18181B` | Hover / nested sekali. |
 | `--border` | `#27272A` | Pembatas. 1px, boleh hilang kalau spacing sudah cukup. |
 | `--text` | `#FAFAFA` · `--text-2: #A1A1AA` · `--text-3: #71717A` | 3 tingkat, cukup. |
-| `--accent` | `#0369A1` (hover `#075985`, teks/garis di bg gelap: `--accent-soft #38BDF8`) | SATU aksen biru laut (ronde 4). Flat. Bukan gradient. Hanya untuk aksi primer & fokus. |
+| `--accent` | `#0F766E` (hover `#115E59`, teks/garis di bg gelap: `--accent-soft #7FC4B8`) | SATU aksen teal-sage muted (ronde 5). Flat. Bukan gradient. Hanya untuk aksi primer & fokus. |
 | `--ok / --warn / --err` | `#10B981` / `#F59E0B` / `#EF4444` | Hanya status BENERAN status. Warna membawa kata, bukan menggantikan kata. |
 
 - Radius: **skala 2 langkah** — `6px` (kontrol) dan `12px` (kontainer). Nested:

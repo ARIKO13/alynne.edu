@@ -25,7 +25,7 @@ const FILE_TYPE_CONFIG: Record<ExtractableType, { icon: typeof File; label: stri
   docx: { icon: FileType, label: 'DOCX', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20', accept: '.docx' },
   pptx: { icon: Presentation, label: 'PPTX', color: 'text-orange-400 bg-orange-500/10 border-orange-500/20', accept: '.pptx' },
   txt:  { icon: File, label: 'TXT', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', accept: '.txt,.md,.csv,.json,.html,.htm' },
-  other: { icon: File, label: 'File', color: 'text-zinc-400 bg-zinc-500/10 border-zinc-500/20', accept: '' },
+  other: { icon: File, label: 'File', color: 'text-stone-400 bg-stone-500/10 border-stone-500/20', accept: '' },
 };
 
 const ALL_ACCEPT = '.pdf,.docx,.pptx,.txt,.md,.csv,.json,.html,.htm';
@@ -158,17 +158,17 @@ export function MaterialUpload({ compact = false }: { compact?: boolean }) {
               'rounded-full p-3 mb-3 transition-colors',
               isDragOver ? 'bg-[var(--accent)]/15' : 'bg-white/[0.04]'
             )}>
-              <CloudUpload className={cn('h-7 w-7 transition-colors', isDragOver ? 'text-[var(--accent-soft)]' : 'text-zinc-500')} />
+              <CloudUpload className={cn('h-7 w-7 transition-colors', isDragOver ? 'text-[var(--accent-soft)]' : 'text-stone-500')} />
             </div>
-            <p className="text-sm font-medium text-zinc-300 mb-1">
+            <p className="text-sm font-medium text-stone-300 mb-1">
               {isDragOver ? 'Lepaskan file di sini' : 'Upload Materi Pendukung'}
             </p>
-            <p className="text-[11px] text-zinc-600">
+            <p className="text-[11px] text-stone-600">
               Drag & drop atau klik untuk pilih file
             </p>
             <div className="flex items-center gap-2 mt-3">
               {['PDF', 'DOCX', 'PPTX', 'TXT'].map(fmt => (
-                <span key={fmt} className="text-[9px] font-medium text-zinc-600 bg-white/[0.04] px-2 py-0.5 rounded-md border border-white/[0.06]">
+                <span key={fmt} className="text-[9px] font-medium text-stone-600 bg-white/[0.04] px-2 py-0.5 rounded-md border border-white/[0.06]">
                   {fmt}
                 </span>
               ))}
@@ -192,7 +192,7 @@ export function MaterialUpload({ compact = false }: { compact?: boolean }) {
             onClick={handleClick}
             variant="outline"
             size="sm"
-            className="gap-2 border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06]"
+            className="gap-2 border-white/[0.08] text-stone-400 hover:text-stone-200 hover:bg-white/[0.06]"
           >
             <Plus className="h-3.5 w-3.5" />
             Upload Materi
@@ -221,8 +221,8 @@ export function MaterialUpload({ compact = false }: { compact?: boolean }) {
                   <Icon className="h-4 w-4" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-zinc-300 truncate">{task.file.name}</p>
-                  <p className="text-[10px] text-zinc-600">Mengekstrak teks...</p>
+                  <p className="text-xs text-stone-300 truncate">{task.file.name}</p>
+                  <p className="text-[10px] text-stone-600">Mengekstrak teks...</p>
                 </div>
                 <Loader2 className="h-4 w-4 text-[var(--accent-soft)] animate-spin shrink-0" />
               </div>
@@ -238,12 +238,12 @@ export function MaterialUpload({ compact = false }: { compact?: boolean }) {
             <div key={task.id} className="flex items-center gap-3 rounded-lg border border-red-500/20 bg-red-500/[0.03] px-4 py-3">
               <AlertCircle className="h-5 w-5 text-red-400 shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-zinc-300 truncate">{task.file.name}</p>
+                <p className="text-xs text-stone-300 truncate">{task.file.name}</p>
                 <p className="text-[10px] text-red-400/80">{task.error}</p>
               </div>
               <button
                 onClick={() => setTasks(prev => prev.filter(t => t.id !== task.id))}
-                className="text-zinc-600 hover:text-zinc-400 transition-colors"
+                className="text-stone-600 hover:text-stone-400 transition-colors"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -257,15 +257,15 @@ export function MaterialUpload({ compact = false }: { compact?: boolean }) {
         <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] overflow-hidden">
           <div className="px-4 py-3 border-b border-white/[0.04] flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <FileText className="h-3.5 w-3.5 text-sky-400" />
-              <span className="text-xs font-medium text-zinc-300">
+              <FileText className="h-3.5 w-3.5 text-[var(--accent-soft)]" />
+              <span className="text-xs font-medium text-stone-300">
                 Materi Pendukung ({uploadedMaterials.length})
               </span>
             </div>
             {uploadedMaterials.length > 1 && (
               <button
                 onClick={clearMaterials}
-                className="flex items-center gap-1 text-[10px] text-zinc-600 hover:text-red-400 transition-colors"
+                className="flex items-center gap-1 text-[10px] text-stone-600 hover:text-red-400 transition-colors"
               >
                 <Trash2 className="h-3 w-3" />
                 Hapus Semua
@@ -282,17 +282,17 @@ export function MaterialUpload({ compact = false }: { compact?: boolean }) {
                     <Icon className="h-4 w-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] text-zinc-300 truncate font-medium">{m.name}</p>
-                    <p className="text-[10px] text-zinc-600">
+                    <p className="text-[11px] text-stone-300 truncate font-medium">{m.name}</p>
+                    <p className="text-[10px] text-stone-600">
                       {formatFileSize(m.size)} · {m.text.length.toLocaleString('id-ID')} karakter
                     </p>
                   </div>
-                  <Badge variant="outline" className="text-[9px] border-white/[0.08] text-zinc-500 uppercase shrink-0">
+                  <Badge variant="outline" className="text-[9px] border-white/[0.08] text-stone-500 uppercase shrink-0">
                     {m.type}
                   </Badge>
                   <button
                     onClick={() => removeMaterial(m.id)}
-                    className="opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-red-400 transition-colors shrink-0"
+                    className="opacity-0 group-hover:opacity-100 text-stone-600 hover:text-red-400 transition-colors shrink-0"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>

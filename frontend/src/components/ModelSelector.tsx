@@ -198,7 +198,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
             <Cpu className="h-5 w-5 text-[var(--accent-soft)]" />
             Pilih Model Speech-to-Text
           </DialogTitle>
-          <DialogDescription className="text-zinc-400">
+          <DialogDescription className="text-stone-400">
             Model dijalankan langsung di browser Anda. Download sekali, tersimpan
             di cache browser untuk penggunaan berikutnya.
           </DialogDescription>
@@ -211,7 +211,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
               <Zap className="h-4 w-4 text-green-400" />
               <h3 className="text-sm font-medium text-green-400">Mode Offline</h3>
             </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-zinc-500 mb-2 pl-6">
+            <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-stone-500 mb-2 pl-6">
               <span>Respon Cepat</span>
               <span>Tanpa Internet</span>
               <span>Hemat Server</span>
@@ -241,7 +241,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
               <Cpu className="h-4 w-4 text-blue-400" />
               <h3 className="text-sm font-medium text-blue-400">Mode Online</h3>
             </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-zinc-500 mb-2 pl-6">
+            <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-stone-500 mb-2 pl-6">
               <span>Akurasi Tinggi</span>
               <span>Model Besar</span>
               <span>Butuh Internet</span>
@@ -275,10 +275,10 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
                   ? `Mengunduh ${selectedModel?.name}...`
                   : `Menginisialisasi ${selectedModel?.name}...`}
               </span>
-              <span className="text-zinc-400">{loadProgress.toFixed(1)}%</span>
+              <span className="text-stone-400">{loadProgress.toFixed(1)}%</span>
             </div>
             <Progress value={loadProgress} className="h-2" />
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-stone-500">
               Model di-cache di browser. Klik Record berikutnya tidak perlu
               download ulang.
             </p>
@@ -310,7 +310,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
             variant="ghost"
             onClick={onClose}
             disabled={loading}
-            className="text-zinc-400 hover:text-white"
+            className="text-stone-400 hover:text-white"
           >
             Batal
           </Button>
@@ -445,10 +445,10 @@ function ModelOption({
               </Badge>
             )}
           </div>
-          <p className="text-[11px] text-zinc-400 mb-1.5 leading-relaxed">
+          <p className="text-[11px] text-stone-400 mb-1.5 leading-relaxed">
             {model.description}
           </p>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px] text-zinc-500">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px] text-stone-500">
             <div className="flex items-center gap-1">
               <HardDrive className="h-3 w-3" />
               <span>{model.sizeMB} MB</span>
@@ -473,7 +473,7 @@ function ModelOption({
               e.stopPropagation();
               onUninstall();
             }}
-            className="shrink-0 p-1.5 rounded-md text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+            className="shrink-0 p-1.5 rounded-md text-stone-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
             title={`Uninstall ${model.name} (hemat ${model.sizeMB} MB)`}
           >
             <Trash2 className="h-3.5 w-3.5" />

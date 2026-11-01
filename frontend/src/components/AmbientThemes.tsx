@@ -20,9 +20,9 @@ const AMBIENT_OPTIONS: Array<{
   icon: typeof Music;
   color: string;
 }> = [
-  { type: 'none', label: 'Off', icon: VolumeX, color: 'text-zinc-500' },
+  { type: 'none', label: 'Off', icon: VolumeX, color: 'text-stone-500' },
   { type: 'lofi', label: 'Lo-Fi', icon: Music, color: 'text-[var(--accent-soft)]' },
-  { type: 'whitenoise', label: 'White Noise', icon: Wind, color: 'text-sky-400' },
+  { type: 'whitenoise', label: 'White Noise', icon: Wind, color: 'text-[var(--accent-soft)]' },
   { type: 'rain', label: 'Hujan', icon: CloudRain, color: 'text-blue-400' },
   { type: 'forest', label: 'Hutan', icon: Trees, color: 'text-green-400' },
 ];
@@ -204,7 +204,7 @@ export function AmbientThemes() {
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2 text-xs text-zinc-500">
+      <div className="flex items-center gap-2 text-xs text-stone-500">
         <Music className="h-3 w-3" />
         <span>Ambient Sound (biar betah belajarnya)</span>
       </div>
@@ -220,7 +220,7 @@ export function AmbientThemes() {
                 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-colors border',
                 isActive
                   ? 'border-white/20 bg-white/[0.08] text-white'
-                  : 'border-white/[0.06] text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-300'
+                  : 'border-white/[0.06] text-stone-500 hover:bg-white/[0.04] hover:text-stone-300'
               )}
             >
               <Icon className={cn('h-3 w-3', isActive ? opt.color : '')} />
@@ -231,7 +231,7 @@ export function AmbientThemes() {
       </div>
       {active !== 'none' && (
         <div className="flex items-center gap-2">
-          <Volume2 className="h-3 w-3 text-zinc-500" />
+          <Volume2 className="h-3 w-3 text-stone-500" />
           <input
             type="range"
             min="0"
@@ -241,7 +241,7 @@ export function AmbientThemes() {
             onChange={(e) => setVolume(Number(e.target.value))}
             className="flex-1 h-1 accent-[var(--accent)]"
           />
-          <span className="text-[10px] text-zinc-500 w-8 text-right">
+          <span className="text-[10px] text-stone-500 w-8 text-right">
             {Math.round(volume * 100)}%
           </span>
         </div>

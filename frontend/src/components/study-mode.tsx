@@ -184,7 +184,7 @@ function BreakPopup({ minutes, onDismiss }: { minutes: number; onDismiss: () => 
           <Flame className="h-8 w-8 text-[#34D399]" />
         </div>
         <h2 className="text-lg font-semibold text-white mb-2">Nice dude, it&apos;s time to break.</h2>
-        <p className="text-sm text-zinc-400 mb-5">Kamu udah fokus selama {minutes} menit. Saatnya istirahat sejenak!</p>
+        <p className="text-sm text-stone-400 mb-5">Kamu udah fokus selama {minutes} menit. Saatnya istirahat sejenak!</p>
         <button onClick={onDismiss} className="w-full py-2.5 rounded-lg bg-[#34D399] hover:bg-[#34D399]/80 text-white font-medium text-sm transition-colors">
           Oke, lanjut nanti
         </button>
@@ -222,21 +222,21 @@ function DistractedPopup({ focusScore, faceDetected, noiseLevel, onDismiss }: {
           <AlertTriangle className="h-8 w-8 text-amber-400" />
         </div>
         <h2 className="text-lg font-semibold text-white mb-2">{title}</h2>
-        <p className="text-sm text-zinc-400 mb-4">{desc}</p>
+        <p className="text-sm text-stone-400 mb-4">{desc}</p>
 
         {/* Status indicators */}
         <div className="flex items-center justify-center gap-4 mb-5">
           <div className="flex items-center gap-1.5">
             <div className={cn('w-2 h-2 rounded-full', faceDetected ? 'bg-[#34D399]' : 'bg-red-400')} />
-            <span className="text-[10px] text-zinc-500">Wajah {faceDetected ? 'ada' : 'tidak ada'}</span>
+            <span className="text-[10px] text-stone-500">Wajah {faceDetected ? 'ada' : 'tidak ada'}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Activity className={cn('h-3 w-3', noiseLevel < 30 ? 'text-[#34D399]' : noiseLevel < 60 ? 'text-amber-400' : 'text-red-400')} />
-            <span className="text-[10px] text-zinc-500">Suara {noiseLevel < 30 ? 'tenang' : noiseLevel < 60 ? 'sedang' : 'berisik'}</span>
+            <span className="text-[10px] text-stone-500">Suara {noiseLevel < 30 ? 'tenang' : noiseLevel < 60 ? 'sedang' : 'berisik'}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Eye className={cn('h-3 w-3', focusScore > 60 ? 'text-[#34D399]' : focusScore > 30 ? 'text-amber-400' : 'text-red-400')} />
-            <span className="text-[10px] text-zinc-500">Skor {focusScore}%</span>
+            <span className="text-[10px] text-stone-500">Skor {focusScore}%</span>
           </div>
         </div>
 
@@ -386,13 +386,13 @@ export function StudyMode() {
                 'w-2 h-2 rounded-full shrink-0',
                 isRunning ? 'bg-[#34D399] animate-pulse'
                   : timerLeft < timerTotal && timerLeft > 0 ? 'bg-amber-400'
-                  : 'bg-zinc-600'
+                  : 'bg-stone-600'
               )} />
               <span className={cn(
                 'font-mono text-sm tabular-nums shrink-0',
                 isRunning ? 'text-[#34D399]'
-                  : timerLeft === 0 ? 'text-zinc-600'
-                  : 'text-zinc-300'
+                  : timerLeft === 0 ? 'text-stone-600'
+                  : 'text-stone-300'
               )}>
                 {timeStr}
               </span>
@@ -420,7 +420,7 @@ export function StudyMode() {
             {/* Controls */}
             <button
               onClick={resetTimer}
-              className="p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors text-zinc-500 hover:text-zinc-300"
+              className="p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors text-stone-500 hover:text-stone-300"
             >
               <RotateCcw className="h-3.5 w-3.5" />
             </button>

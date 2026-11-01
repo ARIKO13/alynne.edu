@@ -218,11 +218,11 @@ export function FileUploadChunked({ onTranscript, onError }: FileUploadChunkedPr
               : 'border-white/10 hover:border-white/20 hover:bg-white/[0.02]'}
           `}
         >
-          <Upload className="h-10 w-10 mx-auto mb-3 text-zinc-500" />
-          <p className="text-sm text-zinc-300 font-medium mb-1">
+          <Upload className="h-10 w-10 mx-auto mb-3 text-stone-500" />
+          <p className="text-sm text-stone-300 font-medium mb-1">
             Drag & drop file audio atau klik untuk pilih
           </p>
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-stone-500">
             Format: MP3, WAV, M4A, WebM, OGG, FLAC, AAC (maks 500 MB)
           </p>
         </div>
@@ -233,7 +233,7 @@ export function FileUploadChunked({ onTranscript, onError }: FileUploadChunkedPr
             <FileAudio className="h-8 w-8 text-[var(--accent-soft)] shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">{file.name}</p>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-stone-500">
                 {formatBytes(file.size)} • {chunks.length} chunks
               </p>
             </div>
@@ -242,7 +242,7 @@ export function FileUploadChunked({ onTranscript, onError }: FileUploadChunkedPr
                 size="sm"
                 variant="ghost"
                 onClick={handleReset}
-                className="text-zinc-400 hover:text-white"
+                className="text-stone-400 hover:text-white"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -253,7 +253,7 @@ export function FileUploadChunked({ onTranscript, onError }: FileUploadChunkedPr
           {(uploading || transcribing || overallProgress > 0) && (
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="flex items-center gap-2 text-zinc-400">
+                <span className="flex items-center gap-2 text-stone-400">
                   {uploading && <Loader2 className="h-3 w-3 animate-spin" />}
                   {transcribing && <Loader2 className="h-3 w-3 animate-spin" />}
                   {uploading ? `Uploading... ${completedChunks}/${chunks.length} chunks` : ''}
@@ -262,7 +262,7 @@ export function FileUploadChunked({ onTranscript, onError }: FileUploadChunkedPr
                     <><CheckCircle2 className="h-3 w-3 text-green-400" /> Selesai</>
                   )}
                 </span>
-                <span className="text-zinc-500">{overallProgress.toFixed(0)}%</span>
+                <span className="text-stone-500">{overallProgress.toFixed(0)}%</span>
               </div>
               <Progress value={overallProgress} className="h-2" />
             </div>

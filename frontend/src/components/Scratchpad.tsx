@@ -116,11 +116,11 @@ export function Scratchpad({ open, onClose, initialContent }: ScratchpadProps) {
         <div className="flex items-center gap-2.5">
           <StickyNote className="h-5 w-5 text-amber-400" />
           <div>
-            <h2 className="text-base font-semibold text-zinc-100">Scratchpad</h2>
-            <p className="text-[11px] text-zinc-500">Coret-coret apa saja. AI bantu organize nanti.</p>
+            <h2 className="text-base font-semibold text-stone-100">Scratchpad</h2>
+            <p className="text-[11px] text-stone-500">Coret-coret apa saja. AI bantu organize nanti.</p>
           </div>
         </div>
-        <Button onClick={onClose} variant="ghost" size="sm" className="text-zinc-400 hover:text-white hover:bg-white/[0.04]">
+        <Button onClick={onClose} variant="ghost" size="sm" className="text-stone-400 hover:text-white hover:bg-white/[0.04]">
           <X className="h-4 w-4" />
           <span className="ml-1 hidden sm:inline">Tutup</span>
         </Button>
@@ -129,10 +129,10 @@ export function Scratchpad({ open, onClose, initialContent }: ScratchpadProps) {
       <div className="p-5 space-y-4">
         {/* Stats */}
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-[10px] text-zinc-500">
+          <Badge variant="outline" className="text-[10px] text-stone-500">
             {wordCount} kata
           </Badge>
-          <Badge variant="outline" className="text-[10px] text-zinc-500">
+          <Badge variant="outline" className="text-[10px] text-stone-500">
             {charCount} karakter
           </Badge>
         </div>
@@ -151,7 +151,7 @@ Contoh:
 - pertanyaan
 
 Lalu klik 'Organize dengan AI' untuk merapikan."
-          className="w-full h-64 p-4 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-zinc-200 placeholder:text-zinc-600 resize-none focus:outline-none focus:border-[var(--accent)]/50"
+          className="w-full h-64 p-4 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-stone-200 placeholder:text-stone-600 resize-none focus:outline-none focus:border-[var(--accent)]/50"
           autoFocus
         />
 
@@ -168,7 +168,7 @@ Lalu klik 'Organize dengan AI' untuk merapikan."
           <Button
             onClick={handleSave}
             variant="outline"
-            className="border-white/[0.08] text-zinc-300"
+            className="border-white/[0.08] text-stone-300"
           >
             <Save className="h-4 w-4 mr-2" />
             Simpan ke Hub

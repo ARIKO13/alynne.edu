@@ -58,14 +58,14 @@ export function SettingsDialog() {
 
   return (
     <Dialog open={settingsOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-md border-white/[0.06] bg-[#161618] p-0 overflow-hidden">
+      <DialogContent className="max-w-md border-white/[0.06] bg-[#171513] p-0 overflow-hidden">
         <div className="px-6 pt-6 pb-2">
           <DialogHeader>
             <div className="flex items-center gap-2">
               <User className="h-5 w-5 text-[var(--accent-soft)]" />
-              <DialogTitle className="text-zinc-100">Profil</DialogTitle>
+              <DialogTitle className="text-stone-100">Profil</DialogTitle>
             </div>
-            <DialogDescription className="text-zinc-500">
+            <DialogDescription className="text-stone-500">
               Nama ini akan tampil di profil, sertifikat, dan leaderboard kamu.
             </DialogDescription>
           </DialogHeader>
@@ -73,7 +73,7 @@ export function SettingsDialog() {
 
         <div className="px-6 pb-6 space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="display-name" className="text-sm font-medium text-zinc-300">
+            <Label htmlFor="display-name" className="text-sm font-medium text-stone-300">
               Username
             </Label>
             <Input
@@ -83,21 +83,21 @@ export function SettingsDialog() {
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="Masukkan username kamu..."
               maxLength={30}
-              className="border-white/[0.08] bg-[#111113] text-zinc-200 placeholder:text-zinc-600"
+              className="border-white/[0.08] bg-[#161412] text-stone-200 placeholder:text-stone-600"
             />
             <div className="flex items-center justify-between">
-              <p className="text-[11px] text-zinc-600">
+              <p className="text-[11px] text-stone-600">
                 {displayName.trim().length}/30 karakter
               </p>
               {user?.email && (
-                <p className="text-[11px] text-zinc-600">{user.email}</p>
+                <p className="text-[11px] text-stone-600">{user.email}</p>
               )}
             </div>
           </div>
 
-          <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3 space-y-1.5">
-            <p className="text-[11px] font-medium text-zinc-400">Info</p>
-            <ul className="text-[11px] text-zinc-500 space-y-0.5">
+          <div className="rounded-lg border border-white/[0.06] bg-[#161412] p-3 space-y-1.5">
+            <p className="text-[11px] font-medium text-stone-400">Info</p>
+            <ul className="text-[11px] text-stone-500 space-y-0.5">
               <li>- Bisa diubah kapan saja, sebanyak apa pun</li>
               <li>- Minimal 2, maksimal 30 karakter</li>
               <li>- Hindari pakai email, NIS/NIP, atau data pribadi</li>
@@ -107,7 +107,7 @@ export function SettingsDialog() {
         </div>
 
         <div className="flex justify-end gap-2 px-6 pb-6">
-          <Button variant="outline" onClick={() => handleOpenChange(false)} className="border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06]">
+          <Button variant="outline" onClick={() => handleOpenChange(false)} className="border-white/[0.08] text-stone-400 hover:text-stone-200 hover:bg-white/[0.06]">
             Batal
           </Button>
           <Button

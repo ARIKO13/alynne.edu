@@ -26,7 +26,7 @@ interface MindMapResult {
 // --- Color Palette (Neural Drift) ---
 
 const COLORS = [
-  { fill: '#38BDF8', bg: 'rgba(183,148,246,0.18)', border: '#38BDF8', text: '#fff' },
+  { fill: '#7FC4B8', bg: 'rgba(183,148,246,0.18)', border: '#7FC4B8', text: '#fff' },
   { fill: '#F687B3', bg: 'rgba(246,135,179,0.18)', border: '#F687B3', text: '#fff' },
   { fill: '#60A5FA', bg: 'rgba(96,165,250,0.18)', border: '#60A5FA', text: '#fff' },
   { fill: '#34D399', bg: 'rgba(52,211,153,0.18)', border: '#34D399', text: '#fff' },
@@ -319,11 +319,11 @@ function MindMapCanvas({ layout, onNodeSelect, selectedNode }: {
 
       {/* Zoom controls */}
       <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-black/60  border border-white/[0.06] rounded-full px-2 py-1 opacity-0 group-hover/mm:opacity-100 transition-opacity">
-        <button onClick={() => setZoom(z => Math.min(3, z + 0.2))} className="p-1 text-zinc-400 hover:text-white transition-colors"><ZoomIn className="h-3.5 w-3.5"/></button>
-        <span className="text-[10px] text-zinc-500 w-9 text-center tabular-nums">{Math.round(zoom * 100)}%</span>
-        <button onClick={() => setZoom(z => Math.max(0.1, z - 0.2))} className="p-1 text-zinc-400 hover:text-white transition-colors"><ZoomOut className="h-3.5 w-3.5"/></button>
+        <button onClick={() => setZoom(z => Math.min(3, z + 0.2))} className="p-1 text-stone-400 hover:text-white transition-colors"><ZoomIn className="h-3.5 w-3.5"/></button>
+        <span className="text-[10px] text-stone-500 w-9 text-center tabular-nums">{Math.round(zoom * 100)}%</span>
+        <button onClick={() => setZoom(z => Math.max(0.1, z - 0.2))} className="p-1 text-stone-400 hover:text-white transition-colors"><ZoomOut className="h-3.5 w-3.5"/></button>
         <div className="w-px h-3.5 bg-white/[0.08] mx-0.5"/>
-        <button onClick={fitToView} className="p-1 text-zinc-400 hover:text-white transition-colors" title="Fit"><Maximize2 className="h-3.5 w-3.5"/></button>
+        <button onClick={fitToView} className="p-1 text-stone-400 hover:text-white transition-colors" title="Fit"><Maximize2 className="h-3.5 w-3.5"/></button>
       </div>
     </div>
   );
@@ -419,11 +419,11 @@ export function MindMapPanel() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-white">Mind Map Generator</h2>
-          <p className="text-xs text-zinc-500 mt-0.5">Generate mind map dari transcript, materi upload, atau teks manual</p>
+          <p className="text-xs text-stone-500 mt-0.5">Generate mind map dari transcript, materi upload, atau teks manual</p>
         </div>
         <div className="flex gap-2">
           {layout && (
-            <Button onClick={exportPNG} variant="outline" size="sm" className="border-white/[0.08] text-zinc-400 hover:text-white hover:bg-white/[0.04] gap-1.5"><Download className="h-3.5 w-3.5" /> PNG</Button>
+            <Button onClick={exportPNG} variant="outline" size="sm" className="border-white/[0.08] text-stone-400 hover:text-white hover:bg-white/[0.04] gap-1.5"><Download className="h-3.5 w-3.5" /> PNG</Button>
           )}
         </div>
       </div>
@@ -431,30 +431,30 @@ export function MindMapPanel() {
       {/* Empty state */}
       {!layout && !generating && (
         <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] p-8 text-center">
-          <Brain className="h-14 w-14 text-zinc-700 mx-auto mb-4" />
-          <h3 className="text-base font-medium text-zinc-300 mb-2">Buat Mind Map dengan AI</h3>
-          <p className="text-xs text-zinc-500 max-w-md mx-auto mb-5 leading-relaxed">
+          <Brain className="h-14 w-14 text-stone-700 mx-auto mb-4" />
+          <h3 className="text-base font-medium text-stone-300 mb-2">Buat Mind Map dengan AI</h3>
+          <p className="text-xs text-stone-500 max-w-md mx-auto mb-5 leading-relaxed">
             AI akan menganalisa teks dan membangun peta konsep visual. Pilih sumber input:
           </p>
           <div className="flex items-center justify-center gap-2 mb-5">
             <button onClick={() => setInputMode('auto')}
               className={cn('px-4 py-2 rounded-lg text-xs font-medium transition-colors flex items-center gap-2',
-                inputMode === 'auto' ? 'bg-[#38BDF8]/15 text-[#38BDF8] border border-[#38BDF8]/30' : 'bg-white/[0.03] text-zinc-500 border border-white/[0.06] hover:bg-white/[0.05]')}>
+                inputMode === 'auto' ? 'bg-[#7FC4B8]/15 text-[#7FC4B8] border border-[#7FC4B8]/30' : 'bg-white/[0.03] text-stone-500 border border-white/[0.06] hover:bg-white/[0.05]')}>
               <Mic className="h-3.5 w-3.5" /> Auto (STT / Upload)
             </button>
             <button onClick={() => setInputMode('manual')}
               className={cn('px-4 py-2 rounded-lg text-xs font-medium transition-colors flex items-center gap-2',
-                inputMode === 'manual' ? 'bg-[#F687B3]/15 text-[#F687B3] border border-[#F687B3]/30' : 'bg-white/[0.03] text-zinc-500 border border-white/[0.06] hover:bg-white/[0.05]')}>
+                inputMode === 'manual' ? 'bg-[#F687B3]/15 text-[#F687B3] border border-[#F687B3]/30' : 'bg-white/[0.03] text-stone-500 border border-white/[0.06] hover:bg-white/[0.05]')}>
               <Edit3 className="h-3.5 w-3.5" /> Materi Pendukung
             </button>
           </div>
           {inputMode === 'auto' ? (
             <div className="flex items-center justify-center gap-5 mb-6">
-              <div className="flex items-center gap-2 text-[11px] text-zinc-500">
-                <Mic className="h-3.5 w-3.5 text-[#38BDF8]" />
+              <div className="flex items-center gap-2 text-[11px] text-stone-500">
+                <Mic className="h-3.5 w-3.5 text-[#7FC4B8]" />
                 <span>STT: {hasTranscript ? `${transcript.length} chars` : 'kosong'}</span>
               </div>
-              <div className="flex items-center gap-2 text-[11px] text-zinc-500">
+              <div className="flex items-center gap-2 text-[11px] text-stone-500">
                 <FileText className="h-3.5 w-3.5 text-[#F687B3]" />
                 <span>Upload: {uploadedMaterials.length} file</span>
               </div>
@@ -463,15 +463,15 @@ export function MindMapPanel() {
             <div className="mb-6 max-w-lg mx-auto">
               <textarea value={manualText} onChange={e => setManualText(e.target.value)}
                 placeholder={"Paste materi pendukung di sini...\n\nContoh:\n- Catatan kuliah\n- Ringkasan bab dari textbook\n- Point-point slide perkuliahan"}
-                className="w-full h-40 bg-white/[0.03] border border-white/[0.08] rounded-lg p-4 text-sm text-zinc-300 placeholder:text-zinc-600 resize-none focus:outline-none focus:border-[#38BDF8]/40 focus:ring-1 focus:ring-[#38BDF8]/20 transition-colors" />
+                className="w-full h-40 bg-white/[0.03] border border-white/[0.08] rounded-lg p-4 text-sm text-stone-300 placeholder:text-stone-600 resize-none focus:outline-none focus:border-[#7FC4B8]/40 focus:ring-1 focus:ring-[#7FC4B8]/20 transition-colors" />
               <div className="flex items-center justify-between mt-1.5">
-                <span className="text-[10px] text-zinc-600">{manualText.trim().length < 30 ? 'Minimal 30 karakter' : `${manualText.length} chars - siap`}</span>
-                {manualText && <button onClick={() => setManualText('')} className="text-[10px] text-zinc-600 hover:text-red-400">Hapus</button>}
+                <span className="text-[10px] text-stone-600">{manualText.trim().length < 30 ? 'Minimal 30 karakter' : `${manualText.length} chars - siap`}</span>
+                {manualText && <button onClick={() => setManualText('')} className="text-[10px] text-stone-600 hover:text-red-400">Hapus</button>}
               </div>
             </div>
           )}
           <Button onClick={() => generateMap()} disabled={inputMode === 'auto' ? (!hasTranscript && !hasMaterials) : !hasManual} size="lg"
-            className="bg-gradient-to-r from-[#38BDF8] to-[#F687B3] text-white hover:opacity-90 gap-2 disabled:opacity-40">
+            className="bg-gradient-to-r from-[#7FC4B8] to-[#F687B3] text-white hover:opacity-90 gap-2 disabled:opacity-40">
             <Sparkles className="h-4 w-4" /> Generate Mind Map (AI)
           </Button>
         </div>
@@ -480,9 +480,9 @@ export function MindMapPanel() {
       {/* Generating */}
       {generating && (
         <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] p-12 text-center">
-          <Loader2 className="h-10 w-10 text-[#38BDF8] animate-spin mx-auto mb-4" />
-          <p className="text-sm text-zinc-400">AI sedang menganalisa dan membangun mind map...</p>
-          <p className="text-[10px] text-zinc-600 mt-2">Sumber: {sourceLabel}</p>
+          <Loader2 className="h-10 w-10 text-[#7FC4B8] animate-spin mx-auto mb-4" />
+          <p className="text-sm text-stone-400">AI sedang menganalisa dan membangun mind map...</p>
+          <p className="text-[10px] text-stone-600 mt-2">Sumber: {sourceLabel}</p>
         </div>
       )}
 
@@ -495,12 +495,12 @@ export function MindMapPanel() {
               result?.source === 'gateway' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400')}>
               {result?.source === 'gateway' ? 'Gateway AI' : 'Groq'}
             </span>
-            <span className="text-[9px] text-zinc-600">{result?.branches.length} cabang</span>
+            <span className="text-[9px] text-stone-600">{result?.branches.length} cabang</span>
           </div>
           <div className="flex items-center gap-2">
             <input value={mapTitle} onChange={e => setMapTitle(e.target.value)}
-              className="bg-transparent text-xs text-zinc-400 border-b border-transparent hover:border-white/[0.1] focus:border-[#38BDF8]/40 focus:outline-none px-1 py-0.5 w-40" />
-            <Button onClick={() => generateMap(sourceText)} variant="ghost" size="sm" className="text-zinc-400 hover:text-white h-8 w-8 p-0" title="Regenerate">
+              className="bg-transparent text-xs text-stone-400 border-b border-transparent hover:border-white/[0.1] focus:border-[#7FC4B8]/40 focus:outline-none px-1 py-0.5 w-40" />
+            <Button onClick={() => generateMap(sourceText)} variant="ghost" size="sm" className="text-stone-400 hover:text-white h-8 w-8 p-0" title="Regenerate">
               <RotateCcw className="h-4 w-4" />
             </Button>
           </div>
@@ -517,14 +517,14 @@ export function MindMapPanel() {
             <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: selectedNodeData.color.fill }} />
             <div>
               <p className="text-sm font-medium text-white">{selectedNodeData.label}</p>
-              <p className="text-[10px] text-zinc-500">
+              <p className="text-[10px] text-stone-500">
                 {selectedNodeData.level === 0 ? 'Topik utama' : selectedNodeData.level === 1 ? 'Cabang utama' : 'Sub-topik'}
               </p>
             </div>
           </div>
         )}
 
-        <div className="flex items-center justify-center gap-4 text-[10px] text-zinc-600">
+        <div className="flex items-center justify-center gap-4 text-[10px] text-stone-600">
           <span>Scroll = Zoom</span><span>Drag = Pan</span><span>Klik node = Detail</span>
         </div>
       </>)}

@@ -1007,7 +1007,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-zinc-950 flex h-screen">
+    <div className="fixed inset-0 z-50 bg-stone-950 flex h-screen">
       {/* Lo-Fi Background (only in session mode) */}
       {mainTab === 'session' && isRunning && (
         <div className="absolute inset-0 pointer-events-none">
@@ -1016,14 +1016,14 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
       )}
 
       {/* ── LEFT SIDEBAR ── */}
-      <div className="w-80 h-full border-r border-white/[0.06] bg-zinc-950/95 flex flex-col z-10 min-h-0">
+      <div className="w-80 h-full border-r border-white/[0.06] bg-stone-950/95 flex flex-col z-10 min-h-0">
         {/* Header */}
         <div className="p-4 border-b border-white/[0.06] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-[var(--accent-soft)]" />
             <span className="text-sm font-semibold text-white">Mode Belajar</span>
           </div>
-          <Button onClick={onClose} size="sm" variant="ghost" className="h-7 text-zinc-500">
+          <Button onClick={onClose} size="sm" variant="ghost" className="h-7 text-stone-500">
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -1032,7 +1032,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
         {stage === 'error' && (
           <div className="p-6 text-center space-y-3">
             <div className="text-3xl font-bold text-amber-400">!</div>
-            <p className="text-sm text-zinc-300">{errorMessage}</p>
+            <p className="text-sm text-stone-300">{errorMessage}</p>
             <Button
               onClick={() => { setStage('idle'); setErrorMessage(''); }}
               className="bg-[var(--accent)] hover:bg-[var(--accent)] text-white text-xs px-4 py-2 rounded"
@@ -1052,12 +1052,12 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                 {stage === 'mindmap' && 'Menyusun modul...'}
                 {stage === 'chapters' && 'Menyusun kuis...'}
               </span>
-              <span className="text-zinc-500">{progress}%</span>
+              <span className="text-stone-500">{progress}%</span>
             </div>
             <Progress value={progress} className="h-1" />
             {estimatedLabel && (
-              <div className="text-[10px] text-zinc-500 mt-1">
-                Estimasi: <span className="text-zinc-300 font-medium">{estimatedLabel}</span>
+              <div className="text-[10px] text-stone-500 mt-1">
+                Estimasi: <span className="text-stone-300 font-medium">{estimatedLabel}</span>
               </div>
             )}
           </div>
@@ -1068,15 +1068,15 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           <div className="p-3 border-b border-white/[0.04] grid grid-cols-3 gap-2 text-center">
             <div>
               <p className="text-base font-bold text-blue-400">{chapters.length}</p>
-              <p className="text-[9px] text-zinc-600 uppercase">Bab</p>
+              <p className="text-[9px] text-stone-600 uppercase">Bab</p>
             </div>
             <div>
               <p className="text-base font-bold text-[var(--accent-soft)]">{totalQuestions}</p>
-              <p className="text-[9px] text-zinc-600 uppercase">Kuis</p>
+              <p className="text-[9px] text-stone-600 uppercase">Kuis</p>
             </div>
             <div>
               <p className="text-base font-bold text-green-400">{correctAnswers}/{answeredQuestions}</p>
-              <p className="text-[9px] text-zinc-600 uppercase">Benar</p>
+              <p className="text-[9px] text-stone-600 uppercase">Benar</p>
             </div>
           </div>
         )}
@@ -1088,7 +1088,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           <div className="flex-1 overflow-y-auto p-2 space-y-1 min-h-0">
             {/* Progress bar */}
             <div className="px-2 py-1 mb-1">
-              <div className="flex items-center justify-between text-[9px] text-zinc-600 mb-0.5">
+              <div className="flex items-center justify-between text-[9px] text-stone-600 mb-0.5">
                 <span>Progress Baca</span>
                 <span>{readChapters.size}/{chapters.length}</span>
               </div>
@@ -1107,7 +1107,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                   'w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs transition-colors text-left',
                   activeChapterId === ch.id
                     ? 'bg-[var(--accent)]/10 text-[var(--accent-soft)]'
-                    : 'text-zinc-400 hover:bg-white/[0.04]'
+                    : 'text-stone-400 hover:bg-white/[0.04]'
                 )}
               >
                 <span className={cn(
@@ -1206,12 +1206,12 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
       <div className="flex-1 overflow-y-auto relative z-10 h-full min-h-0">
         {/* Tab switcher */}
         {stage === 'complete' && (
-          <div className="sticky top-0 z-20 bg-zinc-950/80  border-b border-white/[0.04] px-6 py-2 flex gap-2">
+          <div className="sticky top-0 z-20 bg-stone-950/80  border-b border-white/[0.04] px-6 py-2 flex gap-2">
             <button
               onClick={() => setMainTab('materi')}
               className={cn(
                 'px-3 py-1 rounded text-xs font-medium transition-colors',
-                mainTab === 'materi' ? 'bg-[var(--accent)] text-white' : 'text-zinc-500 hover:text-zinc-300'
+                mainTab === 'materi' ? 'bg-[var(--accent)] text-white' : 'text-stone-500 hover:text-stone-300'
               )}
             >
               <BookOpen className="h-3 w-3 inline mr-1" />
@@ -1221,7 +1221,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               onClick={() => setMainTab('kuis')}
               className={cn(
                 'px-3 py-1 rounded text-xs font-medium transition-colors',
-                mainTab === 'kuis' ? 'bg-[var(--accent)] text-white' : 'text-zinc-500 hover:text-zinc-300'
+                mainTab === 'kuis' ? 'bg-[var(--accent)] text-white' : 'text-stone-500 hover:text-stone-300'
               )}
             >
               <Calculator className="h-3 w-3 inline mr-1" />
@@ -1231,7 +1231,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               onClick={() => setMainTab('mindmap')}
               className={cn(
                 'px-3 py-1 rounded text-xs font-medium transition-colors',
-                mainTab === 'mindmap' ? 'bg-[var(--accent)] text-white' : 'text-zinc-500 hover:text-zinc-300'
+                mainTab === 'mindmap' ? 'bg-[var(--accent)] text-white' : 'text-stone-500 hover:text-stone-300'
               )}
             >
               <Brain className="h-3 w-3 inline mr-1" />
@@ -1244,7 +1244,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               onClick={() => setMainTab('buddy')}
               className={cn(
                 'px-3 py-1 rounded text-xs font-medium transition-colors',
-                mainTab === 'buddy' ? 'bg-[var(--accent)] text-white' : 'text-zinc-500 hover:text-zinc-300'
+                mainTab === 'buddy' ? 'bg-[var(--accent)] text-white' : 'text-stone-500 hover:text-stone-300'
               )}
             >
               <MessageCircle className="h-3 w-3 inline mr-1" />
@@ -1254,7 +1254,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               onClick={() => setMainTab('voice')}
               className={cn(
                 'px-3 py-1 rounded text-xs font-medium transition-colors',
-                mainTab === 'voice' ? 'bg-green-600 text-white' : 'text-zinc-500 hover:text-zinc-300'
+                mainTab === 'voice' ? 'bg-green-600 text-white' : 'text-stone-500 hover:text-stone-300'
               )}
             >
               <Mic className="h-3 w-3 inline mr-1" />
@@ -1267,7 +1267,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               onClick={() => setMainTab('session')}
               className={cn(
                 'px-3 py-1 rounded text-xs font-medium transition-colors',
-                mainTab === 'session' ? 'bg-[var(--accent)] text-white' : 'text-zinc-500 hover:text-zinc-300'
+                mainTab === 'session' ? 'bg-[var(--accent)] text-white' : 'text-stone-500 hover:text-stone-300'
               )}
             >
               <Clock className="h-3 w-3 inline mr-1" />
@@ -1281,7 +1281,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <Loader2 className="h-8 w-8 animate-spin text-[var(--accent-soft)] mx-auto mb-4" />
-              <p className="text-sm text-zinc-400">
+              <p className="text-sm text-stone-400">
                 {stage === 'splitting' && 'Menyusun ringkasan...'}
                 {stage === 'mindmap' && 'Menyusun modul...'}
                 {stage === 'chapters' && 'Menyusun kuis...'}
@@ -1294,7 +1294,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
         {mainTab === 'mindmap' && stage === 'complete' && (
           <div className="p-6">
             <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-6">
-              <h2 className="text-sm font-medium text-zinc-300 mb-4 flex items-center gap-2">
+              <h2 className="text-sm font-medium text-stone-300 mb-4 flex items-center gap-2">
                 <Brain className="h-4 w-4 text-[var(--accent-soft)]" />
                 Mindmap
               </h2>
@@ -1310,7 +1310,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                   }}
                 />
               )}
-              <p className="text-[11px] text-zinc-500 mt-4 text-center">
+              <p className="text-[11px] text-stone-500 mt-4 text-center">
                 {llmMindmap ? 'Mindmap dibuat oleh AI (terstruktur)' : 'Klik node bab untuk lihat isi materinya'}
               </p>
             </div>
@@ -1329,7 +1329,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                 <h2 className="text-lg font-semibold text-white">
                   {activeChapter.title}
                 </h2>
-                <p className="text-[10px] text-zinc-500">{activeChapter.wordCount} kata</p>
+                <p className="text-[10px] text-stone-500">{activeChapter.wordCount} kata</p>
               </div>
               <Badge variant="outline" className="text-[10px] text-blue-400 border-blue-500/30">
                 <BookOpen className="h-3 w-3 mr-1" />
@@ -1339,15 +1339,15 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
 
             {/* Tujuan */}
             {activeChapter.tujuan && (
-              <div className="rounded-lg border border-sky-500/10 bg-sky-500/[0.02] p-3">
-                <p className="text-[11px] text-zinc-500 mb-1">Tujuan</p>
-                <p className="text-xs text-zinc-400 leading-relaxed">{activeChapter.tujuan}</p>
+              <div className="rounded-lg border border-teal-500/10 bg-teal-500/[0.02] p-3">
+                <p className="text-[11px] text-stone-500 mb-1">Tujuan</p>
+                <p className="text-xs text-stone-400 leading-relaxed">{activeChapter.tujuan}</p>
               </div>
             )}
 
             {/* Content */}
             <div className="rounded-lg border border-blue-500/10 bg-blue-500/[0.02] p-5">
-              <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{activeChapter.content}</p>
+              <p className="text-sm text-stone-300 leading-relaxed whitespace-pre-wrap">{activeChapter.content}</p>
             </div>
 
             {/* v19 Callouts  -  Insight, Misconception, Key Takeaway */}
@@ -1373,7 +1373,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                       <p className="text-[11px] font-medium mb-1" style={{ color: c.color }}>
                         {c.title}
                       </p>
-                      <p className="text-xs text-zinc-300 leading-relaxed">{c.content}</p>
+                      <p className="text-xs text-stone-300 leading-relaxed">{c.content}</p>
                     </div>
                   ))}
                 </div>
@@ -1383,35 +1383,35 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
             {/* v19 ELI5  -  Explain Like I'm 5 */}
             {activeChapter.eli5 && !activeChapter.eli5.startsWith('Konsep ini menjelaskan') && (
               <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.05] p-4">
-                <p className="text-[11px] text-zinc-500 mb-1">
+                <p className="text-[11px] text-stone-500 mb-1">
                   Penjelasan untuk anak (ELI5)
                 </p>
-                <p className="text-xs text-zinc-300 leading-relaxed">{activeChapter.eli5}</p>
+                <p className="text-xs text-stone-300 leading-relaxed">{activeChapter.eli5}</p>
               </div>
             )}
 
             {/* v19 Connect To  -  relation to other bab */}
             {activeChapter.connectTo && !activeChapter.connectTo.startsWith('Bab ini terhubung') && (
               <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/[0.05] p-3">
-                <p className="text-[11px] text-zinc-500 mb-1">
+                <p className="text-[11px] text-stone-500 mb-1">
                   Koneksi ke bab lain
                 </p>
-                <p className="text-xs text-zinc-300 leading-relaxed">{activeChapter.connectTo}</p>
+                <p className="text-xs text-stone-300 leading-relaxed">{activeChapter.connectTo}</p>
               </div>
             )}
 
             {/* v19 Contoh */}
             {activeChapter.contoh && (
               <div className="rounded-lg border border-emerald-500/10 bg-emerald-500/[0.02] p-4">
-                <p className="text-[11px] text-zinc-500 mb-1">Contoh</p>
-                <p className="text-xs text-zinc-300 leading-relaxed">{activeChapter.contoh}</p>
+                <p className="text-[11px] text-stone-500 mb-1">Contoh</p>
+                <p className="text-xs text-stone-300 leading-relaxed">{activeChapter.contoh}</p>
               </div>
             )}
 
             {/* Konsep Kunci */}
             {activeChapter.konsep_kunci && activeChapter.konsep_kunci.length > 0 && (
               <div className="rounded-lg border border-pink-500/10 bg-pink-500/[0.02] p-4">
-                <p className="text-[11px] text-zinc-500 mb-2">Konsep Kunci</p>
+                <p className="text-[11px] text-stone-500 mb-2">Konsep Kunci</p>
                 <div className="flex flex-wrap gap-1.5">
                   {activeChapter.konsep_kunci.map((k, i) => (
                     <span
@@ -1495,7 +1495,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                   value={quickNote}
                   onChange={(e) => setQuickNote(e.target.value)}
                   placeholder="Catat sesuatu sambil baca..."
-                  className="w-full h-20 px-3 py-2 rounded bg-white/[0.04] border border-white/[0.08] text-xs text-zinc-300 placeholder:text-zinc-600 resize-none focus:outline-none focus:border-amber-500/50"
+                  className="w-full h-20 px-3 py-2 rounded bg-white/[0.04] border border-white/[0.08] text-xs text-stone-300 placeholder:text-stone-600 resize-none focus:outline-none focus:border-amber-500/50"
                 />
               </div>
             )}
@@ -1512,7 +1512,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               </div>
               <div className="flex-1">
                 <h2 className="text-lg font-semibold text-white">Kuis Bab {activeChapter.id}</h2>
-                <p className="text-[10px] text-zinc-500">
+                <p className="text-[10px] text-stone-500">
                   {quizzes[activeChapter.id]?.length || 0} soal
                 </p>
               </div>
@@ -1533,7 +1533,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
 
                   return (
                     <div key={q.id} className="rounded-lg border border-amber-500/10 bg-amber-500/[0.02] p-4">
-                      <p className="text-sm text-zinc-200 mb-3">
+                      <p className="text-sm text-stone-200 mb-3">
                         <span className="text-amber-400 font-bold mr-1">{i + 1}.</span>
                         {q.question}
                       </p>
@@ -1555,7 +1555,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                                   ? 'border-red-500/50 bg-red-500/10 text-red-400'
                                   : isSelected
                                   ? 'border-[var(--accent)]/50 bg-[var(--accent)]/10 text-[var(--accent-soft)]'
-                                  : 'border-white/[0.06] text-zinc-400 hover:border-white/[0.15] hover:bg-white/[0.04]'
+                                  : 'border-white/[0.06] text-stone-400 hover:border-white/[0.15] hover:bg-white/[0.04]'
                               )}
                             >
                               {opt}
@@ -1574,8 +1574,8 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               </div>
             ) : (
               <div className="text-center py-12">
-                <Calculator className="h-8 w-8 mx-auto mb-2 text-zinc-700" />
-                <p className="text-sm text-zinc-500">Belum ada kuis untuk bab ini</p>
+                <Calculator className="h-8 w-8 mx-auto mb-2 text-stone-700" />
+                <p className="text-sm text-stone-500">Belum ada kuis untuk bab ini</p>
               </div>
             )}
           </div>
@@ -1610,7 +1610,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               )}>
                 <div>
                   <p className="text-4xl font-bold text-white font-mono">{formatTime(timerLeft)}</p>
-                  <p className="text-[10px] text-zinc-500 mt-1">
+                  <p className="text-[10px] text-stone-500 mt-1">
                     {isRunning ? 'BELAJAR...' : timerLeft === 0 ? 'SELESAI' : 'SIAP'}
                   </p>
                 </div>
@@ -1649,7 +1649,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                   setTimerLeft(v);
                   setIsRunning(false);
                 }}
-                className="bg-white/[0.04] border border-white/[0.08] rounded px-2 py-1 text-xs text-zinc-300"
+                className="bg-white/[0.04] border border-white/[0.08] rounded px-2 py-1 text-xs text-stone-300"
               >
                 <option value={15 * 60}>15 menit</option>
                 <option value={25 * 60}>25 menit</option>
@@ -1663,7 +1663,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Sun className="h-4 w-4 text-amber-400" />
-                  <span className="text-sm font-medium text-zinc-200">Focus Detector</span>
+                  <span className="text-sm font-medium text-stone-200">Focus Detector</span>
                 </div>
                 <Button
                   onClick={() => setFocusEnabled(!focusEnabled)}
@@ -1679,7 +1679,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                 <>
                   {/* Camera preview  -  mirrored selfie view, no opacity dimming */}
                   {faceMeshLoading && (
-                    <div className="text-center text-[10px] text-zinc-500 py-2">
+                    <div className="text-center text-[10px] text-stone-500 py-2">
                       Loading focus model... (~3s first time)
                     </div>
                   )}
@@ -1693,7 +1693,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                       Default 'ringan' (pixel path only, no ML download).
                       'stabil' = ML without iris. 'akurat' = ML + iris (gaze). */}
                   <div className="space-y-1.5">
-                    <p className="text-[10px] font-medium text-zinc-400">Mode Vision</p>
+                    <p className="text-[10px] font-medium text-stone-400">Mode Vision</p>
                     <div className="grid grid-cols-3 gap-1">
                       <button
                         type="button"
@@ -1707,11 +1707,11 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                       >
                         <div className={cn(
                           'text-[10px] font-semibold',
-                          studyFocusVisionMode === 'ringan' ? 'text-green-300' : 'text-zinc-300'
+                          studyFocusVisionMode === 'ringan' ? 'text-green-300' : 'text-stone-300'
                         )}>
                           Ringan
                         </div>
-                        <div className="text-[8px] text-zinc-500 mt-0.5">5MB</div>
+                        <div className="text-[8px] text-stone-500 mt-0.5">5MB</div>
                       </button>
                       <button
                         type="button"
@@ -1725,11 +1725,11 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                       >
                         <div className={cn(
                           'text-[10px] font-semibold',
-                          studyFocusVisionMode === 'stabil' ? 'text-blue-300' : 'text-zinc-300'
+                          studyFocusVisionMode === 'stabil' ? 'text-blue-300' : 'text-stone-300'
                         )}>
                           Stabil
                         </div>
-                        <div className="text-[8px] text-zinc-500 mt-0.5">30MB</div>
+                        <div className="text-[8px] text-stone-500 mt-0.5">30MB</div>
                       </button>
                       <button
                         type="button"
@@ -1737,20 +1737,20 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                         className={cn(
                           'rounded-md border px-1.5 py-1.5 text-center transition-colors',
                           studyFocusVisionMode === 'akurat'
-                            ? 'border-sky-400/60 bg-sky-500/10'
+                            ? 'border-teal-400/60 bg-teal-500/10'
                             : 'border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05]'
                         )}
                       >
                         <div className={cn(
                           'text-[10px] font-semibold',
-                          studyFocusVisionMode === 'akurat' ? 'text-white' : 'text-zinc-300'
+                          studyFocusVisionMode === 'akurat' ? 'text-white' : 'text-stone-300'
                         )}>
                           Akurat
                         </div>
-                        <div className="text-[8px] text-zinc-500 mt-0.5">50MB</div>
+                        <div className="text-[8px] text-stone-500 mt-0.5">50MB</div>
                       </button>
                     </div>
-                    <p className="text-[9px] text-zinc-500 leading-tight mt-1">
+                    <p className="text-[9px] text-stone-500 leading-tight mt-1">
                       {studyFocusVisionMode === 'ringan' && 'Pixel path. No download, no ML. Deteksi kulit + sclera yang sudah dinormalisasi anti-bias cahaya. Cocok device kentang.'}
                       {studyFocusVisionMode === 'stabil' && 'FaceMesh tanpa iris. Deteksi kepala + mata tertutup. Tidak deteksi gaze (mata ke HP). Download ~5MB sekali.'}
                       {studyFocusVisionMode === 'akurat' && 'FaceMesh + iris refinement. Deteksi kepala + gaze + mata ke HP (v23). Paling akurat, paling berat. Download ~8MB sekali.'}
@@ -1771,7 +1771,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                   {/* Focus score */}
                   <div>
                     <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="text-zinc-500">Focus Score</span>
+                      <span className="text-stone-500">Focus Score</span>
                       <span className={cn(
                         'font-bold',
                         focusScore >= 70 ? 'text-green-400' : focusScore >= 40 ? 'text-amber-400' : focusScore >= 15 ? 'text-orange-400' : 'text-red-400'
@@ -1792,13 +1792,13 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                         BUKAN dari posture state categorical. Jadi label
                         SELALU match sama angka yang user lihat. */}
                     <div className="flex items-center justify-between mt-1.5 text-[10px]">
-                      <span className="text-zinc-600">Postur:</span>
+                      <span className="text-stone-600">Postur:</span>
                       <span className={cn(
                         'font-medium',
                         focusScore >= 70 ? 'text-green-400'
                           : focusScore >= 40 ? 'text-amber-400'
                           : focusScore >= 15 ? 'text-orange-400'
-                          : 'text-zinc-500'
+                          : 'text-stone-500'
                       )}>
                         {focusScore >= 70 ? 'Fokus ✓'
                           : focusScore >= 40 ? 'Kurang Fokus'
@@ -1807,7 +1807,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                       </span>
                     </div>
                     {/* Engine indicator  -  shows if using MediaPipe or fallback */}
-                    <div className="flex items-center justify-between mt-0.5 text-[9px] text-zinc-600">
+                    <div className="flex items-center justify-between mt-0.5 text-[9px] text-stone-600">
                       <span>Engine:</span>
                       <span>
                         {faceMeshLoading ? 'Loading...'
@@ -1819,14 +1819,14 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                         visible directly in panel (no console needed).
                         If you see this box with values updating → bundle v20+ is loaded. */}
                     {focusDebug && (
-                      <div className="mt-1.5 p-1.5 rounded bg-zinc-900/80 border border-zinc-700/50 font-mono text-[8px] text-zinc-400 leading-tight break-all">
-                        <span className="text-zinc-500">[v20 debug] </span>
+                      <div className="mt-1.5 p-1.5 rounded bg-stone-900/80 border border-stone-700/50 font-mono text-[8px] text-stone-400 leading-tight break-all">
+                        <span className="text-stone-500">[v20 debug] </span>
                         {focusDebug}
                       </div>
                     )}
                   </div>
 
-                  <p className="text-[10px] text-zinc-500">
+                  <p className="text-[10px] text-stone-500">
                     Distraksi terdeteksi: {distractedCount}x
                   </p>
 
@@ -1841,7 +1841,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                   )}
                 </>
               ) : (
-                <p className="text-xs text-zinc-500 text-center py-4">
+                <p className="text-xs text-stone-500 text-center py-4">
                   Focus detector dimatikan
                 </p>
               )}
@@ -1855,7 +1855,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               <div className="rounded-lg border border-green-500/20 bg-green-500/[0.05] p-4 text-center">
                 <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-400" />
                 <p className="text-sm font-medium text-green-400">Sesi selesai!</p>
-                <p className="text-[11px] text-zinc-400 mt-1">
+                <p className="text-[11px] text-stone-400 mt-1">
                   Kamu belajar {Math.round(timerTotal / 60)} menit dengan {distractedCount}x distraksi.
                 </p>
                 <Button
@@ -2018,8 +2018,8 @@ function MindmapTreeNode({
   const colors = [
     'text-[var(--accent-soft)] font-bold text-base',
     'text-blue-400 font-medium text-sm',
-    'text-zinc-300 text-sm',
-    'text-zinc-500 text-xs',
+    'text-stone-300 text-sm',
+    'text-stone-500 text-xs',
   ];
   const colorClass = colors[Math.min(level, colors.length - 1)];
 
@@ -2027,7 +2027,7 @@ function MindmapTreeNode({
     <div>
       <div className="flex items-start gap-1 hover:bg-white/[0.03] rounded px-1 py-0.5 transition-colors">
         {level > 0 && (
-          <span className="text-zinc-700 font-mono text-xs whitespace-pre select-none">
+          <span className="text-stone-700 font-mono text-xs whitespace-pre select-none">
             {prefix}{connector}
           </span>
         )}

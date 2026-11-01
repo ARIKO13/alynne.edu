@@ -161,7 +161,7 @@ export default function App({ onBackToLanding }: AppProps) {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0A0A0B]">
+      <div className="min-h-screen flex items-center justify-center bg-[#0D0C0A]">
         <div className="animate-spin h-8 w-8 border-2 border-[var(--accent)] border-t-transparent rounded-full" />
       </div>
     );
@@ -188,7 +188,7 @@ export default function App({ onBackToLanding }: AppProps) {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#0A0A0B]">
+    <div className="min-h-screen flex bg-[#0D0C0A]">
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/60  z-40 lg:hidden"
@@ -198,7 +198,7 @@ export default function App({ onBackToLanding }: AppProps) {
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-[260px] bg-[#111113] border-r border-white/[0.06] flex flex-col transition-transform duration-200 ease-in-out lg:relative lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 w-[260px] bg-[#161412] border-r border-white/[0.06] flex flex-col transition-transform duration-200 ease-in-out lg:relative lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
@@ -206,7 +206,7 @@ export default function App({ onBackToLanding }: AppProps) {
           <span className="text-sm font-semibold tracking-tight text-white">ALYNNE AI</span>
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="ml-auto p-1.5 rounded-md hover:bg-white/[0.06] transition-colors text-zinc-400 hover:text-zinc-200"
+            className="ml-auto p-1.5 rounded-md hover:bg-white/[0.06] transition-colors text-stone-400 hover:text-stone-200"
             title={theme === 'dark' ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
             aria-label="Toggle theme"
           >
@@ -216,7 +216,7 @@ export default function App({ onBackToLanding }: AppProps) {
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden p-1 rounded-md hover:bg-white/[0.06] transition-colors"
           >
-            <X className="h-4 w-4 text-zinc-400" />
+            <X className="h-4 w-4 text-stone-400" />
           </button>
         </div>
 
@@ -232,10 +232,10 @@ export default function App({ onBackToLanding }: AppProps) {
                   'w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors',
                   isActive
                     ? 'bg-white/[0.08] text-white'
-                    : 'text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-300'
+                    : 'text-stone-500 hover:bg-white/[0.04] hover:text-stone-300'
                 )}
               >
-                <Icon className={cn('h-4 w-4', isActive ? 'text-[var(--accent-soft)]' : 'text-zinc-600')} />
+                <Icon className={cn('h-4 w-4', isActive ? 'text-[var(--accent-soft)]' : 'text-stone-600')} />
                 {tab.label}
               </button>
             );
@@ -245,14 +245,14 @@ export default function App({ onBackToLanding }: AppProps) {
         <div className="border-t border-white/[0.06] p-3 space-y-0.5">
           <button
             onClick={() => { setSettingsOpen(true); setSidebarOpen(false); }}
-            className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-300 transition-colors"
+            className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-stone-500 hover:bg-white/[0.04] hover:text-stone-300 transition-colors"
           >
             <Settings className="h-4 w-4" />
             Pengaturan
           </button>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-zinc-500 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+            className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-stone-500 hover:bg-red-500/10 hover:text-red-400 transition-colors"
           >
             <LogOut className="h-4 w-4" />
             Keluar
@@ -261,28 +261,28 @@ export default function App({ onBackToLanding }: AppProps) {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-30 h-14 bg-[#0A0A0B]/80  border-b border-white/[0.06] flex items-center justify-between px-4 md:px-6">
+        <header className="sticky top-0 z-30 h-14 bg-[#0D0C0A]/80  border-b border-white/[0.06] flex items-center justify-between px-4 md:px-6">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
               className="lg:hidden p-2 rounded-lg hover:bg-white/[0.06] transition-colors"
             >
-              <Menu className="h-4 w-4 text-zinc-400" />
+              <Menu className="h-4 w-4 text-stone-400" />
             </button>
             <button
               onClick={() => window.location.href = '/about'}
-              className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-[12px] font-medium text-zinc-400 hover:text-white hover:bg-white/[0.06] border border-white/[0.06] hover:border-white/[0.12] transition-colors"
+              className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-[12px] font-medium text-stone-400 hover:text-white hover:bg-white/[0.06] border border-white/[0.06] hover:border-white/[0.12] transition-colors"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               <span>Kembali</span>
             </button>
-            <h1 className="text-sm font-medium text-zinc-200">{TAB_TITLES[activeTab]}</h1>
+            <h1 className="text-sm font-medium text-stone-200">{TAB_TITLES[activeTab]}</h1>
             {sttStatus === 'recording' && (
               <Badge
                 variant="outline"
                 className={cn('gap-1.5 text-[11px] animate-pulse hidden sm:flex cursor-pointer',
                   sttSource === 'webspeech' ? 'border-red-500/30 text-red-400 bg-red-500/10'
-                    : sttSource === 'screen-capture' ? 'border-sky-500/30 text-sky-400 bg-sky-500/10'
+                    : sttSource === 'screen-capture' ? 'border-teal-500/30 text-[var(--accent-soft)] bg-teal-500/10'
                     : 'border-amber-500/30 text-amber-400 bg-amber-500/10'
                 )}
                 onClick={() => { setActiveTab('stt'); setSidebarOpen(false); }}
@@ -309,7 +309,7 @@ export default function App({ onBackToLanding }: AppProps) {
               onClick={() => setSettingsOpen(true)}
               className="hidden md:flex p-2 rounded-lg hover:bg-white/[0.06] transition-colors"
             >
-              <Settings className="h-4 w-4 text-zinc-500" />
+              <Settings className="h-4 w-4 text-stone-500" />
             </button>
             <div className="flex items-center gap-2.5">
               <div className="relative h-7 w-7">
@@ -326,7 +326,7 @@ export default function App({ onBackToLanding }: AppProps) {
                 )}
               </div>
               <div className="flex items-center gap-2 hidden sm:flex">
-                <span className="text-sm text-zinc-300">{String(user?.name || 'Player')}</span>
+                <span className="text-sm text-stone-300">{String(user?.name || 'Player')}</span>
                 {userIsAdmin && (
                   <Badge className="bg-[var(--accent)]/20 text-[var(--accent-soft)] border-[var(--accent)]/30 text-[9px] px-1.5 py-0">
                     Admin
@@ -358,7 +358,7 @@ export default function App({ onBackToLanding }: AppProps) {
               <StudyPipeline open={true} onClose={() => setActiveTab('stt')} transcript={transcript} />
             )}
             {activeTab === 'belajar' && !transcript && (
-              <div className="flex items-center justify-center h-[calc(100vh-8rem)] text-zinc-500 text-sm">
+              <div className="flex items-center justify-center h-[calc(100vh-8rem)] text-stone-500 text-sm">
                 Rekam audio dulu di Speech to Text, lalu buka Mode Belajar.
               </div>
             )}

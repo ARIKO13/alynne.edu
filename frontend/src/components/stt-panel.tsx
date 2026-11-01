@@ -102,14 +102,14 @@ function ModeSelector({ disabled }: { disabled: boolean }) {
               )}
             >
               <Icon
-                className={cn('h-4 w-4 transition-colors', isActive ? 'text-[var(--accent-soft)]' : 'text-zinc-500')}
+                className={cn('h-4 w-4 transition-colors', isActive ? 'text-[var(--accent-soft)]' : 'text-stone-500')}
               />
             </div>
             <div className="min-w-0">
-              <p className={cn('text-xs font-medium transition-colors', isActive ? 'text-white' : 'text-zinc-400')}>
+              <p className={cn('text-xs font-medium transition-colors', isActive ? 'text-white' : 'text-stone-400')}>
                 {mode.label}
               </p>
-              <p className={cn('text-[10px] transition-colors', isActive ? 'text-[var(--accent-soft)]/70' : 'text-zinc-600')}>
+              <p className={cn('text-[10px] transition-colors', isActive ? 'text-[var(--accent-soft)]/70' : 'text-stone-600')}>
                 {mode.desc}
               </p>
             </div>
@@ -312,7 +312,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
 
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
-        <h3 className="text-sm font-medium text-zinc-200">Speech to Text</h3>
+        <h3 className="text-sm font-medium text-stone-200">Speech to Text</h3>
         <div className="flex items-center gap-2">
           <Button
             onClick={() => setModelSelectorOpen(true)}
@@ -327,7 +327,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
             onClick={() => window.location.href = '/settings'}
             size="sm"
             variant="ghost"
-            className="h-7 w-7 p-0 text-zinc-400 hover:text-white hover:bg-white/5"
+            className="h-7 w-7 p-0 text-stone-400 hover:text-white hover:bg-white/5"
             title="Pengaturan penyimpanan"
           >
             <HardDrive className="h-3.5 w-3.5" />
@@ -339,7 +339,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
               sttSource === 'webspeech'
                 ? 'text-green-400 bg-green-500/10 border-green-500/20'
                 : sttSource === 'screen-capture'
-                ? 'text-sky-400 bg-sky-500/10 border-sky-500/20'
+                ? 'text-[var(--accent-soft)] bg-teal-500/10 border-teal-500/20'
                 : 'text-amber-400 bg-amber-500/10 border-amber-500/20'
             )}
           >
@@ -352,7 +352,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
             )}
           </Badge>
           {isReconnecting && (
-            <Badge variant="outline" className="gap-1 text-[11px] animate-pulse border-white/[0.08] text-zinc-400">
+            <Badge variant="outline" className="gap-1 text-[11px] animate-pulse border-white/[0.08] text-stone-400">
               <RefreshCw className="h-3 w-3 animate-spin" />
               Reconnecting...
             </Badge>
@@ -380,10 +380,10 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
 
         {/* Screen mode hint */}
         {isScreenMode && !isRecording && (
-          <div className="flex items-start gap-2.5 rounded-lg border border-sky-500/15 bg-sky-500/[0.03] p-3">
-            <MonitorUp className="h-4 w-4 text-sky-400 mt-0.5 shrink-0" />
-            <div className="text-xs text-sky-300/80 leading-relaxed">
-              <p className="font-medium text-sky-300 mb-0.5">Mode Seluruh Layar</p>
+          <div className="flex items-start gap-2.5 rounded-lg border border-teal-500/15 bg-teal-500/[0.03] p-3">
+            <MonitorUp className="h-4 w-4 text-[var(--accent-soft)] mt-0.5 shrink-0" />
+            <div className="text-xs text-[var(--accent-soft)]/80 leading-relaxed">
+              <p className="font-medium text-[var(--accent-soft)] mb-0.5">Mode Seluruh Layar</p>
               <p>Pilih <strong>"Entire Screen"</strong> di pemilih layar browser, lalu <strong>centang "Share system audio"</strong>. Suara dari YouTube, Zoom, Meet, dsb akan ditranskrip otomatis.</p>
             </div>
           </div>
@@ -413,11 +413,11 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
 
         {/* Combined Methods Indicator - shown when Entire Screen capture is active */}
         {isCombinedActive && (
-          <div className="rounded-lg border border-sky-500/20 bg-sky-500/[0.04] p-3">
+          <div className="rounded-lg border border-teal-500/20 bg-teal-500/[0.04] p-3">
             <div className="flex items-center gap-2 mb-2">
-              <MonitorUp className="h-3.5 w-3.5 text-sky-400" />
-              <p className="text-xs font-medium text-sky-300">Mode gabungan aktif</p>
-              <span className="text-[10px] text-zinc-600 ml-auto">mode seluruh layar</span>
+              <MonitorUp className="h-3.5 w-3.5 text-[var(--accent-soft)]" />
+              <p className="text-xs font-medium text-[var(--accent-soft)]">Mode gabungan aktif</p>
+              <span className="text-[10px] text-stone-600 ml-auto">mode seluruh layar</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
               <MethodBadge
@@ -462,7 +462,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
         )}
 
         {/* Transcript Area - Timestamped */}
-        <div className="relative rounded-lg border border-white/[0.06] bg-[#111113] overflow-hidden">
+        <div className="relative rounded-lg border border-white/[0.06] bg-[#161412] overflow-hidden">
           <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.04] bg-white/[0.02]">
             <div className="flex items-center gap-2">
               {isRecording && (
@@ -471,7 +471,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
                   <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
                 </span>
               )}
-              <span className="text-[11px] font-medium text-zinc-400">
+              <span className="text-[11px] font-medium text-stone-400">
                 {isRecording
                   ? isWhisperProcessing ? 'Memperbaiki teks dengan faster-whisper...' : isGroqProcessing ? 'Mentranskripsi...' : sttSource === 'webspeech' ? 'Web Speech API: coba bicara...' : sttSource === 'screen-capture' ? 'Merekam layar + audio...' : 'Mendengarkan...'
                   : transcriptEntries.length > 0 ? `${transcriptEntries.length} entri` : 'Transkrip'}
@@ -479,7 +479,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
             </div>
             <div className="flex items-center gap-2">
               {isGroqProcessing && (
-                <span className="flex items-center gap-1 text-[10px] text-sky-400">
+                <span className="flex items-center gap-1 text-[10px] text-[var(--accent-soft)]">
                   <Loader2 className="h-3 w-3 animate-spin" />
                   Groq memproses
                 </span>
@@ -499,7 +499,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
               )}
               {isRecording && <span className="text-xs font-medium text-red-400 animate-pulse">● REC</span>}
               {sttSource === 'webspeech' && isRecording && !isEnhancing && (
-                <span className="text-[10px] text-zinc-600">AI auto-correct aktif</span>
+                <span className="text-[10px] text-stone-600">AI auto-correct aktif</span>
               )}
             </div>
           </div>
@@ -508,14 +508,14 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
             {transcriptEntries.length > 0 ? (
               transcriptEntries.map((entry, i) => (
                 <div key={i} className="flex items-start gap-3 group">
-                  <span className="text-[11px] font-mono text-zinc-500 shrink-0 pt-0.5 select-none w-16 text-right">{entry.time}</span>
+                  <span className="text-[11px] font-mono text-stone-500 shrink-0 pt-0.5 select-none w-16 text-right">{entry.time}</span>
                   <span className="text-[var(--accent-soft)] shrink-0 pt-0.5 select-none">●</span>
-                  <p className="text-sm leading-relaxed text-zinc-200">{entry.text}</p>
+                  <p className="text-sm leading-relaxed text-stone-200">{entry.text}</p>
                 </div>
               ))
             ) : (
               <div className="flex items-center justify-center h-[180px]">
-                <p className="text-sm text-zinc-600 italic">
+                <p className="text-sm text-stone-600 italic">
                   {!isRecording ? 'Klik tombol untuk mulai merekam' : 'Menunggu teks dari pembicara...'}
                 </p>
               </div>
@@ -527,14 +527,14 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
                 Cuma tampilan preview interim yang di-hide. */}
             {isRecording && !interimTranscript && transcriptEntries.length === 0 && (
               <div className="flex items-center justify-center h-[60px]">
-                <p className="text-sm text-zinc-600 italic animate-pulse">
+                <p className="text-sm text-stone-600 italic animate-pulse">
                   Mendengarkan... bicara sekarang
                 </p>
               </div>
             )}
             {isRecording && interimTranscript && (
               <div className="flex items-center justify-center h-[40px]">
-                <p className="text-[11px] text-zinc-600 animate-pulse">
+                <p className="text-[11px] text-stone-600 animate-pulse">
                   · · · memproses ucapan · · ·
                 </p>
               </div>
@@ -557,7 +557,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
               isRecording
                 ? 'bg-red-600 hover:bg-red-700 text-white'
                 : isScreenMode
-                ? 'bg-sky-600 hover:bg-sky-700 text-white'
+                ? 'bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white'
                 : 'bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white'
             )}
           >
@@ -565,7 +565,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
             {hybridProcessing ? 'Whisper memproses...' : whisperSTT.status === 'loading-model' ? 'Memuat Model...' : isProcessing ? 'Memproses...' : isRecording ? 'Berhenti Merekam' : 'Mulai Merekam'}
           </Button>
           {transcript && (
-                <Button onClick={clearTranscript} disabled={isRecording || isProcessing} variant="outline" size="lg" className="gap-2 rounded-lg border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06]">
+                <Button onClick={clearTranscript} disabled={isRecording || isProcessing} variant="outline" size="lg" className="gap-2 rounded-lg border-white/[0.08] text-stone-400 hover:text-stone-200 hover:bg-white/[0.06]">
               <Trash2 className="h-4 w-4" />
               <span className="hidden sm:inline">Clear</span>
             </Button>
@@ -573,11 +573,11 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
         </div>
 
         {/* Material Upload - always visible */}
-        <div className="rounded-lg border border-sky-500/10 bg-sky-500/[0.02] overflow-hidden">
+        <div className="rounded-lg border border-teal-500/10 bg-teal-500/[0.02] overflow-hidden">
           <div className="flex items-center gap-2 px-5 py-3 border-b border-white/[0.04]">
-            <Upload className="h-4 w-4 text-sky-400" />
-            <h3 className="text-sm font-medium text-zinc-200">Materi Pendukung</h3>
-            <span className="text-[10px] text-zinc-600 ml-auto">PDF, DOCX, PPTX, TXT</span>
+            <Upload className="h-4 w-4 text-[var(--accent-soft)]" />
+            <h3 className="text-sm font-medium text-stone-200">Materi Pendukung</h3>
+            <span className="text-[10px] text-stone-600 ml-auto">PDF, DOCX, PPTX, TXT</span>
           </div>
           <div className="p-4">
             <MaterialUpload />
@@ -588,9 +588,9 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
         {transcript && !isRecording && !isProcessing && (
           <div className="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4">
             <div className="flex items-center gap-2">
-              <Rocket className="h-4 w-4 text-zinc-500" />
-              <span className="text-sm font-medium text-zinc-200">Apa yang mau kamu lakukan?</span>
-              <Badge variant="outline" className="text-[10px] ml-auto border-white/[0.08] text-zinc-500">{transcript.length} karakter</Badge>
+              <Rocket className="h-4 w-4 text-stone-500" />
+              <span className="text-sm font-medium text-stone-200">Apa yang mau kamu lakukan?</span>
+              <Badge variant="outline" className="text-[10px] ml-auto border-white/[0.08] text-stone-500">{transcript.length} karakter</Badge>
             </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               {/* Kartu aksi sejajar: satu gaya, ikon inline netral, tanpa tile
@@ -603,8 +603,8 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
               >
                 {pdfLoading ? <Loader2 className="h-4 w-4 shrink-0 text-[var(--accent-soft)] animate-spin" /> : <FileText className="h-4 w-4 shrink-0 text-[var(--accent-soft)]" />}
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold text-zinc-100">Buat Modul PDF</p>
-                  <p className="text-[10px] text-zinc-500">Generate modul belajar dari transkrip</p>
+                  <p className="text-xs font-semibold text-stone-100">Buat Modul PDF</p>
+                  <p className="text-[10px] text-stone-500">Generate modul belajar dari transkrip</p>
                 </div>
               </button>
 
@@ -612,10 +612,10 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
                 onClick={() => setStudyPipelineOpen(true)}
                 className="flex items-center gap-3 rounded-md border border-[var(--border)] bg-[var(--surface)] p-3.5 text-left transition-colors hover:bg-[var(--surface-2)] disabled:opacity-50"
               >
-                <BookOpen className="h-4 w-4 shrink-0 text-zinc-500" />
+                <BookOpen className="h-4 w-4 shrink-0 text-stone-500" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold text-zinc-100">Mode Belajar</p>
-                  <p className="text-[10px] text-zinc-500">Bab + Kuis + Focus Timer</p>
+                  <p className="text-xs font-semibold text-stone-100">Mode Belajar</p>
+                  <p className="text-[10px] text-stone-500">Bab + Kuis + Focus Timer</p>
                 </div>
               </button>
 
@@ -623,10 +623,10 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
                 onClick={() => setContinuityOpen(true)}
                 className="flex items-center gap-3 rounded-md border border-[var(--border)] bg-[var(--surface)] p-3.5 text-left transition-colors hover:bg-[var(--surface-2)] disabled:opacity-50"
               >
-                <Zap className="h-4 w-4 shrink-0 text-zinc-500" />
+                <Zap className="h-4 w-4 shrink-0 text-stone-500" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold text-zinc-100">Smart Continuity</p>
-                  <p className="text-[10px] text-zinc-500">STT + PDF + Mindmap + Kuis auto</p>
+                  <p className="text-xs font-semibold text-stone-100">Smart Continuity</p>
+                  <p className="text-[10px] text-stone-500">STT + PDF + Mindmap + Kuis auto</p>
                 </div>
               </button>
             </div>
@@ -634,9 +634,9 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
         )}
 
         {/* Status Bar */}
-        <div className="flex items-center justify-between text-xs text-zinc-600">
+        <div className="flex items-center justify-between text-xs text-stone-600">
           <div className="flex items-center gap-1.5">
-            {sttSource === 'webspeech' ? <Wifi className="h-3 w-3 text-green-500" /> : sttSource === 'screen-capture' ? <Monitor className="h-3 w-3 text-sky-500" /> : <WifiOff className="h-3 w-3 text-amber-500" />}
+            {sttSource === 'webspeech' ? <Wifi className="h-3 w-3 text-green-500" /> : sttSource === 'screen-capture' ? <Monitor className="h-3 w-3 text-[var(--accent-soft)]" /> : <WifiOff className="h-3 w-3 text-amber-500" />}
             <span>
               {isRecording
                 ? sttSource === 'webspeech' ? 'Terhubung ke Web Speech API' : sttSource === 'screen-capture' ? 'Merekam system audio (screen)' : 'Menggunakan Groq Whisper API'
@@ -729,15 +729,15 @@ function MethodBadge({
   const colorClasses = {
     green: active
       ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
-      : 'border-white/[0.06] text-zinc-600 bg-white/[0.02]',
+      : 'border-white/[0.06] text-stone-600 bg-white/[0.02]',
     violet: active
       ? 'border-[var(--accent)]/30 text-[var(--accent-soft)] bg-[var(--accent)]/10'
       : loading
       ? 'border-amber-500/30 text-amber-400 bg-amber-500/10'
-      : 'border-white/[0.06] text-zinc-600 bg-white/[0.02]',
+      : 'border-white/[0.06] text-stone-600 bg-white/[0.02]',
     amber: active
       ? 'border-amber-500/30 text-amber-400 bg-amber-500/10'
-      : 'border-white/[0.06] text-zinc-600 bg-white/[0.02]',
+      : 'border-white/[0.06] text-stone-600 bg-white/[0.02]',
   }[color];
 
   return (
@@ -747,11 +747,11 @@ function MethodBadge({
     )}>
       <span className={cn(
         'h-1.5 w-1.5 rounded-full',
-        active ? (color === 'green' ? 'bg-emerald-400' : color === 'violet' ? 'bg-[var(--accent)]' : 'bg-amber-400') : 'bg-zinc-700',
+        active ? (color === 'green' ? 'bg-emerald-400' : color === 'violet' ? 'bg-[var(--accent)]' : 'bg-amber-400') : 'bg-stone-700',
         (active || loading) && 'animate-pulse'
       )} />
       <span>{label}</span>
-      {detail && <span className="text-zinc-600">· {detail}</span>}
+      {detail && <span className="text-stone-600">· {detail}</span>}
     </span>
   );
 }

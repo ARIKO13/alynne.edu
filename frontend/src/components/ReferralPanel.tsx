@@ -75,11 +75,11 @@ export function ReferralPanel({ open, onClose }: ReferralPanelProps) {
         <div className="flex items-center gap-2.5">
           <Gift className="h-5 w-5 text-[var(--accent-soft)]" />
           <div>
-            <h2 className="text-base font-semibold text-zinc-100">Ajak Teman, Dapat Gratis!</h2>
-            <p className="text-[11px] text-zinc-500">Setiap teman yang daftar pakai link kamu, kalian berdua dapat 1 bulan premium gratis.</p>
+            <h2 className="text-base font-semibold text-stone-100">Ajak Teman, Dapat Gratis!</h2>
+            <p className="text-[11px] text-stone-500">Setiap teman yang daftar pakai link kamu, kalian berdua dapat 1 bulan premium gratis.</p>
           </div>
         </div>
-        <Button onClick={onClose} variant="ghost" size="sm" className="text-zinc-400 hover:text-white hover:bg-white/[0.04]">
+        <Button onClick={onClose} variant="ghost" size="sm" className="text-stone-400 hover:text-white hover:bg-white/[0.04]">
           <X className="h-4 w-4" />
           <span className="ml-1 hidden sm:inline">Tutup</span>
         </Button>
@@ -91,28 +91,28 @@ export function ReferralPanel({ open, onClose }: ReferralPanelProps) {
           <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-center">
             <Users className="h-4 w-4 mx-auto mb-1 text-blue-400" />
             <p className="text-lg font-semibold text-white">{memory.referralCount}</p>
-            <p className="text-[10px] text-zinc-500 uppercase">Teman</p>
+            <p className="text-[10px] text-stone-500 uppercase">Teman</p>
           </div>
           <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-center">
             <Gift className="h-4 w-4 mx-auto mb-1 text-[var(--accent-soft)]" />
             <p className="text-lg font-semibold text-white">{memory.referralRewards}</p>
-            <p className="text-[10px] text-zinc-500 uppercase">Bulan Gratis</p>
+            <p className="text-[10px] text-stone-500 uppercase">Bulan Gratis</p>
           </div>
           <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-center">
             <Sparkles className="h-4 w-4 mx-auto mb-1 text-amber-400" />
             <p className="text-lg font-semibold text-white">{referralCode}</p>
-            <p className="text-[10px] text-zinc-500 uppercase">Kode Kamu</p>
+            <p className="text-[10px] text-stone-500 uppercase">Kode Kamu</p>
           </div>
         </div>
 
         {/* Referral link */}
         <div className="space-y-2">
-          <label className="text-xs text-zinc-500">Link Referral Kamu</label>
+          <label className="text-xs text-stone-500">Link Referral Kamu</label>
           <div className="flex gap-2">
             <input
               readOnly
               value={referralLink}
-              className="flex-1 px-3 py-2 rounded-md bg-white/[0.04] border border-white/[0.08] text-xs text-zinc-300 font-mono"
+              className="flex-1 px-3 py-2 rounded-md bg-white/[0.04] border border-white/[0.08] text-xs text-stone-300 font-mono"
               onClick={(e) => (e.target as HTMLInputElement).select()}
             />
             <Button onClick={handleCopy} size="sm" className="bg-[var(--accent)] hover:bg-[var(--accent)]">
@@ -126,7 +126,7 @@ export function ReferralPanel({ open, onClose }: ReferralPanelProps) {
           <Button
             onClick={handleShare}
             variant="outline"
-            className="border-white/[0.08] text-zinc-300"
+            className="border-white/[0.08] text-stone-300"
           >
             <Share2 className="h-4 w-4 mr-2" />
             Bagikan
@@ -144,8 +144,8 @@ export function ReferralPanel({ open, onClose }: ReferralPanelProps) {
 
         {/* How it works */}
         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 space-y-2">
-          <p className="text-xs font-medium text-zinc-300">Cara Kerja:</p>
-          <div className="space-y-1.5 text-[11px] text-zinc-500">
+          <p className="text-xs font-medium text-stone-300">Cara Kerja:</p>
+          <div className="space-y-1.5 text-[11px] text-stone-500">
             <div className="flex gap-2">
               <span className="text-[var(--accent-soft)] font-bold">1.</span>
               <span>Bagikan link atau kode referral ke teman</span>
@@ -173,7 +173,7 @@ export function ReferralPanel({ open, onClose }: ReferralPanelProps) {
         )}
 
         <div className="flex justify-end">
-          <Button variant="ghost" onClick={onClose} className="text-zinc-400">
+          <Button variant="ghost" onClick={onClose} className="text-stone-400">
             <X className="h-4 w-4 mr-2" />
             Tutup
           </Button>

@@ -78,7 +78,7 @@ export function SlideExporter({ open, onClose, chapters, quizzes = {} }: SlideEx
             <Presentation className="h-5 w-5 text-[var(--accent-soft)]" />
             Export ke Slide Presentasi
           </DialogTitle>
-          <DialogDescription className="text-zinc-400">
+          <DialogDescription className="text-stone-400">
             Bikin presentasi HTML dari bab-bab STT kamu.
           </DialogDescription>
         </DialogHeader>
@@ -87,15 +87,15 @@ export function SlideExporter({ open, onClose, chapters, quizzes = {} }: SlideEx
           <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
             <div className="flex items-center gap-2 mb-2">
               <FileText className="h-4 w-4 text-blue-400" />
-              <span className="text-sm text-zinc-300">Slide Preview</span>
+              <span className="text-sm text-stone-300">Slide Preview</span>
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
-                <p className="text-zinc-500">Total Slide</p>
+                <p className="text-stone-500">Total Slide</p>
                 <p className="text-lg font-bold text-white">{chapters.length}</p>
               </div>
               <div>
-                <p className="text-zinc-500">Total Kuis</p>
+                <p className="text-stone-500">Total Kuis</p>
                 <p className="text-lg font-bold text-white">
                   {Object.values(quizzes).reduce((s, q) => s + q.length, 0)}
                 </p>
@@ -103,7 +103,7 @@ export function SlideExporter({ open, onClose, chapters, quizzes = {} }: SlideEx
             </div>
           </div>
 
-          <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-xs text-zinc-500 space-y-1">
+          <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-xs text-stone-500 space-y-1">
             <p>✓ Setiap bab jadi 1 slide</p>
             <p>✓ Kuis otomatis di akhir slide</p>
             <p>✓ Bisa presentasi fullscreen</p>
@@ -177,7 +177,7 @@ function generatePresentationHTML(slides: string[], chapters: Chapter[]): string
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: #0a0a0a;
+    background: #0D0C0A;
     color: #fff;
     overflow: hidden;
   }
@@ -192,7 +192,7 @@ function generatePresentationHTML(slides: string[], chapters: Chapter[]): string
     height: 100%;
     padding: 60px 80px;
     flex-direction: column;
-    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+    background: linear-gradient(135deg, #0D0C0A 0%, #1a1a2e 50%, #16213e 100%);
   }
   .slide.active { display: flex; }
   .slide-header {
@@ -201,9 +201,9 @@ function generatePresentationHTML(slides: string[], chapters: Chapter[]): string
     align-items: center;
     margin-bottom: 30px;
   }
-  .slide-num { color: #71717a; font-size: 14px; }
+  .slide-num { color: #78716C; font-size: 14px; }
   .slide-badge {
-    background: #38BDF8;
+    background: #7FC4B8;
     color: white;
     padding: 4px 12px;
     border-radius: 12px;
@@ -212,14 +212,14 @@ function generatePresentationHTML(slides: string[], chapters: Chapter[]): string
   }
   .slide-title {
     font-size: 36px;
-    color: #38BDF8;
+    color: #7FC4B8;
     margin-bottom: 24px;
     line-height: 1.3;
   }
   .slide-content {
     font-size: 18px;
     line-height: 1.8;
-    color: #d4d4d8;
+    color: #D6D3D1;
     flex: 1;
     overflow-y: auto;
     white-space: pre-wrap;
@@ -231,9 +231,9 @@ function generatePresentationHTML(slides: string[], chapters: Chapter[]): string
     border-radius: 12px;
     border: 1px solid rgba(124, 58, 237, 0.3);
   }
-  .quiz h3 { color: #38BDF8; margin-bottom: 12px; }
+  .quiz h3 { color: #7FC4B8; margin-bottom: 12px; }
   .quiz-item { margin-bottom: 16px; }
-  .quiz-q { color: #fafafa; margin-bottom: 8px; font-size: 16px; }
+  .quiz-q { color: #F5F2ED; margin-bottom: 8px; font-size: 16px; }
   .quiz-options { display: flex; flex-wrap: wrap; gap: 8px; }
   .quiz-opt {
     padding: 6px 14px;
@@ -241,7 +241,7 @@ function generatePresentationHTML(slides: string[], chapters: Chapter[]): string
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 8px;
     font-size: 14px;
-    color: #a1a1aa;
+    color: #ABA49A;
   }
   .quiz-opt.correct {
     background: rgba(34, 197, 94, 0.2);
@@ -253,7 +253,7 @@ function generatePresentationHTML(slides: string[], chapters: Chapter[]): string
     margin-top: 20px;
     padding-top: 16px;
     border-top: 1px solid rgba(255,255,255,0.05);
-    color: #52525b;
+    color: #57534E;
     font-size: 12px;
     text-align: center;
   }
@@ -282,7 +282,7 @@ function generatePresentationHTML(slides: string[], chapters: Chapter[]): string
     top: 0;
     left: 0;
     height: 3px;
-    background: #38BDF8;
+    background: #7FC4B8;
     z-index: 100;
     transition: width 0.3s;
   }
@@ -295,7 +295,7 @@ function generatePresentationHTML(slides: string[], chapters: Chapter[]): string
 </div>
 <div class="controls">
   <button onclick="prevSlide()">Sebelumnya</button>
-  <span id="counter" style="color: #71717a; padding: 10px 20px;">1 / ${slides.length}</span>
+  <span id="counter" style="color: #78716C; padding: 10px 20px;">1 / ${slides.length}</span>
   <button onclick="nextSlide()">Berikutnya</button>
   <button onclick="toggleFullscreen()">Fullscreen</button>
 </div>

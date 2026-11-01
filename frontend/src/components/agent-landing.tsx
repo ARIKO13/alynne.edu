@@ -79,23 +79,23 @@ export function AgentLanding({ onEnter }: { onEnter: (agentId: string) => void }
   const [hoveredAgent, setHoveredAgent] = useState<string | null>(null);
 
   return (
-    <div className="min-h-screen bg-[#0A0A0B] flex flex-col">
+    <div className="min-h-screen bg-[#0D0C0A] flex flex-col">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#0A0A0B]/80  border-b border-white/[0.06]">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#0D0C0A]/80  border-b border-white/[0.06]">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent)]">
               <Sparkles className="h-4 w-4 text-white" />
             </div>
             <span className="text-base font-semibold tracking-tight text-white">
-              ALYNNE<span className="text-zinc-500">.AI</span>
+              ALYNNE<span className="text-stone-500">.AI</span>
             </span>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-[11px] text-zinc-600 hidden sm:block">Platform AI Agent</span>
+            <span className="text-[11px] text-stone-600 hidden sm:block">Platform AI Agent</span>
             <button
               onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })}
-              className="text-xs text-zinc-400 hover:text-white transition-colors"
+              className="text-xs text-stone-400 hover:text-white transition-colors"
             >
               <ChevronDown className="h-4 w-4" />
             </button>
@@ -115,7 +115,7 @@ export function AgentLanding({ onEnter }: { onEnter: (agentId: string) => void }
             Pilih agen untuk tugasmu.
           </h1>
 
-          <p className="text-base sm:text-lg text-zinc-500 max-w-lg mx-auto leading-relaxed">
+          <p className="text-base sm:text-lg text-stone-500 max-w-lg mx-auto leading-relaxed">
             Pilih agent yang kamu butuhkan. Setiap agent dirancang khusus
             untuk tugas yang berbeda.
           </p>
@@ -162,7 +162,7 @@ export function AgentLanding({ onEnter }: { onEnter: (agentId: string) => void }
                       >
                         <Icon
                           className="h-6 w-6"
-                          style={{ color: isAvailable ? agent.color : '#52525b' }}
+                          style={{ color: isAvailable ? agent.color : '#57534E' }}
                         />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -173,13 +173,13 @@ export function AgentLanding({ onEnter }: { onEnter: (agentId: string) => void }
                               Available
                             </span>
                           ) : (
-                            <span className="text-[9px] font-medium text-zinc-500 bg-white/[0.04] border border-white/[0.06] px-2 py-0.5 rounded-full">
+                            <span className="text-[9px] font-medium text-stone-500 bg-white/[0.04] border border-white/[0.06] px-2 py-0.5 rounded-full">
                               Coming Soon
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-zinc-400 mb-3">{agent.tagline}</p>
-                        <p className="text-[12px] text-zinc-600 leading-relaxed line-clamp-2">
+                        <p className="text-sm text-stone-400 mb-3">{agent.tagline}</p>
+                        <p className="text-[12px] text-stone-600 leading-relaxed line-clamp-2">
                           {agent.description}
                         </p>
 
@@ -190,7 +190,7 @@ export function AgentLanding({ onEnter }: { onEnter: (agentId: string) => void }
                             return (
                               <span
                                 key={f.label}
-                                className="inline-flex items-center gap-1.5 text-[10px] text-zinc-500 bg-white/[0.03] border border-white/[0.06] px-2.5 py-1 rounded-lg"
+                                className="inline-flex items-center gap-1.5 text-[10px] text-stone-500 bg-white/[0.03] border border-white/[0.06] px-2.5 py-1 rounded-lg"
                               >
                                 <FIcon className="h-3 w-3" />
                                 {f.label}
@@ -225,9 +225,9 @@ export function AgentLanding({ onEnter }: { onEnter: (agentId: string) => void }
       {/* Footer */}
       <footer className="border-t border-white/[0.04] py-6 px-6">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <span className="text-[11px] text-zinc-500">Povycon Technology</span>
-          <a href="/privacy" className="text-[11px] text-zinc-500 hover:text-zinc-300">Privacy Policy</a>
-          <span className="text-[11px] text-zinc-500">{new Date().getFullYear()}</span>
+          <span className="text-[11px] text-stone-500">Povycon Technology</span>
+          <a href="/privacy" className="text-[11px] text-stone-500 hover:text-stone-300">Privacy Policy</a>
+          <span className="text-[11px] text-stone-500">{new Date().getFullYear()}</span>
         </div>
       </footer>
     </div>

@@ -214,7 +214,7 @@ TRANSCRIPT: ${transcript.substring(0, 1000)}`;
           </div>
           <div>
             <p className="text-sm font-medium text-white">Voice Tutor</p>
-            <p className="text-[10px] text-zinc-500">
+            <p className="text-[10px] text-stone-500">
               {inCall ? 'Sedang panggilan' : 'Klik mic untuk ngomong'}
             </p>
           </div>
@@ -224,7 +224,7 @@ TRANSCRIPT: ${transcript.substring(0, 1000)}`;
             onClick={toggleVoice}
             size="sm"
             variant="ghost"
-            className="h-7 text-zinc-400"
+            className="h-7 text-stone-400"
           >
             {voiceEnabled ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
           </Button>
@@ -262,7 +262,7 @@ TRANSCRIPT: ${transcript.substring(0, 1000)}`;
                 'rounded-lg px-3 py-2 max-w-[75%] text-sm',
                 msg.role === 'user'
                   ? 'bg-[var(--accent)] text-white'
-                  : 'bg-white/[0.04] text-zinc-200'
+                  : 'bg-white/[0.04] text-stone-200'
               )}
             >
               <p className="whitespace-pre-wrap">{msg.content}</p>
@@ -277,7 +277,7 @@ TRANSCRIPT: ${transcript.substring(0, 1000)}`;
             </div>
             {msg.role === 'user' && (
               <div className="w-6 h-6 rounded-full bg-white/[0.04] flex items-center justify-center shrink-0">
-                <User className="h-3 w-3 text-zinc-400" />
+                <User className="h-3 w-3 text-stone-400" />
               </div>
             )}
           </div>
@@ -287,7 +287,7 @@ TRANSCRIPT: ${transcript.substring(0, 1000)}`;
             <div className="w-6 h-6 rounded-full bg-[var(--accent)]/10 flex items-center justify-center shrink-0">
               <Bot className="h-3 w-3 text-[var(--accent-soft)]" />
             </div>
-            <div className="rounded-lg px-3 py-2 bg-white/[0.04] text-zinc-400 text-sm">
+            <div className="rounded-lg px-3 py-2 bg-white/[0.04] text-stone-400 text-sm">
               <Loader2 className="h-3 w-3 animate-spin inline mr-1" />
               Thinking...
             </div>
@@ -318,7 +318,7 @@ TRANSCRIPT: ${transcript.substring(0, 1000)}`;
 
       {/* Status */}
       <div className="text-center pb-2">
-        <p className="text-[10px] text-zinc-600">
+        <p className="text-[10px] text-stone-600">
           {isListening ? 'Mendengarkan...' : isThinking ? 'AI berpikir...' : isSpeaking ? 'AI bicara...' : 'Klik mic untuk tanya'}
         </p>
       </div>

@@ -180,7 +180,7 @@ Instruksi: Lanjutkan percakapan sebagai teman belajar. Singkat (2-3 kalimat).${m
           onClick={() => startMode('diskusi')}
           className={cn(
             'flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-colors',
-            mode === 'diskusi' ? 'bg-[var(--accent)] text-white' : 'text-zinc-500 hover:text-zinc-300'
+            mode === 'diskusi' ? 'bg-[var(--accent)] text-white' : 'text-stone-500 hover:text-stone-300'
           )}
         >
           <MessageCircle className="h-3 w-3" />
@@ -190,7 +190,7 @@ Instruksi: Lanjutkan percakapan sebagai teman belajar. Singkat (2-3 kalimat).${m
           onClick={() => startMode('challenge')}
           className={cn(
             'flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-colors',
-            mode === 'challenge' ? 'bg-orange-600 text-white' : 'text-zinc-500 hover:text-zinc-300'
+            mode === 'challenge' ? 'bg-orange-600 text-white' : 'text-stone-500 hover:text-stone-300'
           )}
         >
           <Swords className="h-3 w-3" />
@@ -200,7 +200,7 @@ Instruksi: Lanjutkan percakapan sebagai teman belajar. Singkat (2-3 kalimat).${m
           onClick={() => startMode('jelaskan')}
           className={cn(
             'flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-colors',
-            mode === 'jelaskan' ? 'bg-blue-600 text-white' : 'text-zinc-500 hover:text-zinc-300'
+            mode === 'jelaskan' ? 'bg-blue-600 text-white' : 'text-stone-500 hover:text-stone-300'
           )}
         >
           <GraduationCap className="h-3 w-3" />
@@ -219,13 +219,13 @@ Instruksi: Lanjutkan percakapan sebagai teman belajar. Singkat (2-3 kalimat).${m
             )}
             <div className={cn(
               'rounded-lg px-3 py-2 max-w-[75%] text-sm',
-              msg.role === 'user' ? 'bg-[var(--accent)] text-white' : 'bg-white/[0.04] text-zinc-200'
+              msg.role === 'user' ? 'bg-[var(--accent)] text-white' : 'bg-white/[0.04] text-stone-200'
             )}>
               <p className="whitespace-pre-wrap">{msg.content}</p>
             </div>
             {msg.role === 'user' && (
               <div className="w-6 h-6 rounded-full bg-white/[0.04] flex items-center justify-center shrink-0">
-                <User className="h-3 w-3 text-zinc-400" />
+                <User className="h-3 w-3 text-stone-400" />
               </div>
             )}
           </div>
@@ -235,7 +235,7 @@ Instruksi: Lanjutkan percakapan sebagai teman belajar. Singkat (2-3 kalimat).${m
             <div className="w-6 h-6 rounded-full bg-[var(--accent)]/10 flex items-center justify-center shrink-0">
               <Bot className="h-3 w-3 text-[var(--accent-soft)]" />
             </div>
-            <div className="rounded-lg px-3 py-2 bg-white/[0.04] text-zinc-400 text-sm">
+            <div className="rounded-lg px-3 py-2 bg-white/[0.04] text-stone-400 text-sm">
               <Loader2 className="h-3 w-3 animate-spin inline mr-1" />
               {mode === 'challenge' ? 'Nyiapin pertanyaan...' : 'Ngetik...'}
             </div>
@@ -270,7 +270,7 @@ Instruksi: Lanjutkan percakapan sebagai teman belajar. Singkat (2-3 kalimat).${m
 
       {/* Mode description */}
       <div className="px-3 pb-2">
-        <p className="text-[9px] text-zinc-600">
+        <p className="text-[9px] text-stone-600">
           {mode === 'diskusi' && 'Diskusi bebas tentang materi'}
           {mode === 'challenge' && 'AI ngasih pertanyaan, kamu jawab'}
           {mode === 'jelaskan' && 'Kamu jelasin konsep, AI evaluasi'}

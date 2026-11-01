@@ -11,12 +11,12 @@ const links = [
 
 <!-- avoid-ai-design-ignore: K3 — nav fixed di atas konten yang scroll; blur
      nyata di sini, diizinkan DESIGN.md §4.3. -->
-<nav class="fixed top-0 left-0 right-0 z-50 bg-[#09090b]/80 backdrop-blur-md border-b border-white/[0.06]">
+<nav class="fixed top-0 left-0 right-0 z-50 bg-[#0D0C0A]/80 backdrop-blur-md border-b border-white/[0.06]">
   <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
     <a href="/" class="flex items-center gap-2 sm:gap-3 group shrink-0">
       <img src="/alynne-ai-logo.png" alt="ALYNNE AI" class="h-8 w-8 rounded-lg object-contain" />
       <span class="text-base font-semibold tracking-tight text-white">
-        ALYNNE<span class="text-zinc-500">.AI</span>
+        ALYNNE<span class="text-stone-500">.AI</span>
       </span>
     </a>
     <div class="flex items-center gap-0.5 sm:gap-1">
@@ -27,7 +27,7 @@ const links = [
             'px-2.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors whitespace-nowrap',
             currentPath === link.href
               ? 'text-white bg-white/[0.08]'
-              : 'text-zinc-400 hover:text-white hover:bg-white/[0.04]',
+              : 'text-stone-400 hover:text-white hover:bg-white/[0.04]',
           ]}
         >
           {link.label}

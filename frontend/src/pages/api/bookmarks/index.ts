@@ -16,7 +16,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     await d1.execute(
       `INSERT INTO Highlight (id, userId, materialName, text, note, color, createdAt)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [id, userId, materialName || 'Umum', text, note || '', color || '#38BDF8', now]
+      [id, userId, materialName || 'Umum', text, note || '', color || '#7FC4B8', now]
     );
     return new Response(JSON.stringify({ success: true, id }), { status: 201 });
   } catch (err: any) {

@@ -11,7 +11,7 @@ import { jsPDF } from 'jspdf';
 import type { Chapter, QuizQuestion } from './stt-chapter-splitter';
 
 const COLORS = {
-  primary: [139, 92, 246] as [number, number, number], // #0284C7
+  primary: [139, 92, 246] as [number, number, number], // #0F766E
   dark: [24, 24, 27] as [number, number, number], // zinc-900
   gray: [161, 161, 170] as [number, number, number], // zinc-400
   light: [244, 244, 245] as [number, number, number], // zinc-100

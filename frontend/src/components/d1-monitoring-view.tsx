@@ -67,7 +67,7 @@ export function D1MonitoringView() {
 
   if (!info) {
     return (
-      <div className="text-center py-8 text-sm text-zinc-500">
+      <div className="text-center py-8 text-sm text-stone-500">
         Loading D1 monitoring data...
       </div>
     );
@@ -80,12 +80,12 @@ export function D1MonitoringView() {
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h3 className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
-            <Database className="h-4 w-4 text-sky-400" />
+          <h3 className="text-sm font-semibold text-stone-200 flex items-center gap-2">
+            <Database className="h-4 w-4 text-[var(--accent-soft)]" />
             Cloudflare D1 - User Account Database
           </h3>
           {timestamp && (
-            <p className="text-[11px] text-zinc-500 mt-0.5">
+            <p className="text-[11px] text-stone-500 mt-0.5">
               Updated: {new Date(timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </p>
           )}
@@ -99,7 +99,7 @@ export function D1MonitoringView() {
               'h-8 text-xs gap-1.5',
               autoRefresh
                 ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
-                : 'border-white/[0.08] text-zinc-400 hover:bg-white/[0.06]'
+                : 'border-white/[0.08] text-stone-400 hover:bg-white/[0.06]'
             )}
           >
             {autoRefresh ? 'Auto 10s' : 'Paused'}
@@ -109,7 +109,7 @@ export function D1MonitoringView() {
             disabled={loading}
             variant="outline"
             size="sm"
-            className="border-white/[0.08] text-zinc-400 hover:bg-white/[0.06] h-8 text-xs gap-1.5"
+            className="border-white/[0.08] text-stone-400 hover:bg-white/[0.06] h-8 text-xs gap-1.5"
           >
             <RefreshCw className={cn('h-3 w-3', loading && 'animate-spin')} />
             Refresh
@@ -118,61 +118,61 @@ export function D1MonitoringView() {
       </div>
 
       {/* D1 Info */}
-      <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
-        <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
+      <div className="rounded-lg border border-white/[0.06] bg-[#161412] p-3">
+        <p className="text-[11px] text-stone-400 mb-2 flex items-center gap-1.5">
           <Database className="h-3 w-3" /> D1 Connection Info
         </p>
         <div className="grid grid-cols-2 gap-2 text-[11px]">
           <div>
-            <p className="text-zinc-500">Account ID</p>
-            <p className="text-zinc-300 font-mono text-[10px] break-all">{d1?.accountId}</p>
+            <p className="text-stone-500">Account ID</p>
+            <p className="text-stone-300 font-mono text-[10px] break-all">{d1?.accountId}</p>
           </div>
           <div>
-            <p className="text-zinc-500">Database ID</p>
-            <p className="text-zinc-300 font-mono text-[10px] break-all">{d1?.databaseId}</p>
+            <p className="text-stone-500">Database ID</p>
+            <p className="text-stone-300 font-mono text-[10px] break-all">{d1?.databaseId}</p>
           </div>
           <div>
-            <p className="text-zinc-500">Region</p>
-            <p className="text-zinc-300 font-mono">{d1?.region}</p>
+            <p className="text-stone-500">Region</p>
+            <p className="text-stone-300 font-mono">{d1?.region}</p>
           </div>
           <div>
-            <p className="text-zinc-500">Type</p>
-            <p className="text-zinc-300 font-mono">Cloudflare D1 (HTTP API)</p>
+            <p className="text-stone-500">Type</p>
+            <p className="text-stone-300 font-mono">Cloudflare D1 (HTTP API)</p>
           </div>
         </div>
       </div>
 
       {/* D1 Storage Usage */}
       {d1?.storage && (
-        <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
-          <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
+        <div className="rounded-lg border border-white/[0.06] bg-[#161412] p-3">
+          <p className="text-[11px] text-stone-400 mb-2 flex items-center gap-1.5">
             <HardDrive className="h-3 w-3" /> D1 Storage Usage
           </p>
           <div className="space-y-2">
             <div className="flex items-center justify-between text-[11px]">
-              <span className="text-zinc-400">
-                Used: <strong className="text-sky-300 font-mono">{d1.storage.usedMB} MB</strong>
-                <span className="text-zinc-600 ml-1">({d1.storage.usedKB.toLocaleString()} KB)</span>
+              <span className="text-stone-400">
+                Used: <strong className="text-[var(--accent-soft)] font-mono">{d1.storage.usedMB} MB</strong>
+                <span className="text-stone-600 ml-1">({d1.storage.usedKB.toLocaleString()} KB)</span>
               </span>
-              <span className="text-zinc-400">
+              <span className="text-stone-400">
                 Available: <strong className="text-emerald-400 font-mono">{d1.storage.availableMB} MB</strong>
               </span>
-              <span className="text-zinc-400">
-                Limit: <strong className="text-zinc-300 font-mono">{d1.storage.limitGB}</strong>
+              <span className="text-stone-400">
+                Limit: <strong className="text-stone-300 font-mono">{d1.storage.limitGB}</strong>
               </span>
             </div>
-            <div className="h-3 bg-[#161618] rounded-full overflow-hidden border border-white/[0.04]">
+            <div className="h-3 bg-[#171513] rounded-full overflow-hidden border border-white/[0.04]">
               <div
                 className={cn(
                   'h-full rounded-full transition-colors',
                   parseFloat(d1.storage.usedPct) > 80 ? 'bg-red-500'
                     : parseFloat(d1.storage.usedPct) > 50 ? 'bg-amber-500'
-                    : 'bg-sky-500'
+                    : 'bg-teal-500'
                 )}
                 style={{ width: `${Math.min(parseFloat(d1.storage.usedPct), 100)}%` }}
               />
             </div>
-            <p className="text-[10px] text-zinc-500">
+            <p className="text-[10px] text-stone-500">
               {d1.storage.usedPct}% used · {((5 * 1024 - parseFloat(d1.storage.usedMB)) / 1024).toFixed(2)} GB free
             </p>
           </div>
@@ -180,12 +180,12 @@ export function D1MonitoringView() {
       )}
 
       {/* Table counts */}
-      <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
-        <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
+      <div className="rounded-lg border border-white/[0.06] bg-[#161412] p-3">
+        <p className="text-[11px] text-stone-400 mb-2 flex items-center gap-1.5">
           <Database className="h-3 w-3" /> Tables ({d1?.tables?.length || 0})
         </p>
         {d1?.tables?.length === 0 ? (
-          <p className="text-xs text-zinc-500 italic py-4 text-center">
+          <p className="text-xs text-stone-500 italic py-4 text-center">
             No tables found. Mungkin D1 API error - cek server logs.
           </p>
         ) : (
@@ -194,17 +194,17 @@ export function D1MonitoringView() {
               const maxCount = Math.max(...(d1?.tables || []).map(x => x.count || 0));
               const pct = maxCount > 0 ? (t.count / maxCount) * 100 : 0;
               return (
-                <div key={i} className="rounded-md border border-white/[0.04] bg-[#161618] p-2">
+                <div key={i} className="rounded-md border border-white/[0.04] bg-[#171513] p-2">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-mono text-sky-400">{t.name}</span>
-                    <span className="text-[10px] text-zinc-400 font-mono">{t.count.toLocaleString()}</span>
+                    <span className="text-xs font-mono text-[var(--accent-soft)]">{t.name}</span>
+                    <span className="text-[10px] text-stone-400 font-mono">{t.count.toLocaleString()}</span>
                   </div>
                   {t.error && (
                     <p className="text-[9px] text-red-400">Error: {t.error}</p>
                   )}
-                  <div className="h-1.5 bg-[#111113] rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-[#161412] rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-sky-500/60 rounded-full"
+                      className="h-full bg-teal-500/60 rounded-full"
                       style={{ width: `${pct}%` }}
                     />
                   </div>
@@ -217,14 +217,14 @@ export function D1MonitoringView() {
 
       {/* Recent users */}
       {d1?.recentUsers?.length > 0 && (
-        <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
-          <p className="text-[11px] text-zinc-400 mb-2">Recent Users (last 5)</p>
+        <div className="rounded-lg border border-white/[0.06] bg-[#161412] p-3">
+          <p className="text-[11px] text-stone-400 mb-2">Recent Users (last 5)</p>
           <div className="space-y-1">
             {d1.recentUsers.map((u, i) => (
               <div key={i} className="flex items-center gap-2 text-[11px] py-0.5">
-                <span className="font-mono text-zinc-300">{u.name || '-'}</span>
-                <span className="text-zinc-600">{u.email}</span>
-                <span className="text-zinc-600 ml-auto text-[10px]">
+                <span className="font-mono text-stone-300">{u.name || '-'}</span>
+                <span className="text-stone-600">{u.email}</span>
+                <span className="text-stone-600 ml-auto text-[10px]">
                   {new Date(u.createdAt).toLocaleDateString('id-ID', { dateStyle: 'short' })}
                 </span>
               </div>
@@ -235,16 +235,16 @@ export function D1MonitoringView() {
 
       {/* Recent STT failures */}
       {d1?.recentFailures?.length > 0 && (
-        <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
-          <p className="text-[11px] text-zinc-400 mb-2">Recent STT Failures (last 5)</p>
+        <div className="rounded-lg border border-white/[0.06] bg-[#161412] p-3">
+          <p className="text-[11px] text-stone-400 mb-2">Recent STT Failures (last 5)</p>
           <div className="space-y-1">
             {d1.recentFailures.map((f, i) => (
               <div key={i} className="flex items-center gap-2 text-[11px] py-0.5">
                 <Badge variant="outline" className="text-[9px] px-1 py-0 border-amber-500/30 text-amber-400 bg-amber-500/10">
                   {f.source}
                 </Badge>
-                <span className="text-zinc-600">{f.unknownCount} unknown</span>
-                <span className="text-zinc-600 ml-auto text-[10px]">
+                <span className="text-stone-600">{f.unknownCount} unknown</span>
+                <span className="text-stone-600 ml-auto text-[10px]">
                   {new Date(f.createdAt).toLocaleDateString('id-ID', { dateStyle: 'short' })}
                 </span>
               </div>
@@ -254,9 +254,9 @@ export function D1MonitoringView() {
       )}
 
       {/* D1 architecture note */}
-      <div className="rounded-lg border border-sky-500/15 bg-sky-500/[0.03] p-3">
-        <p className="text-[11px] text-sky-300 mb-1">D1 vs SQLite</p>
-        <p className="text-[10px] text-zinc-400 leading-relaxed">
+      <div className="rounded-lg border border-teal-500/15 bg-teal-500/[0.03] p-3">
+        <p className="text-[11px] text-[var(--accent-soft)] mb-1">D1 vs SQLite</p>
+        <p className="text-[10px] text-stone-400 leading-relaxed">
           D1 (Cloudflare) menyimpan data user account: User (uid, username, gmail,
           activeSubscription, packetSubscription). Diakses via HTTP API (50-200ms per query).
           SQLite di VPS SSD menyimpan STT dictionary (learned_words, cooccurrence, corrections) -

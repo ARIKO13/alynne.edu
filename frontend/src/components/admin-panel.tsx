@@ -52,9 +52,9 @@ function StatCard({ icon: Icon, label, value, color, sub }: {
       </div>
       <div>
         <p className="text-2xl font-bold text-white">{typeof value === 'number' ? value.toLocaleString() : value}</p>
-        <p className="text-[11px] text-zinc-500">{label}</p>
+        <p className="text-[11px] text-stone-500">{label}</p>
       </div>
-      {sub && <p className="text-[10px] text-zinc-600">{sub}</p>}
+      {sub && <p className="text-[10px] text-stone-600">{sub}</p>}
     </div>
   );
 }
@@ -118,8 +118,8 @@ export function AdminPanel() {
   if (!isAdmin(user?.email)) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <Shield className="h-12 w-12 text-zinc-800 mb-4" />
-        <p className="text-sm text-zinc-500">Akses ditolak. Halaman ini hanya untuk admin.</p>
+        <Shield className="h-12 w-12 text-stone-800 mb-4" />
+        <p className="text-sm text-stone-500">Akses ditolak. Halaman ini hanya untuk admin.</p>
       </div>
     );
   }
@@ -149,7 +149,7 @@ export function AdminPanel() {
           onClick={handleRefresh}
           size="sm"
           variant="outline"
-          className="border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] gap-1.5 h-8 text-xs"
+          className="border-white/[0.08] text-stone-400 hover:text-stone-200 hover:bg-white/[0.06] gap-1.5 h-8 text-xs"
         >
           <RefreshCw className="h-3 w-3" />
           Refresh
@@ -164,7 +164,7 @@ export function AdminPanel() {
             'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
             activeView === 'overview'
               ? 'bg-[var(--accent)]/15 text-[var(--accent-soft)]'
-              : 'text-zinc-500 hover:text-zinc-300'
+              : 'text-stone-500 hover:text-stone-300'
           )}
         >
           <TrendingUp className="h-3.5 w-3.5" />
@@ -176,7 +176,7 @@ export function AdminPanel() {
             'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
             activeView === 'users'
               ? 'bg-[var(--accent)]/15 text-[var(--accent-soft)]'
-              : 'text-zinc-500 hover:text-zinc-300'
+              : 'text-stone-500 hover:text-stone-300'
           )}
         >
           <Users className="h-3.5 w-3.5" />
@@ -188,7 +188,7 @@ export function AdminPanel() {
             'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
             activeView === 'dataset'
               ? 'bg-[var(--accent)]/15 text-[var(--accent-soft)]'
-              : 'text-zinc-500 hover:text-zinc-300'
+              : 'text-stone-500 hover:text-stone-300'
           )}
         >
           <Database className="h-3.5 w-3.5" />
@@ -199,8 +199,8 @@ export function AdminPanel() {
           className={cn(
             'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
             activeView === 'd1'
-              ? 'bg-sky-500/15 text-sky-400'
-              : 'text-zinc-500 hover:text-zinc-300'
+              ? 'bg-teal-500/15 text-[var(--accent-soft)]'
+              : 'text-stone-500 hover:text-stone-300'
           )}
         >
           <Database className="h-3.5 w-3.5" />
@@ -212,7 +212,7 @@ export function AdminPanel() {
             'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
             activeView === 'llm'
               ? 'bg-emerald-500/15 text-emerald-400'
-              : 'text-zinc-500 hover:text-zinc-300'
+              : 'text-stone-500 hover:text-stone-300'
           )}
         >
           <Cpu className="h-3.5 w-3.5" />
@@ -237,7 +237,7 @@ export function AdminPanel() {
               icon={FileText}
               label="Total Modul"
               value={stats.totalModules || 0}
-              color="bg-zinc-500/10 text-zinc-400"
+              color="bg-stone-500/10 text-stone-400"
             />
             <StatCard
               icon={Trophy}
@@ -256,7 +256,7 @@ export function AdminPanel() {
               icon={Award}
               label="Certificates"
               value={stats.totalCertificates}
-              color="bg-sky-500/10 text-sky-400"
+              color="bg-teal-500/10 text-[var(--accent-soft)]"
             />
             <StatCard
               icon={Flame}
@@ -269,7 +269,7 @@ export function AdminPanel() {
           {/* Top Users Leaderboard */}
           <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] overflow-hidden">
             <div className="px-4 py-3 border-b border-white/[0.06]">
-              <h3 className="text-sm font-medium text-zinc-200 flex items-center gap-2">
+              <h3 className="text-sm font-medium text-stone-200 flex items-center gap-2">
                 <Trophy className="h-4 w-4 text-amber-400" />
                 Top 10 Leaderboard
               </h3>
@@ -281,9 +281,9 @@ export function AdminPanel() {
                     <span className={cn(
                       'w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold',
                       idx === 0 ? 'bg-amber-400/20 text-amber-400' :
-                      idx === 1 ? 'bg-zinc-400/20 text-zinc-300' :
+                      idx === 1 ? 'bg-stone-400/20 text-stone-300' :
                       idx === 2 ? 'bg-orange-400/20 text-orange-400' :
-                      'bg-white/[0.04] text-zinc-600'
+                      'bg-white/[0.04] text-stone-600'
                     )}>
                       {idx + 1}
                     </span>
@@ -292,22 +292,22 @@ export function AdminPanel() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-sm text-zinc-200 truncate">{u.name}</span>
+                        <span className="text-sm text-stone-200 truncate">{u.name}</span>
                         {isAdmin(u.email) && (
                           <Badge className="bg-[var(--accent)]/20 text-[var(--accent-soft)] border-[var(--accent)]/30 text-[8px] px-1 py-0">Admin</Badge>
                         )}
                       </div>
-                      <p className="text-[10px] text-zinc-600 truncate">{u.email}</p>
+                      <p className="text-[10px] text-stone-600 truncate">{u.email}</p>
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-sm font-semibold text-white">"-"</p>
-                      <p className="text-[10px] text-zinc-600">"-"</p>
+                      <p className="text-[10px] text-stone-600">"-"</p>
                     </div>
                   </div>
                 );
               })}
               {(stats.topUsers || []).length === 0 && (
-                <div className="px-4 py-8 text-center text-xs text-zinc-600">
+                <div className="px-4 py-8 text-center text-xs text-stone-600">
                   Belum ada data user
                 </div>
               )}
@@ -320,22 +320,22 @@ export function AdminPanel() {
         <div className="space-y-3">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-600" />
             <Input
               value={search}
               onChange={(e) => handleSearch(e.target.value)}
               placeholder="Cari nama atau email..."
-              className="pl-9 h-9 border-white/[0.08] bg-[#111113] text-zinc-200 placeholder:text-zinc-600 text-sm"
+              className="pl-9 h-9 border-white/[0.08] bg-[#161412] text-stone-200 placeholder:text-stone-600 text-sm"
             />
           </div>
 
           {/* User count */}
-          <p className="text-[11px] text-zinc-600">{totalUsers} user ditemukan</p>
+          <p className="text-[11px] text-stone-600">{totalUsers} user ditemukan</p>
 
           {/* Users table */}
           <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] overflow-hidden">
             {/* Desktop header */}
-            <div className="hidden md:grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-white/[0.06] text-[12px] font-medium text-zinc-500">
+            <div className="hidden md:grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-white/[0.06] text-[12px] font-medium text-stone-500">
               <div className="col-span-4">User</div>
               <div className="col-span-3 text-center">Status</div>
               <div className="col-span-3 text-center">Modul</div>
@@ -354,28 +354,28 @@ export function AdminPanel() {
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-sm text-zinc-200 truncate">{u.name}</span>
+                            <span className="text-sm text-stone-200 truncate">{u.name}</span>
                             {isAdmin(u.email) && (
                               <Badge className="bg-[var(--accent)]/20 text-[var(--accent-soft)] border-[var(--accent)]/30 text-[8px] px-1 py-0">Admin</Badge>
                             )}
                           </div>
-                          <p className="text-[10px] text-zinc-600 truncate">{u.email}</p>
+                          <p className="text-[10px] text-stone-600 truncate">{u.email}</p>
                         </div>
                       </div>
                       <div className="col-span-2 text-center">
                         <p className="text-sm font-semibold text-white">"-"</p>
-                        <p className="text-[10px] text-zinc-600">-</p>
+                        <p className="text-[10px] text-stone-600">-</p>
                       </div>
                       <div className="col-span-2 text-center">
                         <span className="text-sm text-amber-400 font-medium">"-"</span>
-                        <span className="text-[10px] text-zinc-600 ml-1">hari</span>
+                        <span className="text-[10px] text-stone-600 ml-1">hari</span>
                       </div>
                       <div className="col-span-2 text-center">
-                        <span className="text-sm text-zinc-300">0</span>
-                        <span className="text-[10px] text-zinc-600 ml-1">modul</span>
+                        <span className="text-sm text-stone-300">0</span>
+                        <span className="text-[10px] text-stone-600 ml-1">modul</span>
                       </div>
                       <div className="col-span-2 text-center">
-                        <p className="text-[10px] text-zinc-500">
+                        <p className="text-[10px] text-stone-500">
                           {new Date(u.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </p>
                       </div>
@@ -388,16 +388,16 @@ export function AdminPanel() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-sm text-zinc-200 truncate">{u.name}</span>
+                          <span className="text-sm text-stone-200 truncate">{u.name}</span>
                           {isAdmin(u.email) && (
                             <Badge className="bg-[var(--accent)]/20 text-[var(--accent-soft)] border-[var(--accent)]/30 text-[8px] px-1 py-0">Admin</Badge>
                           )}
                         </div>
-                        <p className="text-[10px] text-zinc-600 truncate">{u.email}</p>
+                        <p className="text-[10px] text-stone-600 truncate">{u.email}</p>
                         <div className="flex items-center gap-3 mt-1 text-[10px]">
                           <span className="text-white font-medium">"-"</span>
                           <span className="text-amber-400">"-" streak</span>
-                          <span className="text-zinc-500">0 modul</span>
+                          <span className="text-stone-500">0 modul</span>
                         </div>
                       </div>
                     </div>
@@ -405,7 +405,7 @@ export function AdminPanel() {
                 );
               })}
               {(users || []).length === 0 && (
-                <div className="px-4 py-8 text-center text-xs text-zinc-600">
+                <div className="px-4 py-8 text-center text-xs text-stone-600">
                   {search ? 'Tidak ada user yang cocok' : 'Belum ada user'}
                 </div>
               )}
@@ -420,11 +420,11 @@ export function AdminPanel() {
                 disabled={page <= 1}
                 size="sm"
                 variant="outline"
-                className="border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] h-8 text-xs"
+                className="border-white/[0.08] text-stone-400 hover:text-stone-200 hover:bg-white/[0.06] h-8 text-xs"
               >
                 Prev
               </Button>
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-stone-500">
                 {page} / {totalPages}
               </span>
               <Button
@@ -432,7 +432,7 @@ export function AdminPanel() {
                 disabled={page >= totalPages}
                 size="sm"
                 variant="outline"
-                className="border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] h-8 text-xs"
+                className="border-white/[0.08] text-stone-400 hover:text-stone-200 hover:bg-white/[0.06] h-8 text-xs"
               >
                 Next
               </Button>
@@ -541,7 +541,7 @@ function LlmHealthView() {
   }
 
   if (!data) {
-    return <p className="text-xs text-zinc-500 text-center py-8">Gagal memuat data LLM health.</p>;
+    return <p className="text-xs text-stone-500 text-center py-8">Gagal memuat data LLM health.</p>;
   }
 
   const { latest, fallbackEvents, fallbackCount24h, piBansosUrl, usageInfo } = data;
@@ -557,8 +557,8 @@ function LlmHealthView() {
             <Cpu className="h-4 w-4 text-emerald-400" />
             LLM Health Monitor
           </h3>
-          <p className="text-[10px] text-zinc-500 mt-1">
-            Proxy: <code className="text-zinc-400">{piBansosUrl}</code>
+          <p className="text-[10px] text-stone-500 mt-1">
+            Proxy: <code className="text-stone-400">{piBansosUrl}</code>
             {latest && (
               <> • Last check: {new Date(latest.checkedAt).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })} ({latest.triggeredBy})</>
             )}
@@ -580,7 +580,7 @@ function LlmHealthView() {
       <div className={cn(
         'rounded-lg border px-3 py-2.5 text-xs',
         !latest
-          ? 'border-zinc-700 bg-zinc-900/40 text-zinc-400'
+          ? 'border-stone-700 bg-stone-900/40 text-stone-400'
           : !latest.proxyReachable
             ? 'border-red-500/40 bg-red-500/10 text-red-300'
             : allAlive
@@ -600,7 +600,7 @@ function LlmHealthView() {
       {usageInfo && (
         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
           <div className="flex items-center justify-between mb-2">
-            <h4 className="text-xs font-medium text-zinc-200 flex items-center gap-1.5">
+            <h4 className="text-xs font-medium text-stone-200 flex items-center gap-1.5">
               <Activity className="h-3 w-3 text-emerald-400" />
               KiloCode Usage (200 req/jam)
             </h4>
@@ -629,11 +629,11 @@ function LlmHealthView() {
                 style={{ width: `${(usageInfo.requestsThisHour / usageInfo.hourlyLimit) * 100}%` }}
               />
             </div>
-            <span className="text-[10px] text-zinc-500 shrink-0 tabular-nums">
+            <span className="text-[10px] text-stone-500 shrink-0 tabular-nums">
               {usageInfo.requestsThisHour}/{usageInfo.hourlyLimit}
             </span>
           </div>
-          <div className="flex items-center justify-between text-[9px] text-zinc-600">
+          <div className="flex items-center justify-between text-[9px] text-stone-600">
             <span>
               Last: {usageInfo.lastRequestAt
                 ? new Date(usageInfo.lastRequestAt).toLocaleString('id-ID', { timeStyle: 'medium' })
@@ -663,12 +663,12 @@ function LlmHealthView() {
                   m.alive ? 'bg-emerald-400' : 'bg-red-400'
                 )} />
               </div>
-              <p className="text-[9px] text-zinc-500 truncate">{m.modelId}</p>
-              <p className="text-[10px] text-zinc-400">
+              <p className="text-[9px] text-stone-500 truncate">{m.modelId}</p>
+              <p className="text-[10px] text-stone-400">
                 {m.alive ? `${m.responseMs}ms` : m.errorType || 'dead'}
               </p>
               {m.alive && m.replySnippet && (
-                <p className="text-[9px] text-zinc-500 italic truncate">"{m.replySnippet}"</p>
+                <p className="text-[9px] text-stone-500 italic truncate">"{m.replySnippet}"</p>
               )}
               {!m.alive && m.errorMessage && (
                 <p className="text-[9px] text-red-400/70 truncate" title={m.errorMessage}>{m.errorMessage}</p>
@@ -681,28 +681,28 @@ function LlmHealthView() {
       {/* Fallback events summary */}
       <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
         <div className="flex items-center justify-between mb-2">
-          <h4 className="text-xs font-medium text-zinc-200">Recent Fallback Events</h4>
-          <Badge variant="outline" className="text-[10px] border-white/10 text-zinc-400">
+          <h4 className="text-xs font-medium text-stone-200">Recent Fallback Events</h4>
+          <Badge variant="outline" className="text-[10px] border-white/10 text-stone-400">
             {fallbackCount24h} in 24h
           </Badge>
         </div>
         {fallbackEvents.length === 0 ? (
-          <p className="text-[10px] text-zinc-600 text-center py-4">
+          <p className="text-[10px] text-stone-600 text-center py-4">
             Belum ada fallback. Semua request LLM pakai primary model.
           </p>
         ) : (
           <div className="space-y-1 max-h-64 overflow-y-auto">
             {fallbackEvents.slice(0, 20).map((ev, i) => (
               <div key={i} className="text-[10px] flex items-start gap-2 p-1.5 rounded hover:bg-white/[0.02]">
-                <span className="text-zinc-600 shrink-0">
+                <span className="text-stone-600 shrink-0">
                   {new Date(ev.timestamp).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'medium' })}
                 </span>
-                <span className="text-zinc-400 truncate flex-1">
+                <span className="text-stone-400 truncate flex-1">
                   <code className="text-amber-400">{ev.endpoint}</code>{' → '}
                   <code>{modelShortName(ev.fromModel)}</code>{' '}
                   <span className="text-red-400">→</span>{' '}
                   <code className="text-emerald-400">{modelShortName(ev.toModel)}</code>
-                  <span className="text-zinc-500 ml-2">({ev.errorType})</span>
+                  <span className="text-stone-500 ml-2">({ev.errorType})</span>
                 </span>
               </div>
             ))}
@@ -710,7 +710,7 @@ function LlmHealthView() {
         )}
       </div>
 
-      <p className="text-[10px] text-zinc-600">
+      <p className="text-[10px] text-stone-600">
         Cron daily 02:00 UTC+7 otomatis test semua 3 model. Bila ada model mati, akan tampil merah di sini.
       </p>
     </div>

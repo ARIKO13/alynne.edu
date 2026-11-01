@@ -72,13 +72,13 @@ export function YouTubeTranscript({ onTranscript, disabled }: YouTubeTranscriptP
     <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
       <div className="flex items-center gap-2">
         <Youtube className="h-4 w-4 text-red-500" />
-        <p className="text-sm font-medium text-zinc-200">YouTube Transkrip</p>
-        <span className="text-[10px] text-zinc-600 ml-auto">Instan • tanpa pemrosesan</span>
+        <p className="text-sm font-medium text-stone-200">YouTube Transkrip</p>
+        <span className="text-[10px] text-stone-600 ml-auto">Instan • tanpa pemrosesan</span>
       </div>
 
       <form onSubmit={handleSubmit} className="flex gap-2">
         <div className="relative flex-1">
-          <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-600" />
+          <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-600" />
           <input
             type="text"
             value={url}
@@ -86,7 +86,7 @@ export function YouTubeTranscript({ onTranscript, disabled }: YouTubeTranscriptP
             placeholder="Tempel URL YouTube..."
             disabled={disabled || loading}
             className={cn(
-              "w-full rounded-lg border border-white/[0.08] bg-white/[0.02] py-2 pl-9 pr-3 text-xs text-zinc-200 placeholder:text-zinc-600",
+              "w-full rounded-lg border border-white/[0.08] bg-white/[0.02] py-2 pl-9 pr-3 text-xs text-stone-200 placeholder:text-stone-600",
               "focus:border-[var(--accent)]/40 focus:bg-white/[0.04] focus:outline-none",
               disabled && "opacity-50 cursor-not-allowed"
             )}
@@ -96,7 +96,7 @@ export function YouTubeTranscript({ onTranscript, disabled }: YouTubeTranscriptP
           type="submit"
           size="sm"
           disabled={!url.trim() || disabled || loading}
-          className="bg-[var(--surface-2)] text-zinc-200 hover:bg-white/[0.08] border-[var(--border)]"
+          className="bg-[var(--surface-2)] text-stone-200 hover:bg-white/[0.08] border-[var(--border)]"
         >
           {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Ambil"}
         </Button>
@@ -110,13 +110,13 @@ export function YouTubeTranscript({ onTranscript, disabled }: YouTubeTranscriptP
               {result.chars} karakter • {result.duration_min} menit • {result.segments} segmen
             </p>
           </div>
-          <button onClick={clear} className="text-zinc-600 hover:text-red-400">
+          <button onClick={clear} className="text-stone-600 hover:text-red-400">
             <Trash2 className="h-3 w-3" />
           </button>
         </div>
       )}
 
-      <p className="text-[9px] text-zinc-600 leading-relaxed">
+      <p className="text-[9px] text-stone-600 leading-relaxed">
         Hanya untuk video yang memiliki subtitle/caption. Untuk video lebih dari 30 menit, gunakan ini sebagai pengganti upload file.
       </p>
     </div>

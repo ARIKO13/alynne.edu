@@ -10,7 +10,7 @@ export function AudioVisualizer({ audioLevels, isListening = false }: AudioVisua
   // Web Speech API mode: no real audio stream, show a listening pulse
   if (isListening && !hasSound) {
     return (
-      <div className="flex items-center gap-3 rounded-lg border border-white/[0.06] bg-[#111113] px-4 py-3">
+      <div className="flex items-center gap-3 rounded-lg border border-white/[0.06] bg-[#161412] px-4 py-3">
         <div className="flex items-end gap-[2px] h-8 flex-1">
           {audioLevels.map((_, i) => {
             // Simulated gentle pulse based on index
@@ -21,14 +21,14 @@ export function AudioVisualizer({ audioLevels, isListening = false }: AudioVisua
                 className="w-full rounded-sm"
                 style={{
                   height: '3px',
-                  backgroundColor: '#38BDF833',
+                  backgroundColor: '#7FC4B833',
                   animation: `pulse-bar 1.2s ease-in-out ${delay}ms infinite alternate`,
                 }}
               />
             );
           })}
         </div>
-        <span className="text-[10px] text-zinc-500 shrink-0">Mendengarkan...</span>
+        <span className="text-[10px] text-stone-500 shrink-0">Mendengarkan...</span>
 
         <style>{`
           @keyframes pulse-bar {
@@ -41,10 +41,10 @@ export function AudioVisualizer({ audioLevels, isListening = false }: AudioVisua
   }
 
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-[#111113] px-4 py-3">
+    <div className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-[#161412] px-4 py-3">
       <div className="flex items-end gap-[2px] h-8 flex-1">
         {audioLevels.map((level, i) => {
-          const color = level > 40 ? '#38BDF8' : level > 15 ? '#38BDF866' : '#38BDF833';
+          const color = level > 40 ? '#7FC4B8' : level > 15 ? '#7FC4B866' : '#7FC4B833';
           return (
             <div
               key={i}
@@ -58,7 +58,7 @@ export function AudioVisualizer({ audioLevels, isListening = false }: AudioVisua
           );
         })}
       </div>
-      <span className="text-[10px] text-zinc-600 shrink-0">
+      <span className="text-[10px] text-stone-600 shrink-0">
         {hasSound ? 'Suara terdeteksi' : 'Menunggu suara...'}
       </span>
     </div>

@@ -185,8 +185,8 @@ JSON array (tanpa markdown):
           <div className="text-center py-8 space-y-4">
             <GraduationCap className="h-16 w-16 mx-auto text-[var(--accent-soft)]/50" />
             <div>
-              <p className="text-sm text-zinc-300 mb-1">Ujian simulasi dari {chapters.length} bab</p>
-              <p className="text-[11px] text-zinc-500">
+              <p className="text-sm text-stone-300 mb-1">Ujian simulasi dari {chapters.length} bab</p>
+              <p className="text-[11px] text-stone-500">
                 AI buat 8 soal (pilihan ganda + benar/salah + isian) → timer → auto-grade → feedback
               </p>
             </div>
@@ -201,7 +201,7 @@ JSON array (tanpa markdown):
         {state === 'generating' && (
           <div className="text-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-[var(--accent-soft)] mx-auto mb-4" />
-            <p className="text-sm text-zinc-400">AI sedang membuat soal ujian...</p>
+            <p className="text-sm text-stone-400">AI sedang membuat soal ujian...</p>
           </div>
         )}
 
@@ -212,12 +212,12 @@ JSON array (tanpa markdown):
             <div className="flex items-center justify-between">
               <Badge variant="outline" className={cn(
                 'text-xs',
-                timeLeft < 60 ? 'border-red-500/30 text-red-400' : 'border-zinc-700 text-zinc-400'
+                timeLeft < 60 ? 'border-red-500/30 text-red-400' : 'border-stone-700 text-stone-400'
               )}>
                 <Clock className="h-3 w-3 mr-1" />
                 {formatTime(timeLeft)}
               </Badge>
-              <span className="text-[10px] text-zinc-500">
+              <span className="text-[10px] text-stone-500">
                 Soal {currentQ + 1}/{questions.length} | Terjawab: {answeredCount}
               </span>
             </div>
@@ -230,7 +230,7 @@ JSON array (tanpa markdown):
                   {current.type === 'multiple-choice' ? 'Pilihan Ganda' : current.type === 'true-false' ? 'Benar/Salah' : 'Isian Singkat'}
                 </Badge>
               </div>
-              <p className="text-sm text-zinc-200 mb-4">{current.question}</p>
+              <p className="text-sm text-stone-200 mb-4">{current.question}</p>
 
               {/* Answer input */}
               {current.type === 'multiple-choice' || current.type === 'true-false' ? (
@@ -243,7 +243,7 @@ JSON array (tanpa markdown):
                         'text-left px-3 py-2 rounded text-sm transition-colors border',
                         answers[current.id] === opt
                           ? 'border-[var(--accent)]/50 bg-[var(--accent)]/10 text-[var(--accent-soft)]'
-                          : 'border-white/[0.06] text-zinc-400 hover:border-white/[0.15]'
+                          : 'border-white/[0.06] text-stone-400 hover:border-white/[0.15]'
                       )}
                     >
                       {opt}
@@ -255,7 +255,7 @@ JSON array (tanpa markdown):
                   value={answers[current.id] || ''}
                   onChange={e => handleAnswer(current.id, e.target.value)}
                   placeholder="Ketik jawaban..."
-                  className="w-full px-3 py-2 rounded bg-white/[0.04] border border-white/[0.08] text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-[var(--accent)]/50"
+                  className="w-full px-3 py-2 rounded bg-white/[0.04] border border-white/[0.08] text-sm text-stone-200 placeholder:text-stone-600 focus:outline-none focus:border-[var(--accent)]/50"
                 />
               )}
             </div>
@@ -299,7 +299,7 @@ JSON array (tanpa markdown):
             {grading ? (
               <div className="text-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-[var(--accent-soft)] mx-auto mb-4" />
-                <p className="text-sm text-zinc-400">Menilai jawaban...</p>
+                <p className="text-sm text-stone-400">Menilai jawaban...</p>
               </div>
             ) : (
               <>
@@ -307,7 +307,7 @@ JSON array (tanpa markdown):
                 <div className="text-center py-4">
                   <Award className={cn('h-16 w-16 mx-auto mb-2', accuracy >= 80 ? 'text-green-400' : accuracy >= 60 ? 'text-amber-400' : 'text-red-400')} />
                   <p className="text-3xl font-bold text-white">{score}/{questions.length}</p>
-                  <p className="text-sm text-zinc-400">{accuracy}% Akurasi</p>
+                  <p className="text-sm text-stone-400">{accuracy}% Akurasi</p>
                   <Badge variant="outline" className={cn('mt-2 text-xs', accuracy >= 80 ? 'border-green-500/30 text-green-400' : accuracy >= 60 ? 'border-amber-500/30 text-amber-400' : 'border-red-500/30 text-red-400')}>
                     {accuracy >= 80 ? 'Excellent!' : accuracy >= 60 ? 'Good' : 'Belajar lagi!'}
                   </Badge>
@@ -330,15 +330,15 @@ JSON array (tanpa markdown):
                           <X className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
                         )}
                         <div className="flex-1">
-                          <p className="text-xs text-zinc-200 mb-1">{i + 1}. {q.question}</p>
-                          <p className="text-[10px] text-zinc-500">
+                          <p className="text-xs text-stone-200 mb-1">{i + 1}. {q.question}</p>
+                          <p className="text-[10px] text-stone-500">
                             Jawaban kamu: <span className={q.isCorrect ? 'text-green-400' : 'text-red-400'}>{q.userAnswer || '(kosong)'}</span>
                           </p>
                           {!q.isCorrect && (
                             <p className="text-[10px] text-green-400">Benar: {q.correctAnswer}</p>
                           )}
                           {q.explanation && (
-                            <p className="text-[10px] text-zinc-600 mt-1">{q.explanation}</p>
+                            <p className="text-[10px] text-stone-600 mt-1">{q.explanation}</p>
                           )}
                         </div>
                       </div>

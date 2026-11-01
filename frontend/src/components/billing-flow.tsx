@@ -62,11 +62,11 @@ const ACCENT: Record<
     check: 'text-rose-400',
   },
   sky: {
-    ring: 'ring-sky-500',
-    bg: 'bg-sky-500/[0.06]',
-    text: 'text-sky-300',
-    badge: 'bg-sky-500',
-    check: 'text-sky-400',
+    ring: 'ring-teal-500',
+    bg: 'bg-teal-500/[0.06]',
+    text: 'text-[var(--accent-soft)]',
+    badge: 'bg-teal-500',
+    check: 'text-[var(--accent-soft)]',
   },
 };
 
@@ -180,7 +180,7 @@ export function BillingFlow() {
             transition={{ duration: 0.25 }}
             className="flex flex-col gap-3"
           >
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-stone-500">
               Pilih AI model yang ingin kamu langganan. Untuk sekarang ALYNNE.EDU sudah
               tersedia - model lain akan menyusul.
             </p>
@@ -211,13 +211,13 @@ export function BillingFlow() {
                       </span>
                     )}
                     {disabled && (
-                      <span className="absolute -top-2 right-3 inline-flex items-center gap-1 rounded-full bg-zinc-700 px-2 py-0.5 text-[10px] font-semibold text-white">
+                      <span className="absolute -top-2 right-3 inline-flex items-center gap-1 rounded-full bg-stone-700 px-2 py-0.5 text-[10px] font-semibold text-white">
                         Segera Hadir
                       </span>
                     )}
                     <div className="mb-3 flex items-center justify-between">
                       <div
-                        className={`flex h-12 w-12 items-center justify-center rounded-lg bg-white/[0.04] text-xs font-bold ${isSelected ? accent.text : 'text-zinc-400'}`}
+                        className={`flex h-12 w-12 items-center justify-center rounded-lg bg-white/[0.04] text-xs font-bold ${isSelected ? accent.text : 'text-stone-400'}`}
                       >
                         {m.badge}
                       </div>
@@ -228,8 +228,8 @@ export function BillingFlow() {
                     >
                       {m.name}
                     </h3>
-                    <p className="mb-1 text-xs text-zinc-500">{m.tagline}</p>
-                    <p className="text-xs text-zinc-400 leading-relaxed">{m.description}</p>
+                    <p className="mb-1 text-xs text-stone-500">{m.tagline}</p>
+                    <p className="text-xs text-stone-400 leading-relaxed">{m.description}</p>
                   </button>
                 );
               })}
@@ -239,8 +239,8 @@ export function BillingFlow() {
                 <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/[0.02] text-2xl opacity-30">
                   +
                 </div>
-                <p className="text-xs font-medium text-zinc-600">Model lain menyusul</p>
-                <p className="text-[10px] text-zinc-700">ALYNNE.PRO · ALYNNE.VOICE · ALYNNE.LAB</p>
+                <p className="text-xs font-medium text-stone-600">Model lain menyusul</p>
+                <p className="text-[10px] text-stone-700">ALYNNE.PRO · ALYNNE.VOICE · ALYNNE.LAB</p>
               </div>
             </div>
           </motion.div>
@@ -263,13 +263,13 @@ export function BillingFlow() {
                 {model?.badge}
               </div>
               <div>
-                <p className="text-[11px] text-zinc-500">Model dipilih</p>
+                <p className="text-[11px] text-stone-500">Model dipilih</p>
                 <p className="text-sm font-bold text-white">{model?.name}</p>
-                <p className="text-[10px] text-zinc-500">{model?.tagline}</p>
+                <p className="text-[10px] text-stone-500">{model?.tagline}</p>
               </div>
             </div>
 
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-stone-500">
               Pilih paket langganan untuk {model?.name}. Harga mulai dari{' '}
               {formatIDR(Math.min(...tiersForModel.map((t) => t.price)))}.
             </p>
@@ -305,16 +305,16 @@ export function BillingFlow() {
                       </h3>
                       {isSelected && <CheckCircle2 className={`h-5 w-5 ${accent.check}`} />}
                     </div>
-                    <p className="mb-3 text-xs text-zinc-500">{t.tagline}</p>
+                    <p className="mb-3 text-xs text-stone-500">{t.tagline}</p>
                     <div className="mb-3 flex items-baseline gap-1">
                       <span className="text-xl font-bold text-white">{formatIDR(t.price)}</span>
-                      <span className="text-xs text-zinc-500">/{t.durationDays} hari</span>
+                      <span className="text-xs text-stone-500">/{t.durationDays} hari</span>
                     </div>
                     <ul className="space-y-1.5">
                       {t.features.map((f) => (
                         <li
                           key={f}
-                          className="flex items-start gap-1.5 text-xs text-zinc-400"
+                          className="flex items-start gap-1.5 text-xs text-stone-400"
                         >
                           <CheckCircle2
                             className={`mt-0.5 h-3 w-3 flex-shrink-0 ${accent.check}`}
@@ -342,12 +342,12 @@ export function BillingFlow() {
           >
             <div className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
               <div>
-                <p className="text-[11px] text-zinc-500">Pesanan</p>
+                <p className="text-[11px] text-stone-500">Pesanan</p>
                 <p className="font-bold text-white">{tier?.name}</p>
-                <p className="text-xs text-zinc-500">{tier?.tagline}</p>
+                <p className="text-xs text-stone-500">{tier?.tagline}</p>
               </div>
               <div className="text-right">
-                <p className="text-[11px] text-zinc-500">
+                <p className="text-[11px] text-stone-500">
                   {tier?.durationDays} hari
                 </p>
                 <p className="text-lg font-bold text-white">{formatIDR(tier?.price ?? 0)}</p>
@@ -368,12 +368,12 @@ export function BillingFlow() {
                         : 'border-white/[0.06] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.04]'
                     }`}
                   >
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md bg-white/[0.04] text-[10px] font-bold text-zinc-400">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md bg-white/[0.04] text-[10px] font-bold text-stone-400">
                       {p.badge}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-zinc-200">{p.label}</p>
-                      <p className="truncate text-xs text-zinc-500">{p.description}</p>
+                      <p className="truncate text-sm font-medium text-stone-200">{p.label}</p>
+                      <p className="truncate text-xs text-stone-500">{p.description}</p>
                     </div>
                     {isSelected && (
                       <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-[var(--accent-soft)]" />
@@ -397,7 +397,7 @@ export function BillingFlow() {
           >
             <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-5">
               <h3 className="mb-4 text-base font-semibold text-white">Ringkasan Pembayaran</h3>
-              <p className="mb-3 text-xs text-zinc-500">
+              <p className="mb-3 text-xs text-stone-500">
                 Periksa pesananmu sebelum melanjutkan ke pembayaran.
               </p>
               <div className="space-y-2.5 text-sm">
@@ -415,14 +415,14 @@ export function BillingFlow() {
                   <SummaryRow label="Harga langganan" value={formatIDR(subtotal)} />
                   <SummaryRow label="Pajak (PPN 11%)" value={formatIDR(tax)} />
                   <div className="mt-2 flex items-baseline justify-between border-t border-white/[0.06] pt-2">
-                    <span className="font-semibold text-zinc-200">Total Tagihan</span>
+                    <span className="font-semibold text-stone-200">Total Tagihan</span>
                     <span className="text-xl font-bold text-white">{formatIDR(total)}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-start gap-2 rounded-lg border border-emerald-500/15 bg-emerald-500/[0.03] px-3 py-2.5 text-xs text-zinc-400">
+            <div className="flex items-start gap-2 rounded-lg border border-emerald-500/15 bg-emerald-500/[0.03] px-3 py-2.5 text-xs text-stone-400">
               <ShieldCheck className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-400" />
               <p>
                 Pembayaran diamankan oleh Midtrans dengan enkripsi end-to-end.
@@ -465,7 +465,7 @@ export function BillingFlow() {
           type="button"
           onClick={handleBack}
           disabled={step === 1 || submitting}
-          className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+          className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm text-stone-400 transition-colors hover:bg-white/[0.04] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
         >
           <ChevronLeft className="h-4 w-4" />
           Kembali
@@ -503,7 +503,7 @@ function StepperHeader({ currentStep }: { currentStep: Step }) {
                   ? 'bg-[var(--accent)] text-white'
                   : currentStep > s.n
                   ? 'bg-emerald-500 text-white'
-                  : 'bg-white/[0.06] text-zinc-500'
+                  : 'bg-white/[0.06] text-stone-500'
               }`}
             >
               {currentStep > s.n ? <CheckCircle2 className="h-4 w-4" /> : s.n}
@@ -514,7 +514,7 @@ function StepperHeader({ currentStep }: { currentStep: Step }) {
                   ? 'text-white'
                   : currentStep > s.n
                   ? 'text-emerald-400'
-                  : 'text-zinc-500'
+                  : 'text-stone-500'
               }`}
             >
               {s.label}
@@ -536,8 +536,8 @@ function StepperHeader({ currentStep }: { currentStep: Step }) {
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-zinc-500">{label}</span>
-      <span className="font-medium text-zinc-200">{value}</span>
+      <span className="text-stone-500">{label}</span>
+      <span className="font-medium text-stone-200">{value}</span>
     </div>
   );
 }

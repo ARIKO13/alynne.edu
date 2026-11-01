@@ -32,7 +32,7 @@ export class AppErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: 24, background: '#0a0a0a', color: '#e5e5e5', minHeight: '100vh', fontFamily: 'monospace', fontSize: 13 }}>
+        <div style={{ padding: 24, background: '#0D0C0A', color: '#e5e5e5', minHeight: '100vh', fontFamily: 'monospace', fontSize: 13 }}>
           <h2 style={{ color: 'var(--accent-soft)', marginBottom: 8 }}>React Error Caught</h2>
           <p style={{ color: '#ef4444', marginBottom: 16, wordBreak: 'break-all' }}>{this.state.error?.message}</p>
           {this.state.debugInfo && (
@@ -44,11 +44,11 @@ export class AppErrorBoundary extends Component<Props, State> {
             </>
           )}
           <h3 style={{ color: '#a3a3a3', marginBottom: 4 }}>Error Stack:</h3>
-          <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: '#737373', marginBottom: 16, fontSize: 11, background: '#161618', padding: 12, borderRadius: 8 }}>
+          <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: '#737373', marginBottom: 16, fontSize: 11, background: '#171513', padding: 12, borderRadius: 8 }}>
             {this.state.error?.stack}
           </pre>
           <h3 style={{ color: '#a3a3a3', marginBottom: 4 }}>Component Stack:</h3>
-          <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: '#737373', fontSize: 11, background: '#161618', padding: 12, borderRadius: 8 }}>
+          <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: '#737373', fontSize: 11, background: '#171513', padding: 12, borderRadius: 8 }}>
             {this.state.errorInfo}
           </pre>
           <button

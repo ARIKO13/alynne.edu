@@ -17,11 +17,11 @@ interface BrandLogoProps {
   size?: number;
   /** Extra className for the outer container. */
   className?: string;
-  /** Override brand color (defaults to violet #38BDF8). */
+  /** Override brand color (defaults to violet #7FC4B8). */
   color?: string;
 }
 
-export function BrandLogo({ size = 32, className = '', color = '#38BDF8' }: BrandLogoProps) {
+export function BrandLogo({ size = 32, className = '', color = '#7FC4B8' }: BrandLogoProps) {
   return (
     <div
       className={`relative inline-flex items-center justify-center ${className}`}
@@ -37,7 +37,7 @@ export function BrandLogo({ size = 32, className = '', color = '#38BDF8' }: Bran
       />
       {/* Mic badge  -  bottom-right corner, ~55% size, with dark bg circle */}
       <div
-        className="absolute flex items-center justify-center rounded-full bg-zinc-950 ring-2 ring-zinc-950"
+        className="absolute flex items-center justify-center rounded-full bg-stone-950 ring-2 ring-stone-950"
         style={{
           width: size * 0.55,
           height: size * 0.55,

@@ -155,13 +155,13 @@ export function SmartOcrSolver({ initialImage }: SmartOcrSolverProps) {
           onClick={() => fileInputRef.current?.click()}
           variant="outline"
           size="sm"
-          className="border-white/[0.08] text-zinc-300"
+          className="border-white/[0.08] text-stone-300"
         >
           <Upload className="h-4 w-4 mr-2" />
           Upload Foto
         </Button>
         {!cameraActive ? (
-          <Button onClick={startCamera} variant="outline" size="sm" className="border-white/[0.08] text-zinc-300">
+          <Button onClick={startCamera} variant="outline" size="sm" className="border-white/[0.08] text-stone-300">
             <Camera className="h-4 w-4 mr-2" />
             Buka Kamera
           </Button>
@@ -208,7 +208,7 @@ export function SmartOcrSolver({ initialImage }: SmartOcrSolverProps) {
             }}
             size="sm"
             variant="outline"
-            className="absolute top-2 right-2 border-red-500/30 text-red-400 bg-zinc-900/80"
+            className="absolute top-2 right-2 border-red-500/30 text-red-400 bg-stone-900/80"
           >
             <X className="h-3 w-3" />
           </Button>
@@ -241,15 +241,15 @@ export function SmartOcrSolver({ initialImage }: SmartOcrSolverProps) {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-zinc-400" />
-              <span className="text-sm font-medium text-zinc-300">Hasil OCR ({ocrText.length} karakter)</span>
+              <FileText className="h-4 w-4 text-stone-400" />
+              <span className="text-sm font-medium text-stone-300">Hasil OCR ({ocrText.length} karakter)</span>
             </div>
-            <Button onClick={handleCopyText} size="sm" variant="ghost" className="text-zinc-400">
+            <Button onClick={handleCopyText} size="sm" variant="ghost" className="text-stone-400">
               {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
             </Button>
           </div>
           <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 max-h-40 overflow-y-auto">
-            <pre className="text-xs text-zinc-300 whitespace-pre-wrap font-mono">{ocrText}</pre>
+            <pre className="text-xs text-stone-300 whitespace-pre-wrap font-mono">{ocrText}</pre>
           </div>
         </div>
       )}
@@ -259,7 +259,7 @@ export function SmartOcrSolver({ initialImage }: SmartOcrSolverProps) {
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Calculator className="h-4 w-4 text-[var(--accent-soft)]" />
-            <span className="text-sm font-medium text-zinc-300">
+            <span className="text-sm font-medium text-stone-300">
               Solusi Matematika ({solutions.length})
             </span>
             <Badge variant="outline" className="text-[10px] border-[var(--accent)]/30 text-[var(--accent-soft)] ml-auto">
@@ -274,8 +274,8 @@ export function SmartOcrSolver({ initialImage }: SmartOcrSolverProps) {
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <p className="text-xs text-zinc-500 mb-1">Soal #{i + 1}</p>
-                  <p className="text-sm font-mono text-zinc-300">{sol.expression}</p>
+                  <p className="text-xs text-stone-500 mb-1">Soal #{i + 1}</p>
+                  <p className="text-sm font-mono text-stone-300">{sol.expression}</p>
                 </div>
                 <Badge
                   variant="outline"
@@ -290,15 +290,15 @@ export function SmartOcrSolver({ initialImage }: SmartOcrSolverProps) {
                   {sol.type}
                 </Badge>
               </div>
-              <div className="rounded-md bg-zinc-900/50 p-2">
-                <p className="text-[10px] text-zinc-500 mb-1">Jawaban:</p>
+              <div className="rounded-md bg-stone-900/50 p-2">
+                <p className="text-[10px] text-stone-500 mb-1">Jawaban:</p>
                 <p className="text-lg font-bold text-[var(--accent-soft)] font-mono">{sol.result}</p>
               </div>
               {sol.steps.length > 0 && (
                 <div className="space-y-1">
-                  <p className="text-[10px] text-zinc-500 uppercase">Langkah:</p>
+                  <p className="text-[10px] text-stone-500 uppercase">Langkah:</p>
                   {sol.steps.map((step, j) => (
-                    <p key={j} className="text-[11px] text-zinc-400 font-mono pl-2">
+                    <p key={j} className="text-[11px] text-stone-400 font-mono pl-2">
                       {j + 1}. {step}
                     </p>
                   ))}

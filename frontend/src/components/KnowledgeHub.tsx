@@ -91,7 +91,7 @@ const TYPE_COLORS: Record<string, string> = {
   pdf: 'text-blue-400',
   mindmap: 'text-[var(--accent-soft)]',
   quiz: 'text-amber-400',
-  note: 'text-zinc-400',
+  note: 'text-stone-400',
   image: 'text-pink-400',
 };
 
@@ -388,14 +388,14 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
         <div className="flex items-center gap-2.5">
           <Folder className="h-5 w-5 text-[var(--accent-soft)]" />
           <div>
-            <h2 className="text-base font-semibold text-zinc-100">Knowledge Hub</h2>
-            <p className="text-[11px] text-zinc-500">
+            <h2 className="text-base font-semibold text-stone-100">Knowledge Hub</h2>
+            <p className="text-[11px] text-stone-500">
               Simpan dan organize hasil kerja kamu dalam project/folder.
-              <span className="text-zinc-600"> · Double-click folder untuk rename · Drag untuk reorder</span>
+              <span className="text-stone-600"> · Double-click folder untuk rename · Drag untuk reorder</span>
             </p>
           </div>
         </div>
-        <Button onClick={onClose} variant="ghost" size="sm" className="text-zinc-400 hover:text-white hover:bg-white/[0.04]">
+        <Button onClick={onClose} variant="ghost" size="sm" className="text-stone-400 hover:text-white hover:bg-white/[0.04]">
           <X className="h-4 w-4" />
           <span className="ml-1 hidden sm:inline">Tutup</span>
         </Button>
@@ -408,24 +408,24 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
           <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-center">
             <Folder className="h-4 w-4 mx-auto mb-1 text-[var(--accent-soft)]" />
             <p className="text-lg font-semibold text-white">{stats?.totalProjects ?? 0}</p>
-            <p className="text-[10px] text-zinc-500 uppercase">Project</p>
+            <p className="text-[10px] text-stone-500 uppercase">Project</p>
           </div>
           <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-center">
             <FileText className="h-4 w-4 mx-auto mb-1 text-blue-400" />
             <p className="text-lg font-semibold text-white">{stats?.totalItems ?? 0}</p>
-            <p className="text-[10px] text-zinc-500 uppercase">Item</p>
+            <p className="text-[10px] text-stone-500 uppercase">Item</p>
           </div>
           <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-center">
             <Mic className="h-4 w-4 mx-auto mb-1 text-green-400" />
             <p className="text-lg font-semibold text-white">{stats?.byType.stt || 0}</p>
-            <p className="text-[10px] text-zinc-500 uppercase">STT</p>
+            <p className="text-[10px] text-stone-500 uppercase">STT</p>
           </div>
           <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-center">
             <Brain className="h-4 w-4 mx-auto mb-1 text-[var(--accent-soft)]" />
             <p className="text-lg font-semibold text-white">
               {(stats?.byType.pdf || 0) + (stats?.byType.mindmap || 0)}
             </p>
-            <p className="text-[10px] text-zinc-500 uppercase">PDF+Map</p>
+            <p className="text-[10px] text-stone-500 uppercase">PDF+Map</p>
           </div>
         </div>
 
@@ -444,10 +444,10 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
               <div className="flex items-center gap-2 text-xs">
                 <HardDrive
                   className={`h-3.5 w-3.5 ${
-                    storageFull ? 'text-red-400' : storageNearLimit ? 'text-amber-400' : 'text-zinc-400'
+                    storageFull ? 'text-red-400' : storageNearLimit ? 'text-amber-400' : 'text-stone-400'
                   }`}
                 />
-                <span className="text-zinc-300">Storage</span>
+                <span className="text-stone-300">Storage</span>
                 {storageFull && (
                   <span className="flex items-center gap-1 text-red-400">
                     <AlertTriangle className="h-3 w-3" /> Penuh
@@ -461,7 +461,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
               </div>
               <span
                 className={`text-xs font-medium ${
-                  storageFull ? 'text-red-400' : storageNearLimit ? 'text-amber-400' : 'text-zinc-400'
+                  storageFull ? 'text-red-400' : storageNearLimit ? 'text-amber-400' : 'text-stone-400'
                 }`}
               >
                 {formatBytes(storageInfo.totalSizeBytes)} / {formatBytes(storageInfo.maxTotalBytes)}
@@ -479,7 +479,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
                   : 'bg-white/[0.06]'
               }`}
             />
-            <p className="text-[9px] text-zinc-600 mt-1.5">
+            <p className="text-[9px] text-stone-600 mt-1.5">
               Tersimpan di IndexedDB browser{storageInfo.isPersistent ? ' (persisten)' : ''}.
               {storageInfo.browserQuotaBytes && (
                 <>
@@ -493,7 +493,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
         )}
 
         {loading && (
-          <div className="text-center py-4 text-xs text-zinc-500">Memuat…</div>
+          <div className="text-center py-4 text-xs text-stone-500">Memuat…</div>
         )}
 
         {/* Project list + Items */}
@@ -501,7 +501,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
           {/* Projects sidebar */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-zinc-300">Projects</h3>
+              <h3 className="text-sm font-medium text-stone-300">Projects</h3>
               <Button
                 onClick={() => setShowNewProject(!showNewProject)}
                 size="sm"
@@ -534,7 +534,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
               className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
                 !activeProject
                   ? 'bg-[var(--accent)]/10 text-[var(--accent-soft)]'
-                  : 'text-zinc-400 hover:bg-white/[0.04]'
+                  : 'text-stone-400 hover:bg-white/[0.04]'
               }`}
             >
               <FolderOpen className="h-4 w-4" />
@@ -560,14 +560,14 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
                       ? 'bg-[var(--accent)]/10 text-[var(--accent-soft)]'
                       : isDragOver
                       ? 'bg-[var(--accent)]/20 ring-1 ring-[var(--accent)]/40'
-                      : 'text-zinc-400 hover:bg-white/[0.04]'
+                      : 'text-stone-400 hover:bg-white/[0.04]'
                   } ${isDragging ? 'opacity-50' : ''}`}
                   onClick={() => !isRenaming && setActiveProject(p)}
                   onDoubleClick={() => startRenameProject(p)}
                   title="Klik untuk buka · Double-click untuk rename · Drag untuk reorder"
                 >
                   <GripVertical
-                    className="h-3.5 w-3.5 text-zinc-600 opacity-0 group-hover:opacity-100 cursor-grab"
+                    className="h-3.5 w-3.5 text-stone-600 opacity-0 group-hover:opacity-100 cursor-grab"
                     onMouseDown={(e) => e.stopPropagation()}
                   />
                   <Folder className="h-4 w-4 shrink-0" style={{ color: p.color }} />
@@ -593,7 +593,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
                         e.stopPropagation();
                         startRenameProject(p);
                       }}
-                      className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-zinc-300"
+                      className="opacity-0 group-hover:opacity-100 text-stone-500 hover:text-stone-300"
                       title="Rename"
                     >
                       <Pencil className="h-3 w-3" />
@@ -614,7 +614,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
             })}
 
             {projects.length === 0 && !showNewProject && (
-              <p className="text-xs text-zinc-600 px-3 py-4 text-center">
+              <p className="text-xs text-stone-600 px-3 py-4 text-center">
                 Belum ada project.
                 <br />
                 Klik + untuk buat.
@@ -641,7 +641,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
                       toast.error('Gagal wipe data');
                     }
                   }}
-                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-[10px] text-zinc-600 hover:text-red-400 hover:bg-red-500/5 transition-colors"
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-[10px] text-stone-600 hover:text-red-400 hover:bg-red-500/5 transition-colors"
                   title="Hapus semua project dan item permanen"
                 >
                   <Trash2 className="h-3 w-3" />
@@ -656,7 +656,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
             {/* Toolbar: search + sort + bulk actions */}
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-600" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-stone-600" />
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -665,15 +665,15 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
                 />
               </div>
               <div className="relative">
-                <ArrowUpDown className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-600 pointer-events-none" />
+                <ArrowUpDown className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-stone-600 pointer-events-none" />
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as SortBy)}
-                  className="h-8 pl-7 pr-6 text-xs bg-white/[0.04] border border-white/[0.08] rounded text-zinc-300 outline-none cursor-pointer appearance-none"
+                  className="h-8 pl-7 pr-6 text-xs bg-white/[0.04] border border-white/[0.08] rounded text-stone-300 outline-none cursor-pointer appearance-none"
                   title="Sortir"
                 >
                   {(Object.keys(SORT_LABELS) as SortBy[]).map(k => (
-                    <option key={k} value={k} className="bg-zinc-900">{SORT_LABELS[k]}</option>
+                    <option key={k} value={k} className="bg-stone-900">{SORT_LABELS[k]}</option>
                   ))}
                 </select>
               </div>
@@ -683,7 +683,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
               <div className="flex items-center gap-2 px-1">
                 <button
                   onClick={toggleSelectAll}
-                  className="flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-zinc-300"
+                  className="flex items-center gap-1.5 text-[10px] text-stone-500 hover:text-stone-300"
                 >
                   {selectedIds.size === filteredItems.length && selectedIds.size > 0 ? (
                     <CheckSquare className="h-3 w-3 text-[var(--accent-soft)]" />
@@ -710,7 +710,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
             <div className="space-y-1.5 max-h-[400px] overflow-y-auto">
               {filteredItems.map((item) => {
                 const Icon = TYPE_ICONS[item.type] || FileText;
-                const color = TYPE_COLORS[item.type] || 'text-zinc-400';
+                const color = TYPE_COLORS[item.type] || 'text-stone-400';
                 const isSelected = selectedIds.has(item.id);
                 const proj = projects.find(p => p.id === item.projectId);
                 return (
@@ -734,17 +734,17 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
                       {isSelected ? (
                         <CheckSquare className="h-3.5 w-3.5 text-[var(--accent-soft)]" />
                       ) : (
-                        <Square className="h-3.5 w-3.5 text-zinc-600 hover:text-zinc-400" />
+                        <Square className="h-3.5 w-3.5 text-stone-600 hover:text-stone-400" />
                       )}
                     </button>
                     <Icon className={`h-4 w-4 mt-0.5 shrink-0 ${color}`} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-zinc-200 truncate">{item.title}</p>
-                      <p className="text-[10px] text-zinc-500 truncate">
+                      <p className="text-sm text-stone-200 truncate">{item.title}</p>
+                      <p className="text-[10px] text-stone-500 truncate">
                         {item.content.substring(0, 80)}...
                       </p>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[9px] text-zinc-600 flex items-center gap-0.5">
+                        <span className="text-[9px] text-stone-600 flex items-center gap-0.5">
                           <Clock className="h-2.5 w-2.5" />
                           {new Date(item.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
                         </span>
@@ -752,7 +752,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
                           {item.type}
                         </Badge>
                         {proj && !activeProject && (
-                          <span className="text-[8px] text-zinc-600 truncate">· {proj.name}</span>
+                          <span className="text-[8px] text-stone-600 truncate">· {proj.name}</span>
                         )}
                       </div>
                     </div>
@@ -763,7 +763,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
                           e.stopPropagation();
                           handleDuplicate(item.id);
                         }}
-                        className="text-zinc-500 hover:text-zinc-300 p-1"
+                        className="text-stone-500 hover:text-stone-300 p-1"
                         title="Duplikasi"
                       >
                         <Copy className="h-3 w-3" />
@@ -774,7 +774,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
                           openItemViewer(item);
                           setEditingItem(true);
                         }}
-                        className="text-zinc-500 hover:text-zinc-300 p-1"
+                        className="text-stone-500 hover:text-stone-300 p-1"
                         title="Edit"
                       >
                         <Pencil className="h-3 w-3" />
@@ -790,15 +790,15 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
                         <Trash2 className="h-3 w-3" />
                       </button>
                     </div>
-                    <ChevronRight className="h-4 w-4 text-zinc-600 group-hover:text-zinc-400" />
+                    <ChevronRight className="h-4 w-4 text-stone-600 group-hover:text-stone-400" />
                   </div>
                 );
               })}
 
               {filteredItems.length === 0 && (
                 <div className="text-center py-8">
-                  <FileText className="h-8 w-8 mx-auto mb-2 text-zinc-700" />
-                  <p className="text-xs text-zinc-500">
+                  <FileText className="h-8 w-8 mx-auto mb-2 text-stone-700" />
+                  <p className="text-xs text-stone-500">
                     {search ? 'Tidak ada item yang cocok' : 'Belum ada item tersimpan'}
                   </p>
                 </div>
@@ -833,7 +833,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
                   ) : (
                     <h3 className="text-lg font-semibold text-white truncate">{viewingItem.title}</h3>
                   )}
-                  <p className="text-xs text-zinc-500 mt-1">
+                  <p className="text-xs text-stone-500 mt-1">
                     Dibuat {new Date(viewingItem.createdAt).toLocaleString('id-ID')}
                     {viewingItem.updatedAt !== viewingItem.createdAt && (
                       <> · Diubah {new Date(viewingItem.updatedAt).toLocaleString('id-ID')}</>
@@ -856,25 +856,25 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
               {editingItem ? (
                 <div className="space-y-3">
                   <div>
-                    <label className="text-[10px] text-zinc-500 uppercase">Pindah ke project</label>
+                    <label className="text-[10px] text-stone-500 uppercase">Pindah ke project</label>
                     <select
                       value={editProjectId}
                       onChange={(e) => setEditProjectId(e.target.value)}
-                      className="mt-1 w-full h-9 px-3 text-sm bg-white/[0.04] border border-white/[0.08] rounded text-zinc-200 outline-none cursor-pointer"
+                      className="mt-1 w-full h-9 px-3 text-sm bg-white/[0.04] border border-white/[0.08] rounded text-stone-200 outline-none cursor-pointer"
                     >
                       {projects.map(p => (
-                        <option key={p.id} value={p.id} className="bg-zinc-900">
+                        <option key={p.id} value={p.id} className="bg-stone-900">
                           {p.name}
                         </option>
                       ))}
                     </select>
                   </div>
                   <div>
-                    <label className="text-[10px] text-zinc-500 uppercase">Konten</label>
+                    <label className="text-[10px] text-stone-500 uppercase">Konten</label>
                     <textarea
                       value={editContent}
                       onChange={(e) => setEditContent(e.target.value)}
-                      className="mt-1 w-full min-h-[300px] p-3 text-sm font-mono text-zinc-200 bg-white/[0.04] border border-white/[0.08] rounded outline-none resize-y"
+                      className="mt-1 w-full min-h-[300px] p-3 text-sm font-mono text-stone-200 bg-white/[0.04] border border-white/[0.08] rounded outline-none resize-y"
                       placeholder="Isi konten..."
                     />
                   </div>
@@ -899,7 +899,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
               ) : (
                 <>
                   <div className="rounded-lg bg-white/[0.02] border border-white/[0.06] p-4">
-                    <pre className="text-sm text-zinc-300 whitespace-pre-wrap font-mono">
+                    <pre className="text-sm text-stone-300 whitespace-pre-wrap font-mono">
                       {viewingItem.content}
                     </pre>
                   </div>

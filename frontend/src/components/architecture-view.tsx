@@ -22,12 +22,12 @@ export function ArchitectureView({ schemaInfo }: ArchitectureViewProps) {
         startOnLoad: false,
         theme: 'dark',
         themeVariables: {
-          primaryColor: '#38BDF8',
-          primaryTextColor: '#fafafa',
-          primaryBorderColor: '#38BDF8',
-          lineColor: '#52525b',
-          secondaryColor: '#1f1f23',
-          tertiaryColor: '#161618',
+          primaryColor: '#7FC4B8',
+          primaryTextColor: '#F5F2ED',
+          primaryBorderColor: '#7FC4B8',
+          lineColor: '#57534E',
+          secondaryColor: '#25221E',
+          tertiaryColor: '#171513',
           fontFamily: 'monospace',
           fontSize: '12px',
         },
@@ -76,7 +76,7 @@ export function ArchitectureView({ schemaInfo }: ArchitectureViewProps) {
     <div className="space-y-3">
       {/* Header + diagram switcher */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <p className="text-[11px] text-zinc-400 flex items-center gap-1.5">
+        <p className="text-[11px] text-stone-400 flex items-center gap-1.5">
           <Network className="h-3 w-3" /> System Architecture (Mermaid)
         </p>
         <div className="flex gap-1">
@@ -87,19 +87,19 @@ export function ArchitectureView({ schemaInfo }: ArchitectureViewProps) {
       </div>
 
       {/* Mermaid diagram container */}
-      <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-4 overflow-x-auto">
+      <div className="rounded-lg border border-white/[0.06] bg-[#161412] p-4 overflow-x-auto">
         {!mermaidLoaded ? (
-          <p className="text-center text-xs text-zinc-500 py-8">Loading Mermaid...</p>
+          <p className="text-center text-xs text-stone-500 py-8">Loading Mermaid...</p>
         ) : (
           <div ref={mermaidRef} className="mermaid-container flex justify-center" />
         )}
       </div>
 
       {/* Diagram explanation */}
-      <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
+      <div className="rounded-lg border border-white/[0.06] bg-[#161412] p-3">
         {activeDiagram === 'dataflow' && (
-          <div className="text-[11px] text-zinc-400 space-y-1">
-            <p className="font-medium text-zinc-300">STT Data Flow</p>
+          <div className="text-[11px] text-stone-400 space-y-1">
+            <p className="font-medium text-stone-300">STT Data Flow</p>
             <p>• User speaks → Web Speech API / Whisper → raw text</p>
             <p>• Raw text → fuzzy-correct API → 3-layer pipeline (localCorrect → contextAwareCorrect → log)</p>
             <p>• Unknown words with high confidence → auto-learned to SQLite (dataset_origin='user-learned')</p>
@@ -109,18 +109,18 @@ export function ArchitectureView({ schemaInfo }: ArchitectureViewProps) {
           </div>
         )}
         {activeDiagram === 'erd' && (
-          <div className="text-[11px] text-zinc-400 space-y-1">
-            <p className="font-medium text-zinc-300">Entity Relationship Diagram</p>
+          <div className="text-[11px] text-stone-400 space-y-1">
+            <p className="font-medium text-stone-300">Entity Relationship Diagram</p>
             <p>• <strong>learned_words</strong>: KBBI + slang + auto-learned words (299K entries)</p>
             <p>• <strong>word_cooccurrence</strong>: context tracking (word + context_word + position)</p>
             <p>• <strong>user_corrections</strong>: individual vote records (original → corrected)</p>
             <p>• <strong>correction_summary</strong>: aggregated vote counts per pair</p>
-            <p className="text-zinc-500 italic mt-1">Note: Relasi di-handle di application layer, bukan FK constraints.</p>
+            <p className="text-stone-500 italic mt-1">Note: Relasi di-handle di application layer, bukan FK constraints.</p>
           </div>
         )}
         {activeDiagram === 'components' && (
-          <div className="text-[11px] text-zinc-400 space-y-1">
-            <p className="font-medium text-zinc-300">System Components</p>
+          <div className="text-[11px] text-stone-400 space-y-1">
+            <p className="font-medium text-stone-300">System Components</p>
             <p>• <strong>Browser (Client)</strong>: React + Web Speech API + localStorage candidates</p>
             <p>• <strong>Astro Server (Node)</strong>: API routes + stt-dictionary.ts + context-aware corrector</p>
             <p>• <strong>SQLite (SSD)</strong>: learned_words + cooccurrence + corrections (source of truth)</p>
@@ -142,7 +142,7 @@ function DiagramPill({ active, onClick, label }: { active: boolean; onClick: () 
         'px-2.5 py-0.5 rounded-full border text-[11px] font-medium transition-colors',
         active
           ? 'border-[var(--accent)]/40 bg-[var(--accent)]/15 text-[var(--accent-soft)]'
-          : 'border-white/[0.08] bg-white/[0.02] text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]'
+          : 'border-white/[0.08] bg-white/[0.02] text-stone-500 hover:text-stone-300 hover:bg-white/[0.04]'
       )}
     >
       {label}
@@ -196,8 +196,8 @@ function getDiagram(type: string, schemaInfo: any): string {
     BackupCron --> GitHub
     SQLite --> PruneCron
 
-    style SQLite fill:#38BDF8,stroke:#38BDF8,color:#fff
-    style GitHub fill:#1f1f23,stroke:#52525b,color:#fafafa
+    style SQLite fill:#7FC4B8,stroke:#7FC4B8,color:#fff
+    style GitHub fill:#25221E,stroke:#57534E,color:#F5F2ED
     style User fill:#059669,stroke:#047857,color:#fff
     style FuzzyAPI fill:#0891b2,stroke:#0e7490,color:#fff
     style LearnAPI fill:#d97706,stroke:#b45309,color:#fff
@@ -330,7 +330,7 @@ function getDiagram(type: string, schemaInfo: any): string {
     SQLite --> LocalBackup
     API -->|"user data"| D1
 
-    style SQLite fill:#38BDF8,stroke:#38BDF8,color:#fff
+    style SQLite fill:#7FC4B8,stroke:#7FC4B8,color:#fff
     style Server fill:#0891b2,stroke:#0e7490,color:#fff
     style Client fill:#059669,stroke:#047857,color:#fff
     style Cloud fill:#6366f1,stroke:#4f46e5,color:#fff

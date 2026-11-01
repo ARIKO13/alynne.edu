@@ -139,24 +139,24 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
         <DialogContent className="max-w-md  text-center">
           <Trophy className="h-16 w-16 mx-auto mb-4 text-amber-400" />
           <DialogTitle className="text-2xl mb-2">Battle Selesai!</DialogTitle>
-          <p className="text-sm text-zinc-400 mb-6">{title || 'Quiz Battle'}</p>
+          <p className="text-sm text-stone-400 mb-6">{title || 'Quiz Battle'}</p>
 
           <div className="grid grid-cols-2 gap-3 mb-6">
             <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.05] p-4">
               <p className="text-3xl font-bold text-amber-400">{score}</p>
-              <p className="text-[10px] text-zinc-500 uppercase">Skor</p>
+              <p className="text-[10px] text-stone-500 uppercase">Skor</p>
             </div>
             <div className="rounded-lg border border-green-500/20 bg-green-500/[0.05] p-4">
               <p className="text-3xl font-bold text-green-400">{accuracy}%</p>
-              <p className="text-[10px] text-zinc-500 uppercase">Akurasi</p>
+              <p className="text-[10px] text-stone-500 uppercase">Akurasi</p>
             </div>
             <div className="rounded-lg border border-[var(--accent)]/20 bg-[var(--accent)]/[0.05] p-4">
               <p className="text-3xl font-bold text-[var(--accent-soft)]">{correctCount}/{questions.length}</p>
-              <p className="text-[10px] text-zinc-500 uppercase">Benar</p>
+              <p className="text-[10px] text-stone-500 uppercase">Benar</p>
             </div>
             <div className="rounded-lg border border-orange-500/20 bg-orange-500/[0.05] p-4">
               <p className="text-3xl font-bold text-orange-400">x{maxCombo}</p>
-              <p className="text-[10px] text-zinc-500 uppercase">Max Combo</p>
+              <p className="text-[10px] text-stone-500 uppercase">Max Combo</p>
             </div>
           </div>
 
@@ -165,7 +165,7 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
             <p className="text-lg font-semibold" style={{ color: rank.color }}>
               {rank.title}
             </p>
-            <p className="text-xs text-zinc-400">{rank.message}</p>
+            <p className="text-xs text-stone-400">{rank.message}</p>
           </div>
 
           <div className="flex gap-2">
@@ -199,7 +199,7 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
                 Combo x{combo}
               </Badge>
             )}
-            <Badge variant="outline" className="text-zinc-400">
+            <Badge variant="outline" className="text-stone-400">
               {currentIdx + 1}/{questions.length}
             </Badge>
           </div>
@@ -207,11 +207,11 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
           {/* Timer */}
           <div className="mb-4">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-zinc-500 flex items-center gap-1">
+              <span className="text-xs text-stone-500 flex items-center gap-1">
                 <Clock className="h-3 w-3" />
                 Waktu
               </span>
-              <span className={`text-sm font-bold ${timeLeft <= 3 ? 'text-red-400' : 'text-zinc-300'}`}>
+              <span className={`text-sm font-bold ${timeLeft <= 3 ? 'text-red-400' : 'text-stone-300'}`}>
                 {timeLeft}s
               </span>
             </div>
@@ -220,7 +220,7 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
 
           {/* Question */}
           <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 mb-4">
-            <p className="text-sm text-zinc-200">{currentQuestion.question}</p>
+            <p className="text-sm text-stone-200">{currentQuestion.question}</p>
           </div>
 
           {/* Options */}
@@ -243,7 +243,7 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
                       ? 'border-red-500/50 bg-red-500/10 text-red-400'
                       : isSelected
                       ? 'border-[var(--accent)]/50 bg-[var(--accent)]/10 text-[var(--accent-soft)]'
-                      : 'border-white/[0.06] text-zinc-300 hover:border-white/[0.15] hover:bg-white/[0.04]'
+                      : 'border-white/[0.06] text-stone-300 hover:border-white/[0.15] hover:bg-white/[0.04]'
                   }`}
                 >
                   <span className="flex-1 text-left">{opt}</span>
@@ -277,7 +277,7 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
                   </p>
                 )}
                 {currentQuestion.explanation && (
-                  <p className="text-[11px] text-zinc-400 mt-1">
+                  <p className="text-[11px] text-stone-400 mt-1">
                     {currentQuestion.explanation}
                   </p>
                 )}
@@ -298,26 +298,26 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
       <DialogContent className="max-w-md  text-center">
         <Flame className="h-16 w-16 mx-auto mb-4 text-orange-400" />
         <DialogTitle className="text-2xl mb-2">Quiz Battle</DialogTitle>
-        <p className="text-sm text-zinc-400 mb-6">{title || 'Test your knowledge'}</p>
+        <p className="text-sm text-stone-400 mb-6">{title || 'Test your knowledge'}</p>
 
         <div className="grid grid-cols-3 gap-3 mb-6">
           <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
             <p className="text-xl font-bold text-white">{questions.length}</p>
-            <p className="text-[10px] text-zinc-500 uppercase">Soal</p>
+            <p className="text-[10px] text-stone-500 uppercase">Soal</p>
           </div>
           <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
             <p className="text-xl font-bold text-white">{TIME_PER_QUESTION}s</p>
-            <p className="text-[10px] text-zinc-500 uppercase">Per Soal</p>
+            <p className="text-[10px] text-stone-500 uppercase">Per Soal</p>
           </div>
           <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
             <p className="text-xl font-bold text-white">x5</p>
-            <p className="text-[10px] text-zinc-500 uppercase">Max Combo</p>
+            <p className="text-[10px] text-stone-500 uppercase">Max Combo</p>
           </div>
         </div>
 
         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 mb-6 text-left">
-          <p className="text-xs text-zinc-400 mb-2">Cara main:</p>
-          <ul className="text-[11px] text-zinc-500 space-y-1">
+          <p className="text-xs text-stone-400 mb-2">Cara main:</p>
+          <ul className="text-[11px] text-stone-500 space-y-1">
             <li>• 10 detik per soal</li>
             <li>• Jawaban benar: 100 + bonus waktu</li>
             <li>• Combo (berturut-turut): +20% per combo</li>
@@ -345,7 +345,7 @@ function getRank(score: number, accuracy: number): { title: string; message: str
     return { title: 'Expert', message: 'Kerja bagus, lanjutkan!', color: '#94A3B8' };
   }
   if (accuracy >= 40) {
-    return { title: 'Learner', message: 'Belajar lagi yuk!', color: '#38BDF8' };
+    return { title: 'Learner', message: 'Belajar lagi yuk!', color: '#7FC4B8' };
   }
   return { title: 'Beginner', message: 'Jangan menyerah, coba lagi!', color: '#6B7280' };
 }

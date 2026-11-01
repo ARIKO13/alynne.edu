@@ -47,7 +47,7 @@ export function LoginScreen() {
 
   if (status === 'loading') {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0A0A0B' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0D0C0A' }}>
         <Loader2 className="h-5 w-5 animate-spin" style={{ color: 'var(--accent-soft)' }} />
       </div>
     );
@@ -57,17 +57,17 @@ export function LoginScreen() {
     width: '100%',
     background: 'transparent',
     border: 'none',
-    borderBottom: '1px solid #27272A',
+    borderBottom: '1px solid #2B2723',
     borderRadius: 0,
     padding: '8px 0',
     fontSize: '14px',
-    color: '#FAFAFA',
+    color: '#F5F2ED',
     outline: 'none',
     transition: 'border-color 0.15s ease',
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', background: '#0A0A0B' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', background: '#0D0C0A' }}>
       {/* Left, solid color, no grid, no glow, no gradient */}
       <div
         className="hidden lg:flex"
@@ -76,8 +76,8 @@ export function LoginScreen() {
           flexDirection: 'column',
           justifyContent: 'space-between',
           padding: '48px',
-          background: '#0A0A0B',
-          borderRight: '1px solid #1F1F23',
+          background: '#0D0C0A',
+          borderRight: '1px solid #25221E',
         }}
       >
         {/* Logo */}
@@ -88,7 +88,7 @@ export function LoginScreen() {
           }}>
             <span style={{ color: '#FFF', fontWeight: 700, fontSize: '14px' }}>A</span>
           </div>
-          <span style={{ color: '#FAFAFA', fontSize: '15px', fontWeight: 600, letterSpacing: '-0.02em' }}>
+          <span style={{ color: '#F5F2ED', fontSize: '15px', fontWeight: 600, letterSpacing: '-0.02em' }}>
             Alynne
           </span>
         </div>
@@ -96,7 +96,7 @@ export function LoginScreen() {
         {/* One headline. No fluff. */}
         <div style={{ opacity: mounted ? 1 : 0, transition: 'opacity 0.3s ease' }}>
           <h1 style={{
-            color: '#FAFAFA', fontSize: '28px', fontWeight: 600,
+            color: '#F5F2ED', fontSize: '28px', fontWeight: 600,
             letterSpacing: '-0.04em', lineHeight: 1.15, margin: 0,
           }}>
             Video jadi materi.<br />
@@ -107,7 +107,7 @@ export function LoginScreen() {
         </div>
 
         {/* Minimal footer */}
-        <p style={{ color: '#3F3F46', fontSize: '12px', margin: 0 }}>alynne.my.id</p>
+        <p style={{ color: '#44403C', fontSize: '12px', margin: 0 }}>alynne.my.id</p>
       </div>
 
       {/* Right, form */}
@@ -121,11 +121,11 @@ export function LoginScreen() {
             style={{
               position: 'absolute', top: '24px', left: '24px',
               display: 'flex', alignItems: 'center', gap: '6px',
-              color: '#52525B', fontSize: '13px', background: 'none',
+              color: '#57534E', fontSize: '13px', background: 'none',
               border: 'none', cursor: 'pointer', transition: 'color 0.15s ease',
             }}
-            onMouseEnter={(e) => e.currentTarget.style.color = '#A1A1AA'}
-            onMouseLeave={(e) => e.currentTarget.style.color = '#52525B'}
+            onMouseEnter={(e) => e.currentTarget.style.color = '#ABA49A'}
+            onMouseLeave={(e) => e.currentTarget.style.color = '#57534E'}
           >
             <ArrowLeft style={{ width: '14px', height: '14px' }} />
             Kembali
@@ -141,11 +141,11 @@ export function LoginScreen() {
             }}>
               <span style={{ color: '#FFF', fontWeight: 700, fontSize: '14px' }}>A</span>
             </div>
-            <span style={{ color: '#FAFAFA', fontSize: '15px', fontWeight: 600 }}>Alynne</span>
+            <span style={{ color: '#F5F2ED', fontSize: '15px', fontWeight: 600 }}>Alynne</span>
           </div>
 
           <h2 style={{
-            color: '#FAFAFA', fontSize: '18px', fontWeight: 600,
+            color: '#F5F2ED', fontSize: '18px', fontWeight: 600,
             letterSpacing: '-0.03em', margin: '0 0 24px 0',
             opacity: mounted ? 1 : 0, transition: 'opacity 0.3s ease 0.1s',
           }}>
@@ -154,27 +154,27 @@ export function LoginScreen() {
 
           <form onSubmit={handleDemoLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#71717A', marginBottom: '6px' }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#78716C', marginBottom: '6px' }}>
                 Nama
               </label>
               <input
                 type="text" value={name} onChange={(e) => setName(e.target.value)}
                 placeholder="Nama" disabled={loading} autoComplete="name"
                 style={inputBase}
-                onFocus={(e) => e.currentTarget.style.borderBottomColor = '#38BDF8'}
-                onBlur={(e) => e.currentTarget.style.borderBottomColor = '#27272A'}
+                onFocus={(e) => e.currentTarget.style.borderBottomColor = '#7FC4B8'}
+                onBlur={(e) => e.currentTarget.style.borderBottomColor = '#2B2723'}
               />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#71717A', marginBottom: '6px' }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#78716C', marginBottom: '6px' }}>
                 Email
               </label>
               <input
                 type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                 placeholder="email@kamu.com" disabled={loading} autoComplete="email"
                 style={inputBase}
-                onFocus={(e) => e.currentTarget.style.borderBottomColor = '#38BDF8'}
-                onBlur={(e) => e.currentTarget.style.borderBottomColor = '#27272A'}
+                onFocus={(e) => e.currentTarget.style.borderBottomColor = '#7FC4B8'}
+                onBlur={(e) => e.currentTarget.style.borderBottomColor = '#2B2723'}
               />
             </div>
             <button
@@ -186,8 +186,8 @@ export function LoginScreen() {
                 opacity: (loading || !name.trim() || !email.trim()) ? 0.4 : 1,
                 transition: 'background 0.15s ease, opacity 0.15s ease',
               }}
-              onMouseEnter={(e) => !loading && (e.currentTarget.style.background = '#075985')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = '#38BDF8')}
+              onMouseEnter={(e) => !loading && (e.currentTarget.style.background = '#115E59')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = '#7FC4B8')}
             >
               {loading ? <Loader2 className="animate-spin" style={{ width: '16px', height: '16px', margin: '0 auto' }} /> : 'Masuk'}
             </button>
@@ -198,13 +198,13 @@ export function LoginScreen() {
               onClick={handleGoogleLogin}
               style={{
                 width: '100%', padding: '10px 0', fontSize: '13px', fontWeight: 500,
-                background: 'transparent', color: '#A1A1AA', border: '1px solid #27272A',
+                background: 'transparent', color: '#ABA49A', border: '1px solid #2B2723',
                 borderRadius: '6px', cursor: 'pointer', marginTop: '12px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                 transition: 'border-color 0.15s ease, color 0.15s ease',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#3F3F46'; e.currentTarget.style.color = '#FAFAFA'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#27272A'; e.currentTarget.style.color = '#A1A1AA'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#44403C'; e.currentTarget.style.color = '#F5F2ED'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#2B2723'; e.currentTarget.style.color = '#ABA49A'; }}
             >
               <svg style={{ width: '16px', height: '16px' }} viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />

@@ -435,7 +435,7 @@ export function ImageSharpener() {
             </div>
             <div>
               <p className="text-base font-medium text-white">Drop gambar di sini atau klik untuk upload</p>
-              <p className="text-xs text-zinc-500 mt-1">PNG, JPG, WebP - maksimal 10MB</p>
+              <p className="text-xs text-stone-500 mt-1">PNG, JPG, WebP - maksimal 10MB</p>
             </div>
             <div className="mt-2 flex items-center gap-2">
               <button
@@ -446,7 +446,7 @@ export function ImageSharpener() {
                 <ImageIcon className="h-3.5 w-3.5" />
                 Pilih File
               </button>
-              <span className="text-[10px] text-zinc-600">atau drag & drop</span>
+              <span className="text-[10px] text-stone-600">atau drag & drop</span>
             </div>
           </motion.div>
         </div>
@@ -466,14 +466,14 @@ export function ImageSharpener() {
                 <Wand2 className="h-4 w-4 text-[var(--accent-soft)]" />
               </div>
               <div className="flex-1">
-                <p className="text-xs font-medium text-zinc-300">Analisis CV (Laplacian Variance)</p>
-                <p className="text-[10px] text-zinc-500">
-                  Deteksi blur otomatis pakai <code className="text-zinc-400">∇²I variance</code> - score {blurScore?.toFixed(0)}
+                <p className="text-xs font-medium text-stone-300">Analisis CV (Laplacian Variance)</p>
+                <p className="text-[10px] text-stone-500">
+                  Deteksi blur otomatis pakai <code className="text-stone-400">∇²I variance</code> - score {blurScore?.toFixed(0)}
                 </p>
               </div>
               <div className="text-right">
                 <p className={`text-sm font-bold ${blurInterpretation.color}`}>{blurInterpretation.label}</p>
-                <p className="text-[10px] text-zinc-600">{blurInterpretation.percent}% ketajaman</p>
+                <p className="text-[10px] text-stone-600">{blurInterpretation.percent}% ketajaman</p>
               </div>
             </div>
             <div className="mt-2 h-1.5 w-full rounded-full bg-white/[0.06]">
@@ -490,7 +490,7 @@ export function ImageSharpener() {
               />
             </div>
             {blurInterpretation.level !== 'sharp' && (
-              <p className="mt-2 text-[10px] text-zinc-500">
+              <p className="mt-2 text-[10px] text-stone-500">
                 Rekomendasi: intensity <span className="text-[var(--accent-soft)] font-medium">{recommendedIntensity.toFixed(1)}</span> buat gambar ini
               </p>
             )}
@@ -502,27 +502,27 @@ export function ImageSharpener() {
       {imageSrc && (
         <div className="grid gap-4 lg:grid-cols-2">
           {/* Original */}
-          <div className="rounded-lg border border-white/[0.06] bg-[#111113] overflow-hidden">
+          <div className="rounded-lg border border-white/[0.06] bg-[#161412] overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.04] bg-white/[0.02]">
-              <span className="text-xs font-medium text-zinc-400">Original</span>
-              <span className="text-[10px] text-zinc-600">{imageName}</span>
+              <span className="text-xs font-medium text-stone-400">Original</span>
+              <span className="text-[10px] text-stone-600">{imageName}</span>
             </div>
-            <div className="p-3 flex items-center justify-center bg-[#0a0a0b] min-h-[200px] max-h-[400px] overflow-auto">
+            <div className="p-3 flex items-center justify-center bg-[#0D0C0A] min-h-[200px] max-h-[400px] overflow-auto">
               <canvas ref={originalCanvasRef} className="max-w-full h-auto rounded" />
             </div>
           </div>
 
           {/* Sharpened */}
-          <div className="rounded-lg border border-[var(--accent)]/30 bg-[#111113] overflow-hidden">
+          <div className="rounded-lg border border-[var(--accent)]/30 bg-[#161412] overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--accent)]/15 bg-[var(--accent)]/[0.04]">
               <span className="text-xs font-medium text-[var(--accent-soft)]">Hasil Penajaman</span>
               {processing && (
-                <span className="flex items-center gap-1 text-[10px] text-zinc-500">
+                <span className="flex items-center gap-1 text-[10px] text-stone-500">
                   <Loader2 className="h-3 w-3 animate-spin" /> Memproses...
                 </span>
               )}
             </div>
-            <div className="p-3 flex items-center justify-center bg-[#0a0a0b] min-h-[200px] max-h-[400px] overflow-auto">
+            <div className="p-3 flex items-center justify-center bg-[#0D0C0A] min-h-[200px] max-h-[400px] overflow-auto">
               <canvas ref={resultCanvasRef} className="max-w-full h-auto rounded" />
             </div>
           </div>
@@ -534,7 +534,7 @@ export function ImageSharpener() {
         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
           {/* Method selector */}
           <div>
-            <p className="text-xs font-medium text-zinc-300 mb-2">Metode Penajaman</p>
+            <p className="text-xs font-medium text-stone-300 mb-2">Metode Penajaman</p>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {METHODS.map((m) => {
                 const Icon = m.icon;
@@ -550,9 +550,9 @@ export function ImageSharpener() {
                         : 'border-white/[0.06] hover:border-white/[0.15] hover:bg-white/[0.04]'
                     }`}
                   >
-                    <Icon className={`h-4 w-4 mb-1.5 ${active ? 'text-[var(--accent-soft)]' : 'text-zinc-400'}`} />
-                    <p className={`text-[11px] font-medium ${active ? 'text-white' : 'text-zinc-300'}`}>{m.label}</p>
-                    <p className="text-[9px] text-zinc-600 leading-tight mt-0.5">{m.description}</p>
+                    <Icon className={`h-4 w-4 mb-1.5 ${active ? 'text-[var(--accent-soft)]' : 'text-stone-400'}`} />
+                    <p className={`text-[11px] font-medium ${active ? 'text-white' : 'text-stone-300'}`}>{m.label}</p>
+                    <p className="text-[9px] text-stone-600 leading-tight mt-0.5">{m.description}</p>
                   </button>
                 );
               })}
@@ -562,13 +562,13 @@ export function ImageSharpener() {
           {/* Intensity slider */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-medium text-zinc-300">Intensitas</p>
+              <p className="text-xs font-medium text-stone-300">Intensitas</p>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono text-[var(--accent-soft)]">{intensity.toFixed(2)}</span>
                 <button
                   type="button"
                   onClick={() => setIntensity(recommendedIntensity)}
-                  className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
+                  className="text-[10px] text-stone-500 hover:text-stone-300 transition-colors"
                 >
                   Pakai rekomendasi
                 </button>
@@ -583,7 +583,7 @@ export function ImageSharpener() {
               onChange={(e) => setIntensity(parseFloat(e.target.value))}
               className="w-full accent-[var(--accent)]"
             />
-            <div className="flex justify-between text-[9px] text-zinc-600 mt-1">
+            <div className="flex justify-between text-[9px] text-stone-600 mt-1">
               <span>0 (off)</span>
               <span>1.0 (normal)</span>
               <span>2.0 (max)</span>
@@ -609,7 +609,7 @@ export function ImageSharpener() {
                 setBlurScore(null);
                 originalImageRef.current = null;
               }}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.08] px-4 py-2 text-xs font-medium text-zinc-300 hover:bg-white/[0.04] transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.08] px-4 py-2 text-xs font-medium text-stone-300 hover:bg-white/[0.04] transition-colors"
             >
               <Upload className="h-3.5 w-3.5" />
               Gambar Lain
@@ -620,11 +620,11 @@ export function ImageSharpener() {
 
       {/* Info card */}
       {!imageSrc && (
-        <div className="rounded-lg border border-sky-500/15 bg-sky-500/[0.03] p-4">
+        <div className="rounded-lg border border-teal-500/15 bg-teal-500/[0.03] p-4">
           <div className="flex items-start gap-2.5">
-            <AlertCircle className="h-4 w-4 text-sky-400 mt-0.5 flex-shrink-0" />
-            <div className="text-xs text-zinc-400 leading-relaxed">
-              <p className="font-medium text-sky-300 mb-1">Cara kerja</p>
+            <AlertCircle className="h-4 w-4 text-[var(--accent-soft)] mt-0.5 flex-shrink-0" />
+            <div className="text-xs text-stone-400 leading-relaxed">
+              <p className="font-medium text-[var(--accent-soft)] mb-1">Cara kerja</p>
               <p>
                 Tool ini pake <strong>computer vision</strong> beneran:
                 Laplacian variance buat auto-detect seberapa buram gambarmu,
@@ -641,9 +641,9 @@ export function ImageSharpener() {
       <div className="mt-6 rounded-lg border border-[var(--accent)]/20 bg-[var(--accent)]/[0.03] p-4 space-y-3">
         <div className="flex items-center gap-2">
           <ScanText className="h-4 w-4 text-[var(--accent-soft)]" />
-          <h3 className="text-sm font-medium text-zinc-200">Smart OCR + Math Solver</h3>
+          <h3 className="text-sm font-medium text-stone-200">Smart OCR + Math Solver</h3>
         </div>
-        <p className="text-[11px] text-zinc-500">Upload foto soal, AI baca teks + selesaikan matematika otomatis.</p>
+        <p className="text-[11px] text-stone-500">Upload foto soal, AI baca teks + selesaikan matematika otomatis.</p>
         <SmartOcrSolver />
       </div>
     </div>

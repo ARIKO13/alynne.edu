@@ -156,14 +156,14 @@ export function DocumentUpload({ onText, disabled }: DocumentUploadProps) {
     ? <FileType className="h-5 w-5 text-red-400" />
     : ["jpg", "jpeg", "png", "tif", "tiff", "bmp", "webp", "gif"].includes(ext)
     ? <FileImage className="h-5 w-5 text-emerald-400" />
-    : <FileText className="h-5 w-5 text-sky-400" />;
+    : <FileText className="h-5 w-5 text-[var(--accent-soft)]" />;
 
   return (
     <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
       <div className="flex items-center gap-2">
-        <FileText className="h-4 w-4 text-sky-400" />
-        <p className="text-sm font-medium text-zinc-200">Upload Dokumen</p>
-        <span className="text-[10px] text-zinc-600 ml-auto">PDF • Office • Gambar • EPUB</span>
+        <FileText className="h-4 w-4 text-[var(--accent-soft)]" />
+        <p className="text-sm font-medium text-stone-200">Upload Dokumen</p>
+        <span className="text-[10px] text-stone-600 ml-auto">PDF • Office • Gambar • EPUB</span>
       </div>
 
       {/* Drop zone */}
@@ -175,8 +175,8 @@ export function DocumentUpload({ onText, disabled }: DocumentUploadProps) {
         className={cn(
           "rounded-lg border border-dashed p-4 cursor-pointer transition-colors",
           dragOver
-            ? "border-sky-400/50 bg-sky-500/[0.06]"
-            : "border-white/[0.08] bg-white/[0.02] hover:border-sky-400/30 hover:bg-sky-500/[0.03]",
+            ? "border-teal-400/50 bg-teal-500/[0.06]"
+            : "border-white/[0.08] bg-white/[0.02] hover:border-teal-400/30 hover:bg-teal-500/[0.03]",
           (disabled || loading) && "opacity-50 cursor-not-allowed"
         )}
       >
@@ -192,15 +192,15 @@ export function DocumentUpload({ onText, disabled }: DocumentUploadProps) {
           <div className="flex items-center gap-2.5">
             {icon}
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-zinc-200 truncate">{file.name}</p>
-              <p className="text-[10px] text-zinc-500">
+              <p className="text-xs font-medium text-stone-200 truncate">{file.name}</p>
+              <p className="text-[10px] text-stone-500">
                 {(file.size / 1024).toFixed(0)} KB • .{ext}
               </p>
             </div>
             {!loading && !result && (
               <button
                 onClick={(e) => { e.stopPropagation(); clear(); }}
-                className="text-zinc-600 hover:text-red-400"
+                className="text-stone-600 hover:text-red-400"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
@@ -208,9 +208,9 @@ export function DocumentUpload({ onText, disabled }: DocumentUploadProps) {
           </div>
         ) : (
           <div className="flex items-center justify-center gap-2 py-1">
-            <UploadCloud className="h-4 w-4 text-zinc-500" />
-            <p className="text-xs text-zinc-400">
-              Drag & drop atau <span className="text-sky-400">klik untuk pilih file</span>
+            <UploadCloud className="h-4 w-4 text-stone-500" />
+            <p className="text-xs text-stone-400">
+              Drag & drop atau <span className="text-[var(--accent-soft)]">klik untuk pilih file</span>
             </p>
           </div>
         )}
@@ -222,7 +222,7 @@ export function DocumentUpload({ onText, disabled }: DocumentUploadProps) {
           onClick={convert}
           size="sm"
           disabled={disabled || loading || !!error}
-          className="w-full bg-sky-500/15 text-sky-300 hover:bg-sky-500/25 border-sky-500/20"
+          className="w-full bg-teal-500/15 text-[var(--accent-soft)] hover:bg-teal-500/25 border-teal-500/20"
         >
           {loading ? (
             <>
@@ -252,7 +252,7 @@ export function DocumentUpload({ onText, disabled }: DocumentUploadProps) {
               {METHOD_LABEL[result.method] || result.method}
             </p>
           </div>
-          <button onClick={clear} className="text-zinc-600 hover:text-red-400">
+          <button onClick={clear} className="text-stone-600 hover:text-red-400">
             <Trash2 className="h-3 w-3" />
           </button>
         </div>
@@ -266,9 +266,9 @@ export function DocumentUpload({ onText, disabled }: DocumentUploadProps) {
         </div>
       )}
 
-      <p className="text-[9px] text-zinc-600 leading-relaxed">
+      <p className="text-[9px] text-stone-600 leading-relaxed">
         PDF/DOCX/PPTX/XLSX langsung diekstrak. Gambar & PDF scan via OCR (tesseract).
-        Maks 50 MB. Hasil teks masuk transkrip  -  klik <strong className="text-zinc-400">Mode Belajar</strong> untuk generate modul.
+        Maks 50 MB. Hasil teks masuk transkrip  -  klik <strong className="text-stone-400">Mode Belajar</strong> untuk generate modul.
       </p>
     </div>
   );

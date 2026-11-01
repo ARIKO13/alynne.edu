@@ -13,7 +13,7 @@ interface FeatureTutorialProps {
   accentColor?: string;
 }
 
-export function FeatureTutorial({ title, steps, storageKey, accentColor = '#38BDF8' }: FeatureTutorialProps) {
+export function FeatureTutorial({ title, steps, storageKey, accentColor = '#7FC4B8' }: FeatureTutorialProps) {
   const [dismissed, setDismissed] = useState(() => {
     if (typeof window === 'undefined') return true;
     return localStorage.getItem(`tutorial-dismissed-${storageKey}`) === 'true';
@@ -84,7 +84,7 @@ export function FeatureTutorial({ title, steps, storageKey, accentColor = '#38BD
       <div
         className="relative w-full max-w-sm rounded-lg border shadow-lg shadow-black/40 overflow-hidden animate-in fade-in zoom-in-95 duration-200"
         style={{
-          backgroundColor: '#161616',
+          backgroundColor: '#171513',
           borderColor: `${accentColor}25`,
         }}
       >
@@ -102,15 +102,15 @@ export function FeatureTutorial({ title, steps, storageKey, accentColor = '#38BD
               <Lightbulb className="h-4 w-4" style={{ color: accentColor }} />
             </div>
             <div>
-              <p className="text-sm font-semibold text-zinc-100">{title}</p>
-              <p className="text-[10px] text-zinc-500">
+              <p className="text-sm font-semibold text-stone-100">{title}</p>
+              <p className="text-[10px] text-stone-500">
                 Langkah {currentStep + 1} dari {steps.length}
               </p>
             </div>
           </div>
           <button
             onClick={handleDismiss}
-            className="p-1.5 rounded-lg hover:bg-white/[0.06] text-zinc-500 hover:text-zinc-300 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-white/[0.06] text-stone-500 hover:text-stone-300 transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
@@ -138,7 +138,7 @@ export function FeatureTutorial({ title, steps, storageKey, accentColor = '#38BD
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold text-white mb-1.5">{step.title}</p>
-              <p className="text-xs text-zinc-400 leading-relaxed">{step.desc}</p>
+              <p className="text-xs text-stone-400 leading-relaxed">{step.desc}</p>
             </div>
           </div>
         </div>
@@ -147,7 +147,7 @@ export function FeatureTutorial({ title, steps, storageKey, accentColor = '#38BD
           <button
             onClick={handlePrev}
             disabled={currentStep === 0}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/[0.06] text-stone-400 hover:text-stone-200"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
             Sebelumnya
@@ -188,7 +188,7 @@ export function FeatureTutorial({ title, steps, storageKey, accentColor = '#38BD
         <div className="px-5 pb-3">
           <button
             onClick={handleDismiss}
-            className="w-full text-center text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors py-1"
+            className="w-full text-center text-[10px] text-stone-600 hover:text-stone-400 transition-colors py-1"
           >
             Lewati tutorial
           </button>

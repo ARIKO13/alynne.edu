@@ -141,7 +141,7 @@ export function SmartContinuity({ open, onClose, transcript }: SmartContinuityPr
             <Zap className="h-5 w-5 text-[var(--accent-soft)]" />
             Smart Continuity
           </DialogTitle>
-          <DialogDescription className="text-zinc-400">
+          <DialogDescription className="text-stone-400">
             One-click: STT → Bab → Mindmap → Kuis → PDF → Save. Semua otomatis.
           </DialogDescription>
         </DialogHeader>
@@ -150,7 +150,7 @@ export function SmartContinuity({ open, onClose, transcript }: SmartContinuityPr
           /* Start screen */
           <div className="space-y-4">
             <div className="rounded-lg border border-[var(--accent)]/20 bg-[var(--accent)]/[0.05] p-4">
-              <p className="text-sm text-zinc-300 mb-2">Transcript siap di-process:</p>
+              <p className="text-sm text-stone-300 mb-2">Transcript siap di-process:</p>
               <Badge variant="outline" className="text-[10px]">
                 {transcript.length} karakter
               </Badge>
@@ -161,11 +161,11 @@ export function SmartContinuity({ open, onClose, transcript }: SmartContinuityPr
                 const Icon = s.icon;
                 return (
                   <div key={s.id} className="flex items-center gap-3 text-sm">
-                    <div className="w-6 h-6 rounded-full bg-white/[0.04] flex items-center justify-center text-xs text-zinc-500">
+                    <div className="w-6 h-6 rounded-full bg-white/[0.04] flex items-center justify-center text-xs text-stone-500">
                       {i + 1}
                     </div>
-                    <Icon className="h-4 w-4 text-zinc-500" />
-                    <span className="text-zinc-400">{s.label}</span>
+                    <Icon className="h-4 w-4 text-stone-500" />
+                    <span className="text-stone-400">{s.label}</span>
                   </div>
                 );
               })}
@@ -186,23 +186,23 @@ export function SmartContinuity({ open, onClose, transcript }: SmartContinuityPr
               <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
                 <FileText className="h-4 w-4 mx-auto mb-1 text-blue-400" />
                 <p className="text-lg font-bold text-white">{chapters.length}</p>
-                <p className="text-[10px] text-zinc-500 uppercase">Bab</p>
+                <p className="text-[10px] text-stone-500 uppercase">Bab</p>
               </div>
               <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
                 <Brain className="h-4 w-4 mx-auto mb-1 text-[var(--accent-soft)]" />
                 <p className="text-lg font-bold text-white">1</p>
-                <p className="text-[10px] text-zinc-500 uppercase">Mindmap</p>
+                <p className="text-[10px] text-stone-500 uppercase">Mindmap</p>
               </div>
               <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
                 <Calculator className="h-4 w-4 mx-auto mb-1 text-amber-400" />
                 <p className="text-lg font-bold text-white">{totalQuiz}</p>
-                <p className="text-[10px] text-zinc-500 uppercase">Kuis</p>
+                <p className="text-[10px] text-stone-500 uppercase">Kuis</p>
               </div>
             </div>
 
             <div className="rounded-lg border border-green-500/20 bg-green-500/[0.05] p-3 text-left">
               <p className="text-xs text-green-400 mb-1">✓ Tersimpan ke Knowledge Hub:</p>
-              <ul className="text-[11px] text-zinc-400 space-y-0.5">
+              <ul className="text-[11px] text-stone-400 space-y-0.5">
                 <li>• STT transcript</li>
                 <li>• Modul PDF (juga di-download otomatis)</li>
                 <li>• Mindmap notes</li>
@@ -221,7 +221,7 @@ export function SmartContinuity({ open, onClose, transcript }: SmartContinuityPr
                 <Loader2 className="h-4 w-4 animate-spin" />
                 {STEPS.find((s) => s.id === step)?.label}
               </span>
-              <span className="text-zinc-400">{progress}%</span>
+              <span className="text-stone-400">{progress}%</span>
             </div>
             <Progress value={progress} className="h-2" />
 
@@ -237,7 +237,7 @@ export function SmartContinuity({ open, onClose, transcript }: SmartContinuityPr
                   <div
                     key={s.id}
                     className={`flex items-center gap-3 text-sm ${
-                      isDone ? 'text-green-400' : isCurrent ? 'text-[var(--accent-soft)]' : 'text-zinc-600'
+                      isDone ? 'text-green-400' : isCurrent ? 'text-[var(--accent-soft)]' : 'text-stone-600'
                     }`}
                   >
                     {isDone ? (
@@ -245,7 +245,7 @@ export function SmartContinuity({ open, onClose, transcript }: SmartContinuityPr
                     ) : isCurrent ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <div className="w-4 h-4 rounded-full border border-zinc-700" />
+                      <div className="w-4 h-4 rounded-full border border-stone-700" />
                     )}
                     <Icon className="h-4 w-4" />
                     <span>{s.label}</span>

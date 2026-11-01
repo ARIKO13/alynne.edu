@@ -149,7 +149,7 @@ export function VoiceCommandPanel() {
     <div className="space-y-4">
       <div>
         <h2 className="text-lg font-semibold text-white">Voice Command</h2>
-        <p className="text-xs text-zinc-500 mt-0.5">Navigasi platform menggunakan perintah suara</p>
+        <p className="text-xs text-stone-500 mt-0.5">Navigasi platform menggunakan perintah suara</p>
       </div>
 
       {/* Mic Button */}
@@ -157,8 +157,8 @@ export function VoiceCommandPanel() {
         {!supported ? (
           <>
             <XCircle className="h-12 w-12 text-red-400/50 mx-auto mb-3" />
-            <p className="text-sm text-zinc-400">Browser tidak mendukung Speech Recognition</p>
-            <p className="text-xs text-zinc-600 mt-1">Gunakan Chrome atau Edge</p>
+            <p className="text-sm text-stone-400">Browser tidak mendukung Speech Recognition</p>
+            <p className="text-xs text-stone-600 mt-1">Gunakan Chrome atau Edge</p>
           </>
         ) : (
           <>
@@ -168,21 +168,21 @@ export function VoiceCommandPanel() {
                 'relative mx-auto w-24 h-24 rounded-full flex items-center justify-center transition-colors duration-300',
                 voiceCmdActive
                   ? 'bg-red-500/20 border-2 border-red-500/40 animate-pulse'
-                  : 'bg-[#38BDF8]/10 border-2 border-[#38BDF8]/30 hover:bg-[#38BDF8]/20 hover:border-[#38BDF8]/50'
+                  : 'bg-[#7FC4B8]/10 border-2 border-[#7FC4B8]/30 hover:bg-[#7FC4B8]/20 hover:border-[#7FC4B8]/50'
               )}
             >
               {voiceCmdActive && <span className="absolute inset-0 rounded-full animate-ping bg-red-500/10" />}
-              {voiceCmdActive ? <MicOff className="h-8 w-8 text-red-400" /> : <Mic className="h-8 w-8 text-[#38BDF8]" />}
+              {voiceCmdActive ? <MicOff className="h-8 w-8 text-red-400" /> : <Mic className="h-8 w-8 text-[#7FC4B8]" />}
             </button>
-            <p className="text-sm text-zinc-400 mt-4">{voiceCmdActive ? 'Mendengarkan perintah...' : 'Tekan untuk mulai'}</p>
+            <p className="text-sm text-stone-400 mt-4">{voiceCmdActive ? 'Mendengarkan perintah...' : 'Tekan untuk mulai'}</p>
             {interimText && (
               <div className="mt-3 px-4 py-2 rounded-lg bg-white/[0.02] border border-white/[0.04] inline-block">
-                <p className="text-sm text-zinc-500 italic">"{interimText}"</p>
+                <p className="text-sm text-stone-500 italic">"{interimText}"</p>
               </div>
             )}
             {lastRecognized && !voiceCmdActive && (
-              <div className="mt-3 flex items-center justify-center gap-2 text-xs text-zinc-500">
-                <span>Terakhir:</span><span className="text-zinc-300">"{lastRecognized}"</span>
+              <div className="mt-3 flex items-center justify-center gap-2 text-xs text-stone-500">
+                <span>Terakhir:</span><span className="text-stone-300">"{lastRecognized}"</span>
               </div>
             )}
           </>
@@ -191,20 +191,20 @@ export function VoiceCommandPanel() {
 
       {/* Available Commands */}
       <div className="glass-card-sm p-4">
-        <h3 className="text-xs font-medium text-zinc-400 mb-3 flex items-center gap-2">
+        <h3 className="text-xs font-medium text-stone-400 mb-3 flex items-center gap-2">
           <Command className="h-3.5 w-3.5" /> Perintah yang Tersedia
         </h3>
         <div className="space-y-1.5">
           {commands.map((cmd) => (
             <div key={cmd.label} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/[0.02] transition-colors">
-              <Compass className="h-3.5 w-3.5 text-[#38BDF8] shrink-0" />
+              <Compass className="h-3.5 w-3.5 text-[#7FC4B8] shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-zinc-300">{cmd.label}</p>
-                <p className="text-[10px] text-zinc-600">{cmd.description}</p>
+                <p className="text-xs font-medium text-stone-300">{cmd.label}</p>
+                <p className="text-[10px] text-stone-600">{cmd.description}</p>
               </div>
               <div className="flex gap-1">
                 {cmd.keywords.slice(0, 3).map(kw => (
-                  <span key={kw} className="text-[9px] text-zinc-600 bg-white/[0.03] px-1.5 py-0.5 rounded">"{kw}"</span>
+                  <span key={kw} className="text-[9px] text-stone-600 bg-white/[0.03] px-1.5 py-0.5 rounded">"{kw}"</span>
                 ))}
               </div>
             </div>
@@ -216,17 +216,17 @@ export function VoiceCommandPanel() {
       {logs.length > 0 && (
         <div className="glass-card-sm p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-xs font-medium text-zinc-400 flex items-center gap-2">
+            <h3 className="text-xs font-medium text-stone-400 flex items-center gap-2">
               <Zap className="h-3.5 w-3.5" /> Riwayat Perintah
             </h3>
-            <button onClick={() => setLogs([])} className="text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors">Hapus</button>
+            <button onClick={() => setLogs([])} className="text-[10px] text-stone-600 hover:text-stone-400 transition-colors">Hapus</button>
           </div>
           <div className="space-y-1.5 max-h-60 overflow-y-auto">
             {logs.map(log => (
               <div key={log.id} className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg">
                 {log.success ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400/70 shrink-0" /> : <XCircle className="h-3.5 w-3.5 text-red-400/70 shrink-0" />}
-                <div className="flex-1 min-w-0"><p className="text-[11px] text-zinc-400 truncate">"{log.text}"</p></div>
-                <span className="text-[10px] text-zinc-600 shrink-0">{log.action}</span>
+                <div className="flex-1 min-w-0"><p className="text-[11px] text-stone-400 truncate">"{log.text}"</p></div>
+                <span className="text-[10px] text-stone-600 shrink-0">{log.action}</span>
               </div>
             ))}
           </div>
