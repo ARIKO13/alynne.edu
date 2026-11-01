@@ -475,10 +475,9 @@ export function BillingFlow() {
             type="button"
             onClick={handleNext}
             disabled={!canAdvance(step)}
-            className="inline-flex items-center gap-1 rounded-lg bg-[#7C3AED] px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-[#7c3aed] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-lg bg-[#7C3AED] px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-[#6D28D9] disabled:cursor-not-allowed disabled:opacity-50"
           >
             Lanjut
-            <ChevronRight className="h-4 w-4" />
           </button>
         )}
       </div>
