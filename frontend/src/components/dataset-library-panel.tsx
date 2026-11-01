@@ -207,7 +207,7 @@ export function DatasetLibraryPanel() {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h3 className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
-            <Database className="h-4 w-4 text-[#8B5CF6]" />
+            <Database className="h-4 w-4 text-[#7C3AED]" />
             Dataset Library (SQLite di SSD VPS)
           </h3>
           {dbFile && (
@@ -269,7 +269,7 @@ export function DatasetLibraryPanel() {
               value={search}
               onChange={(e) => handleSearch(e.target.value)}
               placeholder="Cari kata... (min 2 huruf)"
-              className="pl-8 border-white/[0.08] bg-[#0c0c0e] text-zinc-200 text-xs placeholder:text-zinc-600 h-8"
+              className="pl-8 border-white/[0.08] bg-[#111113] text-zinc-200 text-xs placeholder:text-zinc-600 h-8"
             />
           </div>
           {/* Source filter - pilih: All / KBBI / Slang / Auto-learned */}
@@ -331,7 +331,7 @@ export function DatasetLibraryPanel() {
 
           {/* Source breakdown - tampilin distribusi KBBI/slang/auto-learned */}
           {sourceBreakdown.length > 0 && (
-            <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+            <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
               <p className="text-[11px] text-zinc-400 mb-2">📊 Breakdown by Source</p>
               <div className="space-y-1.5">
                 {sourceBreakdown.map((row, i) => {
@@ -356,7 +356,7 @@ export function DatasetLibraryPanel() {
           )}
 
           {dbFile && (
-            <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+            <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
               <p className="text-[11px] text-zinc-500 mb-1">DB File</p>
               <p className="text-xs text-zinc-300 font-mono break-all">{dbFile.path}</p>
               <div className="flex items-center gap-4 mt-2 text-[10px] text-zinc-500">
@@ -383,7 +383,7 @@ export function DatasetLibraryPanel() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleWordClick(w.word)}
-                      className="text-sm font-mono text-zinc-200 hover:text-[#8B5CF6] transition-colors"
+                      className="text-sm font-mono text-zinc-200 hover:text-[#7C3AED] transition-colors"
                     >
                       {w.word}
                     </button>
@@ -449,7 +449,7 @@ export function DatasetLibraryPanel() {
                   {w.phonetic_variations.length > 0 && (
                     <div className="mt-1.5 flex flex-wrap gap-1">
                       {w.phonetic_variations.slice(0, 8).map((v, i) => (
-                        <span key={i} className="text-[9px] font-mono text-zinc-500 bg-[#18181b] border border-white/[0.06] rounded px-1.5 py-0.5">
+                        <span key={i} className="text-[9px] font-mono text-zinc-500 bg-[#161618] border border-white/[0.06] rounded px-1.5 py-0.5">
                           {v}
                         </span>
                       ))}
@@ -477,7 +477,7 @@ export function DatasetLibraryPanel() {
                 <div key={c.id} className="rounded-md border border-white/[0.06] bg-white/[0.02] p-2.5 group flex items-center gap-2">
                   <span className="text-sm font-mono text-zinc-200">{c.word}</span>
                   <ChevronRight className="h-3 w-3 text-zinc-600" />
-                  <span className="text-sm font-mono text-[#8B5CF6]">{c.context_word}</span>
+                  <span className="text-sm font-mono text-[#7C3AED]">{c.context_word}</span>
                   <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-sky-500/30 text-sky-400 bg-sky-500/10">
                     {c.position} · d{c.distance}
                   </Badge>
@@ -610,7 +610,7 @@ function TabButton({ active, onClick, children }: {
       className={cn(
         'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap',
         active
-          ? 'bg-[#8B5CF6]/15 text-[#8B5CF6]'
+          ? 'bg-[#7C3AED]/15 text-[#7C3AED]'
           : 'text-zinc-500 hover:text-zinc-300'
       )}
     >
@@ -631,7 +631,7 @@ function SourcePill({ active, onClick, icon, label }: {
       className={cn(
         'flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] font-medium transition-all',
         active
-          ? 'border-[#8B5CF6]/40 bg-[#8B5CF6]/15 text-[#8B5CF6]'
+          ? 'border-[#7C3AED]/40 bg-[#7C3AED]/15 text-[#7C3AED]'
           : 'border-white/[0.08] bg-white/[0.02] text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]'
       )}
     >
@@ -648,7 +648,7 @@ function StatCard({ label, value, icon, color }: {
   color: 'purple' | 'emerald' | 'amber' | 'red' | 'sky' | 'violet';
 }) {
   const colorClasses = {
-    purple: 'border-[#8B5CF6]/15 bg-[#8B5CF6]/[0.03]',
+    purple: 'border-[#7C3AED]/15 bg-[#7C3AED]/[0.03]',
     emerald: 'border-emerald-500/15 bg-emerald-500/[0.03]',
     amber: 'border-amber-500/15 bg-amber-500/[0.03]',
     red: 'border-red-500/15 bg-red-500/[0.03]',
@@ -656,7 +656,7 @@ function StatCard({ label, value, icon, color }: {
     violet: 'border-violet-500/15 bg-violet-500/[0.03]',
   };
   const textColor = {
-    purple: 'text-[#8B5CF6]',
+    purple: 'text-[#7C3AED]',
     emerald: 'text-emerald-400',
     amber: 'text-amber-400',
     red: 'text-red-400',
@@ -667,7 +667,7 @@ function StatCard({ label, value, icon, color }: {
     <div className={cn('rounded-lg border p-3', colorClasses[color])}>
       <div className="flex items-center gap-1.5 mb-1">
         <span className="text-xs">{icon}</span>
-        <p className="text-[10px] text-zinc-500 uppercase tracking-wider">{label}</p>
+        <p className="text-[11px] text-zinc-500">{label}</p>
       </div>
       <p className={cn('text-xl font-semibold', textColor[color])}>{value}</p>
     </div>
@@ -679,9 +679,9 @@ function WordDetailView({ detail }: { detail: any }) {
   const w = detail.word;
   return (
     <div className="space-y-3">
-      <div className="rounded-lg border border-[#8B5CF6]/15 bg-[#8B5CF6]/[0.03] p-3">
+      <div className="rounded-lg border border-[#7C3AED]/15 bg-[#7C3AED]/[0.03] p-3">
         <div className="flex items-center gap-2 mb-2">
-          <h4 className="text-base font-mono text-[#8B5CF6]">{w.word}</h4>
+          <h4 className="text-base font-mono text-[#7C3AED]">{w.word}</h4>
           <Badge variant="outline" className={cn(
             'text-[9px] px-1.5 py-0',
             w.status === 'confirmed' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
@@ -720,11 +720,11 @@ function WordDetailView({ detail }: { detail: any }) {
       </div>
 
       {w.phonetic_variations?.length > 0 && (
-        <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+        <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
           <p className="text-[11px] text-zinc-400 mb-1.5">Phonetic Variations ({w.phonetic_variations.length})</p>
           <div className="flex flex-wrap gap-1">
             {w.phonetic_variations.map((v: string, i: number) => (
-              <span key={i} className="text-[10px] font-mono text-zinc-300 bg-[#18181b] border border-white/[0.06] rounded px-1.5 py-0.5">
+              <span key={i} className="text-[10px] font-mono text-zinc-300 bg-[#161618] border border-white/[0.06] rounded px-1.5 py-0.5">
                 {v}
               </span>
             ))}
@@ -733,7 +733,7 @@ function WordDetailView({ detail }: { detail: any }) {
       )}
 
       {detail.cooccurrence?.length > 0 && (
-        <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+        <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
           <p className="text-[11px] text-zinc-400 mb-1.5">Co-occurrence ({detail.cooccurrence.length} entries)</p>
           <div className="space-y-1 max-h-[200px] overflow-y-auto">
             {detail.cooccurrence.map((c: any, i: number) => (
@@ -754,7 +754,7 @@ function WordDetailView({ detail }: { detail: any }) {
       )}
 
       {detail.corrections?.length > 0 && (
-        <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+        <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
           <p className="text-[11px] text-zinc-400 mb-1.5">Related User Votes ({detail.corrections.length})</p>
           <div className="space-y-1">
             {detail.corrections.map((c: any, i: number) => (
@@ -799,7 +799,7 @@ function StorageView({ info }: { info: any }) {
   return (
     <div className="space-y-3">
       {/* Disk usage overview */}
-      <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+      <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
         <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
           <HardDrive className="h-3 w-3" /> VPS Disk Usage
         </p>
@@ -810,7 +810,7 @@ function StorageView({ info }: { info: any }) {
             <span className="text-zinc-400">Total: <strong className="text-zinc-200">{disk.totalGB} GB</strong></span>
           </div>
           {/* Disk usage bar */}
-          <div className="h-3 bg-[#18181b] rounded-full overflow-hidden border border-white/[0.04]">
+          <div className="h-3 bg-[#161618] rounded-full overflow-hidden border border-white/[0.04]">
             <div
               className={cn(
                 'h-full rounded-full transition-all',
@@ -830,7 +830,7 @@ function StorageView({ info }: { info: any }) {
       </div>
 
       {/* DB File info */}
-      <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+      <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
         <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
           <Database className="h-3 w-3" /> SQLite DB File
         </p>
@@ -852,7 +852,7 @@ function StorageView({ info }: { info: any }) {
       </div>
 
       {/* SQLite internals */}
-      <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+      <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
         <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
           <Database className="h-3 w-3" /> SQLite Internal Stats
         </p>
@@ -890,7 +890,7 @@ function StorageView({ info }: { info: any }) {
       </div>
 
       {/* Table sizes breakdown */}
-      <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+      <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
         <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
           <FileText className="h-3 w-3" /> Tables ({tables.length})
         </p>
@@ -899,16 +899,16 @@ function StorageView({ info }: { info: any }) {
             const maxRows = Math.max(...tables.map((x: any) => x.rows || 0));
             const rowPct = maxRows > 0 ? (t.rows / maxRows) * 100 : 0;
             return (
-              <div key={i} className="rounded-md border border-white/[0.04] bg-[#18181b] p-2">
+              <div key={i} className="rounded-md border border-white/[0.04] bg-[#161618] p-2">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-mono text-[#8B5CF6]">{t.name}</span>
+                  <span className="text-xs font-mono text-[#7C3AED]">{t.name}</span>
                   <span className="text-[10px] text-zinc-500">{t.columns} cols</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] text-zinc-400 w-20">{t.rows.toLocaleString()} rows</span>
-                  <div className="flex-1 h-1.5 bg-[#0c0c0e] rounded-full overflow-hidden">
+                  <div className="flex-1 h-1.5 bg-[#111113] rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-[#8B5CF6]/60 rounded-full"
+                      className="h-full bg-[#7C3AED]/60 rounded-full"
                       style={{ width: `${rowPct}%` }}
                     />
                   </div>
@@ -921,13 +921,13 @@ function StorageView({ info }: { info: any }) {
       </div>
 
       {/* Indexes list */}
-      <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+      <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
         <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
           <GitBranch className="h-3 w-3" /> Indexes ({indexes.length})
         </p>
         <div className="flex flex-wrap gap-1">
           {indexes.map((idx: any, i: number) => (
-            <span key={i} className="text-[9px] font-mono text-zinc-400 bg-[#18181b] border border-white/[0.06] rounded px-1.5 py-0.5" title={`Table: ${idx.table}\nSQL: ${idx.sql}`}>
+            <span key={i} className="text-[9px] font-mono text-zinc-400 bg-[#161618] border border-white/[0.06] rounded px-1.5 py-0.5" title={`Table: ${idx.table}\nSQL: ${idx.sql}`}>
               {idx.name}
             </span>
           ))}
@@ -953,12 +953,12 @@ function SchemaView({ info }: { info: any }) {
   return (
     <div className="space-y-3">
       {/* Header */}
-      <div className="rounded-lg border border-[#8B5CF6]/15 bg-[#8B5CF6]/[0.03] p-3">
+      <div className="rounded-lg border border-[#7C3AED]/15 bg-[#7C3AED]/[0.03] p-3">
         <p className="text-[11px] text-zinc-400 mb-1 flex items-center gap-1.5">
           <GitBranch className="h-3 w-3" /> Database Schema (ERD)
         </p>
         <p className="text-[10px] text-zinc-500">
-          Schema version: <strong className="text-[#8B5CF6] font-mono">{schemaVersion}</strong>
+          Schema version: <strong className="text-[#7C3AED] font-mono">{schemaVersion}</strong>
           {' · '}
           {tables.length} tables · {indexes.length} indexes
         </p>
@@ -967,10 +967,10 @@ function SchemaView({ info }: { info: any }) {
       {/* ERD-style table cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {tables.map((t: any, i: number) => (
-          <div key={i} className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] overflow-hidden">
+          <div key={i} className="rounded-lg border border-white/[0.06] bg-[#111113] overflow-hidden">
             {/* Table header */}
-            <div className="px-3 py-2 bg-[#8B5CF6]/10 border-b border-[#8B5CF6]/20">
-              <p className="text-xs font-mono font-semibold text-[#8B5CF6] flex items-center gap-1.5">
+            <div className="px-3 py-2 bg-[#7C3AED]/10 border-b border-[#7C3AED]/20">
+              <p className="text-xs font-mono font-semibold text-[#7C3AED] flex items-center gap-1.5">
                 <Database className="h-3 w-3" />
                 {t.name}
                 {t.foreignKeys.length > 0 && (
@@ -1011,7 +1011,7 @@ function SchemaView({ info }: { info: any }) {
             {/* Foreign keys */}
             {t.foreignKeys.length > 0 && (
               <div className="px-2 py-1.5 border-t border-white/[0.04] bg-sky-500/[0.02]">
-                <p className="text-[9px] text-sky-400/70 uppercase tracking-wider mb-1">Foreign Keys</p>
+                <p className="text-[11px] text-sky-400/70 mb-1">Foreign Keys</p>
                 {t.foreignKeys.map((fk: any, fi: number) => (
                   <div key={fi} className="flex items-center gap-1.5 text-[10px] py-0.5">
                     <span className="font-mono text-sky-300">{fk.from}</span>
@@ -1025,7 +1025,7 @@ function SchemaView({ info }: { info: any }) {
             {/* Indexes on this table */}
             {t.indexes.length > 0 && (
               <div className="px-2 py-1.5 border-t border-white/[0.04]">
-                <p className="text-[9px] text-zinc-500 uppercase tracking-wider mb-1">Indexes ({t.indexes.length})</p>
+                <p className="text-[11px] text-zinc-500 mb-1">Indexes ({t.indexes.length})</p>
                 <div className="flex flex-wrap gap-1">
                   {t.indexes.map((idx: any, ii: number) => (
                     <span
@@ -1034,7 +1034,7 @@ function SchemaView({ info }: { info: any }) {
                         'text-[9px] font-mono px-1.5 py-0.5 rounded border',
                         idx.unique
                           ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/5'
-                          : 'border-white/[0.08] text-zinc-400 bg-[#18181b]'
+                          : 'border-white/[0.08] text-zinc-400 bg-[#161618]'
                       )}
                       title={`Columns: ${idx.columns.join(', ')}${idx.unique ? ' (UNIQUE)' : ''}`}
                     >
@@ -1049,7 +1049,7 @@ function SchemaView({ info }: { info: any }) {
       </div>
 
       {/* Relationships summary */}
-      <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+      <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
         <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
           <Link2 className="h-3 w-3" /> Relationships (Foreign Keys)
         </p>
@@ -1085,14 +1085,14 @@ function SchemaView({ info }: { info: any }) {
       </div>
 
       {/* All indexes summary */}
-      <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+      <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
         <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
           <GitBranch className="h-3 w-3" /> All Indexes ({indexes.length})
         </p>
         <div className="space-y-1 max-h-[200px] overflow-y-auto">
           {indexes.map((idx: any, i: number) => (
             <div key={i} className="flex items-center gap-2 text-[10px] py-0.5">
-              <span className="font-mono text-[#8B5CF6]">{idx.tbl_name}</span>
+              <span className="font-mono text-[#7C3AED]">{idx.tbl_name}</span>
               <span className="text-zinc-600">·</span>
               <span className="font-mono text-zinc-400">{idx.name}</span>
             </div>
@@ -1161,7 +1161,7 @@ function D1MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefresh, l
       </div>
 
       {/* D1 Info */}
-      <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+      <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
         <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
           <Database className="h-3 w-3" /> D1 Connection Info
         </p>
@@ -1186,7 +1186,7 @@ function D1MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefresh, l
       </div>
 
       {/* Table counts */}
-      <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+      <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
         <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
           <Database className="h-3 w-3" /> Tables ({d1?.tables?.length || 0})
         </p>
@@ -1195,17 +1195,17 @@ function D1MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefresh, l
             const maxCount = Math.max(...(d1?.tables || []).map((x: any) => x.count || 0));
             const pct = maxCount > 0 ? (t.count / maxCount) * 100 : 0;
             return (
-              <div key={i} className="rounded-md border border-white/[0.04] bg-[#18181b] p-2">
+              <div key={i} className="rounded-md border border-white/[0.04] bg-[#161618] p-2">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-mono text-[#8B5CF6]">{t.name}</span>
+                  <span className="text-xs font-mono text-[#7C3AED]">{t.name}</span>
                   <span className="text-[10px] text-zinc-400 font-mono">{t.count.toLocaleString()}</span>
                 </div>
                 {t.error && (
                   <p className="text-[9px] text-red-400">Error: {t.error}</p>
                 )}
-                <div className="h-1.5 bg-[#0c0c0e] rounded-full overflow-hidden">
+                <div className="h-1.5 bg-[#111113] rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[#8B5CF6]/60 rounded-full"
+                    className="h-full bg-[#7C3AED]/60 rounded-full"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -1217,7 +1217,7 @@ function D1MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefresh, l
 
       {/* Recent users */}
       {d1?.recentUsers?.length > 0 && (
-        <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+        <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
           <p className="text-[11px] text-zinc-400 mb-2">Recent Users (last 5)</p>
           <div className="space-y-1">
             {d1.recentUsers.map((u: any, i: number) => (
@@ -1235,7 +1235,7 @@ function D1MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefresh, l
 
       {/* Recent STT failures */}
       {d1?.recentFailures?.length > 0 && (
-        <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+        <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
           <p className="text-[11px] text-zinc-400 mb-2">Recent STT Failures (last 5)</p>
           <div className="space-y-1">
             {d1.recentFailures.map((f: any, i: number) => (

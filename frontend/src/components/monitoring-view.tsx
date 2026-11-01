@@ -89,7 +89,7 @@ export function MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefre
       </div>
 
       {/* VPS Stats */}
-      <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+      <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
         <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
           <Server className="h-3 w-3" /> VPS (176.100.37.238)
         </p>
@@ -107,7 +107,7 @@ export function MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefre
                 {cpuPct.toFixed(1)}%
               </span>
             </div>
-            <div className="h-2 bg-[#18181b] rounded-full overflow-hidden">
+            <div className="h-2 bg-[#161618] rounded-full overflow-hidden">
               <div
                 className={cn(
                   'h-full rounded-full transition-all duration-500',
@@ -131,7 +131,7 @@ export function MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefre
                 {memPct.toFixed(1)}%
               </span>
             </div>
-            <div className="h-2 bg-[#18181b] rounded-full overflow-hidden">
+            <div className="h-2 bg-[#161618] rounded-full overflow-hidden">
               <div
                 className={cn(
                   'h-full rounded-full transition-all duration-500',
@@ -163,7 +163,7 @@ export function MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefre
 
       {/* PM2 Process Stats */}
       {pm2 && (
-        <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+        <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
           <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
             <Activity className="h-3 w-3" /> PM2 Process: {pm2.name}
           </p>
@@ -213,7 +213,7 @@ export function MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefre
 
       {/* SQLite Performance */}
       {sqlite && (
-        <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+        <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
           <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
             <Database className="h-3 w-3" /> SQLite Performance
           </p>
@@ -253,7 +253,7 @@ export function MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefre
 
       {/* DB File */}
       {dbFile && (
-        <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+        <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
           <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
             <HardDrive className="h-3 w-3" /> DB File
           </p>

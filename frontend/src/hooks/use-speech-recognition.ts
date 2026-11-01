@@ -352,11 +352,11 @@ export function useSpeechRecognition() {
         console.warn('[OCR] fuzzy-correct failed:', e);
       }
       addLog('success', `OCR: "${corrected.slice(0, 80)}${corrected.length > 80 ? '...' : ''}" (${confidence.toFixed(0)}%)`);
-      appendTranscript(`[🖼️ OCR] ${corrected}`);
+      appendTranscript(`[OCR] ${corrected}`);
     },
     onSlideChange: (diffPct) => {
-      addLog('info', `🖼️ Slide berubah (${(diffPct * 100).toFixed(0)}% pixel changed)`);
-      appendTranscript(`[🔄 Slide berubah - ${(diffPct * 100).toFixed(0)}% pixel berubah]`);
+      addLog('info', `Slide berubah (${(diffPct * 100).toFixed(0)}% pixel changed)`);
+      appendTranscript(`[Slide berubah - ${(diffPct * 100).toFixed(0)}% pixel berubah]`);
     },
   });
 

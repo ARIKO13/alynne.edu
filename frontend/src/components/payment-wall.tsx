@@ -76,13 +76,13 @@ export function PaymentWall({ subStatus, onPaymentSuccess }: PaymentWallProps) {
 
   if (isTrialEnding && !isExpired) {
     return (
-      <div className="mb-4 rounded-xl border border-violet-500/20 bg-violet-500/5 p-4">
+      <div className="mb-4 rounded-lg border border-violet-500/20 bg-violet-500/5 p-4">
         <div className="flex items-start gap-3">
           <Clock className="h-5 w-5 text-violet-400 mt-0.5 shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-violet-200">Masa trial tersisa {subStatus.daysRemaining} hari lagi</p>
-            <p className="text-xs text-violet-400/70 mt-1">Berlangganan Rp 69.000 untuk tetap akses semua fitur.</p>
-            <Button onClick={pay} disabled={loading} className="mt-3 h-8 text-xs bg-violet-500 hover:bg-violet-600 text-black font-semibold rounded-lg gap-1.5">
+            <p className="text-sm font-medium text-zinc-200">Masa trial tersisa {subStatus.daysRemaining} hari lagi</p>
+            <p className="text-xs text-zinc-500 mt-1">Berlangganan Rp 69.000 untuk tetap akses semua fitur.</p>
+            <Button onClick={pay} disabled={loading} className="mt-3 h-8 text-xs bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-semibold rounded-md gap-1.5">
               {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <CreditCard className="h-3 w-3" />} Berlangganan
             </Button>
           </div>
@@ -101,14 +101,14 @@ export function PaymentWall({ subStatus, onPaymentSuccess }: PaymentWallProps) {
   if (subStatus.status === 'active') return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="w-full max-w-md rounded-2xl border border-white/[0.08] glass-card p-8 text-center space-y-6">
-        <div className="mx-auto w-16 h-16 rounded-2xl bg-[#B794F6]/10 flex items-center justify-center"><Crown className="h-8 w-8 text-[#B794F6]" /></div>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80  p-4">
+      <div className="w-full max-w-md rounded-lg border border-white/[0.08] glass-card p-8 text-center space-y-6">
+        <div className="mx-auto w-16 h-16 rounded-lg bg-[#B794F6]/10 flex items-center justify-center"><Crown className="h-8 w-8 text-[#B794F6]" /></div>
         <div className="space-y-2">
           <h2 className="text-xl font-bold text-white">Masa Percobaan Habis</h2>
           <p className="text-sm text-zinc-400">Berlangganan untuk melanjutkan akses ke semua fitur ALYNNE.EDU.</p>
         </div>
-        <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 space-y-3">
+        <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-sm text-zinc-400">Berlangganan 30 Hari</span>
             <span className="text-lg font-bold text-white">Rp 69.000</span>
@@ -124,7 +124,7 @@ export function PaymentWall({ subStatus, onPaymentSuccess }: PaymentWallProps) {
             <XCircle className="h-3.5 w-3.5 shrink-0" />{error}
           </div>
         )}
-        <Button onClick={pay} disabled={loading} className="w-full h-11 rounded-xl bg-gradient-to-r from-[#B794F6] to-[#a57ce8] hover:shadow-[0_0_20px_rgba(183,148,246,0.3)] hover:brightness-110 text-white font-semibold text-sm gap-2">
+        <Button onClick={pay} disabled={loading} className="w-full h-11 rounded-lg bg-gradient-to-r from-[#B794F6] to-[#a57ce8] hover:shadow-[0_0_20px_rgba(183,148,246,0.3)] hover:brightness-110 text-white font-semibold text-sm gap-2">
           {loading ? <><Loader2 className="h-4 w-4 animate-spin" />Memproses...</> : <><CreditCard className="h-4 w-4" />Bayar Rp 69.000</>}
         </Button>
         <p className="text-[10px] text-zinc-600">Pembayaran aman via Midtrans</p>
@@ -160,8 +160,8 @@ export function TrialWelcomePopup({ subStatus, onClose, onPaymentSuccess }: {
   if (isActive || subStatus.isAdmin) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="w-full max-w-sm rounded-2xl border border-white/[0.08] glass-card overflow-hidden">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70  p-4">
+      <div className="w-full max-w-sm rounded-lg border border-white/[0.08] glass-card overflow-hidden">
         <div className="bg-gradient-to-br from-[#B794F6]/20 to-[#B794F6]/5 px-6 pt-6 pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -180,13 +180,13 @@ export function TrialWelcomePopup({ subStatus, onClose, onPaymentSuccess }: {
                   Kamu sedang dalam masa <span className="text-violet-400 font-medium">percobaan gratis 7 hari</span>. Selama masa trial, kamu bisa menggunakan semua fitur ALYNNE.EDU secara gratis.
                 </p>
               </div>
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 space-y-2">
+              <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-zinc-500">Sisa waktu trial</span>
                   <span className="text-white font-semibold">{subStatus.daysRemaining} hari lagi</span>
                 </div>
                 <div className="w-full h-1.5 rounded-full bg-white/[0.06]">
-                  <div className="h-full rounded-full bg-violet-400 transition-all" style={{ width: Math.max(5, (subStatus.daysRemaining / 7) * 100) + '%' }} />
+                  <div className="h-full rounded-full bg-[#7C3AED] transition-[width]" style={{ width: Math.max(5, (subStatus.daysRemaining / 7) * 100) + '%' }} />
                 </div>
               </div>
               <div className="space-y-1.5 text-xs text-zinc-500">
@@ -196,7 +196,7 @@ export function TrialWelcomePopup({ subStatus, onClose, onPaymentSuccess }: {
               {error && (
                 <div className="flex items-center gap-2 text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2"><XCircle className="h-3.5 w-3.5 shrink-0" />{error}</div>
               )}
-              <Button onClick={handlePay} disabled={loading} className="w-full h-10 rounded-xl bg-gradient-to-r from-[#B794F6] to-[#a57ce8] hover:shadow-[0_0_20px_rgba(183,148,246,0.3)] hover:brightness-110 text-white font-semibold text-sm gap-2">
+              <Button onClick={handlePay} disabled={loading} className="w-full h-10 rounded-lg bg-gradient-to-r from-[#B794F6] to-[#a57ce8] hover:shadow-[0_0_20px_rgba(183,148,246,0.3)] hover:brightness-110 text-white font-semibold text-sm gap-2">
                 {loading ? <><Loader2 className="h-4 w-4 animate-spin" />Memproses...</> : <><CreditCard className="h-4 w-4" />Langganan Sekarang</>}
               </Button>
               <button onClick={onClose} className="w-full text-center text-xs text-zinc-600 hover:text-zinc-400 transition-colors">Nanti saja, lanjutkan trial</button>
@@ -210,7 +210,7 @@ export function TrialWelcomePopup({ subStatus, onClose, onPaymentSuccess }: {
               {error && (
                 <div className="flex items-center gap-2 text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2"><XCircle className="h-3.5 w-3.5 shrink-0" />{error}</div>
               )}
-              <Button onClick={handlePay} disabled={loading} className="w-full h-10 rounded-xl bg-gradient-to-r from-[#B794F6] to-[#a57ce8] hover:shadow-[0_0_20px_rgba(183,148,246,0.3)] hover:brightness-110 text-white font-semibold text-sm gap-2">
+              <Button onClick={handlePay} disabled={loading} className="w-full h-10 rounded-lg bg-gradient-to-r from-[#B794F6] to-[#a57ce8] hover:shadow-[0_0_20px_rgba(183,148,246,0.3)] hover:brightness-110 text-white font-semibold text-sm gap-2">
                 {loading ? <><Loader2 className="h-4 w-4 animate-spin" />Memproses...</> : <><CreditCard className="h-4 w-4" />Bayar Rp 69.000</>}
               </Button>
             </>

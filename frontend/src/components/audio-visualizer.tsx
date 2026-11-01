@@ -10,7 +10,7 @@ export function AudioVisualizer({ audioLevels, isListening = false }: AudioVisua
   // Web Speech API mode: no real audio stream, show a listening pulse
   if (isListening && !hasSound) {
     return (
-      <div className="flex items-center gap-3 rounded-lg border border-white/[0.06] bg-[#0c0c0e] px-4 py-3">
+      <div className="flex items-center gap-3 rounded-lg border border-white/[0.06] bg-[#111113] px-4 py-3">
         <div className="flex items-end gap-[2px] h-8 flex-1">
           {audioLevels.map((_, i) => {
             // Simulated gentle pulse based on index
@@ -21,7 +21,7 @@ export function AudioVisualizer({ audioLevels, isListening = false }: AudioVisua
                 className="w-full rounded-sm"
                 style={{
                   height: '3px',
-                  backgroundColor: '#8B5CF633',
+                  backgroundColor: '#7C3AED33',
                   animation: `pulse-bar 1.2s ease-in-out ${delay}ms infinite alternate`,
                 }}
               />
@@ -41,10 +41,10 @@ export function AudioVisualizer({ audioLevels, isListening = false }: AudioVisua
   }
 
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-[#0c0c0e] px-4 py-3">
+    <div className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-[#111113] px-4 py-3">
       <div className="flex items-end gap-[2px] h-8 flex-1">
         {audioLevels.map((level, i) => {
-          const color = level > 40 ? '#8B5CF6' : level > 15 ? '#8B5CF666' : '#8B5CF633';
+          const color = level > 40 ? '#7C3AED' : level > 15 ? '#7C3AED66' : '#7C3AED33';
           return (
             <div
               key={i}

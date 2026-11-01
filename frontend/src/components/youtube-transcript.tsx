@@ -87,7 +87,7 @@ export function YouTubeTranscript({ onTranscript, disabled }: YouTubeTranscriptP
             disabled={disabled || loading}
             className={cn(
               "w-full rounded-lg border border-white/[0.08] bg-white/[0.02] py-2 pl-9 pr-3 text-xs text-zinc-200 placeholder:text-zinc-600",
-              "focus:border-[#8B5CF6]/40 focus:bg-white/[0.04] focus:outline-none",
+              "focus:border-[#7C3AED]/40 focus:bg-white/[0.04] focus:outline-none",
               disabled && "opacity-50 cursor-not-allowed"
             )}
           />

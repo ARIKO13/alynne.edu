@@ -1,5 +1,5 @@
 /**
- * StudyPipeline.tsx — Mode Belajar dengan sidebar layout
+ * StudyPipeline.tsx  -  Mode Belajar dengan sidebar layout
  *
  * Full-screen overlay (bukan dialog popup):
  *   Left sidebar: Mindmap + Chapter list + Start Session button
@@ -69,6 +69,7 @@ import { VoiceTutor } from '@/components/VoiceTutor';
 import { StudyBuddy } from '@/components/StudyBuddy';
 import { VisualisasiPanel } from '@/components/VisualisasiPanel';
 import { preSummarize } from '@/lib/pre-summarize';
+import { runJSPipeline } from '@/lib/js-pipeline';
 import { ExamSimulator } from '@/components/ExamSimulator';
 import {
   detectFace,
@@ -79,6 +80,8 @@ import {
 } from '@/lib/face-mesh';
 import { computeHeadPose, type HeadPose } from '@/lib/head-pose';
 import { useAppStore } from '@/lib/store';
+// v19 imports  -  enrichment rendering + visualisasi auto-select
+import { buildCallouts, getBabEmoji } from '@/lib/v19/visualisasi-decision-tree';
 
 interface StudyPipelineProps {
   open: boolean;
@@ -89,7 +92,7 @@ interface StudyPipelineProps {
 type PipelineStage = 'idle' | 'splitting' | 'mindmap' | 'chapters' | 'complete' | 'error';
 type MainTab = 'materi' | 'kuis' | 'mindmap' | 'buddy' | 'voice' | 'session';
 
-// cyrb53 — small fast hash function for cache keys (no crypto needed).
+// cyrb53  -  small fast hash function for cache keys (no crypto needed).
 // Returns 53-bit hash as string. Good enough for localStorage cache keys.
 function cyrb53(str: string, seed: number = 0): string {
   let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
@@ -114,14 +117,19 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   const [mainTab, setMainTab] = useState<MainTab>('materi');
   const [llmMindmap, setLLMMindmap] = useState<LLMMindmapNode | null>(null);
   // v-visualisasi: array visualisasi dari chunked-generate response. Di-filter per bab_id
-  // saat dirender di tab Materi (VisualisasiPanel). 0 request tambahan — visualisasi
+  // saat dirender di tab Materi (VisualisasiPanel). 0 request tambahan  -  visualisasi
   // sudah digenerate Phase 2 GLM bersamaan dengan bab/kuis/mindmap.
   const [visualisasi, setVisualisasi] = useState<any[]>([]);
+  // v17-jsfirst: 3 keluaran dari pipeline  -  materi_lengkap (filter), ringkasan_padat (summary),
+  // ringkasan_sedang (Resoomer fallback, opsional). Dipakai di tab Ringkasan + Materi.
+  const [materiLengkap, setMateriLengkap] = useState('');
+  const [ringkasanPadat, setRingkasanPadat] = useState('');
+  const [ringkasanSedang, setRingkasanSedang] = useState('');
   // v-stable: estimasi info untuk UI progress bar
   const [estimatedLabel, setEstimatedLabel] = useState('');
   const [estimatedLembar, setEstimatedLembar] = useState(0);
   const [phaseInfo, setPhaseInfo] = useState('');  // e.g., "3 DeepSeek + 4 GLM"
-  // v9-fast: error state untuk friendly UI — tidak ada regex fallback lagi
+  // v9-fast: error state untuk friendly UI  -  tidak ada regex fallback lagi
   const [errorMessage, setErrorMessage] = useState('');
   const [quizBattleOpen, setQuizBattleOpen] = useState(false);
   const [slideExporterOpen, setSlideExporterOpen] = useState(false);
@@ -150,9 +158,9 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   const [faceMeshLoading, setFaceMeshLoading] = useState(false);
   const [posture, setPosture] = useState<'attentive' | 'nunduk' | 'away' | 'ngantuk'>('away');
   const [usingFaceMesh, setUsingFaceMesh] = useState(false);
-  // v20: UI debug overlay — show detection values directly in panel
+  // v20: UI debug overlay  -  show detection values directly in panel
   const [focusDebug, setFocusDebug] = useState<string>('');
-  // v22: Calibration state — recorded once per session start. We sample
+  // v22: Calibration state  -  recorded once per session start. We sample
   // ambient brightness for the first 5s of a session so the pixel-based
   // fallback can normalize against the user's actual lighting instead of
   // using absolute thresholds that are biased toward well-lit rooms.
@@ -182,7 +190,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   //   2. Set iris refinement preference BEFORE any model load happens.
   //      'akurat' = iris on (full gaze detection), 'stabil' = iris off
   //      (smaller model, no gaze detection but ML still active).
-  //   3. resetFaceMesh() to dispose any loaded model — the new mode may
+  //   3. resetFaceMesh() to dispose any loaded model  -  the new mode may
   //      have different refineLandmarks setting, so the old loaded model
   //      is invalid. Also frees ~30-50MB RAM when switching to 'ringan'.
   useEffect(() => {
@@ -190,6 +198,27 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     setRefineLandmarks(studyFocusVisionMode === 'akurat');
     resetFaceMesh();
   }, [studyFocusVisionMode]);
+
+  // v18-stable: Track last processed transcript  -  detect when user uploads NEW content.
+  // Kalau transcript beda → reset stage ke 'idle' → pipeline jalan ulang dengan transcript baru.
+  // Tanpa ini, stage masih 'complete' dari run sebelumnya → runPipeline GAK jalan → hasil lama.
+  const lastProcessedTranscript = useRef('');
+  useEffect(() => {
+    if (transcript && transcript !== lastProcessedTranscript.current) {
+      lastProcessedTranscript.current = transcript;
+      setStage('idle');
+      setChapters([]);
+      setQuizzes({});
+      setErrorMessage('');
+      setRingkasanPadat('');
+      setMateriLengkap('');
+      setRingkasanSedang('');
+      setVisualisasi([]);
+      setLLMMindmap(null);
+      setActiveChapterId(null);
+      console.log('[Pipeline] Transcript changed → resetting state, will re-run pipeline');
+    }
+  }, [transcript]);
 
   // Auto-start pipeline when opened
   useEffect(() => {
@@ -223,7 +252,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
       : `~${Math.ceil(estimatedMs / 1000)} detik`;
     setEstimatedLabel(estimatedLabel);
     setEstimatedLembar(estimatedLembar);
-    // v9-fast: hapus "pLimit 2" info — user gak mau lihat technical details
+    // v9-fast: hapus "pLimit 2" info  -  user gak mau lihat technical details
     setPhaseInfo('');
     console.log(`[Pipeline] estimated: ${estimatedLabel} (${estPhase1Chunks} DeepSeek + ${estPhase2Sections} GLM, pLimit 5)`);
 
@@ -239,7 +268,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
         const pct = 10 + Math.min(80, (elapsed / estimatedMs) * 80);
         setProgress(Math.floor(pct));
       } else {
-        // Exceeded estimate — hold at 90% (will jump to 100% when response arrives)
+        // Exceeded estimate  -  hold at 90% (will jump to 100% when response arrives)
         setProgress(90);
       }
     }, progressIntervalMs);
@@ -248,45 +277,26 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     // v-chunked: cache check (renamed from chunked-generate) localStorage untuk hasil chunked-generate (7 hari).
     // Cache key = hash of transcript (cyrb53). Kalau HIT, skip 1 LLM call
     // besar sama sekali → sidebar instant di Mode Belajar berikutnya.
-    // NOTE: server-side chunked-generate juga punya cache D1 7 hari (lihat
-    // chunked-generate.ts), tapi cache lokal ini lebih cepat lagi karena
-    // skip network round-trip.
-    // v-chunked-v6-4sec: bump localStorage cache key supaya entry lama (3 sections,
-    // visualisasi light theme, bab kepotong) gak di-return. Match ALGORITHM_VERSION
-    // 'v6-4sec-2026-10-25' di chunked-generate.ts (server-side D1 cache).
-    const CACHE_KEY = `alynne:chunked-v11-fix:${cyrb53(transcript)}`;
-    const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;  // 7 days
+    // v19.1: NO LOCAL CACHE  -  always fetch fresh from server.
+    // LLM is free + fast (~1-3s), cache adds complexity + stale data risk.
+    // User uploads same transcript twice → fresh LLM call each time (always up-to-date).
     let split: Chapter[] | null = null;
     let quizMap: Record<number, QuizQuestion[]> = {};
     let mindmapNode: LLMMindmapNode | null = null;
-    let visualisasiArr: any[] = [];  // v-visualisasi: akan di-populate dari cache atau mega response
-    let usedCache = false;
-    try {
-      const cached = localStorage.getItem(CACHE_KEY);
-      if (cached) {
-        const parsed = JSON.parse(cached) as {
-          ts: number;
-          chapters: Chapter[];
-          quizzes: Record<number, QuizQuestion[]>;
-          mindmap: LLMMindmapNode | null;
-          visualisasi?: any[];  // v-visualisasi: ikut di-cache lokal supaya repeat upload = 0 LLM call
-        };
-        if (Date.now() - parsed.ts < CACHE_TTL_MS && parsed.chapters?.length > 0) {
-          split = parsed.chapters;
-          quizMap = parsed.quizzes || {};
-          mindmapNode = parsed.mindmap;
-          visualisasiArr = parsed.visualisasi || [];  // populate dari cache
-          usedCache = true;
-          console.log(`[Pipeline] Cache HIT: ${split.length} chapters cached ${Math.round((Date.now() - parsed.ts) / 1000 / 60)}min ago — 0 LLM call (mega)`);
-        } else {
-          localStorage.removeItem(CACHE_KEY);  // expired
-        }
-      }
-    } catch (e) {
-      console.warn('[Pipeline] Cache read failed:', e);
-    }
+    let visualisasiArr: any[] = [];
+    const usedCache = false;
 
     // v-mega: PANGGIL /api/stt/chunked-generate (1 request LLM, NO split, NO 55-chunk loop).
+    // v15-arch: pre-summarize (Chatr/Resoomer/PDFSummarizer) di-REMOVE dari client. Kirim RAW
+    // transcript langsung ke chunked-generate. chunked-generate sekarang handle SEMUA internal:
+    //   Phase 1: DeepSeek FILTER (clean + ## Topik markers, preserve 70-85%)
+    //   Phase 1.5: Chatr summary (gratis, 0.5% threshold) + Resoomer fallback (sedang)
+    //   Phase 2: GLM STRUKTUR (modul + kuis + visualisasi + mindmap + glosarium JSON)
+    // Sebelumnya: pre-summarize.ts kirim Resoomer output (15K) ke chunked-generate, yang
+    // bikin Phase 1 filter di-SKIP (input < 30K threshold) → materi_lengkap = dirty Resoomer
+    // output → GLM Phase 2 liat teks kotor ("Halo warga CPL", "Oke. Ah...") → gagal bikin
+    // kuis + visualisasi → UI fallback ke paragraph-split "Bagian 1, Bagian 2".
+    // Fix: hilangkan pre-summarize, biar chunked-generate yang filter + struktur dari awal.
     // Chunked-generate sudah balik: modul.bab + kuis + mindmap + visualisasi + glosarium
     // dalam 1 JSON. Default level: L3 (65K ringkas_lengkap, ~5-8 menit, stabil).
     //
@@ -298,113 +308,86 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     //   fetch('/api/stt/chunked-generate') → 1 LLM call dengan transcript utuh (700K char max)
     //   → LLM yang memecah jadi bab di dalam output JSON → tanpa split, tanpa regex fallback
     if (!split) {
-      // v10-bagi-tugas + pre-summarize: Chrome Summarizer API (gratis, on-device)
-      // pre-summarize transcript SEBELUM kirim ke server. Kalau Chrome API available,
-      // 219K char → ~40-60K char ringkasan → server skip Phase 1 (DeepSeek) → langsung
-      // Phase 2 (GLM/DeepSeek bagi tugas). Total: 0 LLM request untuk Phase 1, 2 untuk Phase 2.
-      const preSummarized = await preSummarize(transcript);
-      const inputText = preSummarized.summary;  // ringkasan (atau raw transcript kalau Chrome API gak ada)
+      // v18.3 (2026-10-29): RESTORE LLM fetch (was disabled v18-stable due to NVIDIA 10s+ timeout).
+      // Now using freellmpool proxy on localhost:8080 (4 keyless providers, ~1-3s response).
+      // JS pipeline REMOVED per user request: "gausah make js pipeline dehh... ai aja yang menganukan".
+      const transcriptForFetch = transcript.length > 50000 ? transcript.slice(0, 50000) : transcript;
+      console.log(`[Pipeline] Fetching /api/stt/chunked-generate (transcript ${transcriptForFetch.length} chars)...`);
 
-      try {
-        const res = await fetch('/api/stt/chunked-generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ transcript: inputText, title: 'Materi Belajar', maxChapters: 15 }),
-          signal: AbortSignal.timeout(180_000),
-        });
-        if (res.ok) {
-          const mega = await res.json() as {
-            modul?: { bab?: any[] };
-            kuis?: any[];
-            mindmap?: { root?: string; cabang?: { nama?: string; sub?: string[] }[] };
-            visualisasi?: any[];
-            error?: string;
-            message?: string;
-            cached?: boolean;
-            levelUsed?: string;
-          };
-          if (mega.error) {
-            // v9-fast: server returned friendly error (200 with error field) — show to user
-            clearInterval(progressTimer);
-            setErrorMessage(mega.message || 'Server sedang sibuk. Coba lagi dalam 1 menit.');
-            setStage('error');
-            return;
-          }
-          if (mega.modul?.bab?.length) {
-            split = mega.modul.bab.map((b: any) => {
-              const content = String(b.penjelasan || b.uraian || '').trim();
-              return {
-                id: Number(b.id) || 0,
-                title: String(b.judul || '').slice(0, 100),
-                content,
-                wordCount: content.split(/\s+/).filter(Boolean).length,
-              };
-            }).filter((c: Chapter) => c.id > 0 && c.content.length > 20);
+      const res = await fetch('/api/stt/chunked-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transcript: transcriptForFetch, title: 'Materi Belajar', maxChapters: 15 }),
+      });
 
-            if (Array.isArray(mega.kuis)) {
-              for (const k of mega.kuis) {
-                const babId = Number(k.bab_id ?? k.bab ?? 0);
-                if (!babId) continue;
-                if (!quizMap[babId]) quizMap[babId] = [];
-                quizMap[babId].push({
-                  id: Number(k.id) || quizMap[babId].length + 1,
-                  type: 'multiple-choice' as const,
-                  question: String(k.soal || ''),
-                  options: Array.isArray(k.opsi) ? k.opsi.map(String) : [],
-                  correctAnswer: String(k.jawaban || ''),
-                  explanation: String(k.pembahasan || ''),
-                });
-              }
-            }
-
-            if (mega.mindmap?.root) {
-              mindmapNode = {
-                label: String(mega.mindmap.root),
-                children: (mega.mindmap.cabang || []).map((c: any) => ({
-                  label: String(c.nama || ''),
-                  children: (c.sub || []).map((s: string) => ({ label: String(s) })),
-                })),
-              };
-            }
-
-            visualisasiArr = Array.isArray(mega.visualisasi) ? mega.visualisasi : [];
-
-            console.log(`[Pipeline] chunked-generate OK: ${split.length} bab, ${Object.keys(quizMap).length} bab dengan kuis, mindmap ${mindmapNode ? 'OK' : 'null'}, visualisasi ${visualisasiArr.length} item (level: ${mega.levelUsed || '?'}${mega.cached ? ', server-cache HIT' : ''})`);
-
-            // Cache hasil (chapters + quizzes + mindmap + visualisasi)
-            try {
-              localStorage.setItem(CACHE_KEY, JSON.stringify({
-                ts: Date.now(),
-                chapters: split,
-                quizzes: quizMap,
-                mindmap: mindmapNode,
-                visualisasi: visualisasiArr,
-              }));
-              console.log(`[Pipeline] Cached ${split.length} chapters + mega result`);
-            } catch (e) {
-              console.log('[Pipeline] Cache write failed:', e);
-            }
-          } else {
-            // No bab in response — show friendly error
-            clearInterval(progressTimer);
-            setErrorMessage('Server sedang sibuk. Coba lagi dalam 1 menit.');
-            setStage('error');
-            return;
-          }
-        } else {
-          // HTTP error — show friendly error
-          clearInterval(progressTimer);
-          setErrorMessage('Server sedang sibuk. Coba lagi dalam 1 menit.');
-          setStage('error');
-          return;
-        }
-      } catch (err) {
-        // Network/timeout — show friendly error (NO retry, NO regex fallback)
-        clearInterval(progressTimer);
-        setErrorMessage('Server sedang sibuk. Coba lagi dalam 1 menit.');
+      if (!res.ok) {
+        console.error(`[Pipeline] chunked-generate HTTP ${res.status}`);
+        const errText = await res.text().catch(() => '');
         setStage('error');
+        setPhaseInfo(`AI gagal (${res.status}). ${errText.slice(0, 100)}`);
+        clearInterval(progressTimer);
         return;
       }
+
+      const mega = await res.json();
+      console.log(`[Pipeline] chunked-generate OK: ${mega.modul?.bab?.length ?? 0} bab, kuis ${mega.kuis?.length ?? 0}, vis ${mega.visualisasi?.length ?? 0}, mindmap ${mega.mindmap?.root ? 'OK' : 'null'}`);
+
+      // Parse response  -  v19 includes enrichment fields + adaptive bab count
+      split = (mega.modul?.bab || []).map((b: any) => {
+        const content = b.penjelasan || '';
+        return {
+          id: b.id,
+          judul: b.judul,
+          title: b.judul,
+          tujuan: b.tujuan || '',
+          konsep_kunci: b.konsep_kunci || [],
+          penjelasan: content,
+          content: content,
+          contoh: b.contoh || '',
+          wordCount: content.split(/\s+/).filter(Boolean).length,
+          keyPoints: b.konsep_kunci?.map((k: string) => ({ istilah: k, penjelasan: '' })) || [],
+          // v19 enrichment fields (8 fields per bab)
+          analogy: b.analogy || '',
+          whyItMatters: b.whyItMatters || '',
+          commonMistake: b.commonMistake || '',
+          eli5: b.eli5 || '',
+          connectTo: b.connectTo || '',
+          examTip: b.examTip || '',
+          mnemonic: b.mnemonic || '',
+          realWorldExample: b.realWorldExample || '',
+          // v19 metadata
+          emoji: getBabEmoji(b.judul || '', b.konsep_kunci || []),
+        };
+      });
+      console.log(`[Pipeline] v19 enrichment: ${split.length} bab, content_type=${mega.content_type || '?'}, enrichment_version=${mega.enrichment_version || 0}`);
+
+      if (mega.ringkasan_padat) setRingkasanPadat(mega.ringkasan_padat);
+      if (mega.materi_lengkap) setMateriLengkap(mega.materi_lengkap);
+
+      for (const k of (mega.kuis || [])) {
+        if (!quizMap[k.bab_id]) quizMap[k.bab_id] = [];
+        quizMap[k.bab_id].push({
+          id: k.id,
+          pertanyaan: k.pertanyaan,
+          opsi: k.opsi,
+          jawaban: k.jawaban,
+          pembahasan: k.pembahasan || '',
+        });
+      }
+
+      if (mega.mindmap?.root) {
+        mindmapNode = {
+          label: mega.mindmap.root,
+          children: (mega.mindmap.cabang || []).map((c: any) => ({
+            label: c.label,
+            children: (c.children || []).map((sc: any) => ({ label: sc.label, children: [] })),
+          })),
+        };
+      }
+
+      visualisasiArr = mega.visualisasi || [];
+
+      // v19.1: NO LOCAL CACHE  -  removed localStorage.setItem call
     }
 
     // Set state untuk SEMUA path (cache HIT, chunked-generate OK, atau regex fallback).
@@ -443,7 +426,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     setStage('complete');
     if (split.length > 0) setActiveChapterId(split[0].id);
     if (usedCache) {
-      console.log(`[Pipeline] DONE — used cache for mega, total time saved ~5-10min`);
+      console.log(`[Pipeline] DONE  -  used cache for mega, total time saved ~5-10min`);
     }
   }, [transcript]);
 
@@ -463,7 +446,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         // v3: Explicitly start playing. autoPlay attribute might not
-        // work immediately after srcObject is set — video.videoWidth
+        // work immediately after srcObject is set  -  video.videoWidth
         // stays 0 until play() resolves → detection fails.
         await videoRef.current.play().catch(() => {});
       }
@@ -522,10 +505,10 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
 
     // Trigger async load of Face Mesh (lazy)
     // v25: only trigger ML model load if vision mode is NOT 'ringan'.
-    // When 'ringan', we skip isFaceMeshAvailable() entirely — no network
+    // When 'ringan', we skip isFaceMeshAvailable() entirely  -  no network
     // request, no model download, no RAM usage. The check() loop also
     // short-circuits getDetectorSync() to null.
-    // 'stabil' and 'akurat' both load ML — difference is iris refinement,
+    // 'stabil' and 'akurat' both load ML  -  difference is iris refinement,
     // which is set via setRefineLandmarks() in the useEffect above.
     if (studyFocusVisionModeRef.current !== 'ringan') {
       setFaceMeshLoading(true);
@@ -547,7 +530,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     // inside the `if (now - lastLegacyFaceCheck > 500)` block but used them
     // in the posture branches below that block. On frames where the legacy
     // check didn't run, the reference would throw ReferenceError, swallowed
-    // by the try-catch — leaving the focus score stuck at 0%. Declaring them
+    // by the try-catch  -  leaving the focus score stuck at 0%. Declaring them
     // here as `let` makes them persist between legacy checks (cached value
     // is reused on intermediate frames), which is the intended behavior.
     let headBowedDown = false;
@@ -690,7 +673,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                   // v23: head upright (aspect ratio > 1.0) BUT eyes look down
                   // at phone in lap. Closes the loophole where v22 classified
                   // "sit-upright-eyes-down" as attentive (score 80). Score 45
-                  // = same as "face present but no sclera" — moderately
+                  // = same as "face present but no sclera"  -  moderately
                   // distracted but still at desk.
                   baseScore = 45;
                   currentPosture = 'nunduk';
@@ -918,7 +901,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
       animRef.current = requestAnimationFrame(check);
     };
     check();
-  }, []);  // v6: no deps — uses refs, not stale closure values
+  }, []);  // v6: no deps  -  uses refs, not stale closure values
 
   // Timer countdown
   useEffect(() => {
@@ -1037,7 +1020,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
         {/* Header */}
         <div className="p-4 border-b border-white/[0.06] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-[#8B5CF6]" />
+            <Sparkles className="h-4 w-4 text-[#7C3AED]" />
             <span className="text-sm font-semibold text-white">Mode Belajar</span>
           </div>
           <Button onClick={onClose} size="sm" variant="ghost" className="h-7 text-zinc-500">
@@ -1045,14 +1028,14 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           </Button>
         </div>
 
-        {/* Error state — v9-fast: friendly error, NO stack trace */}
+        {/* Error state  -  v9-fast: friendly error, NO stack trace */}
         {stage === 'error' && (
           <div className="p-6 text-center space-y-3">
             <div className="text-4xl">⚠️</div>
             <p className="text-sm text-zinc-300">{errorMessage}</p>
             <Button
               onClick={() => { setStage('idle'); setErrorMessage(''); }}
-              className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs px-4 py-2 rounded"
+              className="bg-[#7C3AED] hover:bg-[#7C3AED] text-white text-xs px-4 py-2 rounded"
             >
               Coba lagi
             </Button>
@@ -1063,7 +1046,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
         {stage !== 'complete' && stage !== 'idle' && stage !== 'error' && (
           <div className="p-3 border-b border-white/[0.04]">
             <div className="flex items-center justify-between text-xs mb-1">
-              <span className="text-[#8B5CF6] flex items-center gap-1">
+              <span className="text-[#7C3AED] flex items-center gap-1">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 {stage === 'splitting' && 'Menyusun ringkasan...'}
                 {stage === 'mindmap' && 'Menyusun modul...'}
@@ -1088,7 +1071,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               <p className="text-[9px] text-zinc-600 uppercase">Bab</p>
             </div>
             <div>
-              <p className="text-base font-bold text-[#8B5CF6]">{totalQuestions}</p>
+              <p className="text-base font-bold text-[#7C3AED]">{totalQuestions}</p>
               <p className="text-[9px] text-zinc-600 uppercase">Kuis</p>
             </div>
             <div>
@@ -1123,7 +1106,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                 className={cn(
                   'w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs transition-colors text-left',
                   activeChapterId === ch.id
-                    ? 'bg-[#8B5CF6]/10 text-[#8B5CF6]'
+                    ? 'bg-[#7C3AED]/10 text-[#7C3AED]'
                     : 'text-zinc-400 hover:bg-white/[0.04]'
                 )}
               >
@@ -1144,7 +1127,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           <div className="p-3 border-t border-white/[0.06] space-y-2">
             <Button
               onClick={handleStartSession}
-              className="w-full bg-[#8B5CF6] hover:bg-[#7C3AED] text-xs"
+              className="w-full bg-[#7C3AED] hover:bg-[#7C3AED] text-xs"
               size="sm"
             >
               <Play className="h-3 w-3 mr-1" />
@@ -1223,12 +1206,12 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
       <div className="flex-1 overflow-y-auto relative z-10 h-full min-h-0">
         {/* Tab switcher */}
         {stage === 'complete' && (
-          <div className="sticky top-0 z-20 bg-zinc-950/80 backdrop-blur border-b border-white/[0.04] px-6 py-2 flex gap-2">
+          <div className="sticky top-0 z-20 bg-zinc-950/80  border-b border-white/[0.04] px-6 py-2 flex gap-2">
             <button
               onClick={() => setMainTab('materi')}
               className={cn(
                 'px-3 py-1 rounded text-xs font-medium transition-colors',
-                mainTab === 'materi' ? 'bg-[#8B5CF6] text-white' : 'text-zinc-500 hover:text-zinc-300'
+                mainTab === 'materi' ? 'bg-[#7C3AED] text-white' : 'text-zinc-500 hover:text-zinc-300'
               )}
             >
               <BookOpen className="h-3 w-3 inline mr-1" />
@@ -1238,7 +1221,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               onClick={() => setMainTab('kuis')}
               className={cn(
                 'px-3 py-1 rounded text-xs font-medium transition-colors',
-                mainTab === 'kuis' ? 'bg-[#8B5CF6] text-white' : 'text-zinc-500 hover:text-zinc-300'
+                mainTab === 'kuis' ? 'bg-[#7C3AED] text-white' : 'text-zinc-500 hover:text-zinc-300'
               )}
             >
               <Calculator className="h-3 w-3 inline mr-1" />
@@ -1248,7 +1231,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               onClick={() => setMainTab('mindmap')}
               className={cn(
                 'px-3 py-1 rounded text-xs font-medium transition-colors',
-                mainTab === 'mindmap' ? 'bg-[#8B5CF6] text-white' : 'text-zinc-500 hover:text-zinc-300'
+                mainTab === 'mindmap' ? 'bg-[#7C3AED] text-white' : 'text-zinc-500 hover:text-zinc-300'
               )}
             >
               <Brain className="h-3 w-3 inline mr-1" />
@@ -1261,7 +1244,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               onClick={() => setMainTab('buddy')}
               className={cn(
                 'px-3 py-1 rounded text-xs font-medium transition-colors',
-                mainTab === 'buddy' ? 'bg-[#8B5CF6] text-white' : 'text-zinc-500 hover:text-zinc-300'
+                mainTab === 'buddy' ? 'bg-[#7C3AED] text-white' : 'text-zinc-500 hover:text-zinc-300'
               )}
             >
               <MessageCircle className="h-3 w-3 inline mr-1" />
@@ -1278,13 +1261,13 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               Voice Tutor
             </button>
             {/* v11-combine: tab "Study Buddy" dihapus (duplikat dengan "Tanya AI" di atas).
-                Tab "Tanya AI" (mainTab === 'buddy') sekarang handle semua — pakai
+                Tab "Tanya AI" (mainTab === 'buddy') sekarang handle semua  -  pakai
                 StudyBuddy component dengan 3 mode (diskusi/challenge/jelaskan). */}
             <button
               onClick={() => setMainTab('session')}
               className={cn(
                 'px-3 py-1 rounded text-xs font-medium transition-colors',
-                mainTab === 'session' ? 'bg-[#8B5CF6] text-white' : 'text-zinc-500 hover:text-zinc-300'
+                mainTab === 'session' ? 'bg-[#7C3AED] text-white' : 'text-zinc-500 hover:text-zinc-300'
               )}
             >
               <Clock className="h-3 w-3 inline mr-1" />
@@ -1297,7 +1280,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
         {stage !== 'complete' && stage !== 'idle' && (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <Loader2 className="h-8 w-8 animate-spin text-[#8B5CF6] mx-auto mb-4" />
+              <Loader2 className="h-8 w-8 animate-spin text-[#7C3AED] mx-auto mb-4" />
               <p className="text-sm text-zinc-400">
                 {stage === 'splitting' && 'Menyusun ringkasan...'}
                 {stage === 'mindmap' && 'Menyusun modul...'}
@@ -1310,9 +1293,9 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
         {/* MINDMAP TAB: visual SVG graph */}
         {mainTab === 'mindmap' && stage === 'complete' && (
           <div className="p-6">
-            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-6">
+            <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-6">
               <h2 className="text-sm font-medium text-zinc-300 mb-4 flex items-center gap-2">
-                <Brain className="h-4 w-4 text-[#8B5CF6]" />
+                <Brain className="h-4 w-4 text-[#7C3AED]" />
                 Mindmap
               </h2>
               {llmMindmap ? (
@@ -1337,13 +1320,15 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
         {/* MATERI TAB: chapter content only */}
         {mainTab === 'materi' && stage === 'complete' && activeChapter && (
           <div className="p-6 max-w-3xl mx-auto space-y-4">
-            {/* Chapter title */}
+            {/* Chapter title  -  v19: include emoji */}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#8B5CF6]/10 flex items-center justify-center text-base font-bold text-[#8B5CF6]">
+              <div className="w-10 h-10 rounded-full bg-[#7C3AED]/10 flex items-center justify-center text-base font-bold text-[#7C3AED]">
                 {activeChapter.id}
               </div>
               <div className="flex-1">
-                <h2 className="text-lg font-semibold text-white">{activeChapter.title}</h2>
+                <h2 className="text-lg font-semibold text-white">
+                  {activeChapter.title}
+                </h2>
                 <p className="text-[10px] text-zinc-500">{activeChapter.wordCount} kata</p>
               </div>
               <Badge variant="outline" className="text-[10px] text-blue-400 border-blue-500/30">
@@ -1352,14 +1337,97 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               </Badge>
             </div>
 
+            {/* Tujuan */}
+            {activeChapter.tujuan && (
+              <div className="rounded-lg border border-purple-500/10 bg-purple-500/[0.02] p-3">
+                <p className="text-[11px] text-zinc-500 mb-1">Tujuan</p>
+                <p className="text-xs text-zinc-400 leading-relaxed">{activeChapter.tujuan}</p>
+              </div>
+            )}
+
             {/* Content */}
             <div className="rounded-lg border border-blue-500/10 bg-blue-500/[0.02] p-5">
               <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{activeChapter.content}</p>
             </div>
 
+            {/* v19 Callouts  -  Insight, Misconception, Key Takeaway */}
+            {(activeChapter.analogy || activeChapter.commonMistake || activeChapter.examTip) && (() => {
+              const callouts = buildCallouts({
+                analogy: activeChapter.analogy,
+                realWorldExample: activeChapter.realWorldExample,
+                commonMistake: activeChapter.commonMistake,
+                examTip: activeChapter.examTip,
+                mnemonic: activeChapter.mnemonic,
+              });
+              return callouts.length > 0 ? (
+                <div className="space-y-2">
+                  {callouts.map((c, i) => (
+                    <div
+                      key={i}
+                      className="rounded-lg p-3 border-l-2"
+                      style={{
+                        borderLeftColor: c.color,
+                        background: `${c.color}10`,
+                      }}
+                    >
+                      <p className="text-[11px] font-medium mb-1" style={{ color: c.color }}>
+                        {c.title}
+                      </p>
+                      <p className="text-xs text-zinc-300 leading-relaxed">{c.content}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : null;
+            })()}
+
+            {/* v19 ELI5  -  Explain Like I'm 5 */}
+            {activeChapter.eli5 && !activeChapter.eli5.startsWith('Konsep ini menjelaskan') && (
+              <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.05] p-4">
+                <p className="text-[11px] text-zinc-500 mb-1">
+                  Penjelasan untuk anak (ELI5)
+                </p>
+                <p className="text-xs text-zinc-300 leading-relaxed">{activeChapter.eli5}</p>
+              </div>
+            )}
+
+            {/* v19 Connect To  -  relation to other bab */}
+            {activeChapter.connectTo && !activeChapter.connectTo.startsWith('Bab ini terhubung') && (
+              <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/[0.05] p-3">
+                <p className="text-[11px] text-zinc-500 mb-1">
+                  Koneksi ke bab lain
+                </p>
+                <p className="text-xs text-zinc-300 leading-relaxed">{activeChapter.connectTo}</p>
+              </div>
+            )}
+
+            {/* v19 Contoh */}
+            {activeChapter.contoh && (
+              <div className="rounded-lg border border-emerald-500/10 bg-emerald-500/[0.02] p-4">
+                <p className="text-[11px] text-zinc-500 mb-1">Contoh</p>
+                <p className="text-xs text-zinc-300 leading-relaxed">{activeChapter.contoh}</p>
+              </div>
+            )}
+
+            {/* Konsep Kunci */}
+            {activeChapter.konsep_kunci && activeChapter.konsep_kunci.length > 0 && (
+              <div className="rounded-lg border border-pink-500/10 bg-pink-500/[0.02] p-4">
+                <p className="text-[11px] text-zinc-500 mb-2">Konsep Kunci</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {activeChapter.konsep_kunci.map((k, i) => (
+                    <span
+                      key={i}
+                      className="px-2 py-0.5 rounded text-[10px] bg-pink-500/10 text-pink-300 border border-pink-500/20"
+                    >
+                      {k}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* v-visualisasi: render visualisasi untuk bab yang sedang aktif.
                 GLM generate JSON data (~150-200 tok per item), frontend render pakai
-                Recharts/Mermaid/HTML table — 0 request API tambahan. */}
+                Recharts/Mermaid/HTML table  -  0 request API tambahan. */}
             <VisualisasiPanel items={visualisasi.filter(v => Number(v.bab_id) === Number(activeChapter.id))} />
 
             {/* Actions: TTS + Focus + PDF */}
@@ -1368,7 +1436,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                 onClick={handleToggleTTS}
                 size="sm"
                 className={cn(
-                  ttsPlaying && !ttsPaused ? 'bg-green-600 hover:bg-green-700' : 'bg-[#8B5CF6] hover:bg-[#7C3AED]'
+                  ttsPlaying && !ttsPaused ? 'bg-green-600 hover:bg-green-700' : 'bg-[#7C3AED] hover:bg-[#7C3AED]'
                 )}
               >
                 {ttsPlaying && !ttsPaused ? (
@@ -1486,7 +1554,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                                   : showWrong
                                   ? 'border-red-500/50 bg-red-500/10 text-red-400'
                                   : isSelected
-                                  ? 'border-[#8B5CF6]/50 bg-[#8B5CF6]/10 text-[#8B5CF6]'
+                                  ? 'border-[#7C3AED]/50 bg-[#7C3AED]/10 text-[#7C3AED]'
                                   : 'border-white/[0.06] text-zinc-400 hover:border-white/[0.15] hover:bg-white/[0.04]'
                               )}
                             >
@@ -1513,7 +1581,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           </div>
         )}
 
-        {/* TANYA AI TAB (v11-combine) — sekarang handle semua chat.
+        {/* TANYA AI TAB (v11-combine)  -  sekarang handle semua chat.
             StudyBuddy component punya 3 mode (diskusi/challenge/jelaskan)
             + full context (semua bab + transcript). Inline TanyaAI dihapus. */}
         {mainTab === 'buddy' && stage === 'complete' && activeChapter && (
@@ -1537,7 +1605,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               <div className={cn(
                 'inline-flex items-center justify-center w-48 h-48 rounded-full border-4 transition-all',
                 isRunning
-                  ? 'border-[#8B5CF6] bg-[#8B5CF6]/[0.05]'
+                  ? 'border-[#7C3AED] bg-[#7C3AED]/[0.05]'
                   : 'border-white/[0.06] bg-white/[0.02]'
               )}>
                 <div>
@@ -1558,7 +1626,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                   }
                   setIsRunning(!isRunning);
                 }}
-                className="bg-[#8B5CF6] hover:bg-[#7C3AED]"
+                className="bg-[#7C3AED] hover:bg-[#7C3AED]"
               >
                 {isRunning ? 'Pause' : 'Start'}
               </Button>
@@ -1609,19 +1677,19 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
 
               {focusEnabled ? (
                 <>
-                  {/* Camera preview — mirrored selfie view, no opacity dimming */}
+                  {/* Camera preview  -  mirrored selfie view, no opacity dimming */}
                   {faceMeshLoading && (
                     <div className="text-center text-[10px] text-zinc-500 py-2">
                       Loading focus model... (~3s first time)
                     </div>
                   )}
-                  {/* v22: Calibration banner — shown for first 5s of session */}
+                  {/* v22: Calibration banner  -  shown for first 5s of session */}
                   {calibrating && (
                     <div className="rounded-md bg-blue-500/10 border border-blue-500/30 px-2 py-1.5 text-center text-[10px] text-blue-300 animate-pulse">
                       Kalibrasi cahaya… jangan tutup kamera
                     </div>
                   )}
-                  {/* v25: Vision mode picker — 3 presets, choose BEFORE start.
+                  {/* v25: Vision mode picker  -  3 presets, choose BEFORE start.
                       Default 'ringan' (pixel path only, no ML download).
                       'stabil' = ML without iris. 'akurat' = ML + iris (gaze). */}
                   <div className="space-y-1.5">
@@ -1738,7 +1806,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                           : 'Pergi'}
                       </span>
                     </div>
-                    {/* Engine indicator — shows if using MediaPipe or fallback */}
+                    {/* Engine indicator  -  shows if using MediaPipe or fallback */}
                     <div className="flex items-center justify-between mt-0.5 text-[9px] text-zinc-600">
                       <span>Engine:</span>
                       <span>
@@ -1747,7 +1815,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                           : 'Sclera + Skin Tone (fallback)'}
                       </span>
                     </div>
-                    {/* v20: UI DEBUG OVERLAY — live detection values
+                    {/* v20: UI DEBUG OVERLAY  -  live detection values
                         visible directly in panel (no console needed).
                         If you see this box with values updating → bundle v20+ is loaded. */}
                     {focusDebug && (
@@ -1792,7 +1860,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                 </p>
                 <Button
                   onClick={handleDownloadMaster}
-                  className="mt-3 bg-[#8B5CF6] hover:bg-[#7C3AED]"
+                  className="mt-3 bg-[#7C3AED] hover:bg-[#7C3AED]"
                   size="sm"
                 >
                   <Download className="h-3 w-3 mr-1" />
@@ -1948,7 +2016,7 @@ function MindmapTreeNode({
   const childPrefix = level === 0 ? '' : prefix + (isLast ? '   ' : '│  ');
 
   const colors = [
-    'text-[#8B5CF6] font-bold text-base',
+    'text-[#7C3AED] font-bold text-base',
     'text-blue-400 font-medium text-sm',
     'text-zinc-300 text-sm',
     'text-zinc-500 text-xs',
@@ -1965,7 +2033,7 @@ function MindmapTreeNode({
         )}
         <span className={colorClass}>{node.label}</span>
         {level === 0 && (
-          <Badge variant="outline" className="ml-2 text-[8px] border-[#8B5CF6]/30 text-[#8B5CF6]">
+          <Badge variant="outline" className="ml-2 text-[8px] border-[#7C3AED]/30 text-[#7C3AED]">
             AI Generated
           </Badge>
         )}

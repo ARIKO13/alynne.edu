@@ -110,7 +110,48 @@ export default function App({ onBackToLanding }: AppProps) {
     }
   }, [activeTab, userIsAdmin, setActiveTab, user]);
 
-  // Apply theme class to <html> — runs on mount + whenever theme changes.
+  // v14-routing: Hash-based URL routing supaya tab state persist di URL.
+  // URL jadi /edu#/stt, /edu#/belajar, /edu#/notes, dll.
+  // Refresh halaman tetap di tab yang sama. Bookmark bisa langsung ke tab tujuan.
+  // 1. On mount: read hash → set activeTab
+  // 2. On activeTab change: update hash
+  // 3. On hashchange event: update activeTab (untuk back/forward browser nav)
+  const VALID_TAB_IDS = ['stt', 'modul', 'mindmap', 'sharpen', 'admin', 'voice-cmd', 'belajar', 'hub', 'notes', 'stats', 'refer', 'flash'];
+
+  // Initial sync on mount  -  baca hash, set activeTab kalau valid
+  useEffect(() => {
+    const hash = window.location.hash.slice(1); // remove '#'
+    if (hash && VALID_TAB_IDS.includes(hash)) {
+      // Only set if different from current activeTab (avoid loop)
+      if (hash !== useAppStore.getState().activeTab) {
+        setActiveTab(hash as TabId);
+      }
+    }
+  }, []); // run once on mount
+
+  // Sync activeTab → URL hash (saat user klik tab, update URL)
+  useEffect(() => {
+    const expectedHash = `#${activeTab}`;
+    if (window.location.hash !== expectedHash) {
+      // Use replaceState untuk avoid polluted history (back button tetap ke page sebelumnya)
+      window.history.replaceState(null, '', `/edu${expectedHash}`);
+    }
+  }, [activeTab]);
+
+  // Listen hashchange (untuk back/forward navigation atau manual URL change)
+  useEffect(() => {
+    const onHashChange = () => {
+      const hash = window.location.hash.slice(1);
+      if (hash && VALID_TAB_IDS.includes(hash) && hash !== useAppStore.getState().activeTab) {
+        setActiveTab(hash as TabId);
+      }
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, [setActiveTab]);
+
+
+  // Apply theme class to <html>  -  runs on mount + whenever theme changes.
   // Layout.astro has an inline script that pre-applies the class from
   // localStorage BEFORE React hydrates, so there's no flash of dark mode.
   useEffect(() => {
@@ -120,8 +161,8 @@ export default function App({ onBackToLanding }: AppProps) {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#09090b]">
-        <div className="animate-spin h-8 w-8 border-2 border-[#8B5CF6] border-t-transparent rounded-full" />
+      <div className="min-h-screen flex items-center justify-center bg-[#0A0A0B]">
+        <div className="animate-spin h-8 w-8 border-2 border-[#7C3AED] border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -147,17 +188,17 @@ export default function App({ onBackToLanding }: AppProps) {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#09090b]">
+    <div className="min-h-screen flex bg-[#0A0A0B]">
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-black/60  z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-[260px] bg-[#0c0c0e] border-r border-white/[0.06] flex flex-col transition-transform duration-200 ease-in-out lg:relative lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 w-[260px] bg-[#111113] border-r border-white/[0.06] flex flex-col transition-transform duration-200 ease-in-out lg:relative lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
@@ -194,7 +235,7 @@ export default function App({ onBackToLanding }: AppProps) {
                     : 'text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-300'
                 )}
               >
-                <Icon className={cn('h-4 w-4', isActive ? 'text-[#8B5CF6]' : 'text-zinc-600')} />
+                <Icon className={cn('h-4 w-4', isActive ? 'text-[#7C3AED]' : 'text-zinc-600')} />
                 {tab.label}
               </button>
             );
@@ -220,7 +261,7 @@ export default function App({ onBackToLanding }: AppProps) {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-30 h-14 bg-[#09090b]/80 backdrop-blur-md border-b border-white/[0.06] flex items-center justify-between px-4 md:px-6">
+        <header className="sticky top-0 z-30 h-14 bg-[#0A0A0B]/80  border-b border-white/[0.06] flex items-center justify-between px-4 md:px-6">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -272,7 +313,7 @@ export default function App({ onBackToLanding }: AppProps) {
             </button>
             <div className="flex items-center gap-2.5">
               <div className="relative h-7 w-7">
-                <div className="flex h-full w-full items-center justify-center rounded-full bg-[#8B5CF6] text-white text-xs font-bold">
+                <div className="flex h-full w-full items-center justify-center rounded-full bg-[#7C3AED] text-white text-xs font-bold">
                   {String(user?.name || '?')[0]}
                 </div>
                 {user?.image && (
@@ -287,7 +328,7 @@ export default function App({ onBackToLanding }: AppProps) {
               <div className="flex items-center gap-2 hidden sm:flex">
                 <span className="text-sm text-zinc-300">{String(user?.name || 'Player')}</span>
                 {userIsAdmin && (
-                  <Badge className="bg-[#8B5CF6]/20 text-[#8B5CF6] border-[#8B5CF6]/30 text-[9px] px-1.5 py-0">
+                  <Badge className="bg-[#7C3AED]/20 text-[#7C3AED] border-[#7C3AED]/30 text-[9px] px-1.5 py-0">
                     Admin
                   </Badge>
                 )}

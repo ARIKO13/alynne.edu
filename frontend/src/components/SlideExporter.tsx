@@ -1,5 +1,5 @@
 /**
- * SlideExporter.tsx — Export chapters to presentation slides
+ * SlideExporter.tsx  -  Export chapters to presentation slides
  *
  * Generates HTML-based slide presentation from STT chapters.
  * Each chapter becomes a slide with title + content + quiz.
@@ -72,10 +72,10 @@ export function SlideExporter({ open, onClose, chapters, quizzes = {} }: SlideEx
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-md bg-zinc-950/95 border-white/10 text-white">
+      <DialogContent className="max-w-md ">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
-            <Presentation className="h-5 w-5 text-[#8B5CF6]" />
+            <Presentation className="h-5 w-5 text-[#7C3AED]" />
             Export ke Slide Presentasi
           </DialogTitle>
           <DialogDescription className="text-zinc-400">
@@ -113,7 +113,7 @@ export function SlideExporter({ open, onClose, chapters, quizzes = {} }: SlideEx
           <Button
             onClick={generateSlides}
             disabled={generating}
-            className="w-full bg-[#8B5CF6] hover:bg-[#7C3AED]"
+            className="w-full bg-[#7C3AED] hover:bg-[#7C3AED]"
           >
             {generating ? (
               <>
@@ -203,7 +203,7 @@ function generatePresentationHTML(slides: string[], chapters: Chapter[]): string
   }
   .slide-num { color: #71717a; font-size: 14px; }
   .slide-badge {
-    background: #8B5CF6;
+    background: #7C3AED;
     color: white;
     padding: 4px 12px;
     border-radius: 12px;
@@ -212,7 +212,7 @@ function generatePresentationHTML(slides: string[], chapters: Chapter[]): string
   }
   .slide-title {
     font-size: 36px;
-    color: #8B5CF6;
+    color: #7C3AED;
     margin-bottom: 24px;
     line-height: 1.3;
   }
@@ -229,11 +229,11 @@ function generatePresentationHTML(slides: string[], chapters: Chapter[]): string
     padding: 20px;
     background: rgba(139, 92, 246, 0.1);
     border-radius: 12px;
-    border: 1px solid rgba(139, 92, 246, 0.3);
+    border: 1px solid rgba(124, 58, 237, 0.3);
   }
-  .quiz h3 { color: #8B5CF6; margin-bottom: 12px; }
+  .quiz h3 { color: #7C3AED; margin-bottom: 12px; }
   .quiz-item { margin-bottom: 16px; }
-  .quiz-q { color: #e4e4e7; margin-bottom: 8px; font-size: 16px; }
+  .quiz-q { color: #fafafa; margin-bottom: 8px; font-size: 16px; }
   .quiz-options { display: flex; flex-wrap: wrap; gap: 8px; }
   .quiz-opt {
     padding: 6px 14px;
@@ -267,22 +267,22 @@ function generatePresentationHTML(slides: string[], chapters: Chapter[]): string
     z-index: 100;
   }
   .controls button {
-    background: rgba(139, 92, 246, 0.2);
-    border: 1px solid rgba(139, 92, 246, 0.3);
+    background: rgba(124, 58, 237, 0.2);
+    border: 1px solid rgba(124, 58, 237, 0.3);
     color: white;
     padding: 10px 20px;
     border-radius: 8px;
     cursor: pointer;
     font-size: 14px;
-    transition: all 0.2s;
+    transition: background 0.15s, border-color 0.15s;
   }
-  .controls button:hover { background: rgba(139, 92, 246, 0.4); }
+  .controls button:hover { background: rgba(124, 58, 237, 0.4); }
   .progress {
     position: fixed;
     top: 0;
     left: 0;
     height: 3px;
-    background: #8B5CF6;
+    background: #7C3AED;
     z-index: 100;
     transition: width 0.3s;
   }
@@ -294,9 +294,9 @@ function generatePresentationHTML(slides: string[], chapters: Chapter[]): string
   ${slides.join('\n  ')}
 </div>
 <div class="controls">
-  <button onclick="prevSlide()">← Prev</button>
+  <button onclick="prevSlide()">Sebelumnya</button>
   <span id="counter" style="color: #71717a; padding: 10px 20px;">1 / ${slides.length}</span>
-  <button onclick="nextSlide()">Next →</button>
+  <button onclick="nextSlide()">Berikutnya</button>
   <button onclick="toggleFullscreen()">⛶ Fullscreen</button>
 </div>
 <script>

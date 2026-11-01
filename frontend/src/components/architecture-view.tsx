@@ -22,12 +22,12 @@ export function ArchitectureView({ schemaInfo }: ArchitectureViewProps) {
         startOnLoad: false,
         theme: 'dark',
         themeVariables: {
-          primaryColor: '#8B5CF6',
-          primaryTextColor: '#e4e4e7',
+          primaryColor: '#7C3AED',
+          primaryTextColor: '#fafafa',
           primaryBorderColor: '#7c3aed',
           lineColor: '#52525b',
-          secondaryColor: '#27272a',
-          tertiaryColor: '#18181b',
+          secondaryColor: '#1f1f23',
+          tertiaryColor: '#161618',
           fontFamily: 'monospace',
           fontSize: '12px',
         },
@@ -87,7 +87,7 @@ export function ArchitectureView({ schemaInfo }: ArchitectureViewProps) {
       </div>
 
       {/* Mermaid diagram container */}
-      <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-4 overflow-x-auto">
+      <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-4 overflow-x-auto">
         {!mermaidLoaded ? (
           <p className="text-center text-xs text-zinc-500 py-8">Loading Mermaid...</p>
         ) : (
@@ -96,7 +96,7 @@ export function ArchitectureView({ schemaInfo }: ArchitectureViewProps) {
       </div>
 
       {/* Diagram explanation */}
-      <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+      <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
         {activeDiagram === 'dataflow' && (
           <div className="text-[11px] text-zinc-400 space-y-1">
             <p className="font-medium text-zinc-300">STT Data Flow</p>
@@ -141,7 +141,7 @@ function DiagramPill({ active, onClick, label }: { active: boolean; onClick: () 
       className={cn(
         'px-2.5 py-0.5 rounded-full border text-[11px] font-medium transition-all',
         active
-          ? 'border-[#8B5CF6]/40 bg-[#8B5CF6]/15 text-[#8B5CF6]'
+          ? 'border-[#7C3AED]/40 bg-[#7C3AED]/15 text-[#7C3AED]'
           : 'border-white/[0.08] bg-white/[0.02] text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]'
       )}
     >
@@ -196,8 +196,8 @@ function getDiagram(type: string, schemaInfo: any): string {
     BackupCron --> GitHub
     SQLite --> PruneCron
 
-    style SQLite fill:#8B5CF6,stroke:#7c3aed,color:#fff
-    style GitHub fill:#27272a,stroke:#52525b,color:#e4e4e7
+    style SQLite fill:#7C3AED,stroke:#7c3aed,color:#fff
+    style GitHub fill:#1f1f23,stroke:#52525b,color:#fafafa
     style User fill:#059669,stroke:#047857,color:#fff
     style FuzzyAPI fill:#0891b2,stroke:#0e7490,color:#fff
     style LearnAPI fill:#d97706,stroke:#b45309,color:#fff
@@ -330,7 +330,7 @@ function getDiagram(type: string, schemaInfo: any): string {
     SQLite --> LocalBackup
     API -->|"user data"| D1
 
-    style SQLite fill:#8B5CF6,stroke:#7c3aed,color:#fff
+    style SQLite fill:#7C3AED,stroke:#7c3aed,color:#fff
     style Server fill:#0891b2,stroke:#0e7490,color:#fff
     style Client fill:#059669,stroke:#047857,color:#fff
     style Cloud fill:#6366f1,stroke:#4f46e5,color:#fff

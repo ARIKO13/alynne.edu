@@ -1,5 +1,5 @@
 /**
- * AmbientThemes.tsx — Lo-Fi / White Noise player for study sessions
+ * AmbientThemes.tsx  -  Lo-Fi / White Noise player for study sessions
  *
  * Generates ambient audio using Web Audio API (no external files needed).
  * Options: Lo-Fi (synthesized), White Noise, Rain, Forest, None
@@ -21,7 +21,7 @@ const AMBIENT_OPTIONS: Array<{
   color: string;
 }> = [
   { type: 'none', label: 'Off', icon: VolumeX, color: 'text-zinc-500' },
-  { type: 'lofi', label: 'Lo-Fi', icon: Music, color: 'text-[#8B5CF6]' },
+  { type: 'lofi', label: 'Lo-Fi', icon: Music, color: 'text-[#7C3AED]' },
   { type: 'whitenoise', label: 'White Noise', icon: Wind, color: 'text-sky-400' },
   { type: 'rain', label: 'Hujan', icon: CloudRain, color: 'text-blue-400' },
   { type: 'forest', label: 'Hutan', icon: Trees, color: 'text-green-400' },
@@ -239,7 +239,7 @@ export function AmbientThemes() {
             step="0.05"
             value={volume}
             onChange={(e) => setVolume(Number(e.target.value))}
-            className="flex-1 h-1 accent-[#8B5CF6]"
+            className="flex-1 h-1 accent-[#7C3AED]"
           />
           <span className="text-[10px] text-zinc-500 w-8 text-right">
             {Math.round(volume * 100)}%

@@ -1,5 +1,5 @@
 /**
- * DocumentUpload.tsx — Upload file APAPUN → server konversi → text → masuk transcript
+ * DocumentUpload.tsx  -  Upload file APAPUN → server konversi → text → masuk transcript
  *
  * Server /api/stt/convert-file pakai:
  *   - pdftotext (PDF)
@@ -268,7 +268,7 @@ export function DocumentUpload({ onText, disabled }: DocumentUploadProps) {
 
       <p className="text-[9px] text-zinc-600 leading-relaxed">
         PDF/DOCX/PPTX/XLSX langsung diekstrak. Gambar & PDF scan via OCR (tesseract).
-        Maks 50 MB. Hasil teks masuk transkrip — klik <strong className="text-zinc-400">Mode Belajar</strong> untuk generate modul.
+        Maks 50 MB. Hasil teks masuk transkrip  -  klik <strong className="text-zinc-400">Mode Belajar</strong> untuk generate modul.
       </p>
     </div>
   );

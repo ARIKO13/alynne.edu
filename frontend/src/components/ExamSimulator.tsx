@@ -1,5 +1,5 @@
 /**
- * ExamSimulator.tsx — Full exam simulator with timer + auto-grade
+ * ExamSimulator.tsx  -  Full exam simulator with timer + auto-grade
  *
  * AI generates a full exam (5-10 questions) from chapters:
  * - Multiple choice
@@ -169,12 +169,12 @@ JSON array (tanpa markdown):
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-2xl bg-zinc-950/95 border-white/10 text-white max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
-            <GraduationCap className="h-5 w-5 text-[#8B5CF6]" />
+            <GraduationCap className="h-5 w-5 text-[#7C3AED]" />
             Exam Simulator
-            <Badge variant="outline" className="text-[10px] ml-auto border-[#8B5CF6]/30 text-[#8B5CF6]">
+            <Badge variant="outline" className="text-[10px] ml-auto border-[#7C3AED]/30 text-[#7C3AED]">
               AI Generated
             </Badge>
           </DialogTitle>
@@ -183,14 +183,14 @@ JSON array (tanpa markdown):
         {/* IDLE STATE */}
         {state === 'idle' && (
           <div className="text-center py-8 space-y-4">
-            <GraduationCap className="h-16 w-16 mx-auto text-[#8B5CF6]/50" />
+            <GraduationCap className="h-16 w-16 mx-auto text-[#7C3AED]/50" />
             <div>
               <p className="text-sm text-zinc-300 mb-1">Ujian simulasi dari {chapters.length} bab</p>
               <p className="text-[11px] text-zinc-500">
                 AI buat 8 soal (pilihan ganda + benar/salah + isian) → timer → auto-grade → feedback
               </p>
             </div>
-            <Button onClick={generateExam} className="bg-[#8B5CF6] hover:bg-[#7C3AED]" size="lg">
+            <Button onClick={generateExam} className="bg-[#7C3AED] hover:bg-[#7C3AED]" size="lg">
               <GraduationCap className="h-4 w-4 mr-2" />
               Mulai Ujian
             </Button>
@@ -200,7 +200,7 @@ JSON array (tanpa markdown):
         {/* GENERATING STATE */}
         {state === 'generating' && (
           <div className="text-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-[#8B5CF6] mx-auto mb-4" />
+            <Loader2 className="h-8 w-8 animate-spin text-[#7C3AED] mx-auto mb-4" />
             <p className="text-sm text-zinc-400">AI sedang membuat soal ujian...</p>
           </div>
         )}
@@ -242,7 +242,7 @@ JSON array (tanpa markdown):
                       className={cn(
                         'text-left px-3 py-2 rounded text-sm transition-colors border',
                         answers[current.id] === opt
-                          ? 'border-[#8B5CF6]/50 bg-[#8B5CF6]/10 text-[#8B5CF6]'
+                          ? 'border-[#7C3AED]/50 bg-[#7C3AED]/10 text-[#7C3AED]'
                           : 'border-white/[0.06] text-zinc-400 hover:border-white/[0.15]'
                       )}
                     >
@@ -255,7 +255,7 @@ JSON array (tanpa markdown):
                   value={answers[current.id] || ''}
                   onChange={e => handleAnswer(current.id, e.target.value)}
                   placeholder="Ketik jawaban..."
-                  className="w-full px-3 py-2 rounded bg-white/[0.04] border border-white/[0.08] text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-[#8B5CF6]/50"
+                  className="w-full px-3 py-2 rounded bg-white/[0.04] border border-white/[0.08] text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-[#7C3AED]/50"
                 />
               )}
             </div>
@@ -275,9 +275,9 @@ JSON array (tanpa markdown):
                 <Button
                   onClick={() => setCurrentQ(i => i + 1)}
                   size="sm"
-                  className="bg-[#8B5CF6] hover:bg-[#7C3AED]"
+                  className="bg-[#7C3AED] hover:bg-[#7C3AED]"
                 >
-                  Next →
+                  Lanjut
                 </Button>
               ) : (
                 <Button
@@ -298,7 +298,7 @@ JSON array (tanpa markdown):
           <div className="space-y-4">
             {grading ? (
               <div className="text-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-[#8B5CF6] mx-auto mb-4" />
+                <Loader2 className="h-8 w-8 animate-spin text-[#7C3AED] mx-auto mb-4" />
                 <p className="text-sm text-zinc-400">Menilai jawaban...</p>
               </div>
             ) : (
@@ -309,7 +309,7 @@ JSON array (tanpa markdown):
                   <p className="text-3xl font-bold text-white">{score}/{questions.length}</p>
                   <p className="text-sm text-zinc-400">{accuracy}% Akurasi</p>
                   <Badge variant="outline" className={cn('mt-2 text-xs', accuracy >= 80 ? 'border-green-500/30 text-green-400' : accuracy >= 60 ? 'border-amber-500/30 text-amber-400' : 'border-red-500/30 text-red-400')}>
-                    {accuracy >= 80 ? '🏆 Excellent!' : accuracy >= 60 ? '👍 Good' : '📚 Belajar lagi!'}
+                    {accuracy >= 80 ? 'Excellent!' : accuracy >= 60 ? 'Good' : 'Belajar lagi!'}
                   </Badge>
                 </div>
 
@@ -338,7 +338,7 @@ JSON array (tanpa markdown):
                             <p className="text-[10px] text-green-400">Benar: {q.correctAnswer}</p>
                           )}
                           {q.explanation && (
-                            <p className="text-[10px] text-zinc-600 mt-1">💡 {q.explanation}</p>
+                            <p className="text-[10px] text-zinc-600 mt-1">{q.explanation}</p>
                           )}
                         </div>
                       </div>
@@ -348,7 +348,7 @@ JSON array (tanpa markdown):
 
                 {/* Actions */}
                 <div className="flex gap-2">
-                  <Button onClick={generateExam} className="flex-1 bg-[#8B5CF6] hover:bg-[#7C3AED]">
+                  <Button onClick={generateExam} className="flex-1 bg-[#7C3AED] hover:bg-[#7C3AED]">
                     <RotateCcw className="h-3 w-3 mr-1" />
                     Ulangi (Soal Baru)
                   </Button>

@@ -9,13 +9,15 @@ import Navbar from '@/components/Navbar.astro';
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="id">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="ALYNNE AI - One agent for all skills." />
+    <meta name="description" content="ALYNNE AI — Belajar Sambil Main, Raih Sertifikat!" />
     <link rel="icon" type="image/png" href="/alynne-ai-logo.png" />
+
     <title>{title}</title>
+
     <!-- Pre-apply theme class BEFORE hydration to prevent dark-mode flash.
          The Zustand store at 'lina-learning-v2' persists `theme` in
          state.theme. We read it from localStorage directly here. -->
@@ -27,7 +29,7 @@ import Navbar from '@/components/Navbar.astro';
       } catch (e) {}
     </script>
   </head>
-  <body class="antialiased bg-background text-foreground">
+  <body class="antialiased bg-[var(--bg)] text-[var(--text)]">
     {showNavbar && <Navbar />}
     <slot />
   </body>

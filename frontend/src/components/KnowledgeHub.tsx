@@ -1,5 +1,5 @@
 /**
- * KnowledgeHub.tsx — Personal Knowledge Hub UI (IndexedDB-backed, Explorer-like)
+ * KnowledgeHub.tsx  -  Personal Knowledge Hub UI (IndexedDB-backed, Explorer-like)
  *
  * Folder/project system for organizing saved work, with file-manager
  * ergonomics:
@@ -89,7 +89,7 @@ const TYPE_ICONS: Record<string, typeof FileText> = {
 const TYPE_COLORS: Record<string, string> = {
   stt: 'text-green-400',
   pdf: 'text-blue-400',
-  mindmap: 'text-[#8B5CF6]',
+  mindmap: 'text-[#7C3AED]',
   quiz: 'text-amber-400',
   note: 'text-zinc-400',
   image: 'text-pink-400',
@@ -382,11 +382,11 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
   const storageFull = storageInfo && storageInfo.percentUsed >= 100;
 
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-      {/* Header — full-page style with Back button */}
+    <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+      {/* Header  -  full-page style with Back button */}
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
         <div className="flex items-center gap-2.5">
-          <Folder className="h-5 w-5 text-[#8B5CF6]" />
+          <Folder className="h-5 w-5 text-[#7C3AED]" />
           <div>
             <h2 className="text-base font-semibold text-zinc-100">Knowledge Hub</h2>
             <p className="text-[11px] text-zinc-500">
@@ -406,7 +406,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
         {/* Stats */}
         <div className="grid grid-cols-4 gap-3">
           <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-center">
-            <Folder className="h-4 w-4 mx-auto mb-1 text-[#8B5CF6]" />
+            <Folder className="h-4 w-4 mx-auto mb-1 text-[#7C3AED]" />
             <p className="text-lg font-semibold text-white">{stats?.totalProjects ?? 0}</p>
             <p className="text-[10px] text-zinc-500 uppercase">Project</p>
           </div>
@@ -421,7 +421,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
             <p className="text-[10px] text-zinc-500 uppercase">STT</p>
           </div>
           <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-center">
-            <Brain className="h-4 w-4 mx-auto mb-1 text-[#8B5CF6]" />
+            <Brain className="h-4 w-4 mx-auto mb-1 text-[#7C3AED]" />
             <p className="text-lg font-semibold text-white">
               {(stats?.byType.pdf || 0) + (stats?.byType.mindmap || 0)}
             </p>
@@ -506,7 +506,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
                 onClick={() => setShowNewProject(!showNewProject)}
                 size="sm"
                 variant="ghost"
-                className="h-7 text-[#8B5CF6]"
+                className="h-7 text-[#7C3AED]"
               >
                 <Plus className="h-3 w-3" />
               </Button>
@@ -522,7 +522,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
                   className="h-8 text-xs bg-white/[0.04] border-white/[0.08]"
                   autoFocus
                 />
-                <Button onClick={handleCreateProject} size="sm" className="h-8 bg-[#8B5CF6]">
+                <Button onClick={handleCreateProject} size="sm" className="h-8 bg-[#7C3AED]">
                   OK
                 </Button>
               </div>
@@ -533,7 +533,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
               onClick={() => setActiveProject(null)}
               className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
                 !activeProject
-                  ? 'bg-[#8B5CF6]/10 text-[#8B5CF6]'
+                  ? 'bg-[#7C3AED]/10 text-[#7C3AED]'
                   : 'text-zinc-400 hover:bg-white/[0.04]'
               }`}
             >
@@ -557,9 +557,9 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
                   onDrop={(e) => handleDropProject(e, p.id)}
                   className={`group flex items-center gap-1.5 px-2 py-2 rounded-md text-sm transition-colors cursor-pointer ${
                     activeProject?.id === p.id
-                      ? 'bg-[#8B5CF6]/10 text-[#8B5CF6]'
+                      ? 'bg-[#7C3AED]/10 text-[#7C3AED]'
                       : isDragOver
-                      ? 'bg-[#8B5CF6]/20 ring-1 ring-[#8B5CF6]/40'
+                      ? 'bg-[#7C3AED]/20 ring-1 ring-[#7C3AED]/40'
                       : 'text-zinc-400 hover:bg-white/[0.04]'
                   } ${isDragging ? 'opacity-50' : ''}`}
                   onClick={() => !isRenaming && setActiveProject(p)}
@@ -582,7 +582,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
                         if (e.key === 'Escape') setRenamingProjectId(null);
                       }}
                       onClick={(e) => e.stopPropagation()}
-                      className="flex-1 min-w-0 bg-white/[0.06] border border-[#8B5CF6]/40 rounded px-1.5 py-0.5 text-xs text-white outline-none"
+                      className="flex-1 min-w-0 bg-white/[0.06] border border-[#7C3AED]/40 rounded px-1.5 py-0.5 text-xs text-white outline-none"
                     />
                   ) : (
                     <span className="truncate flex-1">{p.name}</span>
@@ -621,7 +621,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
               </p>
             )}
 
-            {/* Danger zone — wipe all data (for cleaning up test/placeholder projects) */}
+            {/* Danger zone  -  wipe all data (for cleaning up test/placeholder projects) */}
             {(projects.length > 0 || (stats?.totalItems ?? 0) > 0) && (
               <div className="mt-4 pt-3 border-t border-white/[0.04]">
                 <button
@@ -686,7 +686,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
                   className="flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-zinc-300"
                 >
                   {selectedIds.size === filteredItems.length && selectedIds.size > 0 ? (
-                    <CheckSquare className="h-3 w-3 text-[#8B5CF6]" />
+                    <CheckSquare className="h-3 w-3 text-[#7C3AED]" />
                   ) : (
                     <Square className="h-3 w-3" />
                   )}
@@ -718,7 +718,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
                     key={item.id}
                     className={`group flex items-start gap-2 p-2.5 rounded-md border transition-colors cursor-pointer ${
                       isSelected
-                        ? 'border-[#8B5CF6]/40 bg-[#8B5CF6]/5'
+                        ? 'border-[#7C3AED]/40 bg-[#7C3AED]/5'
                         : 'border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.04]'
                     }`}
                     onClick={() => openItemViewer(item)}
@@ -732,7 +732,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
                       title="Pilih"
                     >
                       {isSelected ? (
-                        <CheckSquare className="h-3.5 w-3.5 text-[#8B5CF6]" />
+                        <CheckSquare className="h-3.5 w-3.5 text-[#7C3AED]" />
                       ) : (
                         <Square className="h-3.5 w-3.5 text-zinc-600 hover:text-zinc-400" />
                       )}
@@ -817,7 +817,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
             }}
           >
             <div
-              className="bg-zinc-950 border border-white/10 rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6"
+              className="rounded-lg border border-[var(--border)] bg-[var(--surface)] max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-start justify-between mb-4">
@@ -891,7 +891,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
                     >
                       Batal
                     </Button>
-                    <Button onClick={handleSaveItemEdit} size="sm" className="bg-[#8B5CF6]">
+                    <Button onClick={handleSaveItemEdit} size="sm" className="bg-[#7C3AED]">
                       Simpan
                     </Button>
                   </div>

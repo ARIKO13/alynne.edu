@@ -1,5 +1,5 @@
 /**
- * VoiceTutor.tsx — AI Voice Tutor: conversation with AI via voice
+ * VoiceTutor.tsx  -  AI Voice Tutor: conversation with AI via voice
  *
  * User speaks → STT → AI responds → TTS reads response
  * Like having a real tutor conversation, hands-free
@@ -209,13 +209,13 @@ TRANSCRIPT: ${transcript.substring(0, 1000)}`;
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-[#8B5CF6]/10 flex items-center justify-center">
-            <Bot className="h-4 w-4 text-[#8B5CF6]" />
+          <div className="w-8 h-8 rounded-full bg-[#7C3AED]/10 flex items-center justify-center">
+            <Bot className="h-4 w-4 text-[#7C3AED]" />
           </div>
           <div>
             <p className="text-sm font-medium text-white">Voice Tutor</p>
             <p className="text-[10px] text-zinc-500">
-              {inCall ? '📞 In call' : 'Klik mic untuk ngomong'}
+              {inCall ? 'Sedang panggilan' : 'Klik mic untuk ngomong'}
             </p>
           </div>
         </div>
@@ -253,15 +253,15 @@ TRANSCRIPT: ${transcript.substring(0, 1000)}`;
             className={cn('flex gap-2', msg.role === 'user' ? 'justify-end' : 'justify-start')}
           >
             {msg.role === 'assistant' && (
-              <div className="w-6 h-6 rounded-full bg-[#8B5CF6]/10 flex items-center justify-center shrink-0">
-                <Bot className="h-3 w-3 text-[#8B5CF6]" />
+              <div className="w-6 h-6 rounded-full bg-[#7C3AED]/10 flex items-center justify-center shrink-0">
+                <Bot className="h-3 w-3 text-[#7C3AED]" />
               </div>
             )}
             <div
               className={cn(
                 'rounded-lg px-3 py-2 max-w-[75%] text-sm',
                 msg.role === 'user'
-                  ? 'bg-[#8B5CF6] text-white'
+                  ? 'bg-[#7C3AED] text-white'
                   : 'bg-white/[0.04] text-zinc-200'
               )}
             >
@@ -284,8 +284,8 @@ TRANSCRIPT: ${transcript.substring(0, 1000)}`;
         ))}
         {isThinking && (
           <div className="flex gap-2">
-            <div className="w-6 h-6 rounded-full bg-[#8B5CF6]/10 flex items-center justify-center shrink-0">
-              <Bot className="h-3 w-3 text-[#8B5CF6]" />
+            <div className="w-6 h-6 rounded-full bg-[#7C3AED]/10 flex items-center justify-center shrink-0">
+              <Bot className="h-3 w-3 text-[#7C3AED]" />
             </div>
             <div className="rounded-lg px-3 py-2 bg-white/[0.04] text-zinc-400 text-sm">
               <Loader2 className="h-3 w-3 animate-spin inline mr-1" />
@@ -304,7 +304,7 @@ TRANSCRIPT: ${transcript.substring(0, 1000)}`;
             'w-14 h-14 rounded-full flex items-center justify-center transition-all',
             isListening
               ? 'bg-red-500 animate-pulse'
-              : 'bg-[#8B5CF6] hover:bg-[#7C3AED]',
+              : 'bg-[#7C3AED] hover:bg-[#7C3AED]',
             isThinking && 'opacity-50 cursor-not-allowed'
           )}
         >
@@ -319,7 +319,7 @@ TRANSCRIPT: ${transcript.substring(0, 1000)}`;
       {/* Status */}
       <div className="text-center pb-2">
         <p className="text-[10px] text-zinc-600">
-          {isListening ? '🔴 Mendengarkan...' : isThinking ? '🤔 AI berpikir...' : isSpeaking ? '🔊 AI bicara...' : 'Klik mic untuk tanya'}
+          {isListening ? 'Mendengarkan...' : isThinking ? 'AI berpikir...' : isSpeaking ? 'AI bicara...' : 'Klik mic untuk tanya'}
         </p>
       </div>
     </div>

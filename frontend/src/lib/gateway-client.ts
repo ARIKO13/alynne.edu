@@ -18,16 +18,16 @@ import {
   type FallbackEvent,
 } from '@/lib/llm-health-log';
 
-const POLYVOR_URL = process.env.POLYVOR_URL || 'https://gateway.polyvorlabs.com/v1';
-const POLYVOR_API_KEY = process.env.POLYVOR_API_KEY || '';
+const LLM_PROXY_URL = process.env.LLM_PROXY_URL || 'https://gateway.polyvorlabs.com/v1';
+const LLM_PROXY_API_KEY = process.env.LLM_PROXY_API_KEY || '';
 // v-fast (2026-10-25): default ganti phala/z-ai/glm-5.3-flash → ag/claude-opus-4-6-thinking(xhigh).
 // Benchmark di VPS: glm-5.3-flash throughput 28 tok/s + sering error 54s internal gateway.
 // claude-opus throughput 140 tok/s (5x lebih cepat), reliable.
 // Untuk L3 mega-generate target ~35K output: glm-5.3-flash 21 menit, claude-opus 4 menit.
 // Polyvor gateway status: hanya 4 model yang alive (claude-opus, glm-5.3, glm-5.3-flash,
 // deepseek-v4-flash). Semua model jr/* lagi outage. claude-opus adalah pilihan tercepat.
-const POLYVOR_MODEL = process.env.POLYVOR_MODEL || 'ag/claude-opus-4-6-thinking(xhigh)';
-const POLYVOR_FALLBACK_MODEL = process.env.POLYVOR_FALLBACK_MODEL || 'phala/deepseek/deepseek-v4-flash-0731';
+const LLM_PROXY_MODEL = process.env.LLM_PROXY_MODEL || 'ag/claude-opus-4-6-thinking(xhigh)';
+const LLM_PROXY_FALLBACK_MODEL = process.env.LLM_PROXY_FALLBACK_MODEL || 'phala/deepseek/deepseek-v4-flash-0731';
 
 const PI_BANSOS_URL = process.env.PI_BANSOS_URL || 'http://127.0.0.1:18080/v1';
 const PI_BANSOS_KEY = 'placeholder';
@@ -67,7 +67,7 @@ export interface CallLLMOpts {
   jsonMode?: boolean;
   /**
    * v-hybrid (2026-10-25): Override model spesifik untuk Polyvor gateway.
-   * Kalau diisi, callLLM cuma akan coba model ini (skip POLYVOR_MODEL/POLYVOR_FALLBACK
+   * Kalau diisi, callLLM cuma akan coba model ini (skip LLM_PROXY_MODEL/POLYVOR_FALLBACK
    * fallback chain + skip pi-bansos fallback). Dipakai di mega-generate.ts Phase 1
    * (DeepSeek untuk ringkas) dan Phase 2 (GLM untuk struktur).
    * Contoh: { model: 'phala/deepseek/deepseek-v4-flash-0731' } → cuma DeepSeek.
@@ -183,16 +183,16 @@ export async function callLLM(
   // v-hybrid: kalau opts.model diisi, coba model itu + opts.fallbackModels (per-request fallback chain).
   // v-robust: per-request fallback eliminate phase2_all_failed — kalau GLM down, otomatis coba DeepSeek,
   // kalau DeepSeek down, coba gemini-3.5-flash-lite, dst.
-  if (POLYVOR_API_KEY) {
-    const polyvorModels = opts.model
+  if (LLM_PROXY_API_KEY) {
+    const llmModels = opts.model
       ? [opts.model, ...(opts.fallbackModels || [])]
-      : [POLYVOR_MODEL, POLYVOR_FALLBACK_MODEL];
-    for (let pi = 0; pi < polyvorModels.length; pi++) {
-      const polyvorModel = polyvorModels[pi];
+      : [LLM_PROXY_MODEL, LLM_PROXY_FALLBACK_MODEL];
+    for (let pi = 0; pi < llmModels.length; pi++) {
+      const llmModel = llmModels[pi];
       const t0 = Date.now();
       try {
         const requestBody: any = {
-          model: polyvorModel,
+          model: llmModel,
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userContent },
@@ -203,11 +203,11 @@ export async function callLLM(
         };
         if (jsonMode) requestBody.response_format = { type: 'json_object' };
 
-        const res = await fetch(`${POLYVOR_URL}/chat/completions`, {
+        const res = await fetch(`${LLM_PROXY_URL}/chat/completions`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${POLYVOR_API_KEY}`,
+            Authorization: LLM_PROXY_API_KEY ? `Bearer ${LLM_PROXY_API_KEY}` : '',
           },
           body: JSON.stringify(requestBody),
           signal: AbortSignal.timeout(timeout),
@@ -218,45 +218,45 @@ export async function callLLM(
           const content = data.choices?.[0]?.message?.content || data.choices?.[0]?.message?.reasoning || null;
           if (content) {
             const elapsedMs = Date.now() - t0;
-            console.log(`[callLLM] ${endpoint} Polyvor/${polyvorModel} success (${elapsedMs}ms, ${data.usage?.total_tokens ?? '?'} tokens, jsonMode=${jsonMode})`);
-            return { content, modelUsed: `polyvor/${polyvorModel}`, fallbacksTriggered };
+            console.log(`[callLLM] ${endpoint} LLM/${llmModel} success (${elapsedMs}ms, ${data.usage?.total_tokens ?? '?'} tokens, jsonMode=${jsonMode})`);
+            return { content, modelUsed: `llm/${llmModel}`, fallbacksTriggered };
           }
         }
 
         const errBody = await res.text().catch(() => '');
         const isConcurrency = res.status === 429 || errBody.includes('concurrency') || errBody.includes('rate_limit');
-        const modelShort = polyvorModel.split('/').pop();
-        const errorType = `Polyvor_${modelShort}_HTTP_${res.status}`;
+        const modelShort = llmModel.split('/').pop();
+        const errorType = `LLM_${modelShort}_HTTP_${res.status}`;
         const errorMessage = errBody.slice(0, 200) || res.statusText;
 
         // v-robust: kalau opts.model + opts.fallbackModels diisi (per-request fallback chain),
         // coba next model di chain sebelum return null.
-        if (opts.model && pi + 1 < polyvorModels.length) {
-          console.warn(`[callLLM] ${endpoint} Polyvor/${polyvorModel} ${errorType}: ${errorMessage.slice(0, 100)} → fallback ${polyvorModels[pi + 1]}`);
+        if (opts.model && pi + 1 < llmModels.length) {
+          console.warn(`[callLLM] ${endpoint} LLM/${llmModel} ${errorType}: ${errorMessage.slice(0, 100)} → fallback ${llmModels[pi + 1]}`);
           continue;
         }
         // v-hybrid: kalau cuma opts.model (no fallbackModels), return null segera
         if (opts.model) {
-          console.warn(`[callLLM] ${endpoint} Polyvor/${polyvorModel} (model locked, no fallback) failed: ${errorType} ${errorMessage}`);
-          return { content: null, modelUsed: `polyvor/${polyvorModel}`, fallbacksTriggered };
+          console.warn(`[callLLM] ${endpoint} LLM/${llmModel} (model locked, no fallback) failed: ${errorType} ${errorMessage}`);
+          return { content: null, modelUsed: `llm/${llmModel}`, fallbacksTriggered };
         }
 
-        if (pi + 1 < polyvorModels.length) {
+        if (pi + 1 < llmModels.length) {
           const event: FallbackEvent = {
             timestamp: new Date().toISOString(),
-            fromModel: `polyvor/${polyvorModel}`,
-            toModel: `polyvor/${polyvorModels[pi + 1]}`,
+            fromModel: `llm/${llmModel}`,
+            toModel: `llm/${llmModels[pi + 1]}`,
             task, errorType, errorMessage, endpoint,
           };
           logFallbackEvent(event);
           fallbacksTriggered.push(event);
-          console.warn(`[callLLM] ${endpoint} Polyvor/${polyvorModel} ${isConcurrency ? '429' : 'failed'} → retrying ${polyvorModels[pi + 1]}`);
+          console.warn(`[callLLM] ${endpoint} LLM/${llmModel} ${isConcurrency ? '429' : 'failed'} → retrying ${llmModels[pi + 1]}`);
           continue;
         }
 
         const event: FallbackEvent = {
           timestamp: new Date().toISOString(),
-          fromModel: `polyvor/${polyvorModel}`,
+          fromModel: `llm/${llmModel}`,
           toModel: 'pi-bansos-chain',
           task, errorType, errorMessage, endpoint,
         };
@@ -264,39 +264,39 @@ export async function callLLM(
         fallbacksTriggered.push(event);
         console.warn(`[callLLM] ${endpoint} Polyvor all models failed → falling back to pi-bansos`);
       } catch (e: any) {
-        const modelShort = polyvorModel.split('/').pop();
+        const modelShort = llmModel.split('/').pop();
         const errorType = e?.name === 'TimeoutError' || e?.message?.includes('timeout') || e?.message?.includes('abort')
-          ? `Polyvor_${modelShort}_Timeout` : `Polyvor_${modelShort}_NetworkError`;
+          ? `LLM_${modelShort}_Timeout` : `LLM_${modelShort}_NetworkError`;
         const errorMessage = (e?.message || 'unknown').slice(0, 200);
 
         // v-robust: per-request fallback chain. Kalau opts.model + opts.fallbackModels diisi,
         // coba next model sebelum return null.
-        if (opts.model && pi + 1 < polyvorModels.length) {
-          console.warn(`[callLLM] ${endpoint} Polyvor/${polyvorModel} ${errorType}: ${errorMessage.slice(0, 100)} → fallback ${polyvorModels[pi + 1]}`);
+        if (opts.model && pi + 1 < llmModels.length) {
+          console.warn(`[callLLM] ${endpoint} LLM/${llmModel} ${errorType}: ${errorMessage.slice(0, 100)} → fallback ${llmModels[pi + 1]}`);
           continue;
         }
         // v-hybrid: kalau cuma opts.model (no fallbackModels), return null segera
         if (opts.model) {
-          console.warn(`[callLLM] ${endpoint} Polyvor/${polyvorModel} (model locked, no fallback) ${errorType}: ${errorMessage}`);
-          return { content: null, modelUsed: `polyvor/${polyvorModel}`, fallbacksTriggered };
+          console.warn(`[callLLM] ${endpoint} LLM/${llmModel} (model locked, no fallback) ${errorType}: ${errorMessage}`);
+          return { content: null, modelUsed: `llm/${llmModel}`, fallbacksTriggered };
         }
 
-        if (pi + 1 < polyvorModels.length) {
+        if (pi + 1 < llmModels.length) {
           const event: FallbackEvent = {
             timestamp: new Date().toISOString(),
-            fromModel: `polyvor/${polyvorModel}`,
-            toModel: `polyvor/${polyvorModels[pi + 1]}`,
+            fromModel: `llm/${llmModel}`,
+            toModel: `llm/${llmModels[pi + 1]}`,
             task, errorType, errorMessage, endpoint,
           };
           logFallbackEvent(event);
           fallbacksTriggered.push(event);
-          console.warn(`[callLLM] ${endpoint} Polyvor/${polyvorModel} ${errorType}: ${errorMessage} → retrying ${polyvorModels[pi + 1]}`);
+          console.warn(`[callLLM] ${endpoint} LLM/${llmModel} ${errorType}: ${errorMessage} → retrying ${llmModels[pi + 1]}`);
           continue;
         }
 
         const event: FallbackEvent = {
           timestamp: new Date().toISOString(),
-          fromModel: `polyvor/${polyvorModel}`,
+          fromModel: `llm/${llmModel}`,
           toModel: 'pi-bansos-chain',
           task, errorType, errorMessage, endpoint,
         };
@@ -306,7 +306,7 @@ export async function callLLM(
       }
     }
   } else {
-    console.warn(`[callLLM] ${endpoint} POLYVOR_API_KEY not set — skipping Polyvor, using pi-bansos directly`);
+    console.warn(`[callLLM] ${endpoint} LLM_PROXY_API_KEY not set — skipping Polyvor, using pi-bansos directly`);
   }
 
   // ── PHASE 2: pi-bansos fallback chain (Cohere → Nemotron → Poolside) ──
@@ -456,7 +456,7 @@ export async function callPolyvor(model: string, systemPrompt: string, userConte
   return (await callLLM('long', systemPrompt, userContent, {
     maxTokens: opts?.maxTokens ?? 4096,
     timeout: opts?.timeout ?? 120_000,
-    endpoint: `callPolyvor/${model}`,
+    endpoint: `callLLM/${model}`,
   })).content;
 }
 

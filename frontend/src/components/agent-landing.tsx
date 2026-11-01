@@ -33,7 +33,7 @@ const AGENTS: Agent[] = [
     description:
       'Platform belajar AI-powered dengan Speech-to-Text, auto-generate modul PDF, dan tracking progress. Upload materi pendukung, rekam suara, dan biar AI yang menyusun modul belajarmu.',
     icon: GraduationCap,
-    color: '#8B5CF6',
+    color: '#7C3AED',
     features: [
       { icon: Mic, label: 'Speech to Text' },
       { icon: MonitorUp, label: 'Screen Capture' },
@@ -49,7 +49,7 @@ const AGENTS: Agent[] = [
     description:
       'Assistant AI yang bisa membantu menjawab pertanyaan, menganalisis data, dan memberikan rekomendasi. Dilengkapi web scraping untuk informasi real-time.',
     icon: Bot,
-    color: '#8B5CF6',
+    color: '#7C3AED',
     features: [
       { icon: Sparkles, label: 'Multi-Model LLM' },
       { icon: Zap, label: 'Real-time Web' },
@@ -60,7 +60,7 @@ const AGENTS: Agent[] = [
 ];
 
 function getCardClass(agent: Agent, isHovered: boolean): string {
-  const base = 'relative rounded-2xl border transition-all duration-300 overflow-hidden';
+  const base = 'relative rounded-lg border transition-all duration-300 overflow-hidden';
   if (agent.status === 'coming-soon') return `${base} border-white/[0.04] bg-white/[0.01] opacity-70`;
   if (isHovered) return `${base} border-white/[0.15] bg-white/[0.05] shadow-lg shadow-black/20`;
   return `${base} border-white/[0.08] bg-white/[0.03]`;
@@ -79,12 +79,12 @@ export function AgentLanding({ onEnter }: { onEnter: (agentId: string) => void }
   const [hoveredAgent, setHoveredAgent] = useState<string | null>(null);
 
   return (
-    <div className="min-h-screen bg-[#09090b] flex flex-col">
+    <div className="min-h-screen bg-[#0A0A0B] flex flex-col">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#09090b]/80 backdrop-blur-md border-b border-white/[0.06]">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#0A0A0B]/80  border-b border-white/[0.06]">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#8B5CF6] to-orange-600">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#7C3AED]">
               <Sparkles className="h-4 w-4 text-white" />
             </div>
             <span className="text-base font-semibold tracking-tight text-white">
@@ -112,10 +112,7 @@ export function AgentLanding({ onEnter }: { onEnter: (agentId: string) => void }
           className="text-center max-w-2xl mb-12"
         >
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white mb-4">
-            Meet Your{' '}
-            <span className="bg-gradient-to-r from-[#8B5CF6] to-orange-400 bg-clip-text text-transparent">
-              AI Agents
-            </span>
+            Pilih agen untuk tugasmu.
           </h1>
 
           <p className="text-base sm:text-lg text-zinc-500 max-w-lg mx-auto leading-relaxed">
@@ -160,7 +157,7 @@ export function AgentLanding({ onEnter }: { onEnter: (agentId: string) => void }
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-4 flex-1 min-w-0">
                       <div
-                        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
+                        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg"
                         style={getIconContainerStyle(agent, isHovered)}
                       >
                         <Icon
@@ -210,7 +207,7 @@ export function AgentLanding({ onEnter }: { onEnter: (agentId: string) => void }
                         onClick={() => onEnter(agent.id)}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className="shrink-0 flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-medium transition-colors text-white"
+                        className="shrink-0 flex items-center gap-2 rounded-lg px-5 py-3 text-sm font-medium transition-colors text-white"
                         style={{ backgroundColor: isHovered ? agent.color : `${agent.color}30` }}
                       >
                         Get Started

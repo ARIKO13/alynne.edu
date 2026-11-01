@@ -1,12 +1,12 @@
 /**
- * BrandLogo.tsx — Composed brand mark: Monitor + Mic (lucide icons)
+ * BrandLogo.tsx  -  Composed brand mark: Monitor + Mic (lucide icons)
  *
  * Replaces the old /alynne-ai-logo.png raster asset with a vector icon
  * composition so it scales crisply at any size and matches the violet
  * brand color across the app.
  *
  * Visual: a Monitor (rectangle with stand) as the base, with a small Mic
- * badge pinned to the bottom-right corner — like a "recording indicator".
+ * badge pinned to the bottom-right corner  -  like a "recording indicator".
  * Echoes the product's core value (monitor screen + voice input).
  */
 
@@ -17,11 +17,11 @@ interface BrandLogoProps {
   size?: number;
   /** Extra className for the outer container. */
   className?: string;
-  /** Override brand color (defaults to violet #8B5CF6). */
+  /** Override brand color (defaults to violet #7C3AED). */
   color?: string;
 }
 
-export function BrandLogo({ size = 32, className = '', color = '#8B5CF6' }: BrandLogoProps) {
+export function BrandLogo({ size = 32, className = '', color = '#7C3AED' }: BrandLogoProps) {
   return (
     <div
       className={`relative inline-flex items-center justify-center ${className}`}
@@ -29,13 +29,13 @@ export function BrandLogo({ size = 32, className = '', color = '#8B5CF6' }: Bran
       aria-label="ALYNNE AI"
       role="img"
     >
-      {/* Monitor base — fills the whole box */}
+      {/* Monitor base  -  fills the whole box */}
       <Monitor
         className="h-full w-full"
         style={{ color }}
         strokeWidth={2}
       />
-      {/* Mic badge — bottom-right corner, ~55% size, with dark bg circle */}
+      {/* Mic badge  -  bottom-right corner, ~55% size, with dark bg circle */}
       <div
         className="absolute flex items-center justify-center rounded-full bg-zinc-950 ring-2 ring-zinc-950"
         style={{

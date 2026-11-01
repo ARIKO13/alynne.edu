@@ -44,7 +44,7 @@ function StatCard({ icon: Icon, label, value, color, sub }: {
   sub?: string;
 }) {
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4 space-y-2">
+    <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] p-4 space-y-2">
       <div className="flex items-center justify-between">
         <div className={cn('flex h-8 w-8 items-center justify-center rounded-lg', color)}>
           <Icon className="h-4 w-4" />
@@ -127,7 +127,7 @@ export function AdminPanel() {
   if (loading && !stats) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-[#8B5CF6]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[#7C3AED]" />
       </div>
     );
   }
@@ -139,9 +139,9 @@ export function AdminPanel() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Shield className="h-5 w-5 text-[#8B5CF6]" />
+          <Shield className="h-5 w-5 text-[#7C3AED]" />
           <h2 className="text-lg font-semibold text-white">Admin Panel</h2>
-          <Badge className="bg-[#8B5CF6]/20 text-[#8B5CF6] border-[#8B5CF6]/30 text-[10px]">
+          <Badge className="bg-[#7C3AED]/20 text-[#7C3AED] border-[#7C3AED]/30 text-[10px]">
             Admin
           </Badge>
         </div>
@@ -163,7 +163,7 @@ export function AdminPanel() {
           className={cn(
             'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all',
             activeView === 'overview'
-              ? 'bg-[#8B5CF6]/15 text-[#8B5CF6]'
+              ? 'bg-[#7C3AED]/15 text-[#7C3AED]'
               : 'text-zinc-500 hover:text-zinc-300'
           )}
         >
@@ -175,7 +175,7 @@ export function AdminPanel() {
           className={cn(
             'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all',
             activeView === 'users'
-              ? 'bg-[#8B5CF6]/15 text-[#8B5CF6]'
+              ? 'bg-[#7C3AED]/15 text-[#7C3AED]'
               : 'text-zinc-500 hover:text-zinc-300'
           )}
         >
@@ -187,7 +187,7 @@ export function AdminPanel() {
           className={cn(
             'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all',
             activeView === 'dataset'
-              ? 'bg-[#8B5CF6]/15 text-[#8B5CF6]'
+              ? 'bg-[#7C3AED]/15 text-[#7C3AED]'
               : 'text-zinc-500 hover:text-zinc-300'
           )}
         >
@@ -231,7 +231,7 @@ export function AdminPanel() {
               icon={Users}
               label="Total Users"
               value={stats.totalUsers}
-              color="bg-[#8B5CF6]/10 text-[#8B5CF6]"
+              color="bg-[#7C3AED]/10 text-[#7C3AED]"
             />
             <StatCard
               icon={FileText}
@@ -267,7 +267,7 @@ export function AdminPanel() {
           </div>
 
           {/* Top Users Leaderboard */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] overflow-hidden">
+          <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] overflow-hidden">
             <div className="px-4 py-3 border-b border-white/[0.06]">
               <h3 className="text-sm font-medium text-zinc-200 flex items-center gap-2">
                 <Trophy className="h-4 w-4 text-amber-400" />
@@ -287,14 +287,14 @@ export function AdminPanel() {
                     )}>
                       {idx + 1}
                     </span>
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#8B5CF6]/10 text-xs font-bold text-[#8B5CF6] shrink-0">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#7C3AED]/10 text-xs font-bold text-[#7C3AED] shrink-0">
                       {u.name?.[0] || '?'}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm text-zinc-200 truncate">{u.name}</span>
                         {isAdmin(u.email) && (
-                          <Badge className="bg-[#8B5CF6]/20 text-[#8B5CF6] border-[#8B5CF6]/30 text-[8px] px-1 py-0">Admin</Badge>
+                          <Badge className="bg-[#7C3AED]/20 text-[#7C3AED] border-[#7C3AED]/30 text-[8px] px-1 py-0">Admin</Badge>
                         )}
                       </div>
                       <p className="text-[10px] text-zinc-600 truncate">{u.email}</p>
@@ -325,7 +325,7 @@ export function AdminPanel() {
               value={search}
               onChange={(e) => handleSearch(e.target.value)}
               placeholder="Cari nama atau email..."
-              className="pl-9 h-9 border-white/[0.08] bg-[#0c0c0e] text-zinc-200 placeholder:text-zinc-600 text-sm"
+              className="pl-9 h-9 border-white/[0.08] bg-[#111113] text-zinc-200 placeholder:text-zinc-600 text-sm"
             />
           </div>
 
@@ -333,7 +333,7 @@ export function AdminPanel() {
           <p className="text-[11px] text-zinc-600">{totalUsers} user ditemukan</p>
 
           {/* Users table */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] overflow-hidden">
+          <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] overflow-hidden">
             {/* Desktop header */}
             <div className="hidden md:grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-white/[0.06] text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
               <div className="col-span-4">User</div>
@@ -349,14 +349,14 @@ export function AdminPanel() {
                     {/* Desktop row */}
                     <div className="hidden md:grid grid-cols-12 gap-2 items-center">
                       <div className="col-span-4 flex items-center gap-2.5 min-w-0">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#8B5CF6]/10 text-xs font-bold text-[#8B5CF6] shrink-0">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#7C3AED]/10 text-xs font-bold text-[#7C3AED] shrink-0">
                           {u.name?.[0] || '?'}
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
                             <span className="text-sm text-zinc-200 truncate">{u.name}</span>
                             {isAdmin(u.email) && (
-                              <Badge className="bg-[#8B5CF6]/20 text-[#8B5CF6] border-[#8B5CF6]/30 text-[8px] px-1 py-0">Admin</Badge>
+                              <Badge className="bg-[#7C3AED]/20 text-[#7C3AED] border-[#7C3AED]/30 text-[8px] px-1 py-0">Admin</Badge>
                             )}
                           </div>
                           <p className="text-[10px] text-zinc-600 truncate">{u.email}</p>
@@ -383,14 +383,14 @@ export function AdminPanel() {
 
                     {/* Mobile row */}
                     <div className="md:hidden flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#8B5CF6]/10 text-sm font-bold text-[#8B5CF6] shrink-0">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#7C3AED]/10 text-sm font-bold text-[#7C3AED] shrink-0">
                         {u.name?.[0] || '?'}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
                           <span className="text-sm text-zinc-200 truncate">{u.name}</span>
                           {isAdmin(u.email) && (
-                            <Badge className="bg-[#8B5CF6]/20 text-[#8B5CF6] border-[#8B5CF6]/30 text-[8px] px-1 py-0">Admin</Badge>
+                            <Badge className="bg-[#7C3AED]/20 text-[#7C3AED] border-[#7C3AED]/30 text-[8px] px-1 py-0">Admin</Badge>
                           )}
                         </div>
                         <p className="text-[10px] text-zinc-600 truncate">{u.email}</p>
@@ -590,9 +590,9 @@ function LlmHealthView() {
                 : 'border-red-500/40 bg-red-500/10 text-red-300'
       )}>
         {!latest && 'Belum ada data health check. Klik "Test Now" untuk memulai.'}
-        {latest && !latest.proxyReachable && '⚠️ pi-bansos proxy tidak reachable. Cek PM2: pm2 status pi-bansos'}
-        {latest && latest.proxyReachable && allAlive && `✓ Semua 3 model sehat (${latest.models.length}/3)`}
-        {latest && latest.proxyReachable && !allAlive && anyAlive && `⚠️ ${latest.models.filter(m => m.alive).length}/${latest.models.length} model sehat — beberapa fallback aktif`}
+        {latest && !latest.proxyReachable && 'pi-bansos proxy tidak reachable. Cek PM2: pm2 status pi-bansos'}
+        {latest && latest.proxyReachable && allAlive && `Semua 3 model sehat (${latest.models.length}/3)`}
+        {latest && latest.proxyReachable && !allAlive && anyAlive && `${latest.models.filter(m => m.alive).length}/${latest.models.length} model sehat - beberapa fallback aktif`}
         {latest && latest.proxyReachable && !anyAlive && '✗ Semua model mati. Cek pi-bansos logs: pm2 logs pi-bansos'}
       </div>
 
@@ -637,7 +637,7 @@ function LlmHealthView() {
             <span>
               Last: {usageInfo.lastRequestAt
                 ? new Date(usageInfo.lastRequestAt).toLocaleString('id-ID', { timeStyle: 'medium' })
-                : '—'}
+                : ' - '}
             </span>
             <span>
               Reset: {new Date(usageInfo.resetsAt).toLocaleString('id-ID', { timeStyle: 'short' })}

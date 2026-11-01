@@ -33,7 +33,7 @@ export class AppErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div style={{ padding: 24, background: '#0a0a0a', color: '#e5e5e5', minHeight: '100vh', fontFamily: 'monospace', fontSize: 13 }}>
-          <h2 style={{ color: '#8B5CF6', marginBottom: 8 }}>React Error Caught</h2>
+          <h2 style={{ color: '#7C3AED', marginBottom: 8 }}>React Error Caught</h2>
           <p style={{ color: '#ef4444', marginBottom: 16, wordBreak: 'break-all' }}>{this.state.error?.message}</p>
           {this.state.debugInfo && (
             <>
@@ -44,16 +44,16 @@ export class AppErrorBoundary extends Component<Props, State> {
             </>
           )}
           <h3 style={{ color: '#a3a3a3', marginBottom: 4 }}>Error Stack:</h3>
-          <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: '#737373', marginBottom: 16, fontSize: 11, background: '#18181b', padding: 12, borderRadius: 8 }}>
+          <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: '#737373', marginBottom: 16, fontSize: 11, background: '#161618', padding: 12, borderRadius: 8 }}>
             {this.state.error?.stack}
           </pre>
           <h3 style={{ color: '#a3a3a3', marginBottom: 4 }}>Component Stack:</h3>
-          <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: '#737373', fontSize: 11, background: '#18181b', padding: 12, borderRadius: 8 }}>
+          <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: '#737373', fontSize: 11, background: '#161618', padding: 12, borderRadius: 8 }}>
             {this.state.errorInfo}
           </pre>
           <button
             onClick={() => this.setState({ hasError: false, error: null, errorInfo: '', debugInfo: '' })}
-            style={{ marginTop: 16, padding: '8px 16px', background: '#8B5CF6', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer' }}
+            style={{ marginTop: 16, padding: '8px 16px', background: '#7C3AED', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer' }}
           >
             Try Again
           </button>

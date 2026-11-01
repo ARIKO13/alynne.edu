@@ -1,5 +1,5 @@
 /**
- * LofiBackground.tsx — Animated canvas background for study mode
+ * LofiBackground.tsx  -  Animated canvas background for study mode
  *
  * Renders a calming Lo-Fi aesthetic animation:
  * - Gradient sky (sunset/night)

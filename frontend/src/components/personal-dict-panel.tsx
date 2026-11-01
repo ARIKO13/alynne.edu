@@ -88,11 +88,11 @@ export function PersonalDictPanel({ open, onOpenChange }: PersonalDictPanelProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl border-white/[0.06] bg-[#18181b] p-0 overflow-hidden">
+      <DialogContent className="max-w-2xl border-white/[0.06] bg-[#161618] p-0 overflow-hidden">
         <div className="px-6 pt-6 pb-2">
           <DialogHeader>
             <div className="flex items-center gap-2">
-              <Brain className="h-5 w-5 text-[#8B5CF6]" />
+              <Brain className="h-5 w-5 text-[#7C3AED]" />
               <DialogTitle className="text-zinc-100">Learned Words (Global)</DialogTitle>
               <Globe className="h-3.5 w-3.5 text-emerald-400 ml-1" aria-label="Shared across all users" />
             </div>
@@ -107,16 +107,16 @@ export function PersonalDictPanel({ open, onOpenChange }: PersonalDictPanelProps
         <div className="px-6 pb-4 space-y-4">
           {/* Stats */}
           <div className="grid grid-cols-3 gap-2">
-            <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3 text-center">
-              <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Total</p>
+            <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3 text-center">
+              <p className="text-[11px] text-zinc-500">Total</p>
               <p className="text-xl font-semibold text-zinc-200 mt-0.5">{stats.total}</p>
             </div>
             <div className="rounded-lg border border-emerald-500/15 bg-emerald-500/[0.03] p-3 text-center">
-              <p className="text-[10px] text-emerald-400/70 uppercase tracking-wider">Confirmed</p>
+              <p className="text-[11px] text-emerald-400/70">Confirmed</p>
               <p className="text-xl font-semibold text-emerald-400 mt-0.5">{stats.confirmed}</p>
             </div>
             <div className="rounded-lg border border-amber-500/15 bg-amber-500/[0.03] p-3 text-center">
-              <p className="text-[10px] text-amber-400/70 uppercase tracking-wider">Candidates</p>
+              <p className="text-[11px] text-amber-400/70">Candidates</p>
               <p className="text-xl font-semibold text-amber-400 mt-0.5">{stats.candidates}</p>
             </div>
           </div>
@@ -130,7 +130,7 @@ export function PersonalDictPanel({ open, onOpenChange }: PersonalDictPanelProps
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Cari kata..."
-                className="pl-8 border-white/[0.08] bg-[#0c0c0e] text-zinc-200 text-xs placeholder:text-zinc-600 h-8"
+                className="pl-8 border-white/[0.08] bg-[#111113] text-zinc-200 text-xs placeholder:text-zinc-600 h-8"
               />
             </div>
             <Button
@@ -159,7 +159,7 @@ export function PersonalDictPanel({ open, onOpenChange }: PersonalDictPanelProps
 
           {/* Empty state */}
           {!loading && stats.total === 0 && (
-            <div className="text-center py-8 rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
+            <div className="text-center py-8 rounded-lg border border-white/[0.06] bg-[#111113]">
               <BookOpen className="h-8 w-8 text-zinc-700 mx-auto mb-2" />
               <p className="text-sm text-zinc-500">Belum ada kata yang dipelajari</p>
               <p className="text-[10px] text-zinc-600 mt-1 max-w-sm mx-auto leading-relaxed">
@@ -173,7 +173,7 @@ export function PersonalDictPanel({ open, onOpenChange }: PersonalDictPanelProps
           {/* Loading state */}
           {loading && (
             <div className="text-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-[#8B5CF6] mx-auto" />
+              <Loader2 className="h-6 w-6 animate-spin text-[#7C3AED] mx-auto" />
               <p className="text-xs text-zinc-500 mt-2">Memuat learned words...</p>
             </div>
           )}
@@ -282,7 +282,7 @@ function LearnedWordRow({
           </span>
           {entry.vote_count > 0 && (
             <span className="text-[10px] text-sky-500" title="Jumlah user berbeda yang submit">
-              👥{entry.vote_count}
+              {entry.vote_count} vote
             </span>
           )}
           <span className="text-[10px] text-zinc-600" title="Confidence rata-rata">
@@ -292,7 +292,7 @@ function LearnedWordRow({
             {entry.source}
           </span>
           <span className="text-[10px] text-zinc-600" title={`Status: ${entry.status}`}>
-            {entry.status === 'confirmed' ? '✓' : entry.status === 'candidate' ? '⏳' : '✗'}
+            {entry.status === 'confirmed' ? '✓' : entry.status === 'candidate' ? 'kandidat' : '✗'}
           </span>
           <span className="text-[10px] text-zinc-600">{lastUsed}</span>
           <button
@@ -311,7 +311,7 @@ function LearnedWordRow({
             {entry.phonetic_variations.map((v, i) => (
               <span
                 key={i}
-                className="text-[10px] font-mono text-zinc-400 bg-[#18181b] border border-white/[0.06] rounded px-1.5 py-0.5"
+                className="text-[10px] font-mono text-zinc-400 bg-[#161618] border border-white/[0.06] rounded px-1.5 py-0.5"
               >
                 {v}
               </span>

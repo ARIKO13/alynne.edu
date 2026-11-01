@@ -1,5 +1,5 @@
 /**
- * SmartOcrSolver.tsx — OCR + Math Solver from images
+ * SmartOcrSolver.tsx  -  OCR + Math Solver from images
  *
  * Upload/foto soal → OCR (tesseract.js) → extract math → solve
  *
@@ -167,7 +167,7 @@ export function SmartOcrSolver({ initialImage }: SmartOcrSolverProps) {
           </Button>
         ) : (
           <>
-            <Button onClick={capturePhoto} size="sm" className="bg-[#8B5CF6] hover:bg-[#7C3AED]">
+            <Button onClick={capturePhoto} size="sm" className="bg-[#7C3AED] hover:bg-[#7C3AED]">
               <Camera className="h-4 w-4 mr-2" />
               Foto
             </Button>
@@ -220,7 +220,7 @@ export function SmartOcrSolver({ initialImage }: SmartOcrSolverProps) {
         <Button
           onClick={runOCR}
           disabled={ocrLoading}
-          className="w-full bg-[#8B5CF6] hover:bg-[#7C3AED]"
+          className="w-full bg-[#7C3AED] hover:bg-[#7C3AED]"
         >
           {ocrLoading ? (
             <>
@@ -258,11 +258,11 @@ export function SmartOcrSolver({ initialImage }: SmartOcrSolverProps) {
       {solutions.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <Calculator className="h-4 w-4 text-[#8B5CF6]" />
+            <Calculator className="h-4 w-4 text-[#7C3AED]" />
             <span className="text-sm font-medium text-zinc-300">
               Solusi Matematika ({solutions.length})
             </span>
-            <Badge variant="outline" className="text-[10px] border-[#8B5CF6]/30 text-[#8B5CF6] ml-auto">
+            <Badge variant="outline" className="text-[10px] border-[#7C3AED]/30 text-[#7C3AED] ml-auto">
               <Sparkles className="h-3 w-3 mr-1" />
               AI Solved
             </Badge>
@@ -270,7 +270,7 @@ export function SmartOcrSolver({ initialImage }: SmartOcrSolverProps) {
           {solutions.map((sol, i) => (
             <div
               key={i}
-              className="rounded-lg border border-[#8B5CF6]/20 bg-[#8B5CF6]/[0.05] p-4 space-y-2"
+              className="rounded-lg border border-[#7C3AED]/20 bg-[#7C3AED]/[0.05] p-4 space-y-2"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -292,7 +292,7 @@ export function SmartOcrSolver({ initialImage }: SmartOcrSolverProps) {
               </div>
               <div className="rounded-md bg-zinc-900/50 p-2">
                 <p className="text-[10px] text-zinc-500 mb-1">Jawaban:</p>
-                <p className="text-lg font-bold text-[#8B5CF6] font-mono">{sol.result}</p>
+                <p className="text-lg font-bold text-[#7C3AED] font-mono">{sol.result}</p>
               </div>
               {sol.steps.length > 0 && (
                 <div className="space-y-1">

@@ -42,7 +42,7 @@ export const AI_MODELS: AIModel[] = [
     description:
       'Asisten AI edukasi untuk pelajar, mahasiswa, guru, dan institusi. ' +
       'Speech-to-Text, Modul PDF, Mind Map, AI Assistant, semua dalam satu.',
-    badge: '🎓',
+    badge: 'EDU',
     accent: 'violet',
     default: true,
   },

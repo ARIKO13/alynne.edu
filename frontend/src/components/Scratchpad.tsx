@@ -1,5 +1,5 @@
 /**
- * Scratchpad.tsx — Free canvas for dropping ideas, text, audio
+ * Scratchpad.tsx  -  Free canvas for dropping ideas, text, audio
  *
  * User can paste/type anything here. AI organizes into structured
  * content when requested.
@@ -110,7 +110,7 @@ export function Scratchpad({ open, onClose, initialContent }: ScratchpadProps) {
   const charCount = content.length;
 
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+    <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
         <div className="flex items-center gap-2.5">
@@ -151,7 +151,7 @@ Contoh:
 - pertanyaan
 
 Lalu klik 'Organize dengan AI' untuk merapikan."
-          className="w-full h-64 p-4 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-zinc-200 placeholder:text-zinc-600 resize-none focus:outline-none focus:border-[#8B5CF6]/50 font-mono"
+          className="w-full h-64 p-4 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-zinc-200 placeholder:text-zinc-600 resize-none focus:outline-none focus:border-[#7C3AED]/50 font-mono"
           autoFocus
         />
 
@@ -160,7 +160,7 @@ Lalu klik 'Organize dengan AI' untuk merapikan."
           <Button
             onClick={handleOrganize}
             disabled={organizing || content.length < 50}
-            className="bg-[#8B5CF6] hover:bg-[#7C3AED]"
+            className="bg-[#7C3AED] hover:bg-[#7C3AED]"
           >
             <Wand2 className="h-4 w-4 mr-2" />
             {organizing ? 'Organizing...' : 'Organize dengan AI'}

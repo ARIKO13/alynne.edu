@@ -205,7 +205,7 @@ export function BookmarkPanel() {
           placeholder="Cari bookmark atau catatan..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-[#B794F6]/30 focus:ring-1 focus:ring-[#B794F6]/20 transition-all"
+          className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-[#B794F6]/30 focus:ring-1 focus:ring-[#B794F6]/20 transition-all"
         />
       </div>
 

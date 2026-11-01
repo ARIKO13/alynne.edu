@@ -1,5 +1,5 @@
 /**
- * VisualisasiPanel.tsx — Render visualisasi JSON dari mega-generate
+ * VisualisasiPanel.tsx  -  Render visualisasi JSON dari mega-generate
  *
  * GLM hanya menghasilkan JSON data (~150-200 token per item).
  * Frontend yang render pakai:
@@ -33,7 +33,7 @@ export interface VisualisasiItem {
   render_hint?: string;
 }
 
-const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#7c3aed', '#ec4899', '#06b6d4', '#84cc16'];
 
 export function VisualisasiPanel({ items }: { items: VisualisasiItem[] | undefined | null }) {
   if (!items || !Array.isArray(items) || items.length === 0) {
@@ -42,7 +42,7 @@ export function VisualisasiPanel({ items }: { items: VisualisasiItem[] | undefin
   return (
     <div className="space-y-3 mt-4">
       <h3 className="text-sm font-semibold text-zinc-200 flex items-center gap-1.5">
-        <span className="text-base">📊</span> Visualisasi ({items.length})
+        Visualisasi ({items.length})
       </h3>
       <div className="grid gap-3">
         {items.map((item, i) => (
@@ -181,7 +181,7 @@ function BarChartRenderer({ data }: { data: any }) {
         <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />  {/* zinc-700 */}
         <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#a1a1aa' }} stroke="#52525b" />
         <YAxis tick={{ fontSize: 11, fill: '#a1a1aa' }} stroke="#52525b" />
-        <Tooltip contentStyle={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 6, color: '#e4e4e7' }} />
+        <Tooltip contentStyle={{ background: '#161618', border: '1px solid #3f3f46', borderRadius: 6, color: '#fafafa' }} />
         <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
@@ -200,7 +200,7 @@ function LineChartRenderer({ data }: { data: any }) {
         <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
         <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#a1a1aa' }} stroke="#52525b" />
         <YAxis tick={{ fontSize: 11, fill: '#a1a1aa' }} stroke="#52525b" />
-        <Tooltip contentStyle={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 6, color: '#e4e4e7' }} />
+        <Tooltip contentStyle={{ background: '#161618', border: '1px solid #3f3f46', borderRadius: 6, color: '#fafafa' }} />
         <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3, fill: '#3b82f6' }} />
       </LineChart>
     </ResponsiveContainer>
@@ -219,7 +219,7 @@ function PieChartRenderer({ data }: { data: any }) {
         <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label={{ fill: '#a1a1aa', fontSize: 11 }}>
           {chartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
         </Pie>
-        <Tooltip contentStyle={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 6, color: '#e4e4e7' }} />
+        <Tooltip contentStyle={{ background: '#161618', border: '1px solid #3f3f46', borderRadius: 6, color: '#fafafa' }} />
       </PieChart>
     </ResponsiveContainer>
   );
@@ -250,7 +250,7 @@ function FunctionGraphRenderer({ tipe, data }: { tipe: string; data: any }) {
             <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
             <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#a1a1aa' }} stroke="#52525b" />
             <YAxis tick={{ fontSize: 10, fill: '#a1a1aa' }} stroke="#52525b" />
-            <Tooltip contentStyle={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 6, color: '#e4e4e7' }} />
+            <Tooltip contentStyle={{ background: '#161618', border: '1px solid #3f3f46', borderRadius: 6, color: '#fafafa' }} />
             <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} dot={false} />
           </LineChart>
         </ResponsiveContainer>
@@ -307,7 +307,7 @@ function TableRenderer({ data }: { data: any }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// Renderer 7: KaTeX (rumus_latex) — dynamic import supaya bundle kecil
+// Renderer 7: KaTeX (rumus_latex)  -  dynamic import supaya bundle kecil
 // ═══════════════════════════════════════════════════════════════════════
 function LatexRenderer({ data }: { data: any }) {
   const [html, setHtml] = useState<string>('');
@@ -356,7 +356,7 @@ function LatexRenderer({ data }: { data: any }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// Renderer 8: SmilesDrawer (struktur_molekul) — dynamic import
+// Renderer 8: SmilesDrawer (struktur_molekul)  -  dynamic import
 // ═══════════════════════════════════════════════════════════════════════
 function MoleculeRenderer({ data }: { data: any }) {
   const [svg, setSvg] = useState<string>('');
@@ -407,7 +407,7 @@ function MoleculeRenderer({ data }: { data: any }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// Renderer 9: GayaVectorRenderer (diagram_gaya) — custom SVG
+// Renderer 9: GayaVectorRenderer (diagram_gaya)  -  custom SVG
 // Render vektor gaya sebagai panah dari titik origin.
 // Data: { vektor: [{label, magnitude, angle, color}], origin: [x,y], resultan: {...} }
 // ═══════════════════════════════════════════════════════════════════════
@@ -470,11 +470,11 @@ function GayaVectorRenderer({ data }: { data: any }) {
         <line x1={0} y1={ORIGIN_Y} x2={200} y2={ORIGIN_Y} stroke="#3f3f46" strokeWidth="0.5" strokeDasharray="2,2" />
         <line x1={ORIGIN_X} y1={0} x2={ORIGIN_X} y2={200} stroke="#3f3f46" strokeWidth="0.5" strokeDasharray="2,2" />
         {/* Origin dot */}
-        <circle cx={ORIGIN_X} cy={ORIGIN_Y} r="3" fill="#e4e4e7" />
+        <circle cx={ORIGIN_X} cy={ORIGIN_Y} r="3" fill="#fafafa" />
         {/* Vectors */}
         {vektor.map((v: any) => buildArrow(v, false))}
         {/* Resultant (if provided) */}
-        {resultan && buildArrow({ ...resultan, label: resultan.label || 'R', color: '#e4e4e7' }, true)}
+        {resultan && buildArrow({ ...resultan, label: resultan.label || 'R', color: '#fafafa' }, true)}
       </svg>
       <p className="text-[10px] text-zinc-500 mt-1 text-center">
         Skala: 1 unit = {SCALE}px · Sudut: 0°=timur, positif=CCW
@@ -484,7 +484,7 @@ function GayaVectorRenderer({ data }: { data: any }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// Renderer 10: CellRenderer (diagram_sel) — custom SVG
+// Renderer 10: CellRenderer (diagram_sel)  -  custom SVG
 // Render organel sel sebagai shapes (lingkaran, oval, rect, titik).
 // Data: { organel: [{nama, tipe, warna, posisi: [x,y,r] atau [x,y,w,h]}] }
 // ═══════════════════════════════════════════════════════════════════════
@@ -542,7 +542,7 @@ function CellRenderer({ data }: { data: any }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// Renderer 11: CircuitRenderer (rangkaian_listrik) — custom SVG
+// Renderer 11: CircuitRenderer (rangkaian_listrik)  -  custom SVG
 // Render komponen listrik (resistor, kapasitor, induktor, baterai) + koneksi wire.
 // Data: {
 //   komponen: [{tipe, label, value, pos: [x,y]}],
@@ -575,11 +575,11 @@ function CircuitRenderer({ data }: { data: any }) {
       // Zigzag pattern (4 teeth)
       const teeth = 4;
       const path = `M ${x},${py} L ${x + 3},${py - 4} ${x + 6},${py + 4} ${x + 9},${py - 4} ${x + 12},${py + 4} ${x + 15},${py - 4} ${x + 18},${py + 4} ${x + SYMBOL_W},${py}`;
-      symbol = <path d={path} stroke="#e4e4e7" strokeWidth={1.5} fill="none" />;
+      symbol = <path d={path} stroke="#fafafa" strokeWidth={1.5} fill="none" />;
     } else if (tipe === 'kapasitor') {
       // Two parallel vertical lines with horizontal leads
       symbol = (
-        <g stroke="#e4e4e7" strokeWidth={1.5} fill="none">
+        <g stroke="#fafafa" strokeWidth={1.5} fill="none">
           <line x1={x} y1={py} x2={px - 2} y2={py} />
           <line x1={px - 2} y1={y} x2={px - 2} y2={y + SYMBOL_H} />
           <line x1={px + 2} y1={y} x2={px + 2} y2={y + SYMBOL_H} />
@@ -591,19 +591,19 @@ function CircuitRenderer({ data }: { data: any }) {
       const arcs = [];
       for (let a = 0; a < 3; a++) {
         const cx = x + 4 + a * 8;
-        arcs.push(<path key={a} d={`M ${cx - 4},${py} A 4 4 0 0 1 ${cx + 4},${py}`} stroke="#e4e4e7" strokeWidth={1.5} fill="none" />);
+        arcs.push(<path key={a} d={`M ${cx - 4},${py} A 4 4 0 0 1 ${cx + 4},${py}`} stroke="#fafafa" strokeWidth={1.5} fill="none" />);
       }
       symbol = (
         <g>
-          <line x1={x} y1={py} x2={x + 4} y2={py} stroke="#e4e4e7" strokeWidth={1.5} />
+          <line x1={x} y1={py} x2={x + 4} y2={py} stroke="#fafafa" strokeWidth={1.5} />
           {arcs}
-          <line x1={x + SYMBOL_W - 4} y1={py} x2={x + SYMBOL_W} y2={py} stroke="#e4e4e7" strokeWidth={1.5} />
+          <line x1={x + SYMBOL_W - 4} y1={py} x2={x + SYMBOL_W} y2={py} stroke="#fafafa" strokeWidth={1.5} />
         </g>
       );
     } else if (tipe === 'battery') {
       // Long line + short line (cell), repeat for battery
       symbol = (
-        <g stroke="#e4e4e7" strokeWidth={1.5} fill="none">  {/* light color for dark theme */}
+        <g stroke="#fafafa" strokeWidth={1.5} fill="none">  {/* light color for dark theme */}
           <line x1={x} y1={py} x2={px - 4} y2={py} />
           <line x1={px - 4} y1={y - 4} x2={px - 4} y2={y + SYMBOL_H + 4} />
           <line x1={px - 2} y1={y} x2={px - 2} y2={y + SYMBOL_H} />
@@ -614,12 +614,12 @@ function CircuitRenderer({ data }: { data: any }) {
       );
     } else {
       // Fallback: box
-      symbol = <rect x={x} y={y} width={SYMBOL_W} height={SYMBOL_H} stroke="#e4e4e7" strokeWidth={1} fill="none" />;
+      symbol = <rect x={x} y={y} width={SYMBOL_W} height={SYMBOL_H} stroke="#fafafa" strokeWidth={1} fill="none" />;
     }
     return (
       <g key={i}>
         {symbol}
-        <text x={px} y={y - 4} fontSize="8" textAnchor="middle" fontWeight="bold" fill="#e4e4e7">{label}</text>
+        <text x={px} y={y - 4} fontSize="8" textAnchor="middle" fontWeight="bold" fill="#fafafa">{label}</text>
         {value && <text x={px} y={y + SYMBOL_H + 8} fontSize="7" textAnchor="middle" fill="#a1a1aa">{value}</text>}
       </g>
     );
@@ -660,7 +660,7 @@ function CircuitRenderer({ data }: { data: any }) {
 function InvalidDataRenderer({ data, expected, error }: { data: any; expected: string; error?: string }) {
   return (
     <div className="text-xs text-amber-400 p-2 bg-amber-950/30 border border-amber-800/50 rounded">
-      <p className="font-medium">⚠️ Struktur data tidak sesuai</p>
+      <p className="font-medium">Struktur data tidak sesuai</p>
       <p className="text-[11px] mt-1">Expected: <code className="text-[10px] text-amber-300">{expected}</code></p>
       {error && <p className="text-[11px] mt-1 text-red-400">Error: {error}</p>}
       <pre className="text-[10px] mt-2 bg-zinc-900/60 p-1 rounded overflow-x-auto text-zinc-300">

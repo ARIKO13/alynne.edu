@@ -239,16 +239,14 @@ export function QuizPanel() {
   // Results screen
   if (quizState?.showResults) {
     const pct = Math.round((quizState.score / quizState.questions.length) * 100);
-    const emoji = pct >= 80 ? '🎉' : pct >= 60 ? '👍' : pct >= 40 ? '📚' : '💪';
     const msg = pct >= 80 ? 'Luar biasa!' : pct >= 60 ? 'Bagus!' : pct >= 40 ? 'Terus belajar!' : 'Jangan menyerah!';
     return (
       <div className="space-y-6">
         <div className="glass-card p-8 text-center space-y-4">
-          <div className="text-5xl mb-2">{emoji}</div>
-          <h2 className="text-2xl font-bold text-white">{msg}</h2>
+            <h2 className="text-2xl font-bold text-white">{msg}</h2>
           <div className="flex items-center justify-center gap-8">
             <div className="text-center">
-              <div className="text-3xl font-bold text-gradient">{quizState.score}/{quizState.questions.length}</div>
+              <div className="text-3xl font-bold ">{quizState.score}/{quizState.questions.length}</div>
               <div className="text-xs text-zinc-500 mt-1">Jawaban Benar</div>
             </div>
             <div className="text-center">
@@ -266,7 +264,7 @@ export function QuizPanel() {
             const userAns = quizState.answers[q.id] || '-';
             const isCorrect = userAns.toLowerCase() === q.correctAnswer.toLowerCase();
             return (
-              <div key={q.id} className={cn('flex items-start gap-3 p-3 rounded-xl text-sm',
+              <div key={q.id} className={cn('flex items-start gap-3 p-3 rounded-lg text-sm',
                 isCorrect ? 'bg-green-500/5 border border-green-500/10' : 'bg-red-500/5 border border-red-500/10')}>
                 {isCorrect ? <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 shrink-0" /> : <XCircle className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />}
                 <div className="flex-1 min-w-0">
@@ -278,10 +276,10 @@ export function QuizPanel() {
           })}
         </div>
         <div className="flex gap-3">
-          <Button onClick={handleRetry} className="flex-1 h-10 rounded-xl bg-gradient-to-r from-[#B794F6] to-[#a57ce8] text-white font-medium gap-2 hover:shadow-[0_0_20px_rgba(183,148,246,0.3)]">
+          <Button onClick={handleRetry} className="flex-1 h-10 rounded-lg bg-gradient-to-r from-[#B794F6] to-[#a57ce8] text-white font-medium gap-2 hover:shadow-[0_0_20px_rgba(183,148,246,0.3)]">
             <RotateCcw className="h-4 w-4" /> Coba Lagi (Quiz Baru)
           </Button>
-          <Button onClick={handleBack} variant="outline" className="h-10 rounded-xl border-white/[0.08] text-zinc-400 hover:text-white hover:bg-white/[0.04]">
+          <Button onClick={handleBack} variant="outline" className="h-10 rounded-lg border-white/[0.08] text-zinc-400 hover:text-white hover:bg-white/[0.04]">
             Upload Materi Baru
           </Button>
         </div>
@@ -319,7 +317,7 @@ export function QuizPanel() {
               value={selectedAnswer}
               onChange={e => handleFillBlank(e.target.value)}
               placeholder="Ketik jawaban..."
-              className="w-full h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] px-4 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#B794F6]/50 transition-colors"
+              className="w-full h-10 rounded-lg bg-white/[0.04] border border-white/[0.08] px-4 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#B794F6]/50 transition-colors"
             />
           )}
           {q.options && (
@@ -341,7 +339,7 @@ export function QuizPanel() {
                 }
                 return (
                   <button key={i} onClick={() => handleAnswer(opt)} disabled={showAnswer}
-                    className={cn('w-full flex items-center gap-3 p-3 rounded-xl border text-left text-sm transition-all', borderColor, textColor, bgColor)}>
+                    className={cn('w-full flex items-center gap-3 p-3 rounded-lg border text-left text-sm transition-all', borderColor, textColor, bgColor)}>
                     <span className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-medium',
                       isSelected ? 'bg-[#B794F6]/20 text-[#B794F6]' : 'bg-white/[0.04] text-zinc-500')}>{letter}</span>
                     {opt}
@@ -351,7 +349,7 @@ export function QuizPanel() {
             </div>
           )}
           {showAnswer && (
-            <div className={cn('p-3 rounded-xl text-sm', isCorrect ? 'bg-green-500/5 border border-green-500/10' : 'bg-red-500/5 border border-red-500/10')}>
+            <div className={cn('p-3 rounded-lg text-sm', isCorrect ? 'bg-green-500/5 border border-green-500/10' : 'bg-red-500/5 border border-red-500/10')}>
               <div className="flex items-center gap-2 mb-1">
                 {isCorrect ? <CheckCircle className="h-4 w-4 text-green-400" /> : <XCircle className="h-4 w-4 text-red-400" />}
                 <span className={isCorrect ? 'text-green-400 font-medium' : 'text-red-400 font-medium'}>{isCorrect ? 'Benar!' : 'Salah!'}</span>
@@ -367,12 +365,12 @@ export function QuizPanel() {
           </button>
           <div className="flex gap-2">
             {!showAnswer && selectedAnswer && (
-              <Button onClick={handleCheck} className="h-9 rounded-xl bg-gradient-to-r from-[#B794F6] to-[#a57ce8] text-white text-xs font-medium gap-1.5 hover:shadow-[0_0_20px_rgba(183,148,246,0.3)]">
+              <Button onClick={handleCheck} className="h-9 rounded-lg bg-gradient-to-r from-[#B794F6] to-[#a57ce8] text-white text-xs font-medium gap-1.5 hover:shadow-[0_0_20px_rgba(183,148,246,0.3)]">
                 <CheckCircle className="h-3.5 w-3.5" /> Cek Jawaban
               </Button>
             )}
             {showAnswer && (
-              <Button onClick={handleNext} className="h-9 rounded-xl bg-gradient-to-r from-[#B794F6] to-[#a57ce8] text-white text-xs font-medium gap-1.5 hover:shadow-[0_0_20px_rgba(183,148,246,0.3)]">
+              <Button onClick={handleNext} className="h-9 rounded-lg bg-gradient-to-r from-[#B794F6] to-[#a57ce8] text-white text-xs font-medium gap-1.5 hover:shadow-[0_0_20px_rgba(183,148,246,0.3)]">
                 {quizState.currentIndex >= quizState.questions.length - 1 ? 'Lihat Hasil' : 'Selanjutnya'}
                 <ChevronRight className="h-3.5 w-3.5" />
               </Button>
@@ -400,7 +398,7 @@ export function QuizPanel() {
           <span>Upload file teks (.txt, .md, .csv)</span>
         </div>
         <input ref={fileRef} type="file" accept=".txt,.md,.csv" className="hidden" onChange={e => e.target.files?.[0] && extractTextFromFile(e.target.files[0])} />
-        <Button onClick={() => fileRef.current?.click()} variant="outline" className="w-full h-10 rounded-xl border-dashed border-white/[0.08] text-zinc-400 hover:text-white hover:border-[#B794F6]/30 hover:bg-[#B794F6]/5 gap-2">
+        <Button onClick={() => fileRef.current?.click()} variant="outline" className="w-full h-10 rounded-lg border-dashed border-white/[0.08] text-zinc-400 hover:text-white hover:border-[#B794F6]/30 hover:bg-[#B794F6]/5 gap-2">
           <Upload className="h-4 w-4" />
           {fileName || 'Pilih file...'}
         </Button>
@@ -416,22 +414,21 @@ export function QuizPanel() {
           onChange={e => setRawText(e.target.value)}
           placeholder="Paste materi belajar di sini... (minimal 50 kata)"
           rows={6}
-          className="w-full rounded-xl bg-white/[0.03] border border-white/[0.06] px-4 py-3 text-sm text-white placeholder:text-zinc-700 focus:outline-none focus:border-[#B794F6]/30 transition-colors resize-none"
+          className="w-full rounded-lg bg-white/[0.03] border border-white/[0.06] px-4 py-3 text-sm text-white placeholder:text-zinc-700 focus:outline-none focus:border-[#B794F6]/30 transition-colors resize-none"
         />
 
-        <Button onClick={handleGenerate} disabled={generating} className="w-full h-10 rounded-xl bg-gradient-to-r from-[#B794F6] to-[#F687B3] text-white font-medium gap-2 hover:shadow-[0_0_20px_rgba(183,148,246,0.3)]">
+        <Button onClick={handleGenerate} disabled={generating} className="w-full h-10 rounded-lg bg-gradient-to-r from-[#B794F6] to-[#F687B3] text-white font-medium gap-2 hover:shadow-[0_0_20px_rgba(183,148,246,0.3)]">
           {generating ? <><Loader2 className="h-4 w-4 animate-spin" /> Generating...</> : <><Sparkles className="h-4 w-4" /> Generate 10 Soal Quiz</>}
         </Button>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
         {[
-          { icon: '📝', label: 'Pilihan Ganda', desc: 'Soal multi-choice otomatis' },
-          { icon: '✅', label: 'Benar/Salah', desc: 'Tebak benar atau salah' },
-          { icon: '✏️', label: 'Isi Titik-titik', desc: 'Lengkapi kalimat' },
+          { label: 'Pilihan Ganda', desc: 'Soal multi-choice otomatis' },
+          { label: 'Benar/Salah', desc: 'Tebak benar atau salah' },
+          { label: 'Isi Titik-titik', desc: 'Lengkapi kalimat' },
         ].map(f => (
           <div key={f.label} className="glass-card-sm p-3 text-center space-y-1">
-            <div className="text-lg">{f.icon}</div>
             <div className="text-xs font-medium text-zinc-300">{f.label}</div>
             <div className="text-[10px] text-zinc-600">{f.desc}</div>
           </div>

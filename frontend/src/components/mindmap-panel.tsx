@@ -318,7 +318,7 @@ function MindMapCanvas({ layout, onNodeSelect, selectedNode }: {
       </div>
 
       {/* Zoom controls */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-black/60 backdrop-blur-md border border-white/[0.06] rounded-full px-2 py-1 opacity-0 group-hover/mm:opacity-100 transition-opacity">
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-black/60  border border-white/[0.06] rounded-full px-2 py-1 opacity-0 group-hover/mm:opacity-100 transition-opacity">
         <button onClick={() => setZoom(z => Math.min(3, z + 0.2))} className="p-1 text-zinc-400 hover:text-white transition-colors"><ZoomIn className="h-3.5 w-3.5"/></button>
         <span className="text-[10px] text-zinc-500 w-9 text-center tabular-nums">{Math.round(zoom * 100)}%</span>
         <button onClick={() => setZoom(z => Math.max(0.1, z - 0.2))} className="p-1 text-zinc-400 hover:text-white transition-colors"><ZoomOut className="h-3.5 w-3.5"/></button>
@@ -430,7 +430,7 @@ export function MindMapPanel() {
 
       {/* Empty state */}
       {!layout && !generating && (
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-8 text-center">
+        <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] p-8 text-center">
           <Brain className="h-14 w-14 text-zinc-700 mx-auto mb-4" />
           <h3 className="text-base font-medium text-zinc-300 mb-2">Buat Mind Map dengan AI</h3>
           <p className="text-xs text-zinc-500 max-w-md mx-auto mb-5 leading-relaxed">
@@ -463,7 +463,7 @@ export function MindMapPanel() {
             <div className="mb-6 max-w-lg mx-auto">
               <textarea value={manualText} onChange={e => setManualText(e.target.value)}
                 placeholder={"Paste materi pendukung di sini...\n\nContoh:\n- Catatan kuliah\n- Ringkasan bab dari textbook\n- Point-point slide perkuliahan"}
-                className="w-full h-40 bg-white/[0.03] border border-white/[0.08] rounded-xl p-4 text-sm text-zinc-300 placeholder:text-zinc-600 resize-none focus:outline-none focus:border-[#B794F6]/40 focus:ring-1 focus:ring-[#B794F6]/20 transition-all" />
+                className="w-full h-40 bg-white/[0.03] border border-white/[0.08] rounded-lg p-4 text-sm text-zinc-300 placeholder:text-zinc-600 resize-none focus:outline-none focus:border-[#B794F6]/40 focus:ring-1 focus:ring-[#B794F6]/20 transition-all" />
               <div className="flex items-center justify-between mt-1.5">
                 <span className="text-[10px] text-zinc-600">{manualText.trim().length < 30 ? 'Minimal 30 karakter' : `${manualText.length} chars - siap`}</span>
                 {manualText && <button onClick={() => setManualText('')} className="text-[10px] text-zinc-600 hover:text-red-400">Hapus</button>}
@@ -479,7 +479,7 @@ export function MindMapPanel() {
 
       {/* Generating */}
       {generating && (
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-12 text-center">
+        <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] p-12 text-center">
           <Loader2 className="h-10 w-10 text-[#B794F6] animate-spin mx-auto mb-4" />
           <p className="text-sm text-zinc-400">AI sedang menganalisa dan membangun mind map...</p>
           <p className="text-[10px] text-zinc-600 mt-2">Sumber: {sourceLabel}</p>
@@ -489,7 +489,7 @@ export function MindMapPanel() {
       {/* Mind Map Display */}
       {layout && !generating && (<>
         {/* Toolbar */}
-        <div className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.03] p-2">
+        <div className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-white/[0.03] p-2">
           <div className="flex items-center gap-2">
             <span className={cn('text-[9px] px-1.5 py-0.5 rounded-full',
               result?.source === 'gateway' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400')}>
@@ -507,13 +507,13 @@ export function MindMapPanel() {
         </div>
 
         {/* Canvas */}
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] overflow-hidden" style={{ borderRadius: '16px' }}>
+        <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] overflow-hidden" style={{ borderRadius: '16px' }}>
           <MindMapCanvas layout={layout} onNodeSelect={setSelectedNode} selectedNode={selectedNode} />
         </div>
 
         {/* Selected node detail */}
         {selectedNodeData && (
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3 flex items-center gap-3">
+          <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] p-3 flex items-center gap-3">
             <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: selectedNodeData.color.fill }} />
             <div>
               <p className="text-sm font-medium text-white">{selectedNodeData.label}</p>

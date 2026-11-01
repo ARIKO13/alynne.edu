@@ -192,10 +192,10 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && !loading && onClose()}>
-      <DialogContent className="max-w-2xl bg-zinc-950/95 border-white/10 text-white">
+      <DialogContent className="max-w-2xl ">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
-            <Cpu className="h-5 w-5 text-[#8B5CF6]" />
+            <Cpu className="h-5 w-5 text-[#7C3AED]" />
             Pilih Model Speech-to-Text
           </DialogTitle>
           <DialogDescription className="text-zinc-400">
@@ -267,9 +267,9 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
         </div>
 
         {loading && (
-          <div className="rounded-lg border border-[#8B5CF6]/30 bg-[#8B5CF6]/[0.05] p-4 space-y-3">
+          <div className="rounded-lg border border-[#7C3AED]/30 bg-[#7C3AED]/[0.05] p-4 space-y-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="flex items-center gap-2 text-[#8B5CF6]">
+              <span className="flex items-center gap-2 text-[#7C3AED]">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 {loadProgress < 100
                   ? `Mengunduh ${selectedModel?.name}...`
@@ -317,7 +317,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
           <Button
             onClick={isAlreadyLoaded ? handleUseExisting : handleDownload}
             disabled={loading || !selectedModel}
-            className="bg-[#8B5CF6] hover:bg-[#7C3AED]"
+            className="bg-[#7C3AED] hover:bg-[#7C3AED]"
           >
             {loading ? (
               <>
@@ -377,7 +377,7 @@ function ModelOption({
         ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}
         ${
           selected
-            ? 'border-[#8B5CF6]/50 bg-[#8B5CF6]/[0.08]'
+            ? 'border-[#7C3AED]/50 bg-[#7C3AED]/[0.08]'
             : 'border-white/[0.06] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.04]'
         }
       `}
@@ -388,7 +388,7 @@ function ModelOption({
           checked={selected}
           onChange={onSelect}
           disabled={disabled}
-          className="mt-1 accent-[#8B5CF6]"
+          className="mt-1 accent-[#7C3AED]"
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -414,7 +414,7 @@ function ModelOption({
             {isRecommended && (
               <Badge
                 variant="outline"
-                className="bg-[#8B5CF6]/10 text-[#8B5CF6] border-[#8B5CF6]/30 text-[10px]"
+                className="bg-[#7C3AED]/10 text-[#7C3AED] border-[#7C3AED]/30 text-[10px]"
               >
                 RECOMMENDED
               </Badge>

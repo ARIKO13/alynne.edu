@@ -58,7 +58,7 @@ export function FeatureTutorial({ title, steps, storageKey, accentColor = '#B794
     return (
       <button
         onClick={handleReset}
-        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-medium shadow-2xl shadow-black/40 backdrop-blur-xl border transition-all hover:scale-105 active:scale-95"
+        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-medium shadow-2xl shadow-black/40 -xl border transition-all hover:scale-105 active:scale-95"
         style={{
           backgroundColor: `${accentColor}18`,
           borderColor: `${accentColor}30`,
@@ -77,12 +77,12 @@ export function FeatureTutorial({ title, steps, storageKey, accentColor = '#B794
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/60 "
         onClick={handleDismiss}
       />
 
       <div
-        className="relative w-full max-w-sm rounded-2xl border shadow-2xl shadow-black/50 overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+        className="relative w-full max-w-sm rounded-lg border shadow-2xl shadow-black/50 overflow-hidden animate-in fade-in zoom-in-95 duration-200"
         style={{
           backgroundColor: '#161616',
           borderColor: `${accentColor}25`,
@@ -96,7 +96,7 @@ export function FeatureTutorial({ title, steps, storageKey, accentColor = '#B794
         <div className="flex items-center justify-between px-5 pt-4 pb-2">
           <div className="flex items-center gap-2.5">
             <div
-              className="flex h-8 w-8 items-center justify-center rounded-xl"
+              className="flex h-8 w-8 items-center justify-center rounded-lg"
               style={{ backgroundColor: `${accentColor}15` }}
             >
               <Lightbulb className="h-4 w-4" style={{ color: accentColor }} />

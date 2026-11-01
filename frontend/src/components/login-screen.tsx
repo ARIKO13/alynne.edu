@@ -1,7 +1,6 @@
-import { Button } from '@/components/ui/button';
+import { useState, useEffect } from 'react';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { useClientSession } from '@/lib/use-client-session';
-import { BrandLogo } from '@/components/brand-logo';
 import { toast } from 'sonner';
 
 const ALYNNE_DOMAINS = ['alynne.my.id', 'www.alynne.my.id'];
@@ -10,71 +9,212 @@ function isAlynneDomain(): boolean {
   return ALYNNE_DOMAINS.includes(window.location.hostname);
 }
 
+const GOOGLE_OAUTH_ENABLED = true;
 const handleGoogleLogin = () => { window.location.href = '/api/auth/google'; };
 
 export function LoginScreen() {
   const { status } = useClientSession();
   const isAlynne = isAlynneDomain();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const handleBack = () => {
     sessionStorage.removeItem('alynne-entered');
     window.location.reload();
   };
 
+  const handleDemoLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !email.trim()) { toast.error('Nama dan email wajib diisi'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast.error('Format email tidak valid'); return; }
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/demo-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim(), email: email.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error || 'Gagal login'); return; }
+      window.location.reload();
+    } catch { toast.error('Gagal login.'); }
+    finally { setLoading(false); }
+  };
+
   if (status === 'loading') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#09090b]">
-        <Loader2 className="h-8 w-8 animate-spin text-[#8B5CF6]" />
-        <p className="mt-3 text-sm text-zinc-500">Mengecek session...</p>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0A0A0B' }}>
+        <Loader2 className="h-5 w-5 animate-spin" style={{ color: '#7C3AED' }} />
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#09090b] p-4 relative">
-      {/* Back to landing */}
-      {isAlynne && (
-        <button
-          onClick={handleBack}
-          className="absolute top-6 left-6 flex items-center gap-2 text-zinc-500 hover:text-zinc-300 transition-colors text-sm"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span>Back</span>
-        </button>
-      )}
+  const inputBase = {
+    width: '100%',
+    background: 'transparent',
+    border: 'none',
+    borderBottom: '1px solid #27272A',
+    borderRadius: 0,
+    padding: '8px 0',
+    fontSize: '14px',
+    color: '#FAFAFA',
+    outline: 'none',
+    transition: 'border-color 0.15s ease',
+  };
 
-      <div className="w-full max-w-sm space-y-8">
-        {/* Logo & Branding */}
-        <div className="text-center space-y-4">
-          <div className="flex justify-center">
-            <BrandLogo size={64} className="rounded-2xl ring-2 ring-white/10" />
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', background: '#0A0A0B' }}>
+      {/* Left, solid color, no grid, no glow, no gradient */}
+      <div
+        className="hidden lg:flex"
+        style={{
+          flex: 1,
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          padding: '48px',
+          background: '#0A0A0B',
+          borderRight: '1px solid #1F1F23',
+        }}
+      >
+        {/* Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{
+            width: '28px', height: '28px', background: '#7C3AED', borderRadius: '6px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <span style={{ color: '#FFF', fontWeight: 700, fontSize: '14px' }}>A</span>
           </div>
-          <div className="space-y-1.5">
-            <h1 className="text-2xl font-bold tracking-tight text-white">
-              ALYNNE AI
-            </h1>
-            <p className="text-sm text-zinc-500">Belajar Sambil Main, Raih Sertifikat!</p>
-          </div>
+          <span style={{ color: '#FAFAFA', fontSize: '15px', fontWeight: 600, letterSpacing: '-0.02em' }}>
+            Alynne
+          </span>
         </div>
 
-        {/* Google OAuth Button */}
-        <div className="space-y-3">
-          <Button
-            onClick={handleGoogleLogin}
-            className="w-full h-11 rounded-lg bg-white text-zinc-900 font-medium text-sm gap-3 hover:bg-zinc-200 transition-colors"
-            size="lg"
+        {/* One headline. No fluff. */}
+        <div style={{ opacity: mounted ? 1 : 0, transition: 'opacity 0.3s ease' }}>
+          <h1 style={{
+            color: '#FAFAFA', fontSize: '28px', fontWeight: 600,
+            letterSpacing: '-0.04em', lineHeight: 1.15, margin: 0,
+          }}>
+            Video jadi materi.<br />
+            {/* avoid-ai-design-ignore: SD5 — satu aksen pada baris kedua adalah
+                signature login screen yang jadi referensi DESIGN.md §1. */}
+            <span style={{ color: '#7C3AED' }}>Satu klik.</span>
+          </h1>
+        </div>
+
+        {/* Minimal footer */}
+        <p style={{ color: '#3F3F46', fontSize: '12px', margin: 0 }}>alynne.my.id</p>
+      </div>
+
+      {/* Right, form */}
+      <div style={{
+        flex: 1, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', padding: '32px', position: 'relative',
+      }}>
+        {isAlynne && (
+          <button
+            onClick={handleBack}
+            style={{
+              position: 'absolute', top: '24px', left: '24px',
+              display: 'flex', alignItems: 'center', gap: '6px',
+              color: '#52525B', fontSize: '13px', background: 'none',
+              border: 'none', cursor: 'pointer', transition: 'color 0.15s ease',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = '#A1A1AA'}
+            onMouseLeave={(e) => e.currentTarget.style.color = '#52525B'}
           >
-            <svg className="h-5 w-5" viewBox="0 0 24 24">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-            </svg>
-            Masuk dengan Google
-          </Button>
-          <p className="text-[11px] text-center text-zinc-600">
-            Login via Google OAuth. Data kamu aman & tersimpan.
-          </p>
+            <ArrowLeft style={{ width: '14px', height: '14px' }} />
+            Kembali
+          </button>
+        )}
+
+        <div style={{ width: '100%', maxWidth: '280px' }}>
+          {/* Mobile logo */}
+          <div className="lg:hidden" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '40px' }}>
+            <div style={{
+              width: '28px', height: '28px', background: '#7C3AED', borderRadius: '6px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <span style={{ color: '#FFF', fontWeight: 700, fontSize: '14px' }}>A</span>
+            </div>
+            <span style={{ color: '#FAFAFA', fontSize: '15px', fontWeight: 600 }}>Alynne</span>
+          </div>
+
+          <h2 style={{
+            color: '#FAFAFA', fontSize: '18px', fontWeight: 600,
+            letterSpacing: '-0.03em', margin: '0 0 24px 0',
+            opacity: mounted ? 1 : 0, transition: 'opacity 0.3s ease 0.1s',
+          }}>
+            Masuk
+          </h2>
+
+          <form onSubmit={handleDemoLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#71717A', marginBottom: '6px' }}>
+                Nama
+              </label>
+              <input
+                type="text" value={name} onChange={(e) => setName(e.target.value)}
+                placeholder="Nama" disabled={loading} autoComplete="name"
+                style={inputBase}
+                onFocus={(e) => e.currentTarget.style.borderBottomColor = '#7C3AED'}
+                onBlur={(e) => e.currentTarget.style.borderBottomColor = '#27272A'}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#71717A', marginBottom: '6px' }}>
+                Email
+              </label>
+              <input
+                type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                placeholder="email@kamu.com" disabled={loading} autoComplete="email"
+                style={inputBase}
+                onFocus={(e) => e.currentTarget.style.borderBottomColor = '#7C3AED'}
+                onBlur={(e) => e.currentTarget.style.borderBottomColor = '#27272A'}
+              />
+            </div>
+            <button
+              type="submit" disabled={loading || !name.trim() || !email.trim()}
+              style={{
+                width: '100%', padding: '10px 0', fontSize: '13px', fontWeight: 500,
+                background: '#7C3AED', color: '#FFF', border: 'none', borderRadius: '6px',
+                cursor: 'pointer',
+                opacity: (loading || !name.trim() || !email.trim()) ? 0.4 : 1,
+                transition: 'background 0.15s ease, opacity 0.15s ease',
+              }}
+              onMouseEnter={(e) => !loading && (e.currentTarget.style.background = '#6D28D9')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = '#7C3AED')}
+            >
+              {loading ? <Loader2 className="animate-spin" style={{ width: '16px', height: '16px', margin: '0 auto' }} /> : 'Masuk'}
+            </button>
+          </form>
+
+          {GOOGLE_OAUTH_ENABLED && (
+            <button
+              onClick={handleGoogleLogin}
+              style={{
+                width: '100%', padding: '10px 0', fontSize: '13px', fontWeight: 500,
+                background: 'transparent', color: '#A1A1AA', border: '1px solid #27272A',
+                borderRadius: '6px', cursor: 'pointer', marginTop: '12px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                transition: 'border-color 0.15s ease, color 0.15s ease',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#3F3F46'; e.currentTarget.style.color = '#FAFAFA'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#27272A'; e.currentTarget.style.color = '#A1A1AA'; }}
+            >
+              <svg style={{ width: '16px', height: '16px' }} viewBox="0 0 24 24">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+              </svg>
+              Google
+            </button>
+          )}
         </div>
       </div>
     </div>

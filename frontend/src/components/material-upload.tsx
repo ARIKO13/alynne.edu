@@ -147,18 +147,18 @@ export function MaterialUpload({ compact = false }: { compact?: boolean }) {
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           className={cn(
-            'relative rounded-xl border-2 border-dashed cursor-pointer transition-all duration-200 overflow-hidden',
+            'relative rounded-lg border-2 border-dashed cursor-pointer transition-all duration-200 overflow-hidden',
             isDragOver
-              ? 'border-[#8B5CF6] bg-[#8B5CF6]/[0.06] scale-[1.01]'
+              ? 'border-[#7C3AED] bg-[#7C3AED]/[0.06] scale-[1.01]'
               : 'border-white/[0.08] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.04]'
           )}
         >
           <div className="flex flex-col items-center justify-center py-8 px-6 text-center">
             <div className={cn(
               'rounded-full p-3 mb-3 transition-colors',
-              isDragOver ? 'bg-[#8B5CF6]/15' : 'bg-white/[0.04]'
+              isDragOver ? 'bg-[#7C3AED]/15' : 'bg-white/[0.04]'
             )}>
-              <CloudUpload className={cn('h-7 w-7 transition-colors', isDragOver ? 'text-[#8B5CF6]' : 'text-zinc-500')} />
+              <CloudUpload className={cn('h-7 w-7 transition-colors', isDragOver ? 'text-[#7C3AED]' : 'text-zinc-500')} />
             </div>
             <p className="text-sm font-medium text-zinc-300 mb-1">
               {isDragOver ? 'Lepaskan file di sini' : 'Upload Materi Pendukung'}
@@ -224,7 +224,7 @@ export function MaterialUpload({ compact = false }: { compact?: boolean }) {
                   <p className="text-xs text-zinc-300 truncate">{task.file.name}</p>
                   <p className="text-[10px] text-zinc-600">Mengekstrak teks...</p>
                 </div>
-                <Loader2 className="h-4 w-4 text-[#8B5CF6] animate-spin shrink-0" />
+                <Loader2 className="h-4 w-4 text-[#7C3AED] animate-spin shrink-0" />
               </div>
             );
           })}
@@ -254,7 +254,7 @@ export function MaterialUpload({ compact = false }: { compact?: boolean }) {
 
       {/* Uploaded Materials List */}
       {uploadedMaterials.length > 0 && (
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] overflow-hidden">
+        <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] overflow-hidden">
           <div className="px-4 py-3 border-b border-white/[0.04] flex items-center justify-between">
             <div className="flex items-center gap-2">
               <FileText className="h-3.5 w-3.5 text-sky-400" />

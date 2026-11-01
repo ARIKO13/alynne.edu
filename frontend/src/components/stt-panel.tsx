@@ -7,11 +7,10 @@ import { AudioVisualizer } from '@/components/audio-visualizer';
 import { PersonalDictPanel } from '@/components/personal-dict-panel';
 import {
   Mic, MicOff, Wifi, WifiOff, RefreshCw, Trash2, CheckCircle2, Radio,
-  FileText, Loader2, Rocket, Sparkles, Upload, Monitor, MonitorUp, Brain, Cpu, HardDrive, TrendingUp, Gift, FolderOpen, StickyNote, Zap,
+  FileText, Loader2, Rocket, Sparkles, Upload, Monitor, MonitorUp, Brain, Cpu, HardDrive, TrendingUp, Gift, FolderOpen, StickyNote, Zap, BookOpen,
 } from 'lucide-react';
 import { MaterialUpload } from '@/components/material-upload';
 import { YouTubeTranscript } from '@/components/youtube-transcript';
-import { DocumentUpload } from '@/components/DocumentUpload';
 import { BrandLogo } from '@/components/brand-logo';
 import { cn } from '@/lib/utils';
 import { useState, useRef, useEffect } from 'react';
@@ -92,30 +91,30 @@ function ModeSelector({ disabled }: { disabled: boolean }) {
               'flex-1 flex items-center gap-2.5 rounded-lg border p-3 text-left transition-all duration-200',
               disabled && 'opacity-50 cursor-not-allowed',
               isActive
-                ? 'border-[#8B5CF6]/40 bg-[#8B5CF6]/10'
+                ? 'border-[#7C3AED]/40 bg-[#7C3AED]/10'
                 : 'border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12] hover:bg-white/[0.04]'
             )}
           >
             <div
               className={cn(
                 'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors',
-                isActive ? 'bg-[#8B5CF6]/20' : 'bg-white/[0.05]'
+                isActive ? 'bg-[#7C3AED]/20' : 'bg-white/[0.05]'
               )}
             >
               <Icon
-                className={cn('h-4 w-4 transition-colors', isActive ? 'text-[#8B5CF6]' : 'text-zinc-500')}
+                className={cn('h-4 w-4 transition-colors', isActive ? 'text-[#7C3AED]' : 'text-zinc-500')}
               />
             </div>
             <div className="min-w-0">
               <p className={cn('text-xs font-medium transition-colors', isActive ? 'text-white' : 'text-zinc-400')}>
                 {mode.label}
               </p>
-              <p className={cn('text-[10px] transition-colors', isActive ? 'text-[#8B5CF6]/70' : 'text-zinc-600')}>
+              <p className={cn('text-[10px] transition-colors', isActive ? 'text-[#7C3AED]/70' : 'text-zinc-600')}>
                 {mode.desc}
               </p>
             </div>
             {isActive && (
-              <div className="ml-auto h-2 w-2 rounded-full bg-[#8B5CF6] shrink-0" />
+              <div className="ml-auto h-2 w-2 rounded-full bg-[#7C3AED] shrink-0" />
             )}
           </button>
         );
@@ -299,7 +298,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
   };
 
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] overflow-hidden">
+    <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] overflow-hidden">
       {/* Info Banner - Whisper required for accurate STT */}
       <div className="px-5 py-2 bg-emerald-500/[0.03] border-b border-emerald-500/10">
         <div className="flex items-center gap-2 text-[11px] text-emerald-400/80">
@@ -318,7 +317,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
           <Button
             onClick={() => setModelSelectorOpen(true)}
             size="sm"
-            className="h-7 gap-1.5 px-2.5 text-[11px] font-medium bg-[#8B5CF6] hover:bg-[#7C3AED] text-white border-[#8B5CF6]/30"
+            className="h-7 gap-1.5 px-2.5 text-[11px] font-medium bg-[#7C3AED] hover:bg-[#7C3AED] text-white border-[#7C3AED]/30"
             title="Pilih model Whisper untuk STT"
           >
             <Cpu className="h-3.5 w-3.5" />
@@ -369,21 +368,13 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
           disabled={isRecording || isProcessing}
           onTranscript={(text, meta) => {
             console.log('[YouTubeTranscript] transcript:', text.length, 'chars', meta);
+            console.log('[YouTubeTranscript] first 80 chars:', text.slice(0, 80));
+            // v18.3 (2026-10-29): setTranscriptBatch = REPLACE both transcript AND transcriptEntries.
+            // Before (setTranscript) only set transcript string but cleared transcriptEntries,
+            // so UI display (which reads transcriptEntries) showed empty.
             const sentences = text.split(/(?<=[.!?])\s+/).filter(s => s.trim());
-            useAppStore.getState().appendTranscriptBatch(sentences);
+            useAppStore.getState().setTranscriptBatch(sentences);
             toast.success(`Transkrip YouTube: ${text.length} karakter (${meta.duration} detik)`);
-          }}
-        />
-
-        {/* DocumentUpload — upload file apapun (PDF/DOCX/PPTX/XLSX/gambar/EPUB/HTML)
-            → server konversi ke teks → masuk transkrip → siap untuk Mode Belajar. */}
-        <DocumentUpload
-          disabled={isRecording || isProcessing}
-          onText={(text, meta) => {
-            console.log('[DocumentUpload] text:', text.length, 'chars', meta);
-            const sentences = text.split(/\n\s*\n|\s{2,}/).filter(s => s.trim().length > 10);
-            useAppStore.getState().appendTranscriptBatch(sentences);
-            toast.success(`Dokumen "${meta.fileName}": ${meta.charCount.toLocaleString()} karakter via ${meta.method}`);
           }}
         />
 
@@ -471,7 +462,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
         )}
 
         {/* Transcript Area - Timestamped */}
-        <div className="relative rounded-lg border border-white/[0.06] bg-[#0c0c0e] overflow-hidden">
+        <div className="relative rounded-lg border border-white/[0.06] bg-[#111113] overflow-hidden">
           <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.04] bg-white/[0.02]">
             <div className="flex items-center gap-2">
               {isRecording && (
@@ -518,7 +509,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
               transcriptEntries.map((entry, i) => (
                 <div key={i} className="flex items-start gap-3 group">
                   <span className="text-[11px] font-mono text-zinc-500 shrink-0 pt-0.5 select-none w-16 text-right">{entry.time}</span>
-                  <span className="text-[#8B5CF6] shrink-0 pt-0.5 select-none">●</span>
+                  <span className="text-[#7C3AED] shrink-0 pt-0.5 select-none">●</span>
                   <p className="text-sm leading-relaxed text-zinc-200">{entry.text}</p>
                 </div>
               ))
@@ -567,7 +558,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
                 ? 'bg-red-600 hover:bg-red-700 text-white'
                 : isScreenMode
                 ? 'bg-sky-600 hover:bg-sky-700 text-white'
-                : 'bg-[#8B5CF6] hover:bg-[#d14e1c] text-white'
+                : 'bg-[#7C3AED] hover:bg-[#d14e1c] text-white'
             )}
           >
             {whisperSTT.status === 'loading-model' ? <Loader2 className="h-5 w-5 animate-spin" /> : isProcessing ? <RefreshCw className="h-5 w-5 animate-spin" /> : isRecording ? <MicOff className="h-5 w-5 text-red-400" /> : <BrandLogo size={20} color="#ffffff" />}
@@ -582,7 +573,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
         </div>
 
         {/* Material Upload - always visible */}
-        <div className="rounded-xl border border-sky-500/10 bg-sky-500/[0.02] overflow-hidden">
+        <div className="rounded-lg border border-sky-500/10 bg-sky-500/[0.02] overflow-hidden">
           <div className="flex items-center gap-2 px-5 py-3 border-b border-white/[0.04]">
             <Upload className="h-4 w-4 text-sky-400" />
             <h3 className="text-sm font-medium text-zinc-200">Materi Pendukung</h3>
@@ -595,68 +586,47 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
 
         {/* Post-Recording: Next Steps */}
         {transcript && !isRecording && !isProcessing && (
-          <div className="space-y-3 rounded-xl border border-[#8B5CF6]/20 bg-[#8B5CF6]/[0.03] p-4">
+          <div className="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4">
             <div className="flex items-center gap-2">
-              <Rocket className="h-4 w-4 text-[#8B5CF6]" />
+              <Rocket className="h-4 w-4 text-zinc-500" />
               <span className="text-sm font-medium text-zinc-200">Apa yang mau kamu lakukan?</span>
               <Badge variant="outline" className="text-[10px] ml-auto border-white/[0.08] text-zinc-500">{transcript.length} karakter</Badge>
             </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              {/* Card: Modul PDF */}
+              {/* Kartu aksi sejajar: satu gaya, ikon inline netral, tanpa tile
+                  berwarna (DESIGN.md §9 — struktur dari ruang, bukan kotak).
+                  Warna hanya di aksi primer. */}
               <button
                 onClick={generatePDFCombined}
                 disabled={pdfLoading}
-                className="flex items-center gap-3 rounded-lg border border-violet-500/20 bg-violet-500/[0.06] p-3.5 text-left transition-all hover:border-violet-500/40 hover:bg-violet-500/10 disabled:opacity-50"
+                className="flex items-center gap-3 rounded-md border border-[#7C3AED]/30 bg-[#7C3AED]/[0.08] p-3.5 text-left transition-colors hover:border-[#7C3AED]/60 hover:bg-[#7C3AED]/[0.14] disabled:opacity-50"
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-500/15">
-                  {pdfLoading ? <Loader2 className="h-4.5 w-4.5 text-violet-400 animate-spin" /> : <FileText className="h-4.5 w-4.5 text-violet-400" />}
-                </div>
+                {pdfLoading ? <Loader2 className="h-4 w-4 shrink-0 text-[#7C3AED] animate-spin" /> : <FileText className="h-4 w-4 shrink-0 text-[#7C3AED]" />}
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold text-violet-300">Buat Modul PDF</p>
-                  <p className="text-[10px] text-violet-400/60">Generate modul belajar dari transkrip</p>
+                  <p className="text-xs font-semibold text-zinc-100">Buat Modul PDF</p>
+                  <p className="text-[10px] text-zinc-500">Generate modul belajar dari transkrip</p>
                 </div>
               </button>
 
-              {/* Card: Langsung ke Modul */}
-              <button
-                onClick={generatePDFCombined}
-                disabled={pdfLoading}
-                className="flex items-center gap-3 rounded-lg border border-[#8B5CF6]/20 bg-[#8B5CF6]/[0.06] p-3.5 text-left transition-all hover:border-[#8B5CF6]/40 hover:bg-[#8B5CF6]/10 disabled:opacity-50"
-              >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#8B5CF6]/15">
-                  {pdfLoading ? <Loader2 className="h-4.5 w-4.5 text-[#8B5CF6] animate-spin" /> : <Rocket className="h-4.5 w-4.5 text-[#8B5CF6]" />}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold text-[#8B5CF6]">Generate Langsung</p>
-                  <p className="text-[10px] text-[#8B5CF6]/60">STT + PDF sekaligus</p>
-                </div>
-              </button>
-
-              {/* Card: Mode Belajar */}
               <button
                 onClick={() => setStudyPipelineOpen(true)}
-                className="flex items-center gap-3 rounded-lg border border-green-500/20 bg-green-500/[0.06] p-3.5 text-left transition-all hover:border-green-500/40 hover:bg-green-500/10"
+                className="flex items-center gap-3 rounded-md border border-[var(--border)] bg-[var(--surface)] p-3.5 text-left transition-colors hover:bg-[var(--surface-2)] disabled:opacity-50"
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-green-500/15">
-                  <Sparkles className="h-4.5 w-4.5 text-green-400" />
-                </div>
+                <BookOpen className="h-4 w-4 shrink-0 text-zinc-500" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold text-green-300">Mode Belajar</p>
-                  <p className="text-[10px] text-green-400/60">Bab + Kuis + Focus Timer</p>
+                  <p className="text-xs font-semibold text-zinc-100">Mode Belajar</p>
+                  <p className="text-[10px] text-zinc-500">Bab + Kuis + Focus Timer</p>
                 </div>
               </button>
 
-              {/* Card: Smart Continuity */}
               <button
                 onClick={() => setContinuityOpen(true)}
-                className="flex items-center gap-3 rounded-lg border border-amber-500/20 bg-amber-500/[0.06] p-3.5 text-left transition-all hover:border-amber-500/40 hover:bg-amber-500/10"
+                className="flex items-center gap-3 rounded-md border border-[var(--border)] bg-[var(--surface)] p-3.5 text-left transition-colors hover:bg-[var(--surface-2)] disabled:opacity-50"
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/15">
-                  <Zap className="h-4.5 w-4.5 text-amber-400" />
-                </div>
+                <Zap className="h-4 w-4 shrink-0 text-zinc-500" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold text-amber-300">Smart Continuity</p>
-                  <p className="text-[10px] text-amber-400/60">STT + PDF + Mindmap + Kuis auto</p>
+                  <p className="text-xs font-semibold text-zinc-100">Smart Continuity</p>
+                  <p className="text-[10px] text-zinc-500">STT + PDF + Mindmap + Kuis auto</p>
                 </div>
               </button>
             </div>
@@ -761,7 +731,7 @@ function MethodBadge({
       ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
       : 'border-white/[0.06] text-zinc-600 bg-white/[0.02]',
     violet: active
-      ? 'border-[#8B5CF6]/30 text-[#8B5CF6] bg-[#8B5CF6]/10'
+      ? 'border-[#7C3AED]/30 text-[#7C3AED] bg-[#7C3AED]/10'
       : loading
       ? 'border-amber-500/30 text-amber-400 bg-amber-500/10'
       : 'border-white/[0.06] text-zinc-600 bg-white/[0.02]',
@@ -777,7 +747,7 @@ function MethodBadge({
     )}>
       <span className={cn(
         'h-1.5 w-1.5 rounded-full',
-        active ? (color === 'green' ? 'bg-emerald-400' : color === 'violet' ? 'bg-[#8B5CF6]' : 'bg-amber-400') : 'bg-zinc-700',
+        active ? (color === 'green' ? 'bg-emerald-400' : color === 'violet' ? 'bg-[#7C3AED]' : 'bg-amber-400') : 'bg-zinc-700',
         (active || loading) && 'animate-pulse'
       )} />
       <span>{label}</span>

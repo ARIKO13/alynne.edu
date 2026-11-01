@@ -4,12 +4,11 @@ import '@/styles/global.css';
 ---
 
 <Layout title="Contact - ALYNNE AI">
-  <main class="min-h-screen bg-[#09090b] pt-24 pb-16 px-6">
+  <main class="min-h-screen bg-[var(--bg)] pt-24 pb-16 px-6">
     <div class="max-w-6xl mx-auto">
       <div class="text-center mb-12">
         <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-3">
-          Hubungi{' '}
-          <span class="bg-gradient-to-r from-[#8B5CF6] to-orange-400 bg-clip-text text-transparent">Kami</span>
+          Hubungi kami
         </h1>
         <p class="text-sm text-zinc-500 max-w-md mx-auto">
           Punya pertanyaan atau ingin bekerja sama? Hubungi kami melalui sosial media berikut.
@@ -17,9 +16,10 @@ import '@/styles/global.css';
       </div>
 
       <div class="max-w-md mx-auto">
-        <div class="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-8 text-center">
-          <!-- Instagram Icon -->
-          <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center mx-auto mb-6">
+        <div class="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-8 text-center">
+          <!-- Logo Instagram (aset brand: gradient resmi Instagram, satu-satunya
+               gradien di halaman ini — avoid-ai-design-ignore: C1) -->
+          <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center mx-auto mb-6">
             <svg class="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
               <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
@@ -36,7 +36,7 @@ import '@/styles/global.css';
             href="https://instagram.com/alynne.ai"
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 hover:opacity-90 transition-opacity"
+            class="inline-flex items-center gap-2 rounded-md px-6 py-3 text-sm font-semibold text-white bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors"
           >
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
@@ -50,7 +50,7 @@ import '@/styles/global.css';
 
       <div class="text-center mt-12">
         <a href="/" class="text-sm text-zinc-500 hover:text-white transition-colors">
-          &larr; Kembali ke Home
+          &larr; Kembali ke beranda
         </a>
       </div>
     </div>

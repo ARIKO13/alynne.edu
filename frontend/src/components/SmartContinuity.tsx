@@ -1,5 +1,5 @@
 /**
- * SmartContinuity.tsx — One-click chain: STT -> PDF -> Mindmap -> Quiz -> Save
+ * SmartContinuity.tsx  -  One-click chain: STT -> PDF -> Mindmap -> Quiz -> Save
  *
  * User clicks one button after STT, and everything happens automatically:
  *   1. Split transcript into chapters
@@ -135,10 +135,10 @@ export function SmartContinuity({ open, onClose, transcript }: SmartContinuityPr
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg bg-zinc-950/95 border-white/10 text-white">
+      <DialogContent className="max-w-lg ">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
-            <Zap className="h-5 w-5 text-[#8B5CF6]" />
+            <Zap className="h-5 w-5 text-[#7C3AED]" />
             Smart Continuity
           </DialogTitle>
           <DialogDescription className="text-zinc-400">
@@ -149,7 +149,7 @@ export function SmartContinuity({ open, onClose, transcript }: SmartContinuityPr
         {step === 'idle' ? (
           /* Start screen */
           <div className="space-y-4">
-            <div className="rounded-lg border border-[#8B5CF6]/20 bg-[#8B5CF6]/[0.05] p-4">
+            <div className="rounded-lg border border-[#7C3AED]/20 bg-[#7C3AED]/[0.05] p-4">
               <p className="text-sm text-zinc-300 mb-2">Transcript siap di-process:</p>
               <Badge variant="outline" className="text-[10px]">
                 {transcript.length} karakter
@@ -171,7 +171,7 @@ export function SmartContinuity({ open, onClose, transcript }: SmartContinuityPr
               })}
             </div>
 
-            <Button onClick={run} className="w-full bg-[#8B5CF6] hover:bg-[#7C3AED]" size="lg">
+            <Button onClick={run} className="w-full bg-[#7C3AED] hover:bg-[#7C3AED]" size="lg">
               <Sparkles className="h-5 w-5 mr-2" />
               Jalankan Semua!
             </Button>
@@ -189,7 +189,7 @@ export function SmartContinuity({ open, onClose, transcript }: SmartContinuityPr
                 <p className="text-[10px] text-zinc-500 uppercase">Bab</p>
               </div>
               <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
-                <Brain className="h-4 w-4 mx-auto mb-1 text-[#8B5CF6]" />
+                <Brain className="h-4 w-4 mx-auto mb-1 text-[#7C3AED]" />
                 <p className="text-lg font-bold text-white">1</p>
                 <p className="text-[10px] text-zinc-500 uppercase">Mindmap</p>
               </div>
@@ -209,7 +209,7 @@ export function SmartContinuity({ open, onClose, transcript }: SmartContinuityPr
               </ul>
             </div>
 
-            <Button onClick={onClose} className="w-full bg-[#8B5CF6] hover:bg-[#7C3AED]">
+            <Button onClick={onClose} className="w-full bg-[#7C3AED] hover:bg-[#7C3AED]">
               Selesai
             </Button>
           </div>
@@ -217,7 +217,7 @@ export function SmartContinuity({ open, onClose, transcript }: SmartContinuityPr
           /* Progress screen */
           <div className="space-y-4">
             <div className="flex items-center justify-between text-sm">
-              <span className="flex items-center gap-2 text-[#8B5CF6]">
+              <span className="flex items-center gap-2 text-[#7C3AED]">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 {STEPS.find((s) => s.id === step)?.label}
               </span>
@@ -237,7 +237,7 @@ export function SmartContinuity({ open, onClose, transcript }: SmartContinuityPr
                   <div
                     key={s.id}
                     className={`flex items-center gap-3 text-sm ${
-                      isDone ? 'text-green-400' : isCurrent ? 'text-[#8B5CF6]' : 'text-zinc-600'
+                      isDone ? 'text-green-400' : isCurrent ? 'text-[#7C3AED]' : 'text-zinc-600'
                     }`}
                   >
                     {isDone ? (

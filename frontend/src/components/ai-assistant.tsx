@@ -19,7 +19,7 @@ import { indexTranscript, getRAGContext } from '@/lib/rag';
 const PROVIDER_COLORS: Record<string, string> = {
   claude: 'border-violet-500/30 text-violet-400',
   gemini: 'border-sky-500/30 text-sky-400',
-  deepseek: 'border-[#8B5CF6]/30 text-[#8B5CF6]',
+  deepseek: 'border-[#7C3AED]/30 text-[#7C3AED]',
   nvidia: 'border-emerald-500/30 text-emerald-400',
   minimax: 'border-pink-500/30 text-pink-400',
   openai: 'border-green-500/30 text-green-400',
@@ -270,12 +270,12 @@ export function AIAssistant() {
   };
 
   return (
-    <div className="flex h-full flex-col rounded-xl border border-white/[0.06] bg-white/[0.03] overflow-hidden">
+    <div className="flex h-full flex-col rounded-lg border border-white/[0.06] bg-white/[0.03] overflow-hidden">
       {/* Header */}
       <div className="px-5 py-3.5 border-b border-white/[0.06] space-y-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Bot className="h-4 w-4 text-[#8B5CF6]" />
+            <Bot className="h-4 w-4 text-[#7C3AED]" />
             <span className="text-sm font-medium text-zinc-200">AI Assistant</span>
             <span className="flex items-center gap-1 text-[10px] text-zinc-500 bg-white/[0.04] px-1.5 py-0.5 rounded">
               <Search className="h-2.5 w-2.5" /> Auto-Scrape
@@ -299,7 +299,7 @@ export function AIAssistant() {
             <SelectTrigger className="h-7 w-[220px] text-[11px] border-white/[0.08] bg-transparent text-zinc-300">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="border-white/[0.08] bg-[#18181b] max-h-[400px]">
+            <SelectContent className="border-white/[0.08] bg-[#161618] max-h-[400px]">
               {MODEL_GROUPS.map((group) => {
                 const groupModels = MODEL_LIST.filter((m) => m.group === group);
                 return (
@@ -361,15 +361,15 @@ export function AIAssistant() {
             {aiMessages.map((msg) => (
               <div key={msg.id} className={cn('flex gap-2', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
                 {msg.role === 'assistant' && (
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#8B5CF6]/10">
-                    <Bot className="h-3.5 w-3.5 text-[#8B5CF6]" />
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#7C3AED]/10">
+                    <Bot className="h-3.5 w-3.5 text-[#7C3AED]" />
                   </div>
                 )}
                 <div
                   className={cn(
-                    'max-w-[80%] rounded-xl px-3.5 py-2.5 text-sm',
+                    'max-w-[80%] rounded-lg px-3.5 py-2.5 text-sm',
                     msg.role === 'user'
-                      ? 'bg-[#8B5CF6] text-white'
+                      ? 'bg-[#7C3AED] text-white'
                       : 'bg-white/[0.06] text-zinc-200 border border-white/[0.06]'
                   )}
                 >
@@ -377,7 +377,7 @@ export function AIAssistant() {
                   {msg.model && (
                     <div className="mt-1.5 text-[10px] opacity-50">
                       {msg.model.includes('+ Web') ? (
-                        <span className="text-[#8B5CF6]">{msg.model}</span>
+                        <span className="text-[#7C3AED]">{msg.model}</span>
                       ) : (
                         MODEL_LIST.find((m) => m.id === msg.model)?.name || msg.model
                       )}
@@ -389,7 +389,7 @@ export function AIAssistant() {
                       <p className="text-[10px] font-medium text-zinc-500 mb-1">Sumber web:</p>
                       {messageSources[msg.id].map((s, i) => (
                         <a key={i} href={s.url} target="_blank" rel="noopener noreferrer"
-                          className="block text-[10px] text-[#8B5CF6] hover:underline truncate"
+                          className="block text-[10px] text-[#7C3AED] hover:underline truncate"
                         >
                           {s.title || s.url}
                         </a>
@@ -406,10 +406,10 @@ export function AIAssistant() {
             ))}
             {isAiLoading && (
               <div className="flex gap-2">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#8B5CF6]/10">
-                  <Bot className="h-3.5 w-3.5 text-[#8B5CF6]" />
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#7C3AED]/10">
+                  <Bot className="h-3.5 w-3.5 text-[#7C3AED]" />
                 </div>
-                <div className="rounded-xl bg-white/[0.06] border border-white/[0.06] px-3.5 py-2.5">
+                <div className="rounded-lg bg-white/[0.06] border border-white/[0.06] px-3.5 py-2.5">
                   <div className="flex items-center gap-2 text-xs text-zinc-500">
                     {loadingPhase === 'scraping' ? (
                       <>
@@ -444,7 +444,7 @@ export function AIAssistant() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Tanyakan apa saja... (otomatis cari referensi web + AI jelaskan)"
-            className="min-h-[44px] max-h-[120px] resize-none border-white/[0.08] bg-[#0c0c0e] text-zinc-200 placeholder:text-zinc-600 focus-visible:ring-white/[0.08]"
+            className="min-h-[44px] max-h-[120px] resize-none border-white/[0.08] bg-[#111113] text-zinc-200 placeholder:text-zinc-600 focus-visible:ring-white/[0.08]"
             rows={1}
             disabled={isAiLoading}
           />
@@ -452,7 +452,7 @@ export function AIAssistant() {
             onClick={handleSend}
             disabled={!input.trim() || isAiLoading}
             size="icon"
-            className="h-[44px] w-[44px] shrink-0 rounded-lg bg-[#8B5CF6] hover:bg-[#d14e1c] text-white"
+            className="h-[44px] w-[44px] shrink-0 rounded-lg bg-[#7C3AED] hover:bg-[#d14e1c] text-white"
           >
             {isAiLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />

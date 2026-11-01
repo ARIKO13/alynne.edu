@@ -102,7 +102,7 @@ export function D1MonitoringView() {
                 : 'border-white/[0.08] text-zinc-400 hover:bg-white/[0.06]'
             )}
           >
-            {autoRefresh ? '⏸ Auto 10s' : '▶ Paused'}
+            {autoRefresh ? 'Auto 10s' : 'Paused'}
           </Button>
           <Button
             onClick={fetchData}
@@ -118,7 +118,7 @@ export function D1MonitoringView() {
       </div>
 
       {/* D1 Info */}
-      <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+      <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
         <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
           <Database className="h-3 w-3" /> D1 Connection Info
         </p>
@@ -144,7 +144,7 @@ export function D1MonitoringView() {
 
       {/* D1 Storage Usage */}
       {d1?.storage && (
-        <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+        <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
           <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
             <HardDrive className="h-3 w-3" /> D1 Storage Usage
           </p>
@@ -161,7 +161,7 @@ export function D1MonitoringView() {
                 Limit: <strong className="text-zinc-300 font-mono">{d1.storage.limitGB}</strong>
               </span>
             </div>
-            <div className="h-3 bg-[#18181b] rounded-full overflow-hidden border border-white/[0.04]">
+            <div className="h-3 bg-[#161618] rounded-full overflow-hidden border border-white/[0.04]">
               <div
                 className={cn(
                   'h-full rounded-full transition-all',
@@ -180,7 +180,7 @@ export function D1MonitoringView() {
       )}
 
       {/* Table counts */}
-      <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+      <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
         <p className="text-[11px] text-zinc-400 mb-2 flex items-center gap-1.5">
           <Database className="h-3 w-3" /> Tables ({d1?.tables?.length || 0})
         </p>
@@ -194,7 +194,7 @@ export function D1MonitoringView() {
               const maxCount = Math.max(...(d1?.tables || []).map(x => x.count || 0));
               const pct = maxCount > 0 ? (t.count / maxCount) * 100 : 0;
               return (
-                <div key={i} className="rounded-md border border-white/[0.04] bg-[#18181b] p-2">
+                <div key={i} className="rounded-md border border-white/[0.04] bg-[#161618] p-2">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-mono text-sky-400">{t.name}</span>
                     <span className="text-[10px] text-zinc-400 font-mono">{t.count.toLocaleString()}</span>
@@ -202,7 +202,7 @@ export function D1MonitoringView() {
                   {t.error && (
                     <p className="text-[9px] text-red-400">Error: {t.error}</p>
                   )}
-                  <div className="h-1.5 bg-[#0c0c0e] rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-[#111113] rounded-full overflow-hidden">
                     <div
                       className="h-full bg-sky-500/60 rounded-full"
                       style={{ width: `${pct}%` }}
@@ -217,7 +217,7 @@ export function D1MonitoringView() {
 
       {/* Recent users */}
       {d1?.recentUsers?.length > 0 && (
-        <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+        <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
           <p className="text-[11px] text-zinc-400 mb-2">Recent Users (last 5)</p>
           <div className="space-y-1">
             {d1.recentUsers.map((u, i) => (
@@ -235,7 +235,7 @@ export function D1MonitoringView() {
 
       {/* Recent STT failures */}
       {d1?.recentFailures?.length > 0 && (
-        <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3">
+        <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
           <p className="text-[11px] text-zinc-400 mb-2">Recent STT Failures (last 5)</p>
           <div className="space-y-1">
             {d1.recentFailures.map((f, i) => (
@@ -255,7 +255,7 @@ export function D1MonitoringView() {
 
       {/* D1 architecture note */}
       <div className="rounded-lg border border-sky-500/15 bg-sky-500/[0.03] p-3">
-        <p className="text-[11px] text-sky-300 mb-1">ℹ️ D1 vs SQLite</p>
+        <p className="text-[11px] text-sky-300 mb-1">D1 vs SQLite</p>
         <p className="text-[10px] text-zinc-400 leading-relaxed">
           D1 (Cloudflare) menyimpan data user account: User (uid, username, gmail,
           activeSubscription, packetSubscription). Diakses via HTTP API (50-200ms per query).

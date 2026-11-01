@@ -1,5 +1,5 @@
 /**
- * WeeklyAnalytics.tsx — Focus study analytics dashboard
+ * WeeklyAnalytics.tsx  -  Focus study analytics dashboard
  *
  * Shows last 7 days of study sessions:
  * - Total minutes studied
@@ -51,11 +51,11 @@ export function WeeklyAnalytics({ open, onClose }: WeeklyAnalyticsProps) {
   const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+    <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
         <div className="flex items-center gap-2.5">
-          <TrendingUp className="h-5 w-5 text-[#8B5CF6]" />
+          <TrendingUp className="h-5 w-5 text-[#7C3AED]" />
           <div>
             <h2 className="text-base font-semibold text-zinc-100">Analitik Belajar Minggu Ini</h2>
             <p className="text-[11px] text-zinc-500">Statistik fokus dan progress belajar 7 hari terakhir.</p>
@@ -94,7 +94,7 @@ export function WeeklyAnalytics({ open, onClose }: WeeklyAnalyticsProps) {
             label="Akurasi Kuis"
             value={`${quizAccuracy}%`}
             sub={`${memory.totalCorrectAnswers}/${memory.totalQuestionsAttempted}`}
-            color="text-[#8B5CF6]"
+            color="text-[#7C3AED]"
           />
         </div>
 
@@ -118,19 +118,19 @@ export function WeeklyAnalytics({ open, onClose }: WeeklyAnalyticsProps) {
                     {day.minutes > 0 ? `${day.minutes}m` : ''}
                   </span>
                   <div
-                    className={`w-full rounded-t transition-all ${
+                    className={`w-full rounded-t transition-colors ${
                       isBest
-                        ? 'bg-gradient-to-t from-amber-500 to-amber-400'
+                        ? 'bg-amber-500'
                         : isToday
-                        ? 'bg-gradient-to-t from-[#8B5CF6] to-purple-400'
-                        : 'bg-gradient-to-t from-zinc-700 to-zinc-600'
+                        ? 'bg-[#7C3AED]'
+                        : 'bg-zinc-700'
                     }`}
                     style={{ height: `${Math.max(heightPct, 2)}%` }}
                     title={`${day.date}: ${day.minutes} menit, ${day.sessions} sesi`}
                   />
                   <span
                     className={`text-[10px] ${
-                      isToday ? 'text-[#8B5CF6] font-bold' : 'text-zinc-500'
+                      isToday ? 'text-[#7C3AED] font-bold' : 'text-zinc-500'
                     }`}
                   >
                     {dayName}
@@ -198,7 +198,7 @@ export function WeeklyAnalytics({ open, onClose }: WeeklyAnalyticsProps) {
               variant="outline"
               className={`text-[10px] ${
                 quizAccuracy >= 80 && memory.totalQuizzesTaken >= 5
-                  ? 'border-[#8B5CF6]/30 text-[#8B5CF6] bg-[#8B5CF6]/10'
+                  ? 'border-[#7C3AED]/30 text-[#7C3AED] bg-[#7C3AED]/10'
                   : 'border-zinc-700 text-zinc-600'
               }`}
             >

@@ -77,6 +77,7 @@ interface AppState {
   setSttAudioMode: (m: STTAudioMode) => void;
   transcript: string;
   setTranscript: (t: string) => void;
+  setTranscriptBatch: (texts: string[]) => void;
   transcriptEntries: { time: string; text: string }[];
   appendTranscript: (t: string) => void;
   appendTranscriptBatch: (texts: string[]) => void;
@@ -173,6 +174,18 @@ export const useAppStore = create<AppState>()(
       transcript: '',
       transcriptEntries: [] as { time: string; text: string }[],
       setTranscript: (transcript) => set({ transcript, transcriptEntries: [] }),
+      // v18.3 (2026-10-29): setTranscriptBatch — REPLACE both transcript + transcriptEntries.
+      // Same as appendTranscriptBatch but RESETS first (clears existing entries before adding new).
+      // Used by YouTube/DocumentUpload callbacks so new content fully replaces old
+      // (was the root cause of "tetap warga CPL" bug — old entries persisted across uploads).
+      setTranscriptBatch: (texts: string[]) => set(() => {
+        const time = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const newEntries = texts
+          .filter(t => t && t.trim())
+          .map(text => ({ time, text: text.trim() }));
+        const newTranscript = newEntries.map(e => e.text).join(' ');
+        return { transcript: newTranscript, transcriptEntries: newEntries };
+      }),
       appendTranscript: (text) => set((s) => {
         if (!text || !text.trim()) return s;
         const time = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -270,12 +283,16 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'lina-learning-v2',
-      version: 1,
+      // v2 (2026-10-29): bump to invalidate persisted state containing stale
+      // "Halo warga CPL" transcript that survived reloads because of the
+      // appendTranscriptBatch bug in YouTubeTranscript handler.
+      version: 2,
       partialize: (state) => ({
         apiKeys: state.apiKeys,
         selectedModel: state.selectedModel,
-        transcript: state.transcript,
-        transcriptEntries: state.transcriptEntries,
+        // v18.1: do NOT persist transcript/transcriptEntries. They leak across
+        // sessions and stale content (e.g. old YouTube transcript) keeps showing
+        // up even after user uploads new material. Each session starts clean.
         uploadedMaterials: state.uploadedMaterials,
         theme: state.theme,
         user: state.user ? {

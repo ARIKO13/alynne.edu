@@ -1,5 +1,5 @@
 /**
- * StreakCalendar.tsx — GitHub-style heatmap of study activity
+ * StreakCalendar.tsx  -  GitHub-style heatmap of study activity
  *
  * Shows last 90 days of study sessions.
  * Color intensity = minutes studied that day.
@@ -44,11 +44,11 @@ function getIntensity(minutes: number): number {
 
 const INTENSITY_COLORS = [
   'bg-white/[0.03]',
-  'bg-[#8B5CF6]/20',
-  'bg-[#8B5CF6]/40',
-  'bg-[#8B5CF6]/60',
-  'bg-[#8B5CF6]/80',
-  'bg-[#8B5CF6]',
+  'bg-[#7C3AED]/20',
+  'bg-[#7C3AED]/40',
+  'bg-[#7C3AED]/60',
+  'bg-[#7C3AED]/80',
+  'bg-[#7C3AED]',
 ];
 
 export function StreakCalendar({ className }: StreakCalendarProps) {

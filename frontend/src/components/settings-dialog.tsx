@@ -58,11 +58,11 @@ export function SettingsDialog() {
 
   return (
     <Dialog open={settingsOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-md border-white/[0.06] bg-[#18181b] p-0 overflow-hidden">
+      <DialogContent className="max-w-md border-white/[0.06] bg-[#161618] p-0 overflow-hidden">
         <div className="px-6 pt-6 pb-2">
           <DialogHeader>
             <div className="flex items-center gap-2">
-              <User className="h-5 w-5 text-[#8B5CF6]" />
+              <User className="h-5 w-5 text-[#7C3AED]" />
               <DialogTitle className="text-zinc-100">Profil</DialogTitle>
             </div>
             <DialogDescription className="text-zinc-500">
@@ -83,7 +83,7 @@ export function SettingsDialog() {
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="Masukkan username kamu..."
               maxLength={30}
-              className="border-white/[0.08] bg-[#0c0c0e] text-zinc-200 placeholder:text-zinc-600"
+              className="border-white/[0.08] bg-[#111113] text-zinc-200 placeholder:text-zinc-600"
             />
             <div className="flex items-center justify-between">
               <p className="text-[11px] text-zinc-600">
@@ -95,7 +95,7 @@ export function SettingsDialog() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-3 space-y-1.5">
+          <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3 space-y-1.5">
             <p className="text-[11px] font-medium text-zinc-400">Info</p>
             <ul className="text-[11px] text-zinc-500 space-y-0.5">
               <li>- Bisa diubah kapan saja, sebanyak apa pun</li>
@@ -113,7 +113,7 @@ export function SettingsDialog() {
           <Button
             onClick={handleSave}
             disabled={isSaving || displayName.trim().length < 2}
-            className="bg-[#8B5CF6] hover:bg-[#d14e1c] text-white rounded-lg gap-2 disabled:opacity-50"
+            className="bg-[#7C3AED] hover:bg-[#d14e1c] text-white rounded-lg gap-2 disabled:opacity-50"
           >
             {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
             Simpan

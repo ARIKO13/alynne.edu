@@ -178,14 +178,14 @@ function useFocusDetector(enabled: boolean, isRunning: boolean) {
 
 function BreakPopup({ minutes, onDismiss }: { minutes: number; onDismiss: () => void }) {
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onDismiss}>
-      <div className="bg-[#161616] border border-white/[0.08] rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60  p-4" onClick={onDismiss}>
+      <div className="bg-[#161616] border border-white/[0.08] rounded-lg p-6 max-w-sm w-full text-center shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="w-16 h-16 rounded-full bg-[#34D399]/10 flex items-center justify-center mx-auto mb-4">
           <Flame className="h-8 w-8 text-[#34D399]" />
         </div>
         <h2 className="text-lg font-semibold text-white mb-2">Nice dude, it&apos;s time to break.</h2>
         <p className="text-sm text-zinc-400 mb-5">Kamu udah fokus selama {minutes} menit. Saatnya istirahat sejenak!</p>
-        <button onClick={onDismiss} className="w-full py-2.5 rounded-xl bg-[#34D399] hover:bg-[#34D399]/80 text-white font-medium text-sm transition-colors">
+        <button onClick={onDismiss} className="w-full py-2.5 rounded-lg bg-[#34D399] hover:bg-[#34D399]/80 text-white font-medium text-sm transition-colors">
           Oke, lanjut nanti
         </button>
       </div>
@@ -216,8 +216,8 @@ function DistractedPopup({ focusScore, faceDetected, noiseLevel, onDismiss }: {
   const { title, desc } = getWarningMessage();
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onDismiss}>
-      <div className="bg-[#161616] border border-amber-400/20 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60  p-4" onClick={onDismiss}>
+      <div className="bg-[#161616] border border-amber-400/20 rounded-lg p-6 max-w-sm w-full text-center shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="w-16 h-16 rounded-full bg-amber-400/10 flex items-center justify-center mx-auto mb-4 animate-pulse">
           <AlertTriangle className="h-8 w-8 text-amber-400" />
         </div>
@@ -240,7 +240,7 @@ function DistractedPopup({ focusScore, faceDetected, noiseLevel, onDismiss }: {
           </div>
         </div>
 
-        <button onClick={onDismiss} className="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-400/80 text-black font-medium text-sm transition-colors">
+        <button onClick={onDismiss} className="w-full py-2.5 rounded-lg bg-amber-400 hover:bg-amber-400/80 text-black font-medium text-sm transition-colors">
           Oke, aku fokus lagi
         </button>
       </div>
@@ -378,7 +378,7 @@ export function StudyMode() {
         {/* Lo-Fi animated background */}
         <LofiBackground theme="sunset" intensity={0.4} />
 
-        <div className="bg-[#111]/90 backdrop-blur-xl border-t border-white/[0.06]">
+        <div className="bg-[#111]/90 -xl border-t border-white/[0.06]">
           <div className="max-w-2xl mx-auto flex items-center gap-2 px-3 py-2">
             {/* Timer display */}
             <div className="flex items-center gap-2 flex-1 min-w-0">

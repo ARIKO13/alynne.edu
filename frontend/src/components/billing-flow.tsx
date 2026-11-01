@@ -41,11 +41,11 @@ const ACCENT: Record<
     check: 'text-emerald-400',
   },
   violet: {
-    ring: 'ring-[#8B5CF6]',
-    bg: 'bg-[#8B5CF6]/[0.08]',
-    text: 'text-[#8B5CF6]',
-    badge: 'bg-[#8B5CF6]',
-    check: 'text-[#8B5CF6]',
+    ring: 'ring-[#7C3AED]',
+    bg: 'bg-[#7C3AED]/[0.08]',
+    text: 'text-[#7C3AED]',
+    badge: 'bg-[#7C3AED]',
+    check: 'text-[#7C3AED]',
   },
   amber: {
     ring: 'ring-amber-500',
@@ -195,7 +195,7 @@ export function BillingFlow() {
                     type="button"
                     onClick={() => !disabled && handleModelSelect(m)}
                     disabled={disabled}
-                    className={`relative text-left rounded-xl border-2 p-5 transition-all ${
+                    className={`relative text-left rounded-lg border-2 p-5 transition-all ${
                       disabled
                         ? 'border-white/[0.04] bg-white/[0.01] opacity-50 cursor-not-allowed'
                         : isSelected
@@ -207,7 +207,6 @@ export function BillingFlow() {
                       <span
                         className={`absolute -top-2 right-3 inline-flex items-center gap-1 rounded-full ${accent.badge} px-2 py-0.5 text-[10px] font-semibold text-white`}
                       >
-                        <Sparkles className="h-2.5 w-2.5" />
                         Bawaan
                       </span>
                     )}
@@ -218,7 +217,7 @@ export function BillingFlow() {
                     )}
                     <div className="mb-3 flex items-center justify-between">
                       <div
-                        className={`flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04] text-2xl ${isSelected ? accent.text : ''}`}
+                        className={`flex h-12 w-12 items-center justify-center rounded-lg bg-white/[0.04] text-xs font-bold ${isSelected ? accent.text : 'text-zinc-400'}`}
                       >
                         {m.badge}
                       </div>
@@ -236,8 +235,8 @@ export function BillingFlow() {
               })}
 
               {/* Placeholder slot for future models */}
-              <div className="rounded-xl border-2 border-dashed border-white/[0.04] bg-white/[0.01] p-5 flex flex-col items-center justify-center text-center gap-2">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.02] text-2xl opacity-30">
+              <div className="rounded-lg border-2 border-dashed border-white/[0.04] bg-white/[0.01] p-5 flex flex-col items-center justify-center text-center gap-2">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/[0.02] text-2xl opacity-30">
                   ✨
                 </div>
                 <p className="text-xs font-medium text-zinc-600">Model lain menyusul</p>
@@ -257,14 +256,14 @@ export function BillingFlow() {
             transition={{ duration: 0.25 }}
             className="flex flex-col gap-3"
           >
-            <div className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+            <div className="flex items-center gap-3 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
               <div
                 className={`flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.04] text-lg ${model ? ACCENT[model.accent].text : ''}`}
               >
                 {model?.badge}
               </div>
               <div>
-                <p className="text-[10px] uppercase tracking-wide text-zinc-500">Model dipilih</p>
+                <p className="text-[11px] text-zinc-500">Model dipilih</p>
                 <p className="text-sm font-bold text-white">{model?.name}</p>
                 <p className="text-[10px] text-zinc-500">{model?.tagline}</p>
               </div>
@@ -284,7 +283,7 @@ export function BillingFlow() {
                     key={t.id}
                     type="button"
                     onClick={() => handleTierSelect(t)}
-                    className={`relative text-left rounded-xl border-2 p-4 transition-all ${
+                    className={`relative text-left rounded-lg border-2 p-4 transition-all ${
                       isSelected
                         ? `${accent.bg} ${accent.ring} ring-2 border-transparent`
                         : 'border-white/[0.06] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.05]'
@@ -341,14 +340,14 @@ export function BillingFlow() {
             transition={{ duration: 0.25 }}
             className="flex flex-col gap-4"
           >
-            <div className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+            <div className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
               <div>
-                <p className="text-[10px] uppercase tracking-wide text-zinc-500">Pesanan</p>
+                <p className="text-[11px] text-zinc-500">Pesanan</p>
                 <p className="font-bold text-white">{tier?.name}</p>
                 <p className="text-xs text-zinc-500">{tier?.tagline}</p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] uppercase tracking-wide text-zinc-500">
+                <p className="text-[11px] text-zinc-500">
                   {tier?.durationDays} hari
                 </p>
                 <p className="text-lg font-bold text-white">{formatIDR(tier?.price ?? 0)}</p>
@@ -363,9 +362,9 @@ export function BillingFlow() {
                     key={p.id}
                     type="button"
                     onClick={() => setPaymentMethod(p)}
-                    className={`flex items-center gap-3 rounded-xl border-2 p-3 text-left transition-all ${
+                    className={`flex items-center gap-3 rounded-lg border-2 p-3 text-left transition-all ${
                       isSelected
-                        ? 'border-[#8B5CF6] bg-[#8B5CF6]/[0.08]'
+                        ? 'border-[#7C3AED] bg-[#7C3AED]/[0.08]'
                         : 'border-white/[0.06] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.04]'
                     }`}
                   >
@@ -377,7 +376,7 @@ export function BillingFlow() {
                       <p className="truncate text-xs text-zinc-500">{p.description}</p>
                     </div>
                     {isSelected && (
-                      <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-[#8B5CF6]" />
+                      <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-[#7C3AED]" />
                     )}
                   </button>
                 );
@@ -396,7 +395,7 @@ export function BillingFlow() {
             transition={{ duration: 0.25 }}
             className="flex flex-col gap-4"
           >
-            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
+            <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-5">
               <h3 className="mb-4 text-base font-semibold text-white">Ringkasan Pembayaran</h3>
               <p className="mb-3 text-xs text-zinc-500">
                 Periksa pesananmu sebelum melanjutkan ke pembayaran.
@@ -442,7 +441,7 @@ export function BillingFlow() {
               type="button"
               onClick={handleCheckout}
               disabled={submitting}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#8B5CF6] to-[#7c3aed] text-sm font-semibold text-white shadow-lg transition-all hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#7C3AED] to-[#7c3aed] text-sm font-semibold text-white shadow-lg transition-all hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? (
                 <>
@@ -476,7 +475,7 @@ export function BillingFlow() {
             type="button"
             onClick={handleNext}
             disabled={!canAdvance(step)}
-            className="inline-flex items-center gap-1 rounded-lg bg-[#8B5CF6] px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-[#7c3aed] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-lg bg-[#7C3AED] px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-[#7c3aed] disabled:cursor-not-allowed disabled:opacity-50"
           >
             Lanjut
             <ChevronRight className="h-4 w-4" />
@@ -502,7 +501,7 @@ function StepperHeader({ currentStep }: { currentStep: Step }) {
             <div
               className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-xs font-semibold transition ${
                 currentStep === s.n
-                  ? 'bg-[#8B5CF6] text-white'
+                  ? 'bg-[#7C3AED] text-white'
                   : currentStep > s.n
                   ? 'bg-emerald-500 text-white'
                   : 'bg-white/[0.06] text-zinc-500'

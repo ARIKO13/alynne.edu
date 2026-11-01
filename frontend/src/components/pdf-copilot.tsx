@@ -101,8 +101,8 @@ export function PdfCopilot({ pdfContent, pdfTitle, onClose }: PdfCopilotProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="w-full max-w-5xl h-[85vh] bg-[#111] rounded-2xl border border-white/[0.08] flex flex-col overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 z-[60] bg-black/80  flex items-center justify-center p-4">
+      <div className="w-full max-w-5xl h-[85vh] bg-[#111] rounded-lg border border-white/[0.08] flex flex-col overflow-hidden shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.06] bg-[#161616]">
           <div className="flex items-center gap-2">
@@ -175,7 +175,7 @@ export function PdfCopilot({ pdfContent, pdfTitle, onClose }: PdfCopilotProps) {
                   <Sparkles className="h-3 w-3 text-[#B794F6]" />
                 </div>
               )}
-              <div className={cn('max-w-[80%] rounded-xl px-4 py-3 text-sm leading-relaxed',
+              <div className={cn('max-w-[80%] rounded-lg px-4 py-3 text-sm leading-relaxed',
                 msg.role === 'user' ? 'bg-[#B794F6]/15 text-zinc-200 rounded-br-sm' : 'bg-white/[0.04] text-zinc-300 rounded-bl-sm'
               )}>
                 <div className="whitespace-pre-wrap">{msg.content}</div>
@@ -187,7 +187,7 @@ export function PdfCopilot({ pdfContent, pdfTitle, onClose }: PdfCopilotProps) {
               <div className="w-6 h-6 rounded-full bg-[#B794F6]/20 flex items-center justify-center shrink-0">
                 <Sparkles className="h-3 w-3 text-[#B794F6] animate-pulse" />
               </div>
-              <div className="bg-white/[0.04] rounded-xl rounded-bl-sm px-4 py-3">
+              <div className="bg-white/[0.04] rounded-lg rounded-bl-sm px-4 py-3">
                 <div className="flex items-center gap-2 text-xs text-zinc-500">
                   <Loader2 className="h-3 w-3 animate-spin" /> AI sedang berpikir...
                 </div>
@@ -208,11 +208,11 @@ export function PdfCopilot({ pdfContent, pdfTitle, onClose }: PdfCopilotProps) {
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                 placeholder={selectedText ? 'Tambah pertanyaan (opsional)...' : 'Tanya tentang materi PDF...'}
                 rows={1}
-                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 resize-none focus:outline-none focus:border-[#B794F6]/40 focus:ring-1 focus:ring-[#B794F6]/20 transition-all max-h-24"
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-4 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 resize-none focus:outline-none focus:border-[#B794F6]/40 focus:ring-1 focus:ring-[#B794F6]/20 transition-all max-h-24"
               />
             </div>
             <Button onClick={handleSend} disabled={isLoading || (!input.trim() && !selectedText)}
-              size="sm" className="h-10 w-10 p-0 rounded-xl bg-[#B794F6] hover:bg-[#B794F6]/80 text-white shrink-0">
+              size="sm" className="h-10 w-10 p-0 rounded-lg bg-[#B794F6] hover:bg-[#B794F6]/80 text-white shrink-0">
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </div>

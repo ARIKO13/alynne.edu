@@ -9,15 +9,20 @@ import '@/styles/global.css';
 ---
 
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="id" class="dark">
   <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Inter sesuai DESIGN.md §6 (utang desain tercatat)
+         — avoid-ai-design-ignore-file: T1 -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="One agent for all skills." />
+    <meta name="description" content="ALYNNE AI — ubah materi belajar jadi rangkuman, kuis, dan flashcard." />
     <link rel="icon" type="image/png" href="/alynne-ai-logo.png" />
     <title>{title}</title>
   </head>
-  <body class="antialiased bg-[#050507] text-foreground">
+  <body class="antialiased bg-[var(--bg)] text-[var(--text)]">
     <Navbar />
     <main>
       <slot />

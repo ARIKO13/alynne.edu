@@ -1,14 +1,14 @@
 /**
- * StudyBuddy.tsx — AI Study Buddy that discusses material with you
+ * StudyBuddy.tsx  -  AI Study Buddy that discusses material with you
  *
  * AI acts as a fellow student. Instead of just answering questions,
  * it proactively asks questions, challenges understanding, and
  * discusses the material conversationally.
  *
  * Modes:
- * - "Diskusi" — free discussion about material
- * - "Challenge" — AI asks questions, user answers
- * - "Jelaskan" — user tries to explain, AI evaluates
+ * - "Diskusi"  -  free discussion about material
+ * - "Challenge"  -  AI asks questions, user answers
+ * - "Jelaskan"  -  user tries to explain, AI evaluates
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -48,11 +48,11 @@ const MODE_PROMPTS: Record<BuddyMode, string> = {
 };
 
 // Build system prompt dengan FULL context (semua bab + transcript) per user spec
-// — gabung fungsionalitas Tanya AI (full context) ke Study Buddy (modes).
+//  -  gabung fungsionalitas Tanya AI (full context) ke Study Buddy (modes).
 function buildSystemPrompt(mode: BuddyMode, chapter: Chapter, transcript: string, allChapters?: Chapter[]): string {
   const modePrompt = MODE_PROMPTS[mode];
 
-  // Bab aktif — full content (bukan 800 char truncated)
+  // Bab aktif  -  full content (bukan 800 char truncated)
   const activeBabText = `MATERI BAB ${chapter.id} (SEDANG DIBACA):\n${chapter.title}\n${chapter.content}`;
 
   // Semua bab context (3K chars limit biar gak kebanyakan token)
@@ -180,7 +180,7 @@ Instruksi: Lanjutkan percakapan sebagai teman belajar. Singkat (2-3 kalimat).${m
           onClick={() => startMode('diskusi')}
           className={cn(
             'flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-colors',
-            mode === 'diskusi' ? 'bg-[#8B5CF6] text-white' : 'text-zinc-500 hover:text-zinc-300'
+            mode === 'diskusi' ? 'bg-[#7C3AED] text-white' : 'text-zinc-500 hover:text-zinc-300'
           )}
         >
           <MessageCircle className="h-3 w-3" />
@@ -213,13 +213,13 @@ Instruksi: Lanjutkan percakapan sebagai teman belajar. Singkat (2-3 kalimat).${m
         {messages.map((msg, i) => (
           <div key={i} className={cn('flex gap-2', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
             {msg.role === 'assistant' && (
-              <div className="w-6 h-6 rounded-full bg-[#8B5CF6]/10 flex items-center justify-center shrink-0">
-                <Bot className="h-3 w-3 text-[#8B5CF6]" />
+              <div className="w-6 h-6 rounded-full bg-[#7C3AED]/10 flex items-center justify-center shrink-0">
+                <Bot className="h-3 w-3 text-[#7C3AED]" />
               </div>
             )}
             <div className={cn(
               'rounded-lg px-3 py-2 max-w-[75%] text-sm',
-              msg.role === 'user' ? 'bg-[#8B5CF6] text-white' : 'bg-white/[0.04] text-zinc-200'
+              msg.role === 'user' ? 'bg-[#7C3AED] text-white' : 'bg-white/[0.04] text-zinc-200'
             )}>
               <p className="whitespace-pre-wrap">{msg.content}</p>
             </div>
@@ -232,8 +232,8 @@ Instruksi: Lanjutkan percakapan sebagai teman belajar. Singkat (2-3 kalimat).${m
         ))}
         {loading && (
           <div className="flex gap-2">
-            <div className="w-6 h-6 rounded-full bg-[#8B5CF6]/10 flex items-center justify-center shrink-0">
-              <Bot className="h-3 w-3 text-[#8B5CF6]" />
+            <div className="w-6 h-6 rounded-full bg-[#7C3AED]/10 flex items-center justify-center shrink-0">
+              <Bot className="h-3 w-3 text-[#7C3AED]" />
             </div>
             <div className="rounded-lg px-3 py-2 bg-white/[0.04] text-zinc-400 text-sm">
               <Loader2 className="h-3 w-3 animate-spin inline mr-1" />
@@ -262,7 +262,7 @@ Instruksi: Lanjutkan percakapan sebagai teman belajar. Singkat (2-3 kalimat).${m
           onClick={handleSend}
           disabled={loading || !input.trim()}
           size="sm"
-          className="bg-[#8B5CF6] hover:bg-[#7C3AED]"
+          className="bg-[#7C3AED] hover:bg-[#7C3AED]"
         >
           <Send className="h-4 w-4" />
         </Button>
@@ -271,9 +271,9 @@ Instruksi: Lanjutkan percakapan sebagai teman belajar. Singkat (2-3 kalimat).${m
       {/* Mode description */}
       <div className="px-3 pb-2">
         <p className="text-[9px] text-zinc-600">
-          {mode === 'diskusi' && '💬 Diskusi bebas tentang materi'}
-          {mode === 'challenge' && '⚔ AI ngasih pertanyaan, kamu jawab'}
-          {mode === 'jelaskan' && '🎓 Kamu jelasin konsep, AI evaluasi'}
+          {mode === 'diskusi' && 'Diskusi bebas tentang materi'}
+          {mode === 'challenge' && 'AI ngasih pertanyaan, kamu jawab'}
+          {mode === 'jelaskan' && 'Kamu jelasin konsep, AI evaluasi'}
         </p>
       </div>
     </div>

@@ -13,26 +13,26 @@ const agents = [
 ---
 
 <Layout title="About - ALYNNE AI">
-  <main class="min-h-screen bg-[#09090b] pt-24 pb-16 px-6">
+  <main class="min-h-screen bg-[var(--bg)] pt-24 pb-16 px-6">
     <div class="max-w-4xl mx-auto">
       <!-- Header -->
       <div class="mb-10">
         <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-2">
-          Model <span class="text-[#8B5CF6]">ALYNNE AI</span>
+          Model ALYNNE AI
         </h1>
         <p class="text-sm text-zinc-500">Pilih agent yang kamu butuhkan.</p>
       </div>
 
-      <!-- Agent Grid -->
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+      <!-- Daftar agent: jumlah kolom mengikuti jumlah item -->
+      <div class="space-y-3">
         {agents.map((agent) => (
           <a
             href={agent.href}
             class:list={[
-              'group relative flex items-center justify-between rounded-xl border px-4 py-5 transition-colors',
+              'group flex items-center justify-between rounded-md border px-4 py-4 transition-colors',
               agent.status === 'available'
-                ? 'border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.07] hover:border-white/[0.15]'
-                : 'border-white/[0.04] bg-white/[0.01] opacity-50 cursor-not-allowed',
+                ? 'border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-2)]'
+                : 'border-[var(--border)] bg-[var(--surface)] opacity-50 cursor-not-allowed',
             ]}
           >
             <span class="text-sm font-medium text-zinc-200 truncate">
@@ -49,10 +49,10 @@ const agents = [
         ))}
       </div>
 
-      <!-- Agent Detail Card -->
+      <!-- Detail agent -->
       {agents.map((agent) => (
-        <div class="mt-8 rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-          <div class="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between">
+        <div class="mt-8 rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
+          <div class="px-6 py-4 border-b border-[var(--border)] flex items-center justify-between">
             <div class="flex items-center gap-3">
               <span class="text-base font-semibold text-white">{agent.name}</span>
               {agent.status === 'available' ? (
@@ -64,7 +64,7 @@ const agents = [
           </div>
           <div class="px-6 py-4">
             <p class="text-sm text-zinc-400 mb-2">{agent.tagline}</p>
-            <p class="text-xs text-zinc-600 leading-relaxed">
+            <p class="text-xs text-zinc-500 leading-relaxed">
               Platform belajar AI-powered dengan Speech-to-Text, auto-generate modul PDF, dan tracking progress. Upload materi pendukung, rekam suara, dan biar AI yang menyusun modul belajarmu.
             </p>
           </div>
@@ -72,9 +72,9 @@ const agents = [
       ))}
 
       <!-- Back -->
-      <div class="text-center mt-12">
+      <div class="mt-12">
         <a href="/" class="text-sm text-zinc-500 hover:text-white transition-colors">
-          &larr; Kembali ke Home
+          Kembali ke beranda
         </a>
       </div>
     </div>

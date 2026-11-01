@@ -130,7 +130,7 @@ export function exportConversationMarkdown(id: string): string {
   md += `---\n\n`;
 
   for (const msg of conv.messages) {
-    const role = msg.role === 'user' ? '👤 **You**' : msg.role === 'assistant' ? '🤖 **AI**' : '⚙️ **System**';
+    const role = msg.role === 'user' ? '**You**' : msg.role === 'assistant' ? '**AI**' : '**System**';
     md += `${role}\n\n${msg.content}\n\n---\n\n`;
   }
 

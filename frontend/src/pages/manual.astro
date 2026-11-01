@@ -293,7 +293,7 @@ Auto Layout memudahkan responsive design.
     // Pendahuluan
     if (data.pendahuluan) {
       html += `<div>
-        <h2 class="text-sm font-semibold text-primary mb-2 uppercase tracking-wide">Pendahuluan</h2>
+        <h2 class="text-sm font-semibold text-primary mb-2">Pendahuluan</h2>
         <p class="text-muted-foreground">${esc(data.pendahuluan)}</p>
       </div>`;
     }
@@ -301,7 +301,7 @@ Auto Layout memudahkan responsive design.
     // Tujuan Pembelajaran
     if (data.tujuanPembelajaran?.length) {
       html += `<div>
-        <h2 class="text-sm font-semibold text-primary mb-2 uppercase tracking-wide">Tujuan Pembelajaran</h2>
+        <h2 class="text-sm font-semibold text-primary mb-2">Tujuan pembelajaran</h2>
         <ul class="space-y-1">
           ${data.tujuanPembelajaran.map((t: string) => `<li class="flex gap-2 text-muted-foreground"><span class="text-primary mt-0.5">•</span><span>${esc(t)}</span></li>`).join('')}
         </ul>
@@ -311,7 +311,7 @@ Auto Layout memudahkan responsive design.
     // Kegiatan Pembelajaran
     if (data.kegiatanPembelajaran?.length) {
       html += `<div class="space-y-6">`;
-      html += `<h2 class="text-sm font-semibold text-primary uppercase tracking-wide">Kegiatan Pembelajaran</h2>`;
+      html += `<h2 class="text-sm font-semibold text-primary">Kegiatan pembelajaran</h2>`;
 
       for (const kg of data.kegiatanPembelajaran) {
         html += `<div class="bg-secondary/30 rounded-lg p-4 border border-border">`;
@@ -351,7 +351,7 @@ Auto Layout memudahkan responsive design.
     // Rangkuman Akhir
     if (data.rangkumanAkhir?.length) {
       html += `<div class="bg-primary/5 border border-primary/20 rounded-lg p-4">
-        <h2 class="text-sm font-semibold text-primary mb-2 uppercase tracking-wide">Rangkuman Akhir</h2>
+        <h2 class="text-sm font-semibold text-primary mb-2">Rangkuman akhir</h2>
         <ul class="space-y-1">
           ${data.rangkumanAkhir.map((r: string) => `<li class="flex gap-2 text-muted-foreground"><span class="text-primary mt-0.5">✓</span><span>${esc(r)}</span></li>`).join('')}
         </ul>
@@ -363,7 +363,7 @@ Auto Layout memudahkan responsive design.
     const hasEntities = ep && (ep.tools?.length || ep.namaOrang?.length || ep.angkaAturan?.length || ep.istilahTeknis?.length || ep.kodeRumus?.length);
     if (hasEntities) {
       html += `<div>
-        <h2 class="text-sm font-semibold text-primary mb-2 uppercase tracking-wide">Entitas Penting</h2>
+        <h2 class="text-sm font-semibold text-primary mb-2">Entitas penting</h2>
         <div class="grid grid-cols-2 gap-2 text-xs">`;
 
       if (ep.tools?.length) html += entityCard('Tools', ep.tools);

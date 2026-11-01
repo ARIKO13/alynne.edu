@@ -87,9 +87,9 @@ export function ModulPanel() {
   // No content state
   if (!hasContent) {
     return (
-      <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] overflow-hidden">
+      <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] overflow-hidden">
         <div className="px-5 py-3.5 border-b border-white/[0.06] flex items-center gap-2">
-          <FileText className="h-4 w-4 text-[#8B5CF6]" />
+          <FileText className="h-4 w-4 text-[#7C3AED]" />
           <span className="text-sm font-medium text-zinc-200">Modul PDF</span>
         </div>
         <div className="flex flex-col items-center justify-center py-10 text-center px-6">
@@ -122,10 +122,10 @@ export function ModulPanel() {
   return (
     <div className="space-y-4">
       {/* Header Card */}
-      <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] overflow-hidden">
+      <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] overflow-hidden">
         <div className="px-5 py-3.5 border-b border-white/[0.06] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <FileText className="h-4 w-4 text-[#8B5CF6]" />
+            <FileText className="h-4 w-4 text-[#7C3AED]" />
             <span className="text-sm font-medium text-zinc-200">Modul PDF</span>
           </div>
           <div className="flex items-center gap-2">
@@ -147,7 +147,7 @@ export function ModulPanel() {
         <div className="p-5 space-y-4">
           {/* Content Summary */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <InfoCard icon={Mic} label="Transkrip" value={`${transcript.length} kar`} color="text-[#8B5CF6]" />
+            <InfoCard icon={Mic} label="Transkrip" value={`${transcript.length} kar`} color="text-[#7C3AED]" />
             <InfoCard icon={File} label="Materi" value={`${materialTexts.length} file`} color="text-sky-400" />
             {moduleData && (
               <InfoCard icon={Layers} label="Kegiatan" value={`${moduleData.kegiatanPembelajaran.length}`} color="text-violet-400" />
@@ -158,7 +158,7 @@ export function ModulPanel() {
           <Button
             onClick={handleGeneratePdf}
             disabled={generating || !moduleData || structuring}
-            className="w-full h-12 gap-2 bg-[#8B5CF6] hover:bg-[#d14e1c] text-white font-medium rounded-lg text-sm"
+            className="w-full h-12 gap-2 bg-[#7C3AED] hover:bg-[#d14e1c] text-white font-medium rounded-lg text-sm"
           >
             {generating ? (
               <>
@@ -182,10 +182,10 @@ export function ModulPanel() {
 
       {/* Module Structure Preview */}
       {moduleData && (
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] overflow-hidden">
+        <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] overflow-hidden">
           <div className="px-5 py-3.5 border-b border-white/[0.06] flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <BookOpen className="h-4 w-4 text-[#8B5CF6]" />
+              <BookOpen className="h-4 w-4 text-[#7C3AED]" />
               <span className="text-sm font-medium text-zinc-200">Struktur Modul</span>
             </div>
             <span className="text-[11px] text-zinc-600">Preview</span>
@@ -193,7 +193,7 @@ export function ModulPanel() {
           <ScrollArea className="max-h-[500px]">
             <div className="p-5 space-y-4">
               {/* Title Preview */}
-              <div className="rounded-lg bg-[#0c0c0e] border border-white/[0.06] p-4">
+              <div className="rounded-lg bg-[#111113] border border-white/[0.06] p-4">
                 <p className="text-[10px] text-zinc-600 uppercase tracking-wider mb-1">Judul Modul</p>
                 <p className="text-sm font-semibold text-zinc-200">{moduleData.title}</p>
                 <p className="text-xs text-zinc-500 mt-1">
@@ -203,9 +203,9 @@ export function ModulPanel() {
 
               {/* Pendahuluan Preview */}
               {moduleData.pendahuluan && (
-                <div className="rounded-lg bg-[#0c0c0e] border border-white/[0.06] p-4">
+                <div className="rounded-lg bg-[#111113] border border-white/[0.06] p-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <BookOpen className="h-3.5 w-3.5 text-[#8B5CF6]" />
+                    <BookOpen className="h-3.5 w-3.5 text-[#7C3AED]" />
                     <h3 className="text-xs font-semibold text-zinc-200">Pendahuluan</h3>
                   </div>
                   <p className="text-[11px] text-zinc-500 leading-relaxed line-clamp-3">
@@ -217,7 +217,7 @@ export function ModulPanel() {
 
               {/* Tujuan Preview */}
               {moduleData.tujuanPembelajaran.length > 0 && (
-                <div className="rounded-lg bg-[#0c0c0e] border border-white/[0.06] p-4">
+                <div className="rounded-lg bg-[#111113] border border-white/[0.06] p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Target className="h-3.5 w-3.5 text-emerald-400" />
                     <h3 className="text-xs font-semibold text-zinc-200">Tujuan Pembelajaran ({moduleData.tujuanPembelajaran.length})</h3>
@@ -234,9 +234,9 @@ export function ModulPanel() {
 
               {/* Kegiatan Preview */}
               {moduleData.kegiatanPembelajaran.map((kg, i) => (
-                <div key={i} className="rounded-lg bg-[#0c0c0e] border border-white/[0.06] p-4">
+                <div key={i} className="rounded-lg bg-[#111113] border border-white/[0.06] p-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="flex items-center justify-center h-5 w-5 rounded bg-[#8B5CF6]/10 text-[#8B5CF6] text-[10px] font-bold">{i + 1}</span>
+                    <span className="flex items-center justify-center h-5 w-5 rounded bg-[#7C3AED]/10 text-[#7C3AED] text-[10px] font-bold">{i + 1}</span>
                     <h3 className="text-xs font-semibold text-zinc-200">Kegiatan {i + 1}: {kg.title}</h3>
                   </div>
                   <div className="space-y-1 ml-7">

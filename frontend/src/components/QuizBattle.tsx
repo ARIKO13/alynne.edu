@@ -1,5 +1,5 @@
 /**
- * QuizBattle.tsx — Gamified timed quiz with scoring
+ * QuizBattle.tsx  -  Gamified timed quiz with scoring
  *
  * Takes quiz questions (from STT chapters or custom), runs them as a battle:
  * - Timer per question (10 seconds default)
@@ -136,7 +136,7 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
 
     return (
       <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-        <DialogContent className="max-w-md bg-zinc-950/95 border-white/10 text-white text-center">
+        <DialogContent className="max-w-md  text-center">
           <Trophy className="h-16 w-16 mx-auto mb-4 text-amber-400" />
           <DialogTitle className="text-2xl mb-2">Battle Selesai!</DialogTitle>
           <p className="text-sm text-zinc-400 mb-6">{title || 'Quiz Battle'}</p>
@@ -150,8 +150,8 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
               <p className="text-3xl font-bold text-green-400">{accuracy}%</p>
               <p className="text-[10px] text-zinc-500 uppercase">Akurasi</p>
             </div>
-            <div className="rounded-lg border border-[#8B5CF6]/20 bg-[#8B5CF6]/[0.05] p-4">
-              <p className="text-3xl font-bold text-[#8B5CF6]">{correctCount}/{questions.length}</p>
+            <div className="rounded-lg border border-[#7C3AED]/20 bg-[#7C3AED]/[0.05] p-4">
+              <p className="text-3xl font-bold text-[#7C3AED]">{correctCount}/{questions.length}</p>
               <p className="text-[10px] text-zinc-500 uppercase">Benar</p>
             </div>
             <div className="rounded-lg border border-orange-500/20 bg-orange-500/[0.05] p-4">
@@ -169,7 +169,7 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
           </div>
 
           <div className="flex gap-2">
-            <Button onClick={startBattle} className="flex-1 bg-[#8B5CF6] hover:bg-[#7C3AED]">
+            <Button onClick={startBattle} className="flex-1 bg-[#7C3AED] hover:bg-[#7C3AED]">
               <RotateCcw className="h-4 w-4 mr-2" />
               Ulangi
             </Button>
@@ -186,7 +186,7 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
   if (state === 'playing' && currentQuestion) {
     return (
       <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-        <DialogContent className="max-w-lg bg-zinc-950/95 border-white/10 text-white">
+        <DialogContent className="max-w-lg ">
           {/* Header: score + combo + question counter */}
           <div className="flex items-center justify-between mb-4">
             <Badge variant="outline" className="border-amber-500/30 text-amber-400">
@@ -242,7 +242,7 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
                       : showWrong
                       ? 'border-red-500/50 bg-red-500/10 text-red-400'
                       : isSelected
-                      ? 'border-[#8B5CF6]/50 bg-[#8B5CF6]/10 text-[#8B5CF6]'
+                      ? 'border-[#7C3AED]/50 bg-[#7C3AED]/10 text-[#7C3AED]'
                       : 'border-white/[0.06] text-zinc-300 hover:border-white/[0.15] hover:bg-white/[0.04]'
                   }`}
                 >
@@ -268,7 +268,7 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
                   {selectedAnswer === currentQuestion.correctAnswer
                     ? '✓ Benar!'
                     : selectedAnswer === ''
-                    ? '⏰ Waktu habis!'
+                    ? 'Waktu habis!'
                     : '✗ Salah!'}
                 </p>
                 {selectedAnswer !== currentQuestion.correctAnswer && (
@@ -282,7 +282,7 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
                   </p>
                 )}
               </div>
-              <Button onClick={nextQuestion} className="w-full bg-[#8B5CF6] hover:bg-[#7C3AED]">
+              <Button onClick={nextQuestion} className="w-full bg-[#7C3AED] hover:bg-[#7C3AED]">
                 {currentIdx + 1 >= questions.length ? 'Lihat Hasil' : 'Soal Berikutnya'}
               </Button>
             </div>
@@ -295,7 +295,7 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
   // ── Idle/start screen ──
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-md bg-zinc-950/95 border-white/10 text-white text-center">
+      <DialogContent className="max-w-md  text-center">
         <Flame className="h-16 w-16 mx-auto mb-4 text-orange-400" />
         <DialogTitle className="text-2xl mb-2">Quiz Battle</DialogTitle>
         <p className="text-sm text-zinc-400 mb-6">{title || 'Test your knowledge'}</p>
@@ -325,7 +325,7 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
           </ul>
         </div>
 
-        <Button onClick={startBattle} className="w-full bg-[#8B5CF6] hover:bg-[#7C3AED]" size="lg">
+        <Button onClick={startBattle} className="w-full bg-[#7C3AED] hover:bg-[#7C3AED]" size="lg">
           <Zap className="h-5 w-5 mr-2" />
           Mulai Battle!
         </Button>
@@ -336,16 +336,16 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
 
 function getRank(score: number, accuracy: number): { title: string; message: string; color: string } {
   if (accuracy === 100) {
-    return { title: '🏆 Perfect!', message: 'Semua benar! Luar biasa!', color: '#FBBF24' };
+    return { title: 'Perfect!', message: 'Semua benar! Luar biasa!', color: '#FBBF24' };
   }
   if (accuracy >= 80) {
-    return { title: '🥇 Master', message: 'Hampir sempurna!', color: '#F59E0B' };
+    return { title: 'Master', message: 'Hampir sempurna!', color: '#F59E0B' };
   }
   if (accuracy >= 60) {
-    return { title: '🥈 Expert', message: 'Kerja bagus, lanjutkan!', color: '#94A3B8' };
+    return { title: 'Expert', message: 'Kerja bagus, lanjutkan!', color: '#94A3B8' };
   }
   if (accuracy >= 40) {
-    return { title: '🥉 Learner', message: 'Belajar lagi yuk!', color: '#A78BFA' };
+    return { title: 'Learner', message: 'Belajar lagi yuk!', color: '#A78BFA' };
   }
-  return { title: '🌱 Beginner', message: 'Jangan menyerah, coba lagi!', color: '#6B7280' };
+  return { title: 'Beginner', message: 'Jangan menyerah, coba lagi!', color: '#6B7280' };
 }
