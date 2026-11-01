@@ -21,6 +21,27 @@
 > tidak terukur ("24/7") diganti fakta nyata. Inter ditoleransi sesuai §6
 > (waiver `avoid-ai-design-ignore-file: T1`); URL font NavLayout yang rusak
 > diperbaiki; `#050507` disatukan ke `--bg`.
+>
+> **Ronde 2 — 2026-11-01 (commit `7ec9306`, deploy terverifikasi):** scan
+> kill-ai-slop 1.024 → **889 hit** (sisa = FP & pilihan kontrak: komentar,
+> warna status beneran, mono kode/transkrip/timer, emoji di pesan share
+> WhatsApp, diagram admin). Dibersihkan: gradien kartu flashcard & tombol
+> checkout (glow + brightness ikut dihapus) → flat `--accent`/tint;
+> radial-gradient mindmap → flat; `transition-all` 72× → transisi scoped
+> (`transition-colors`, `transition-[width]`, `transition-shadow`,
+> `transition-transform`); `hover:scale`/`scale-110` dihapus
+> (feature-tutorial, swatch bookmark); emoji-ikon UI dibersihkan (StatCard
+> dataset-library, peringatan StudyPipeline, SlideExporter, Scratchpad,
+> monitoring, image-sharpener, node Mermaid architecture-view, placeholder
+> billing); kicker kapital → sentence case (VisualisasiPanel, ai-assistant,
+> modul-panel, header tabel admin); violet/purple lama dimigrasi
+> (color-coding kategori → zinc, aksen AI → `#7C3AED`, `#B794F6` → token);
+> badge "NEW" dilepas; sisa "24/7" → "Prioritas antrean dukungan"; panah
+> `←` dilepas dari link; `font-mono` textarea Scratchpad → text face;
+> `shadow-2xl` → `shadow-lg`. Waiver tetap: gradien logo Instagram (brand),
+> pulse pada status nyata (REC, matchmaking, recording), pill
+> "Available/Coming Soon", Inter (§6). Komponen mati terdeteksi:
+> `payment-wall.tsx` (tidak di-import) — kandidat dihapus.
 
 ## 1. Arah (satu kalimat)
 
