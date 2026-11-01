@@ -110,6 +110,47 @@ export default function App({ onBackToLanding }: AppProps) {
     }
   }, [activeTab, userIsAdmin, setActiveTab, user]);
 
+  // v14-routing: Hash-based URL routing supaya tab state persist di URL.
+  // URL jadi /edu#/stt, /edu#/belajar, /edu#/notes, dll.
+  // Refresh halaman tetap di tab yang sama. Bookmark bisa langsung ke tab tujuan.
+  // 1. On mount: read hash → set activeTab
+  // 2. On activeTab change: update hash
+  // 3. On hashchange event: update activeTab (untuk back/forward browser nav)
+  const VALID_TAB_IDS = ['stt', 'modul', 'mindmap', 'sharpen', 'admin', 'voice-cmd', 'belajar', 'hub', 'notes', 'stats', 'refer', 'flash'];
+
+  // Initial sync on mount — baca hash, set activeTab kalau valid
+  useEffect(() => {
+    const hash = window.location.hash.slice(1); // remove '#'
+    if (hash && VALID_TAB_IDS.includes(hash)) {
+      // Only set if different from current activeTab (avoid loop)
+      if (hash !== useAppStore.getState().activeTab) {
+        setActiveTab(hash as TabId);
+      }
+    }
+  }, []); // run once on mount
+
+  // Sync activeTab → URL hash (saat user klik tab, update URL)
+  useEffect(() => {
+    const expectedHash = `#${activeTab}`;
+    if (window.location.hash !== expectedHash) {
+      // Use replaceState untuk avoid polluted history (back button tetap ke page sebelumnya)
+      window.history.replaceState(null, '', `/edu${expectedHash}`);
+    }
+  }, [activeTab]);
+
+  // Listen hashchange (untuk back/forward navigation atau manual URL change)
+  useEffect(() => {
+    const onHashChange = () => {
+      const hash = window.location.hash.slice(1);
+      if (hash && VALID_TAB_IDS.includes(hash) && hash !== useAppStore.getState().activeTab) {
+        setActiveTab(hash as TabId);
+      }
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, [setActiveTab]);
+
+
   // Apply theme class to <html> — runs on mount + whenever theme changes.
   // Layout.astro has an inline script that pre-applies the class from
   // localStorage BEFORE React hydrates, so there's no flash of dark mode.

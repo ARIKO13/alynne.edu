@@ -69,6 +69,7 @@ import { VoiceTutor } from '@/components/VoiceTutor';
 import { StudyBuddy } from '@/components/StudyBuddy';
 import { VisualisasiPanel } from '@/components/VisualisasiPanel';
 import { preSummarize } from '@/lib/pre-summarize';
+import { runJSPipeline } from '@/lib/js-pipeline';
 import { ExamSimulator } from '@/components/ExamSimulator';
 import {
   detectFace,
@@ -117,6 +118,11 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   // saat dirender di tab Materi (VisualisasiPanel). 0 request tambahan — visualisasi
   // sudah digenerate Phase 2 GLM bersamaan dengan bab/kuis/mindmap.
   const [visualisasi, setVisualisasi] = useState<any[]>([]);
+  // v17-jsfirst: 3 keluaran dari pipeline — materi_lengkap (filter), ringkasan_padat (summary),
+  // ringkasan_sedang (Resoomer fallback, opsional). Dipakai di tab Ringkasan + Materi.
+  const [materiLengkap, setMateriLengkap] = useState('');
+  const [ringkasanPadat, setRingkasanPadat] = useState('');
+  const [ringkasanSedang, setRingkasanSedang] = useState('');
   // v-stable: estimasi info untuk UI progress bar
   const [estimatedLabel, setEstimatedLabel] = useState('');
   const [estimatedLembar, setEstimatedLembar] = useState(0);
@@ -191,6 +197,27 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     resetFaceMesh();
   }, [studyFocusVisionMode]);
 
+  // v18-stable: Track last processed transcript — detect when user uploads NEW content.
+  // Kalau transcript beda → reset stage ke 'idle' → pipeline jalan ulang dengan transcript baru.
+  // Tanpa ini, stage masih 'complete' dari run sebelumnya → runPipeline GAK jalan → hasil lama.
+  const lastProcessedTranscript = useRef('');
+  useEffect(() => {
+    if (transcript && transcript !== lastProcessedTranscript.current) {
+      lastProcessedTranscript.current = transcript;
+      setStage('idle');
+      setChapters([]);
+      setQuizzes({});
+      setErrorMessage('');
+      setRingkasanPadat('');
+      setMateriLengkap('');
+      setRingkasanSedang('');
+      setVisualisasi([]);
+      setLLMMindmap(null);
+      setActiveChapterId(null);
+      console.log('[Pipeline] Transcript changed → resetting state, will re-run pipeline');
+    }
+  }, [transcript]);
+
   // Auto-start pipeline when opened
   useEffect(() => {
     if (open && transcript && stage === 'idle') {
@@ -254,7 +281,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     // v-chunked-v6-4sec: bump localStorage cache key supaya entry lama (3 sections,
     // visualisasi light theme, bab kepotong) gak di-return. Match ALGORITHM_VERSION
     // 'v6-4sec-2026-10-25' di chunked-generate.ts (server-side D1 cache).
-    const CACHE_KEY = `alynne:chunked-v11-fix:${cyrb53(transcript)}`;
+    const CACHE_KEY = `alynne:chunked-v18-nvidia:${cyrb53(transcript)}`;
     const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;  // 7 days
     let split: Chapter[] | null = null;
     let quizMap: Record<number, QuizQuestion[]> = {};
@@ -287,6 +314,16 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     }
 
     // v-mega: PANGGIL /api/stt/chunked-generate (1 request LLM, NO split, NO 55-chunk loop).
+    // v15-arch: pre-summarize (Chatr/Resoomer/PDFSummarizer) di-REMOVE dari client. Kirim RAW
+    // transcript langsung ke chunked-generate. chunked-generate sekarang handle SEMUA internal:
+    //   Phase 1: DeepSeek FILTER (clean + ## Topik markers, preserve 70-85%)
+    //   Phase 1.5: Chatr summary (gratis, 0.5% threshold) + Resoomer fallback (sedang)
+    //   Phase 2: GLM STRUKTUR (modul + kuis + visualisasi + mindmap + glosarium JSON)
+    // Sebelumnya: pre-summarize.ts kirim Resoomer output (15K) ke chunked-generate, yang
+    // bikin Phase 1 filter di-SKIP (input < 30K threshold) → materi_lengkap = dirty Resoomer
+    // output → GLM Phase 2 liat teks kotor ("Halo warga CPL", "Oke. Ah...") → gagal bikin
+    // kuis + visualisasi → UI fallback ke paragraph-split "Bagian 1, Bagian 2".
+    // Fix: hilangkan pre-summarize, biar chunked-generate yang filter + struktur dari awal.
     // Chunked-generate sudah balik: modul.bab + kuis + mindmap + visualisasi + glosarium
     // dalam 1 JSON. Default level: L3 (65K ringkas_lengkap, ~5-8 menit, stabil).
     //
@@ -298,113 +335,71 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
     //   fetch('/api/stt/chunked-generate') → 1 LLM call dengan transcript utuh (700K char max)
     //   → LLM yang memecah jadi bab di dalam output JSON → tanpa split, tanpa regex fallback
     if (!split) {
-      // v10-bagi-tugas + pre-summarize: Chrome Summarizer API (gratis, on-device)
-      // pre-summarize transcript SEBELUM kirim ke server. Kalau Chrome API available,
-      // 219K char → ~40-60K char ringkasan → server skip Phase 1 (DeepSeek) → langsung
-      // Phase 2 (GLM/DeepSeek bagi tugas). Total: 0 LLM request untuk Phase 1, 2 untuk Phase 2.
-      const preSummarized = await preSummarize(transcript);
-      const inputText = preSummarized.summary;  // ringkasan (atau raw transcript kalau Chrome API gak ada)
+      // v17-js-first: INSTANT JS pipeline — filter + summary + bab + kuis, <2 detik, 0 LLM call.
+      // User lihat hasil LANGSUNG. Gak ada "Server sedang sibuk" lagi.
+      // Setelah itu, chunked-generate jalan di background sebagai "Enhance dengan AI".
+      // Kalau LLM sukses → hasil diganti dengan yang lebih bagus. Kalau timeout → user tetap punya JS results.
+      console.log('[Pipeline] JS pipeline running (instant, deterministic, 0 LLM)...');
+      const jsResult = runJSPipeline(transcript, 'Materi Belajar');
+      console.log(`[Pipeline] JS pipeline done: ${jsResult.stats.babCount} bab, ${jsResult.stats.kuisCount} kuis, ${jsResult.stats.ringkasanPadatChars} char ringkasan, ${jsResult.stats.processingMs}ms`);
+      console.log(`[Pipeline] Transcript first 100 chars: "${transcript.slice(0, 100)}..."`);
 
-      try {
-        const res = await fetch('/api/stt/chunked-generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ transcript: inputText, title: 'Materi Belajar', maxChapters: 15 }),
-          signal: AbortSignal.timeout(180_000),
+      // Set instant results to state — user sees bab + ringkasan immediately
+      // Field names HARUS match Chapter type: title, content, wordCount
+      // (Materi tab renders activeChapter.title, activeChapter.content, activeChapter.wordCount)
+      split = jsResult.modul.bab.map((b: any) => {
+        const content = b.penjelasan || '';
+        return {
+          id: b.id,
+          judul: b.judul,
+          title: b.judul,
+          tujuan: b.tujuan || '',
+          konsep_kunci: b.konsep_kunci || [],
+          penjelasan: content,
+          content: content,
+          contoh: b.contoh || '',
+          wordCount: content.split(/\s+/).filter(Boolean).length,
+          keyPoints: b.konsep_kunci?.map((k: string) => ({ istilah: k, penjelasan: '' })) || [],
+        };
+      });
+      console.log(`[Pipeline] Bab 1 title: "${split?.[0]?.title || 'N/A'}", preview: "${(split?.[0]?.content || '').slice(0, 100)}..."`);
+      if (jsResult.ringkasan_padat) setRingkasanPadat(jsResult.ringkasan_padat);
+      if (jsResult.materi_lengkap) setMateriLengkap(jsResult.materi_lengkap);
+      for (const k of jsResult.kuis) {
+        if (!quizMap[k.bab_id]) quizMap[k.bab_id] = [];
+        quizMap[k.bab_id].push({
+          id: k.id,
+          pertanyaan: k.pertanyaan,
+          opsi: k.opsi,
+          jawaban: k.jawaban,
+          pembahasan: k.pembahasan || '',
         });
-        if (res.ok) {
-          const mega = await res.json() as {
-            modul?: { bab?: any[] };
-            kuis?: any[];
-            mindmap?: { root?: string; cabang?: { nama?: string; sub?: string[] }[] };
-            visualisasi?: any[];
-            error?: string;
-            message?: string;
-            cached?: boolean;
-            levelUsed?: string;
-          };
-          if (mega.error) {
-            // v9-fast: server returned friendly error (200 with error field) — show to user
-            clearInterval(progressTimer);
-            setErrorMessage(mega.message || 'Server sedang sibuk. Coba lagi dalam 1 menit.');
-            setStage('error');
-            return;
-          }
-          if (mega.modul?.bab?.length) {
-            split = mega.modul.bab.map((b: any) => {
-              const content = String(b.penjelasan || b.uraian || '').trim();
-              return {
-                id: Number(b.id) || 0,
-                title: String(b.judul || '').slice(0, 100),
-                content,
-                wordCount: content.split(/\s+/).filter(Boolean).length,
-              };
-            }).filter((c: Chapter) => c.id > 0 && c.content.length > 20);
-
-            if (Array.isArray(mega.kuis)) {
-              for (const k of mega.kuis) {
-                const babId = Number(k.bab_id ?? k.bab ?? 0);
-                if (!babId) continue;
-                if (!quizMap[babId]) quizMap[babId] = [];
-                quizMap[babId].push({
-                  id: Number(k.id) || quizMap[babId].length + 1,
-                  type: 'multiple-choice' as const,
-                  question: String(k.soal || ''),
-                  options: Array.isArray(k.opsi) ? k.opsi.map(String) : [],
-                  correctAnswer: String(k.jawaban || ''),
-                  explanation: String(k.pembahasan || ''),
-                });
-              }
-            }
-
-            if (mega.mindmap?.root) {
-              mindmapNode = {
-                label: String(mega.mindmap.root),
-                children: (mega.mindmap.cabang || []).map((c: any) => ({
-                  label: String(c.nama || ''),
-                  children: (c.sub || []).map((s: string) => ({ label: String(s) })),
-                })),
-              };
-            }
-
-            visualisasiArr = Array.isArray(mega.visualisasi) ? mega.visualisasi : [];
-
-            console.log(`[Pipeline] chunked-generate OK: ${split.length} bab, ${Object.keys(quizMap).length} bab dengan kuis, mindmap ${mindmapNode ? 'OK' : 'null'}, visualisasi ${visualisasiArr.length} item (level: ${mega.levelUsed || '?'}${mega.cached ? ', server-cache HIT' : ''})`);
-
-            // Cache hasil (chapters + quizzes + mindmap + visualisasi)
-            try {
-              localStorage.setItem(CACHE_KEY, JSON.stringify({
-                ts: Date.now(),
-                chapters: split,
-                quizzes: quizMap,
-                mindmap: mindmapNode,
-                visualisasi: visualisasiArr,
-              }));
-              console.log(`[Pipeline] Cached ${split.length} chapters + mega result`);
-            } catch (e) {
-              console.log('[Pipeline] Cache write failed:', e);
-            }
-          } else {
-            // No bab in response — show friendly error
-            clearInterval(progressTimer);
-            setErrorMessage('Server sedang sibuk. Coba lagi dalam 1 menit.');
-            setStage('error');
-            return;
-          }
-        } else {
-          // HTTP error — show friendly error
-          clearInterval(progressTimer);
-          setErrorMessage('Server sedang sibuk. Coba lagi dalam 1 menit.');
-          setStage('error');
-          return;
-        }
-      } catch (err) {
-        // Network/timeout — show friendly error (NO retry, NO regex fallback)
-        clearInterval(progressTimer);
-        setErrorMessage('Server sedang sibuk. Coba lagi dalam 1 menit.');
-        setStage('error');
-        return;
       }
+      if (jsResult.mindmap?.root) {
+        mindmapNode = {
+          label: jsResult.mindmap.root,
+          children: (jsResult.mindmap.cabang || []).map((c: any) => ({
+            label: c.label,
+            children: (c.children || []).map((sc: any) => ({ label: sc.label, children: [] })),
+          })),
+        };
+      }
+      visualisasiArr = []; // JS pipeline gak generate visualisasi (no LLM)
+
+      // Set stage to complete NOW — user can interact with bab, kuis, ringkasan
+      setChapters(split);
+      setQuizzes(quizMap);
+      if (mindmapNode) setLLMMindmap(mindmapNode);
+      setVisualisasi(visualisasiArr);
+      setStage('complete');
+      if (split.length > 0) setActiveChapterId(split[0].id);
+      console.log('[Pipeline] JS results shown INSTANTLY. No auto background LLM (stable, no warnings).');
+      // v18-stable: Background LLM enhancement di-REMOVE (auto-call bikin warning/400/timeout).
+      // Ganti dengan tombol "Enhance dengan AI" manual (user-triggered, on-demand).
+      // JS pipeline = primary output (instant, 0 LLM, 100% reliable).
+      // LLM enhancement = optional, user klik tombol → baru jalan.
+      // v18-stable: Auto background LLM call di-HAPUS. Bikin 400/timeout/warning.
+      // JS pipeline = primary (instant, 0 LLM, 100% reliable, no warnings).
     }
 
     // Set state untuk SEMUA path (cache HIT, chunked-generate OK, atau regex fallback).

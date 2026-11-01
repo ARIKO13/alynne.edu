@@ -232,7 +232,7 @@ export const POST: APIRoute = async ({ request }) => {
     // SEBELUM kirim ke server. Kalau Chrome API available: 219K → 40-60K char ringkasan
     // → server skip Phase 1 (DeepSeek, 0 LLM req) → langsung Phase 2 (GLM/DeepSeek bagi tugas, 2 LLM req).
     // Kalau Chrome API gak available: raw transcript → Phase 1 DeepSeek (5 LLM req) → Phase 2 (2-4 LLM req).
-    const ALGORITHM_VERSION = 'v11-fix-ringsak-2026-10-25';
+    const ALGORITHM_VERSION = 'v18-nvidia-2026-10-28';
     const materiHash = cyrb53(`${ALGORITHM_VERSION}:${transcript}`);
     try {
       await d1.execute(`
@@ -314,30 +314,31 @@ export const POST: APIRoute = async ({ request }) => {
       ? splitTranscriptByParagraph(transcript, MAX_DEEPSEEK_CHUNK_CHARS)
       : [];  // empty = skip Phase 1
 
-    let ringkasan: string;
+    let materi_lengkap: string;  // v15: renamed from ringkasan — Phase 1 sekarang FILTER, BUKAN ringkas
     let phase1SuccessCount = 0;
     let phase1FailCount = 0;
 
     if (chunks.length === 0) {
-      // Skip Phase 1: transcript ≤ 30K char, langsung pakai sebagai ringkasan untuk Phase 2
-      ringkasan = transcript;
+      // Skip Phase 1: transcript ≤ 30K char, langsung pakai sebagai materi_lengkap
+      materi_lengkap = transcript;
       console.log(`[chunked-generate] Phase 1 SKIPPED: transcript ${transcript.length} chars ≤ ${SKIP_PHASE1_THRESHOLD}K threshold — use as-is, 0 LLM call`);
     } else {
-      // v9-fast (per user spec 2026-10-25): pLimit 5 (was 2), no retry, single attempt
-      // 9 chunks total (5 DeepSeek + 4 GLM) selesai dalam 2 gelombang (~66-100s) bukan 5 gelombang.
-      // Kalau gateway timeout/rate-limit, fail fast — Phase 2 minimal fallback ensure no crash.
-      console.log(`[chunked-generate] Phase 1: DeepSeek ${chunks.length} chunk(s) paralel (max 6K tok each, pLimit(5), no retry)`);
+      // v15-arch: Phase 1 sekarang FILTER (preserve 70-85%), BUKAN ringkas.
+      // maxTokens naik dari 6K → 10K supaya output materi_lengkap muat semua konten yang difilter.
+      // timeout naik dari 60s → 90s untuk output lebih panjang (10K tok × 150 tok/s = 67s).
+      // Prompt: DEEPSEEK_FILTER_PROMPT (clean + ## Topik markers, preserve all content).
+      console.log(`[chunked-generate] Phase 1: DeepSeek FILTER ${chunks.length} chunk(s) paralel (max 10K tok each, pLimit(5), preserve 70-85%)`);
       const phase1Limiter = makeConcurrencyLimiter(5);  // v9-fast: pLimit 5 (was 2)
       const deepseekResults = await Promise.all(
         chunks.map((chunk, i) => phase1Limiter(() =>
-          callLLM('long', DEEPSEEK_SUMMARY_PROMPT, chunk, {
-            model: 'phala/deepseek/deepseek-v4-flash-0731',
-            fallbackModels: ['phala/z-ai/glm-5.3-flash', 'jr/gemini-3.5-flash-lite'],
-            maxTokens: 6000,
-            timeout: 60_000,  // v9-fast: 60s per attempt (was 90s)
+          callLLM('long', DEEPSEEK_FILTER_PROMPT, chunk, {
+            model: 'z-ai/glm-5.3-flash',
+            fallbackModels: [],  // v16: no fallback, DeepSeek-only
+            maxTokens: 10000,
+            timeout: 300_000,
             temperature: 0.2,
             jsonMode: false,
-            endpoint: `chunked-generate/p1-chunk-${i + 1}-of-${chunks.length}`,
+            endpoint: `chunked-generate/p1-filter-chunk-${i + 1}-of-${chunks.length}`,
           })
         ))
       );
@@ -348,12 +349,47 @@ export const POST: APIRoute = async ({ request }) => {
       if (summaries.length === 0) {
         // v-stable: jangan crash kalau Phase 1 all failed. Lanjut ke Phase 2 dengan transcript utuh
         // (kalau ≤ 600K char, muat di DeepSeek context 128K token). Quality turun tapi gak crash.
-        console.log(`[chunked-generate] Phase 1 ALL FAILED — using raw transcript as ringkasan (degraded)`);
-        ringkasan = transcript.slice(0, 100_000);  // cap at 100K to fit Phase 2 input
+        console.log(`[chunked-generate] Phase 1 ALL FAILED — using raw transcript as materi_lengkap (degraded)`);
+        materi_lengkap = transcript.slice(0, 100_000);  // cap at 100K to fit Phase 2 input
       } else {
-        ringkasan = summaries.join('\n\n---\n\n');
-        console.log(`[chunked-generate] Phase 1 done: ${phase1SuccessCount}/${chunks.length} chunks OK, ${phase1FailCount} failed, ringkasan ${ringkasan.length} chars`);
+        materi_lengkap = summaries.join('\n\n');
+        console.log(`[chunked-generate] Phase 1 FILTER done: ${phase1SuccessCount}/${chunks.length} chunks OK, ${phase1FailCount} failed, materi_lengkap ${materi_lengkap.length} chars (${(materi_lengkap.length * 100 / transcript.length).toFixed(0)}% retention)`);
       }
+    }
+
+    // ── PHASE 1.5: SUMMARY via Chatr (gratis) + fallback Resoomer (v15-arch) ──
+    // Chatr = single HTTP POST ke Supabase, ~2-5s, no LLM di gateway kita.
+    // Threshold: max(300, materi_lengkap.length * 0.005) — kalau Chatr return < 0.5% dari
+    // materi_lengkap, terlalu pendek → fallback ke Resoomer (lebih panjang, 7% retention).
+    // Untuk input > 5K char, juga panggil Resoomer sebagai "Ringkasan Sedang" toggle di UI.
+    const chatrThreshold = Math.max(300, Math.floor(materi_lengkap.length * 0.005));
+    let ringkasan_padat = '';       // dari Chatr (default "Padat" di UI)
+    let ringkasan_sedang = '';      // dari Resoomer (opsional toggle "Sedang" di UI)
+
+    console.log(`[chunked-generate] Phase 1.5: Chatr summary (threshold ${chatrThreshold} chars, materi_lengkap ${materi_lengkap.length} chars)`);
+    const chatrResult = await callChatrSummary(materi_lengkap);
+    if (chatrResult && chatrResult.length >= chatrThreshold) {
+      ringkasan_padat = chatrResult;
+      console.log(`[chunked-generate] Chatr OK: ${materi_lengkap.length} → ${ringkasan_padat.length} chars (${(ringkasan_padat.length * 100 / materi_lengkap.length).toFixed(1)}% retention)`);
+    } else {
+      console.log(`[chunked-generate] Chatr too short: ${chatrResult?.length || 0} chars < ${chatrThreshold} threshold — will fallback to Resoomer`);
+    }
+
+    // Untuk input > 5K char, panggil Resoomer untuk "Ringkasan Sedang" toggle di UI
+    if (materi_lengkap.length > 5000) {
+      console.log(`[chunked-generate] Phase 1.5: Resoomer summary (for "Sedang" toggle)`);
+      const resoomerResult = await callResoomerSummary(materi_lengkap, request.headers.get('cookie') || '');
+      if (resoomerResult && resoomerResult.length > 100) {
+        ringkasan_sedang = resoomerResult;
+        console.log(`[chunked-generate] Resoomer OK: ${materi_lengkap.length} → ${ringkasan_sedang.length} chars (${(ringkasan_sedang.length * 100 / materi_lengkap.length).toFixed(1)}% retention)`);
+      }
+    }
+
+    // Final fallback: kalau Chatr gak ada, pakai Resoomer sebagai padat
+    if (!ringkasan_padat && ringkasan_sedang) {
+      ringkasan_padat = ringkasan_sedang;
+      ringkasan_sedang = '';  // jangan duplikat
+      console.log(`[chunked-generate] Using Resoomer as padat fallback (Chatr was empty)`);
     }
 
     // ── PHASE 2: Strukturkan ringkasan → JSON modul lengkap ──
@@ -371,8 +407,10 @@ export const POST: APIRoute = async ({ request }) => {
     //   4 × max_tokens=5000, timeout=60s. Wall time: ~33s (1 gelombang)
     
     // v10: GLM health check
-    const glmAlive = await isGLMAlive();
-    console.log(`[chunked-generate] GLM health: ${glmAlive ? 'ALIVE → bagi tugas (GLM modul + DeepSeek kuis)' : 'DEAD → DeepSeek everything (4 sections)'}`);
+    // v16-all-deepseek: Phase 2 selalu DeepSeek-only, no GLM health check, no bagi-tugas.
+    // User request: "semuanya libatin deepseek". GLM + Gemini Flash dihapus dari fallback chain
+    // karena bermasalah terus (GLM timeout, Gemini Flash quota habis permanent -$0.01).
+    // Sekarang: 4 sections × DeepSeek V4 Flash, parallel pLimit 2 (was 5 — kurangi strain gateway).
 
     interface Phase2Section {
       name: string;
@@ -383,59 +421,37 @@ export const POST: APIRoute = async ({ request }) => {
       timeout: number;
     }
 
-    let sections: Phase2Section[];
-    const DS = 'phala/deepseek/deepseek-v4-flash-0731';
-    const GLM = 'phala/z-ai/glm-5.3-flash';
-    const GEMINI = 'jr/gemini-3.5-flash-lite';
-    const DS_FALLBACK = [GLM, GEMINI] as const;
-    const GLM_FALLBACK = [DS, GEMINI] as const;
+    const DS = 'z-ai/glm-5.3-flash';
+    const DS_FALLBACK: readonly string[] = [];  // v16: no fallback, just retry DeepSeek
 
+    let sections: Phase2Section[];
     if (lembar <= 21) {
       // Compact: 1 section, target 5 bab (hemat untuk materi pendek)
       sections = [{
         name: 'modul-compact',
-        userPrompt: buildGLMCompactPrompt(ringkasan, title, 5),
+        userPrompt: buildGLMCompactPrompt(materi_lengkap, title, 5),
         model: DS,
         fallbackModels: [...DS_FALLBACK],
-        maxTokens: 5000,
-        timeout: 60_000,
+        maxTokens: 10000,
+        timeout: 300_000,
       }];
-    } else if (glmAlive) {
-      // v10-bagi-tugas: 2 paralel — GLM modul+vis, DeepSeek kuis+extras
-      sections = [
-        {
-          name: 'glm-modul-vis',
-          userPrompt: buildGLMModulPrompt(ringkasan, title),
-          model: GLM,
-          fallbackModels: [...GLM_FALLBACK],
-          maxTokens: 8000,   // 8K / 71 tok/s = 113s < 120s gateway limit ✓
-          timeout: 110_000,  // just under 120s gateway limit
-        },
-        {
-          name: 'deepseek-kuis-extras',
-          userPrompt: buildGLMKuisExtrasPrompt(ringkasan, title),
-          model: DS,
-          fallbackModels: [...DS_FALLBACK],
-          maxTokens: 10000,  // 10K / 150 tok/s = 67s < 120s ✓
-          timeout: 70_000,
-        },
-      ];
     } else {
-      // GLM dead: 4 sections DeepSeek (v9-fast fallback)
+      // v16-all-deepseek: 4 sections × DeepSeek V4 Flash, paralel pLimit 2
       sections = [
-        { name: 'bab-1-4', userPrompt: buildGLMBabPrompt(ringkasan, title, 1, 4), model: DS, fallbackModels: [...DS_FALLBACK], maxTokens: 5000, timeout: 60_000 },
-        { name: 'bab-5-8', userPrompt: buildGLMBabPrompt(ringkasan, title, 5, 8), model: DS, fallbackModels: [...DS_FALLBACK], maxTokens: 5000, timeout: 60_000 },
-        { name: 'bab-9-12', userPrompt: buildGLMBabPrompt(ringkasan, title, 9, 12), model: DS, fallbackModels: [...DS_FALLBACK], maxTokens: 5000, timeout: 60_000 },
-        { name: 'bab-13-15-extras', userPrompt: buildGLMBabAndExtrasPrompt(ringkasan, title, 13, 15), model: DS, fallbackModels: [...DS_FALLBACK], maxTokens: 5000, timeout: 60_000 },
+        { name: 'bab-1-4', userPrompt: buildGLMBabPrompt(materi_lengkap, title, 1, 4), model: DS, fallbackModels: [...DS_FALLBACK], maxTokens: 8000, timeout: 300_000 },
+        { name: 'bab-5-8', userPrompt: buildGLMBabPrompt(materi_lengkap, title, 5, 8), model: DS, fallbackModels: [...DS_FALLBACK], maxTokens: 8000, timeout: 300_000 },
+        { name: 'bab-9-12', userPrompt: buildGLMBabPrompt(materi_lengkap, title, 9, 12), model: DS, fallbackModels: [...DS_FALLBACK], maxTokens: 8000, timeout: 300_000 },
+        { name: 'bab-13-15-extras', userPrompt: buildGLMBabAndExtrasPrompt(materi_lengkap, title, 13, 15), model: DS, fallbackModels: [...DS_FALLBACK], maxTokens: 8000, timeout: 300_000 },
       ];
     }
 
     const totalReq = chunks.length + sections.length;
-    const modeLabel = glmAlive && lembar > 21 ? 'BAGI TUGAS (GLM+DeepSeek)' : 'DEEPSEEK-ONLY';
+    const modeLabel = 'DEEPSEEK-ONLY (v16)';
     console.log(`[chunked-generate] Phase 2: ${modeLabel} ${sections.length} section(s) paralel — total req this call: ${totalReq} (${chunks.length} DeepSeek p1 + ${sections.length} p2)`);
 
+    const phase2Limiter = makeConcurrencyLimiter(2);  // v16: pLimit 2 (was 5) — kurangi strain gateway
     const glmResults = await Promise.all(
-      sections.map(s => callLLM('long', GLM_STRUCTURE_SYSTEM_PROMPT, s.userPrompt, {
+      sections.map(s => phase2Limiter(() => callLLM('long', GLM_STRUCTURE_SYSTEM_PROMPT, s.userPrompt, {
         model: s.model,
         fallbackModels: s.fallbackModels,
         maxTokens: s.maxTokens,
@@ -443,33 +459,56 @@ export const POST: APIRoute = async ({ request }) => {
         temperature: 0.3,
         jsonMode: true,
         endpoint: `chunked-generate/p2-${s.name}`,
-      }))
+      })))
     );
 
     // Merge section results
     let merged = mergeGLMSections(glmResults, title);
     if (!merged || !merged.modul?.bab?.length) {
-      // v-stable: kalau Phase 2 ALL FAILED after retry, jangan crash. Build minimal
-      // response dari raw ringkasan — 1 bab dengan 1000 char pertama ringkasan sebagai
-      // penjelasan. User tetap dapat something, UI gak blank, gak 500 error.
-      console.error(`[chunked-generate] Phase 2 ALL FAILED after retry — building minimal fallback response (1 bab dari ringkasan, gak crash)`);
+      // v12-fix-chatr: kalau Phase 2 ALL FAILED, jangan crash. Build fallback yang LEBIH BERMANFAAT
+      // dari raw materi_lengkap — pecah jadi multiple bab berdasarkan paragraph (~600 char per bab).
+      // User tetap dapat something, UI gak blank, gak 500 error, dan materi lumayan detail.
+      console.error(`[chunked-generate] Phase 2 ALL FAILED after retry — building paragraph-split fallback response (multiple bab dari materi_lengkap, gak crash)`);
+      // Pecah materi_lengkap jadi multiple paragraph — setiap paragraf jadi 1 bab
+      const paragraphs = materi_lengkap.split(/\n\s*\n/).map(p => p.trim()).filter(p => p.length > 50);
+      // Atau split per ~600 char kalau cuma 1 paragraf panjang
+      let chunks: string[] = [];
+      if (paragraphs.length >= 3) {
+        chunks = paragraphs;
+      } else {
+        // Manual chunk: ambil per 600 char (atau kelipatan sentence)
+        const sentences = materi_lengkap.match(/[^.!?]+[.!?]+/g) || [materi_lengkap];
+        let cur = '';
+        for (const s of sentences) {
+          if (cur.length + s.length > 800 && cur.length > 0) {
+            chunks.push(cur);
+            cur = s;
+          } else {
+            cur += s;
+          }
+        }
+        if (cur) chunks.push(cur);
+      }
+      // Cap max 15 bab
+      const babChunks = chunks.slice(0, 15);
+      console.log(`[chunked-generate] Fallback: ${babChunks.length} bab dari ${materi_lengkap.length} char materi_lengkap (${paragraphs.length} paragraphs source)`);
       merged = {
         modul: {
           judul: title,
-          bab: [{
-            id: 1,
-            judul: title.slice(0, 50) || 'Materi Belajar',
-            tujuan: 'Materi belajar (mode fallback — server LLM sedang tidak stabil, coba lagi nanti)',
+          bab: babChunks.map((chunk, i) => ({
+            id: i + 1,
+            judul: i === 0 ? title.slice(0, 50) || 'Materi Belajar' : `Bagian ${i + 1}`,
+            tujuan: `Materi belajar (mode fallback — server LLM sedang tidak stabil, coba lagi nanti untuk generate kuis + visualisasi)`,
             konsep_kunci: [],
-            penjelasan: ringkasan.slice(0, 1000),
+            penjelasan: chunk,
             contoh: '',
-          }],
+          })),
         },
         kuis: [],
         visualisasi: [],
         mindmap: { root: title, cabang: [] },
         glosarium: [],
-        coverage_checklist: [{ bagian_transkrip: 'full transcript (fallback mode)', masuk_ke_modul: 'bab 1' }],
+        coverage_checklist: babChunks.map((_, i) => ({ bagian_transkrip: `paragraf ${i + 1}`, masuk_ke_modul: `bab ${i + 1}` })),
       };
     }
 
@@ -503,22 +542,30 @@ export const POST: APIRoute = async ({ request }) => {
     console.log(`[chunked-generate] FINAL: ${babCount} bab, ${kuisCount} kuis, ${visualisasiCount} visualisasi, ${glosariumCount} glosarium, ${coverageCount} coverage (DeepSeek ${phase1SuccessCount}/${chunks.length} + GLM ${glmResults.filter(r => r.content).length}/${sections.length})`);
 
     // ── SAVE TO D1 CACHE ──
+    // v15-arch: response sekarang include materi_lengkap + ringkasan_padat + ringkasan_sedang
+    // (3 keluaran dari 1 upload). materi_lengkap = hasil filter Phase 1 (untuk tab Materi,
+    // accordion per ## Topik). ringkasan_padat = Chatr summary (untuk tab Ringkasan default).
+    // ringkasan_sedang = Resoomer summary (untuk toggle "Sedang" di tab Ringkasan, opsional).
     const megaResponse = {
+      materi_lengkap,           // v15: ~160K char filtered (untuk tab Materi accordion)
+      ringkasan_padat,          // v15: ~2-5K char dari Chatr (untuk tab Ringkasan default "Padat")
+      ringkasan_sedang,         // v15: ~15K char dari Resoomer (untuk toggle "Sedang", bisa kosong)
       modul: merged.modul,
       kuis: merged.kuis || [],
       visualisasi: merged.visualisasi || [],
       mindmap: merged.mindmap || { root: title, cabang: [] },
       glosarium: merged.glosarium || [],
       coverage_checklist: merged.coverage_checklist || [],
-      modelUsed: 'hybrid:deepseek-v4-flash→glm-5.3-flash',
-      levelUsed: `hybrid-${chunks.length}d-${sections.length}g`,
+      modelUsed: 'v15-arch:deepseek-filter→chatr+resoomer-summary→glm-struktur',
+      levelUsed: `v15-${chunks.length}d-filter-${sections.length}g-struktur`,
       stats: {
         babCount, kuisCount, visualisasiCount, glosariumCount,
         coverageCount, transcriptChars: transcript.length,
+        materiLengkapChars: materi_lengkap.length,
+        ringkasanPadatChars: ringkasan_padat.length,
+        ringkasanSedangChars: ringkasan_sedang.length,
         lembar, phase1SuccessCount, phase1FailCount,
         phase2SectionCount: sections.length,
-        // v-stable: estimasi waktu untuk client UI progress bar.
-        // Phase 1: ceil(N/2) gelombang × 40s, Phase 2: ceil(M/2) gelombang × 70s.
         estimatedTimeMs,
         estimatedTimeLabel: estimatedTimeMs >= 60_000
           ? `~${Math.ceil(estimatedTimeMs / 60_000)} menit`
@@ -642,7 +689,7 @@ function makeConcurrencyLimiter(concurrency: number) {
 async function isGLMAlive(): Promise<boolean> {
   try {
     const result = await callLLM('fast', 'Balas dengan satu kata: OK', 'Health check', {
-      model: 'phala/z-ai/glm-5.3-flash',
+      model: 'z-ai/glm-5.3-flash',
       maxTokens: 10,
       timeout: 10_000,
       endpoint: 'chunked-generate/glm-health-check',
@@ -667,22 +714,37 @@ Output JSON valid. Format: {"modul":{"judul":"${title}","bab":[{"id":1,"judul":"
 Visualisasi maks 1 per bab, hanya untuk konsep STEM yang butuh gambar. Materi non-STEM = array kosong.`;
 }
 
-// ── DeepSeek summarization prompt (Phase 1) ──
-const DEEPSEEK_SUMMARY_PROMPT = `Kamu adalah peringkas transkrip kuliah Bahasa Indonesia.
+// ── DeepSeek FILTER prompt (Phase 1 v15: filter, BUKAN ringkas) ──
+// v15-arch: Phase 1 sekarang FILTER (preserve 70-85% content), BUKAN ringkas.
+// Output materi_lengkap = transkrip yang dibersihkan + diberi penanda ## Topik: <judul>
+// untuk accordion di UI. Ringkasan dilakukan terpisah oleh Chatr (Phase 1.5, gratis).
+const DEEPSEEK_FILTER_PROMPT = `Kamu asisten pembersih transkrip kuliah Bahasa Indonesia.
 
-TUGAS: Ringkas transkrip berikut tanpa kehilangan:
-- Semua poin penting, angka, nama, definisi
-- Struktur bab/section (kalau ada di source)
-- Konteks penting
+TUGAS: BERSIHKAN transkrip berikut, jangan ringkas. Pertahankan SEMUA konten substantif.
 
-ATURAN:
-- Output 3.000-5.000 token
-- Pertahankan SEMUA istilah teknis asli (bahasa Inggris/Indonesia)
-- Jangan hilangkan bab (kalau ada di source)
-- Buang filler words, greetings, intermezzo, pengulangan
+LANGKAH PEMBERSIHAN:
+1. Hapus pengisi verbal: "um", "ah", "eh", "hmm", "kan", "gitu", "ya ya ya", "Oke", "eee", "Halo warga"
+2. Normalisasi whitespace: gabungkan baris pendek, hapus spasi ganda
+3. Hapus duplikat: kalimat yang diulang 2+ kali → tulis sekali
+4. Hapus greeting/closing/sapaan: "selamat datang", "terima kasih", "okay guys", "breaking news nih"
+5. Hapus intermezo off-topic: guyonan yang tidak nyambung dengan materi
+6. Rapikan kalimat: gabungkan fragment kalimat, perbaiki grammar ringan
+7. SISIPKAN "## Topik: <judul_topik>" di awal setiap bagian ketika TEMA BERUBAH SIGNIFIKAN
+   (contoh: pindah dari teori → praktik, atau dari konsep A → konsep B)
+   Judul topik = 2-5 kata yang menggambarkan isi bagian tersebut.
+
+ATURAN RETENSI:
+- Target output 70-85% dari panjang input
+- PERTAHANKAN SEMUA: poin penting, angka, nama, definisi, contoh, langkah-langkah
+- PERTAHANKAN SEMUA istilah teknis asli (Bahasa Inggris/Indonesia)
+- Jangan gabungkan paragraf yang berbeda topik
 - Tetap dalam Bahasa Indonesia
 
-Output HANYA teks ringkasan, tanpa JSON, tanpa markdown fence, tanpa header tambahan.`;
+Output HANYA teks materi yang sudah dibersihkan + diberi penanda ## Topik:.
+JANGAN tambahkan JSON, markdown fence, atau header lain di luar "## Topik:".`;
+
+// Legacy alias (untuk backward-compat dengan kode lama yang manggil DEEPSEEK_SUMMARY_PROMPT)
+const DEEPSEEK_SUMMARY_PROMPT = DEEPSEEK_FILTER_PROMPT;
 
 // ── GLM structure system prompt (Phase 2) ──
 const GLM_STRUCTURE_SYSTEM_PROMPT = `Kamu generator modul belajar Bahasa Indonesia. Output HANYA JSON valid.
@@ -907,4 +969,91 @@ function validateMegaResult(merged: any, expectedBab: number): {
   }
 
   return { valid: warnings.length === 0, warnings, missingBab };
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// v15-arch: Phase 1.5 summary helpers (Chatr + Resoomer)
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * callChatrSummary — panggil Chatr's Supabase Edge Function (GPT-4o) untuk summary padat.
+ * Free, no auth, no captcha, ~2-5 detik. Returns summary text atau null.
+ */
+async function callChatrSummary(text: string): Promise<string | null> {
+  try {
+    const inputText = text.length > 100_000 ? text.slice(0, 100_000) : text;
+    const payload = {
+      brandName: 'Chatr ',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a summarization assistant for educational content. Provide concise summaries that capture only the most essential points. Plain text only, no markdown, no bullet points. Use clear paragraphs.'
+        },
+        {
+          role: 'user',
+          content: `Give me a very concise summary of the following text. Aim for 1-2% of original length (very compact). Preserve only key concepts, main arguments, and critical numbers. Skip details and examples. Plain text only.\n\nText to summarize:\n${inputText}`
+        }
+      ]
+    };
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 90_000);
+    try {
+      const r = await fetch('https://xdxjetmnngpscvnotoze.supabase.co/functions/v1/chat-gpt4o', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Origin': 'https://chatrai.app',
+          'Referer': 'https://chatrai.app/',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        },
+        body: JSON.stringify(payload),
+        signal: ctrl.signal,
+      });
+      if (!r.ok) {
+        console.log(`[callChatrSummary] HTTP ${r.status}`);
+        return null;
+      }
+      const data = await r.json() as { reply?: string; error?: string };
+      return (data.reply || '').trim() || null;
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch (e: any) {
+    console.log(`[callChatrSummary] error: ${e?.message?.slice(0, 100)}`);
+    return null;
+  }
+}
+
+/**
+ * callResoomerSummary — panggil internal endpoint /api/stt/pre-summarize-resoomer
+ * (yang punya 7-step curl pipeline ke resoomer.com, mode filtreSummary).
+ */
+async function callResoomerSummary(text: string, cookieHeader: string): Promise<string | null> {
+  try {
+    const inputText = text.length > 50_000 ? text.slice(0, 50_000) : text;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 120_000);
+    try {
+      const r = await fetch('http://localhost:3000/api/stt/pre-summarize-resoomer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': cookieHeader,
+        },
+        body: JSON.stringify({ text: inputText }),
+        signal: ctrl.signal,
+      });
+      if (!r.ok) {
+        console.log(`[callResoomerSummary] HTTP ${r.status}`);
+        return null;
+      }
+      const data = await r.json() as { summary?: string; error?: string };
+      return (data.summary || '').trim() || null;
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch (e: any) {
+    console.log(`[callResoomerSummary] error: ${e?.message?.slice(0, 100)}`);
+    return null;
+  }
 }

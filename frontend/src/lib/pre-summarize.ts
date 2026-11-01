@@ -1,26 +1,37 @@
 /**
  * pre-summarize.ts — Pre-summarize transcript client-side SEBELUM kirim ke server.
  *
- * Strategi (berurutan):
- * 1. Chrome Summarizer API (window.ai.summarizer) — gratis, on-device, Chrome 127+
+ * Strategi (berurutan, kalau satu gagal → fallback berikutnya):
+ * 1. Resoomer (https://resoomer.com/) — gratis, no signup, no captcha.
+ *    Pakai mode "filtreSummary" (Résumé optimisé) — paling detail di antara 5 mode Resoomer.
+ *    Server-side endpoint /api/stt/pre-summarize-resoomer handle full multi-step flow:
+ *      GET homepage → POST step 1-6 (multi-step pipeline) → POST changeViewResult=filtre
+ *      → GET homepage lagi → extract #returnFiltre (clean summary text).
+ *    Untuk input panjang (>5K char) → filtre mode IS actually summarize (keep only key sentences).
+ *    Untuk input pendek (<2K char) → filtre mode keeps most sentences (since they're all important).
+ *    Retention: 30-70% of input length, depending on text complexity.
+ *    Time: ~30-45s (server-side, no captcha, no rate-limit known).
+ * 2. Chatr (https://chatrai.app/tools/ai-chat-text) — gratis, no signup, no captcha.
+ *    Backend: Supabase Edge Function (GPT-4o) — endpoint public tanpa auth.
+ *    Server-side endpoint /api/stt/pre-summarize-chatr forward text + "comprehensive summary" prompt.
+ *    Retention: 15-65% (smart compression, preserves all key info).
+ *    Time: ~2-5 seconds (jauh lebih cepat dari Resoomer).
+ * 3. PDFSummarizer.net API (server-side, free, no signup, handle 50MB)
+ *    API: ai-services.formatech.io → upload to S3 → initialize → poll status → summary
+ *    Reject threshold: kalau summary <10% of input → too aggressive (350 char dari 219K = useless)
+ * 4. Chrome Summarizer API (window.ai.summarizer) — gratis, on-device, Chrome 127+
  *    Gemini Nano model, no rate limit, no API key, no signup.
  *    Chunk transcript ke 20K char per chunk (Chrome API max ~10K token).
- *    Untuk 219K char = ~11 chunks × 3s = ~33s (paralel tidak didukung, sequential).
- * 2. Fallback: kirim raw transcript ke server (Phase 1 DeepSeek handle ringkasan)
+ * 5. Fallback: kirim raw transcript ke server (Phase 1 DeepSeek handle ringkasan)
  *
  * Setelah pre-summarize:
- *   219K char → ~40-60K char ringkasan → kirim ke server
+ *   219K char → ~30-50K char ringkasan → kirim ke server
  *   Server lihat text ≤ 30K → skip Phase 1 (DeepSeek) → langsung Phase 2 (GLM/DeepSeek)
- *   Total: 0 LLM request untuk Phase 1 (Chrome API), 2 LLM request untuk Phase 2 (bagi tugas)
- *
- * Alternatif yang gak dipakai (terlalu rapuh):
- *   - Web scraping PDFSummarizer.net/Tomedes via headless browser — fragile, ToS issue
- *   - transformers.js summarization model — max input 1024 token, butuh 80+ chunks, lambat
  */
 
 export interface PreSummarizeResult {
   summary: string;
-  method: string;  // 'chrome-summarizer-api' | 'none'
+  method: string;  // 'resoomer-filtre' | 'chatr-gpt4o' | 'pdfsummarizer-net-api' | 'chrome-summarizer-api' | 'none'
   originalLength: number;
   summaryLength: number;
   chunkCount: number;
@@ -29,7 +40,93 @@ export interface PreSummarizeResult {
 export async function preSummarize(transcript: string): Promise<PreSummarizeResult> {
   const originalLength = transcript.length;
 
-  // Strategy 1: PDFSummarizer.net API (server-side, free, no signup, handle 50MB)
+  // Strategy 1: Chatr (Supabase GPT-4o function — FASTEST, no captcha, ~2-5s, reliable)
+  // Dipindah jadi #1 (sebelumnya #2) karena:
+  //   - 5-10x lebih cepat dari Resoomer (2-5s vs 30-45s)
+  //   - API-nya single-call (no multi-step pipeline)
+  //   - Compression ratio 15-65% (smart, preserves key info)
+  //   - Dari VPS test: 4K input → 800 char output (20% retention), 2 detik
+  try {
+    const res = await fetch('/api/stt/pre-summarize-chatr', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: transcript }),
+      signal: AbortSignal.timeout(120_000),
+    });
+    if (res.ok) {
+      const data = await res.json() as { summary?: string; method?: string; error?: string };
+      if (data.summary && data.summary.length > 50) {
+        // Chatr compression: 15-65% retention depending on input.
+        // For 219K input → 2% (too aggressive — REJECT, fall to Resoomer)
+        // For 5K-50K input → 20-50% (good — ACCEPT)
+        // Threshold: min 8% of input OR 2000 char for big input
+        // v14-3output: Chatr threshold diturunkan 8% → 0.5% (sesuai arsitektur baru).
+        // Chatr memang dirancang untuk "padat" (1-2% retention), bukan ringkasan sedang.
+        // Threshold 0.5% = batas minimum wajar — di bawah itu, summary gak berguna.
+        // Contoh: 219K input → min 1095 chars. Chatr return 2738 → diterima (2738 > 1095).
+        const minSummaryLength = originalLength > 10000 ? Math.max(300, originalLength * 0.005) : 150;
+        if (data.summary.length < minSummaryLength) {
+          console.log(`[pre-summarize] Chatr summary too short: ${data.summary.length} chars from ${originalLength} input (min ${minSummaryLength}) — rejecting, falling back to Resoomer`);
+        } else {
+          console.log(`[pre-summarize] Chatr GPT-4o: ${originalLength} → ${data.summary.length} chars (${(data.summary.length * 100 / originalLength).toFixed(0)}% retention, method: ${data.method})`);
+          return {
+            summary: data.summary,
+            method: 'chatr-gpt4o',
+            originalLength,
+            summaryLength: data.summary.length,
+            chunkCount: 1,
+          };
+        }
+      }
+      console.log(`[pre-summarize] Chatr returned: ${data.error || 'no summary'}`);
+    } else {
+      console.log(`[pre-summarize] Chatr HTTP ${res.status}`);
+    }
+  } catch (err: any) {
+    console.log(`[pre-summarize] Chatr failed:`, err?.message?.slice(0, 100) || err);
+  }
+
+  // Strategy 2: Resoomer (filtreSummary mode — paling detail di antara 5 mode Resoomer)
+  // Dipindah jadi #2 — dipakai kalau Chatr return too-short summary (untuk input >50K yang
+  // Chatr kompres terlalu agresif). Resoomer filtre biasanya give 7-15% retention.
+  // Time budget: 120s (server flow takes ~30-45s, give buffer)
+  try {
+    const res = await fetch('/api/stt/pre-summarize-resoomer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: transcript }),
+      signal: AbortSignal.timeout(120_000),
+    });
+    if (res.ok) {
+      const data = await res.json() as { summary?: string; method?: string; error?: string };
+      if (data.summary && data.summary.length > 50) {
+        // Resoomer filtre mode for long input keeps ~7% of content (key sentences only)
+        // For 219K input → 15K summary (7% retention). Itu ACTUALLY GOOD summary!
+        // Old threshold was 10% (too strict — 15K dari 219K = rejected).
+        // New threshold: 5% (supaya 15K dari 219K diterima).
+        const minSummaryLength = originalLength > 10000 ? Math.max(1500, originalLength * 0.05) : 150;
+        if (data.summary.length < minSummaryLength) {
+          console.log(`[pre-summarize] Resoomer summary too short: ${data.summary.length} chars from ${originalLength} input (min ${minSummaryLength}) — rejecting, falling back`);
+        } else {
+          console.log(`[pre-summarize] Resoomer filtre: ${originalLength} → ${data.summary.length} chars (${(data.summary.length * 100 / originalLength).toFixed(0)}% retention, method: ${data.method})`);
+          return {
+            summary: data.summary,
+            method: 'resoomer-filtre',
+            originalLength,
+            summaryLength: data.summary.length,
+            chunkCount: 1,
+          };
+        }
+      }
+      console.log(`[pre-summarize] Resoomer returned: ${data.error || 'no summary'}`);
+    } else {
+      console.log(`[pre-summarize] Resoomer HTTP ${res.status}`);
+    }
+  } catch (err: any) {
+    console.log(`[pre-summarize] Resoomer failed:`, err?.message?.slice(0, 100) || err);
+  }
+
+  // Strategy 3: PDFSummarizer.net API (server-side, free, no signup, handle 50MB)
   // API: ai-services.formatech.io → upload to S3 → initialize → poll status → summary
   try {
     const res = await fetch('/api/stt/pre-summarize-web', {
@@ -67,7 +164,7 @@ export async function preSummarize(transcript: string): Promise<PreSummarizeResu
     console.log(`[pre-summarize] PDFSummarizer.net API failed:`, err);
   }
 
-  // Strategy 2: Chrome Summarizer API (on-device, free, Chrome 127+)
+  // Strategy 4: Chrome Summarizer API (on-device, free, Chrome 127+)
   const chromeResult = await chromeSummarizeChunked(transcript);
   if (chromeResult) {
     console.log(`[pre-summarize] Chrome Summarizer API: ${originalLength} → ${chromeResult.summary.length} chars (${chromeResult.chunkCount} chunks, method: on-device)`);
@@ -80,9 +177,9 @@ export async function preSummarize(transcript: string): Promise<PreSummarizeResu
     };
   }
 
-  // Strategy 2: No pre-summarization — send raw transcript
+  // Strategy 5: No pre-summarization — send raw transcript
   // Server Phase 1 (DeepSeek) will handle ringkasan
-  console.log(`[pre-summarize] No Chrome Summarizer API → send raw transcript (${originalLength} chars), server Phase 1 will handle`);
+  console.log(`[pre-summarize] No pre-summarizer worked → send raw transcript (${originalLength} chars), server Phase 1 will handle`);
   return {
     summary: transcript,
     method: 'none',

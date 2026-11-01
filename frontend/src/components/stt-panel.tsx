@@ -381,8 +381,10 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
           disabled={isRecording || isProcessing}
           onText={(text, meta) => {
             console.log('[DocumentUpload] text:', text.length, 'chars', meta);
-            const sentences = text.split(/\n\s*\n|\s{2,}/).filter(s => s.trim().length > 10);
-            useAppStore.getState().appendTranscriptBatch(sentences);
+            // v17: REPLACE transcript (bukan append) supaya gak campur dengan transcript lama.
+            // Sebelumnya appendTranscriptBatch bikin transcript lama + baru gabung →
+            // Mode Belajar pakai text campuran → materi lama masih muncul.
+            useAppStore.getState().setTranscript(text);
             toast.success(`Dokumen "${meta.fileName}": ${meta.charCount.toLocaleString()} karakter via ${meta.method}`);
           }}
         />
