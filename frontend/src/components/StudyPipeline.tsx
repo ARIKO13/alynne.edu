@@ -1339,7 +1339,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
 
             {/* Tujuan */}
             {activeChapter.tujuan && (
-              <div className="rounded-lg border border-teal-500/10 bg-teal-500/[0.02] p-3">
+              <div className="rounded-lg border border-orange-700/10 bg-orange-700/[0.02] p-3">
                 <p className="text-[11px] text-stone-500 mb-1">Tujuan</p>
                 <p className="text-xs text-stone-400 leading-relaxed">{activeChapter.tujuan}</p>
               </div>
@@ -1737,7 +1737,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                         className={cn(
                           'rounded-md border px-1.5 py-1.5 text-center transition-colors',
                           studyFocusVisionMode === 'akurat'
-                            ? 'border-teal-400/60 bg-teal-500/10'
+                            ? 'border-orange-400/60 bg-orange-700/10'
                             : 'border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05]'
                         )}
                       >

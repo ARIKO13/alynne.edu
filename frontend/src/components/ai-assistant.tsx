@@ -18,7 +18,7 @@ import { indexTranscript, getRAGContext } from '@/lib/rag';
 
 const PROVIDER_COLORS: Record<string, string> = {
   claude: 'border-stone-500/30 text-stone-400',
-  gemini: 'border-teal-500/30 text-[var(--accent-soft)]',
+  gemini: 'border-orange-700/30 text-[var(--accent-soft)]',
   deepseek: 'border-[var(--accent)]/30 text-[var(--accent-soft)]',
   nvidia: 'border-emerald-500/30 text-emerald-400',
   minimax: 'border-pink-500/30 text-pink-400',

@@ -281,7 +281,7 @@ export async function createProject(name: string, description?: string): Promise
     throw new Error(`Maksimal ${LIMITS.MAX_PROJECTS} project. Hapus yang tidak terpakai untuk membuat baru.`);
   }
   const COLORS = [
-    '#0F766E', '#3B82F6', '#10B981', '#F59E0B',
+    '#C2410C', '#3B82F6', '#10B981', '#F59E0B',
     '#EF4444', '#EC4899', '#06B6D4', '#84CC16',
   ];
   const now = new Date().toISOString();

@@ -98,22 +98,42 @@
 > bukan dekorasi; kandidat review produk, tidak dihapus di sini. Warna
 > kategori data-viz (chart/mindmap/diagram) dipertahankan = encoding
 > konten, bukan ornamen. Statistik kontras dihitung via skrip (WCAG).
+>
+> **Ronde 6 — 2026-11-01 (palet "lampu belajar malam" — keputusan owner):**
+> owner mengirim referensi warna cahaya lampu — oranye hangat (cozy, tak
+> menyilaukan), merah (malam/relaksasi, bukan fokus), putih netral ±4000K
+> (fokus belajar lama) — plus "sama warna hitam. nih pake". Arah: hitam +
+> oranye + putih netral. Dieksekusi: (1) aksen teal-sage → **oranye terbakar
+> muted**: `--accent #0F766E → #C2410C` (hue 17°), `--accent-hover #115E59 →
+> #9A3412`, `--accent-soft #7FC4B8 → #D9A87E` (peach muted, hue 28°).
+> Kontras terverifikasi via skrip WCAG: putih di --accent 5.18:1,
+> --accent-soft di --bg 9.17:1 (di --surface 8.62:1), ring 3.78:1.
+> (2) Dasar hitam hangat `#0D0C0A` + teks putih netral `#F5F2ED`
+> dipertahankan — sudah sesuai arah owner sejak ronde 5. (3) Merah
+> `--err #EF4444` tetap khusus status error, bukan warna aksi (sesuai
+> catatan owner). (4) Migrasi mekanis 30 file: hex #0F766E/#115E59/#7FC4B8
+> → padanan oranye — termasuk konstanta canvas/SVG (ctx.strokeStyle dkk.
+> butuh hex literal, var() tidak terbaca di canvas); kelas teal-400/500/
+> 700/800 → orange-400/700/800/900 (fill solid → step 700 agar teks putih
+> ≥ 4.5:1). Sisa teal aktif: 0. Waiver tetap: gradien logo Instagram,
+> LofiBackground, warna kategori data-viz. Tabel §2 disinkronkan dengan
+> nilai stone ronde 5 yang tertinggal.
 
 ## 1. Arah (satu kalimat)
 
 Aplikasi belajar gelap yang tenang dan padat-fungsi: satu permukaan flat,
-satu aksen teal-sage membumi, tipografi yang jelas, gerak yang beralasan — nol ornamen.
+satu aksen oranye hangat membumi, tipografi yang jelas, gerak yang beralasan — nol ornamen.
 
 ## 2. Token (wajib lewat token, dilarang nilai literal baru)
 
 | Token | Nilai | Peran |
 |---|---|---|
 | `--bg` | `#0D0C0A` (warm) | Satu-satunya latar. Tidak ada gradient atmosfer. |
-| `--surface` | `#111113` | Kartu/panel, **opaque** (bukan blur, bukan alpha). |
-| `--surface-2` | `#18181B` | Hover / nested sekali. |
-| `--border` | `#27272A` | Pembatas. 1px, boleh hilang kalau spacing sudah cukup. |
-| `--text` | `#FAFAFA` · `--text-2: #A1A1AA` · `--text-3: #71717A` | 3 tingkat, cukup. |
-| `--accent` | `#0F766E` (hover `#115E59`, teks/garis di bg gelap: `--accent-soft #7FC4B8`) | SATU aksen teal-sage muted (ronde 5). Flat. Bukan gradient. Hanya untuk aksi primer & fokus. |
+| `--surface` | `#161412` | Kartu/panel, **opaque** (bukan blur, bukan alpha). |
+| `--surface-2` | `#1E1B18` | Hover / nested sekali. |
+| `--border` | `#2B2723` | Pembatas. 1px, boleh hilang kalau spacing sudah cukup. |
+| `--text` | `#F5F2ED` · `--text-2: #ABA49A` · `--text-3: #8E8880` | 3 tingkat, cukup. |
+| `--accent` | `#C2410C` (hover `#9A3412`, teks/garis di bg gelap: `--accent-soft #D9A87E`) | SATU aksen oranye hangat muted (ronde 6, "lampu belajar malam"). Flat. Bukan gradient. Hanya untuk aksi primer & fokus. |
 | `--ok / --warn / --err` | `#10B981` / `#F59E0B` / `#EF4444` | Hanya status BENERAN status. Warna membawa kata, bukan menggantikan kata. |
 
 - Radius: **skala 2 langkah** — `6px` (kontrol) dan `12px` (kontainer). Nested:

@@ -199,7 +199,7 @@ export function AdminPanel() {
           className={cn(
             'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
             activeView === 'd1'
-              ? 'bg-teal-500/15 text-[var(--accent-soft)]'
+              ? 'bg-orange-700/15 text-[var(--accent-soft)]'
               : 'text-stone-500 hover:text-stone-300'
           )}
         >
@@ -256,7 +256,7 @@ export function AdminPanel() {
               icon={Award}
               label="Certificates"
               value={stats.totalCertificates}
-              color="bg-teal-500/10 text-[var(--accent-soft)]"
+              color="bg-orange-700/10 text-[var(--accent-soft)]"
             />
             <StatCard
               icon={Flame}

@@ -62,10 +62,10 @@ const ACCENT: Record<
     check: 'text-rose-400',
   },
   sky: {
-    ring: 'ring-teal-500',
-    bg: 'bg-teal-500/[0.06]',
+    ring: 'ring-orange-700',
+    bg: 'bg-orange-700/[0.06]',
     text: 'text-[var(--accent-soft)]',
-    badge: 'bg-teal-500',
+    badge: 'bg-orange-700',
     check: 'text-[var(--accent-soft)]',
   },
 };

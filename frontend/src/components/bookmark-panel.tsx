@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 const COLORS = [
-  { name: 'Violet', value: '#7FC4B8' },
+  { name: 'Violet', value: '#D9A87E' },
   { name: 'Magenta', value: '#F687B3' },
   { name: 'Sky', value: '#60A5FA' },
   { name: 'Emerald', value: '#34D399' },
@@ -38,7 +38,7 @@ export function BookmarkPanel() {
   const [formText, setFormText] = useState('');
   const [formNote, setFormNote] = useState('');
   const [formMaterial, setFormMaterial] = useState('');
-  const [formColor, setFormColor] = useState('#7FC4B8');
+  const [formColor, setFormColor] = useState('#D9A87E');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -119,7 +119,7 @@ export function BookmarkPanel() {
     setFormText('');
     setFormNote('');
     setFormMaterial('');
-    setFormColor('#7FC4B8');
+    setFormColor('#D9A87E');
   };
 
   const handlePasteFromTranscript = () => {
@@ -189,7 +189,7 @@ export function BookmarkPanel() {
           <Button
             onClick={() => { resetForm(); setShowForm(true); }}
             size="sm"
-            className="bg-gradient-to-r from-[#7FC4B8] to-[#F687B3] text-white hover:opacity-90 gap-1.5"
+            className="bg-gradient-to-r from-[#D9A87E] to-[#F687B3] text-white hover:opacity-90 gap-1.5"
           >
             <Plus className="h-3.5 w-3.5" />
             Tambah
@@ -205,7 +205,7 @@ export function BookmarkPanel() {
           placeholder="Cari bookmark atau catatan..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-sm text-stone-200 placeholder:text-stone-600 focus:outline-none focus:border-[#7FC4B8]/30 focus:ring-1 focus:ring-[#7FC4B8]/20 transition-colors"
+          className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-sm text-stone-200 placeholder:text-stone-600 focus:outline-none focus:border-[#D9A87E]/30 focus:ring-1 focus:ring-[#D9A87E]/20 transition-colors"
         />
       </div>
 
@@ -229,7 +229,7 @@ export function BookmarkPanel() {
                 placeholder="cth: Biologi Bab 3"
                 value={formMaterial}
                 onChange={(e) => setFormMaterial(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-sm text-stone-200 placeholder:text-stone-600 focus:outline-none focus:border-[#7FC4B8]/30 transition-colors"
+                className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-sm text-stone-200 placeholder:text-stone-600 focus:outline-none focus:border-[#D9A87E]/30 transition-colors"
               />
             </div>
 
@@ -238,7 +238,7 @@ export function BookmarkPanel() {
                 <label className="text-[11px] text-stone-500">Teks Highlight</label>
                 <button
                   onClick={handlePasteFromTranscript}
-                  className="text-[10px] text-[#7FC4B8] hover:text-[#7FC4B8]/80 transition-colors"
+                  className="text-[10px] text-[#D9A87E] hover:text-[#D9A87E]/80 transition-colors"
                 >
                   Tempel dari Transcript
                 </button>
@@ -248,7 +248,7 @@ export function BookmarkPanel() {
                 value={formText}
                 onChange={(e) => setFormText(e.target.value)}
                 rows={3}
-                className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-sm text-stone-200 placeholder:text-stone-600 focus:outline-none focus:border-[#7FC4B8]/30 transition-colors resize-none"
+                className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-sm text-stone-200 placeholder:text-stone-600 focus:outline-none focus:border-[#D9A87E]/30 transition-colors resize-none"
               />
             </div>
 
@@ -259,7 +259,7 @@ export function BookmarkPanel() {
                 value={formNote}
                 onChange={(e) => setFormNote(e.target.value)}
                 rows={2}
-                className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-sm text-stone-200 placeholder:text-stone-600 focus:outline-none focus:border-[#7FC4B8]/30 transition-colors resize-none"
+                className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-sm text-stone-200 placeholder:text-stone-600 focus:outline-none focus:border-[#D9A87E]/30 transition-colors resize-none"
               />
             </div>
 
@@ -292,7 +292,7 @@ export function BookmarkPanel() {
               Batal
             </Button>
             <Button onClick={handleSave} disabled={saving} size="sm"
-              className="flex-1 bg-gradient-to-r from-[#7FC4B8] to-[#F687B3] text-white hover:opacity-90">
+              className="flex-1 bg-gradient-to-r from-[#D9A87E] to-[#F687B3] text-white hover:opacity-90">
               {saving ? 'Menyimpan...' : editingId ? 'Perbarui' : 'Simpan'}
             </Button>
           </div>
@@ -302,7 +302,7 @@ export function BookmarkPanel() {
       {/* Bookmark List */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin h-6 w-6 border-2 border-[#7FC4B8] border-t-transparent rounded-full" />
+          <div className="animate-spin h-6 w-6 border-2 border-[#D9A87E] border-t-transparent rounded-full" />
         </div>
       ) : filteredBookmarks.length === 0 ? (
         <div className="text-center py-16">
@@ -342,7 +342,7 @@ export function BookmarkPanel() {
                   {b.note && (
                     <button
                       onClick={() => setExpandedId(expandedId === b.id ? null : b.id)}
-                      className="flex items-center gap-1 mt-2 text-[11px] text-[#7FC4B8]/70 hover:text-[#7FC4B8] transition-colors"
+                      className="flex items-center gap-1 mt-2 text-[11px] text-[#D9A87E]/70 hover:text-[#D9A87E] transition-colors"
                     >
                       {expandedId === b.id ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                       Catatan

@@ -282,7 +282,7 @@ export default function App({ onBackToLanding }: AppProps) {
                 variant="outline"
                 className={cn('gap-1.5 text-[11px] animate-pulse hidden sm:flex cursor-pointer',
                   sttSource === 'webspeech' ? 'border-red-500/30 text-red-400 bg-red-500/10'
-                    : sttSource === 'screen-capture' ? 'border-teal-500/30 text-[var(--accent-soft)] bg-teal-500/10'
+                    : sttSource === 'screen-capture' ? 'border-orange-700/30 text-[var(--accent-soft)] bg-orange-700/10'
                     : 'border-amber-500/30 text-amber-400 bg-amber-500/10'
                 )}
                 onClick={() => { setActiveTab('stt'); setSidebarOpen(false); }}

@@ -90,7 +90,7 @@ export function MindmapGraph({ chapters, activeChapterId, onSelectChapter }: Min
               y1={root.y}
               x2={node.x}
               y2={node.y}
-              stroke={isActive ? '#7FC4B8' : '#44403C'}
+              stroke={isActive ? '#D9A87E' : '#44403C'}
               strokeWidth={isActive ? 2 : 1}
               strokeDasharray={isActive ? '0' : '4'}
             />
@@ -115,7 +115,7 @@ export function MindmapGraph({ chapters, activeChapterId, onSelectChapter }: Min
                   cx={node.x}
                   cy={node.y}
                   r={r + 6}
-                  fill="#7FC4B8"
+                  fill="#D9A87E"
                   opacity={0.2}
                 />
               )}
@@ -123,8 +123,8 @@ export function MindmapGraph({ chapters, activeChapterId, onSelectChapter }: Min
                 cx={node.x}
                 cy={node.y}
                 r={r}
-                fill={isRoot ? '#7FC4B8' : isActive ? '#7FC4B8' : '#25221E'}
-                stroke={isRoot || isActive ? '#7FC4B8' : '#44403C'}
+                fill={isRoot ? '#D9A87E' : isActive ? '#D9A87E' : '#25221E'}
+                stroke={isRoot || isActive ? '#D9A87E' : '#44403C'}
                 strokeWidth={2}
               />
               <text
@@ -143,7 +143,7 @@ export function MindmapGraph({ chapters, activeChapterId, onSelectChapter }: Min
                   x={node.x}
                   y={node.y + 14}
                   textAnchor="middle"
-                  fill={isActive ? '#7FC4B8' : '#57534E'}
+                  fill={isActive ? '#D9A87E' : '#57534E'}
                   fontSize={8}
                 >
                   {chapters.find((c) => c.id === node.id)?.wordCount || 0} kata

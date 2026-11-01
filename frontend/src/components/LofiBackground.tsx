@@ -58,7 +58,7 @@ export function LofiBackground({ theme = 'sunset', intensity = 0.6 }: LofiBackgr
         wave: 'rgba(34, 211, 238, 0.1)',
       },
       ocean: {
-        sky: ['#0c4a6e', '#115E59', '#0284c7', '#38bdf8'],
+        sky: ['#0c4a6e', '#9A3412', '#0284c7', '#38bdf8'],
         particles: '#e0f2fe',
         cloud: 'rgba(255, 255, 255, 0.08)',
         wave: 'rgba(56, 189, 248, 0.15)',

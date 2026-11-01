@@ -620,7 +620,7 @@ export function ImageSharpener() {
 
       {/* Info card */}
       {!imageSrc && (
-        <div className="rounded-lg border border-teal-500/15 bg-teal-500/[0.03] p-4">
+        <div className="rounded-lg border border-orange-700/15 bg-orange-700/[0.03] p-4">
           <div className="flex items-start gap-2.5">
             <AlertCircle className="h-4 w-4 text-[var(--accent-soft)] mt-0.5 flex-shrink-0" />
             <div className="text-xs text-stone-400 leading-relaxed">

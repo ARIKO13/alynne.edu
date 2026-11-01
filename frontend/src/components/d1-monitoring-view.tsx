@@ -167,7 +167,7 @@ export function D1MonitoringView() {
                   'h-full rounded-full transition-colors',
                   parseFloat(d1.storage.usedPct) > 80 ? 'bg-red-500'
                     : parseFloat(d1.storage.usedPct) > 50 ? 'bg-amber-500'
-                    : 'bg-teal-500'
+                    : 'bg-orange-700'
                 )}
                 style={{ width: `${Math.min(parseFloat(d1.storage.usedPct), 100)}%` }}
               />
@@ -204,7 +204,7 @@ export function D1MonitoringView() {
                   )}
                   <div className="h-1.5 bg-[#161412] rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-teal-500/60 rounded-full"
+                      className="h-full bg-orange-700/60 rounded-full"
                       style={{ width: `${pct}%` }}
                     />
                   </div>
@@ -254,7 +254,7 @@ export function D1MonitoringView() {
       )}
 
       {/* D1 architecture note */}
-      <div className="rounded-lg border border-teal-500/15 bg-teal-500/[0.03] p-3">
+      <div className="rounded-lg border border-orange-700/15 bg-orange-700/[0.03] p-3">
         <p className="text-[11px] text-[var(--accent-soft)] mb-1">D1 vs SQLite</p>
         <p className="text-[10px] text-stone-400 leading-relaxed">
           D1 (Cloudflare) menyimpan data user account: User (uid, username, gmail,

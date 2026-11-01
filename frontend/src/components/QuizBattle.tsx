@@ -345,7 +345,7 @@ function getRank(score: number, accuracy: number): { title: string; message: str
     return { title: 'Expert', message: 'Kerja bagus, lanjutkan!', color: '#94A3B8' };
   }
   if (accuracy >= 40) {
-    return { title: 'Learner', message: 'Belajar lagi yuk!', color: '#7FC4B8' };
+    return { title: 'Learner', message: 'Belajar lagi yuk!', color: '#D9A87E' };
   }
   return { title: 'Beginner', message: 'Jangan menyerah, coba lagi!', color: '#6B7280' };
 }

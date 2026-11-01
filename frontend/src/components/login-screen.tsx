@@ -161,7 +161,7 @@ export function LoginScreen() {
                 type="text" value={name} onChange={(e) => setName(e.target.value)}
                 placeholder="Nama" disabled={loading} autoComplete="name"
                 style={inputBase}
-                onFocus={(e) => e.currentTarget.style.borderBottomColor = '#7FC4B8'}
+                onFocus={(e) => e.currentTarget.style.borderBottomColor = '#D9A87E'}
                 onBlur={(e) => e.currentTarget.style.borderBottomColor = '#2B2723'}
               />
             </div>
@@ -173,7 +173,7 @@ export function LoginScreen() {
                 type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                 placeholder="email@kamu.com" disabled={loading} autoComplete="email"
                 style={inputBase}
-                onFocus={(e) => e.currentTarget.style.borderBottomColor = '#7FC4B8'}
+                onFocus={(e) => e.currentTarget.style.borderBottomColor = '#D9A87E'}
                 onBlur={(e) => e.currentTarget.style.borderBottomColor = '#2B2723'}
               />
             </div>
@@ -186,8 +186,8 @@ export function LoginScreen() {
                 opacity: (loading || !name.trim() || !email.trim()) ? 0.4 : 1,
                 transition: 'background 0.15s ease, opacity 0.15s ease',
               }}
-              onMouseEnter={(e) => !loading && (e.currentTarget.style.background = '#115E59')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = '#7FC4B8')}
+              onMouseEnter={(e) => !loading && (e.currentTarget.style.background = '#9A3412')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = '#D9A87E')}
             >
               {loading ? <Loader2 className="animate-spin" style={{ width: '16px', height: '16px', margin: '0 auto' }} /> : 'Masuk'}
             </button>

@@ -33,7 +33,7 @@ export interface VisualisasiItem {
   render_hint?: string;
 }
 
-const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#7FC4B8', '#ec4899', '#06b6d4', '#84cc16'];
+const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#D9A87E', '#ec4899', '#06b6d4', '#84cc16'];
 
 export function VisualisasiPanel({ items }: { items: VisualisasiItem[] | undefined | null }) {
   if (!items || !Array.isArray(items) || items.length === 0) {

@@ -339,7 +339,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
               sttSource === 'webspeech'
                 ? 'text-green-400 bg-green-500/10 border-green-500/20'
                 : sttSource === 'screen-capture'
-                ? 'text-[var(--accent-soft)] bg-teal-500/10 border-teal-500/20'
+                ? 'text-[var(--accent-soft)] bg-orange-700/10 border-orange-700/20'
                 : 'text-amber-400 bg-amber-500/10 border-amber-500/20'
             )}
           >
@@ -380,7 +380,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
 
         {/* Screen mode hint */}
         {isScreenMode && !isRecording && (
-          <div className="flex items-start gap-2.5 rounded-lg border border-teal-500/15 bg-teal-500/[0.03] p-3">
+          <div className="flex items-start gap-2.5 rounded-lg border border-orange-700/15 bg-orange-700/[0.03] p-3">
             <MonitorUp className="h-4 w-4 text-[var(--accent-soft)] mt-0.5 shrink-0" />
             <div className="text-xs text-[var(--accent-soft)]/80 leading-relaxed">
               <p className="font-medium text-[var(--accent-soft)] mb-0.5">Mode Seluruh Layar</p>
@@ -413,7 +413,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
 
         {/* Combined Methods Indicator - shown when Entire Screen capture is active */}
         {isCombinedActive && (
-          <div className="rounded-lg border border-teal-500/20 bg-teal-500/[0.04] p-3">
+          <div className="rounded-lg border border-orange-700/20 bg-orange-700/[0.04] p-3">
             <div className="flex items-center gap-2 mb-2">
               <MonitorUp className="h-3.5 w-3.5 text-[var(--accent-soft)]" />
               <p className="text-xs font-medium text-[var(--accent-soft)]">Mode gabungan aktif</p>
@@ -573,7 +573,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
         </div>
 
         {/* Material Upload - always visible */}
-        <div className="rounded-lg border border-teal-500/10 bg-teal-500/[0.02] overflow-hidden">
+        <div className="rounded-lg border border-orange-700/10 bg-orange-700/[0.02] overflow-hidden">
           <div className="flex items-center gap-2 px-5 py-3 border-b border-white/[0.04]">
             <Upload className="h-4 w-4 text-[var(--accent-soft)]" />
             <h3 className="text-sm font-medium text-stone-200">Materi Pendukung</h3>

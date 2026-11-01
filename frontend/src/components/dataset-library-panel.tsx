@@ -404,7 +404,7 @@ export function DatasetLibraryPanel() {
                       className={cn(
                         'text-[9px] px-1.5 py-0',
                         w.source === 'kbbi' ? 'border-stone-500/30 text-stone-400 bg-stone-500/10'
-                          : w.source === 'slang' ? 'border-teal-500/30 text-[var(--accent-soft)] bg-teal-500/10'
+                          : w.source === 'slang' ? 'border-orange-700/30 text-[var(--accent-soft)] bg-orange-700/10'
                           : 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
                       )}
                       title={`Source: ${w.source}`}
@@ -478,7 +478,7 @@ export function DatasetLibraryPanel() {
                   <span className="text-sm font-mono text-stone-200">{c.word}</span>
                   <ChevronRight className="h-3 w-3 text-stone-600" />
                   <span className="text-sm font-mono text-[var(--accent-soft)]">{c.context_word}</span>
-                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-teal-500/30 text-[var(--accent-soft)] bg-teal-500/10">
+                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-orange-700/30 text-[var(--accent-soft)] bg-orange-700/10">
                     {c.position} · d{c.distance}
                   </Badge>
                   <span className="text-[10px] text-stone-600 ml-auto">×{c.count}</span>
@@ -556,7 +556,7 @@ export function DatasetLibraryPanel() {
                     <ChevronRight className="h-3 w-3 text-stone-600" />
                     <span className="text-sm font-mono text-emerald-300">{s.corrected_word}</span>
                     <div className="ml-auto flex items-center gap-2">
-                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-teal-500/30 text-[var(--accent-soft)] bg-teal-500/10">
+                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-orange-700/30 text-[var(--accent-soft)] bg-orange-700/10">
                         {s.total_votes} votes
                       </Badge>
                       <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-emerald-500/30 text-emerald-400 bg-emerald-500/10">
@@ -652,8 +652,8 @@ function StatCard({ label, value, icon, color }: {
     emerald: 'border-emerald-500/15 bg-emerald-500/[0.03]',
     amber: 'border-amber-500/15 bg-amber-500/[0.03]',
     red: 'border-red-500/15 bg-red-500/[0.03]',
-    sky: 'border-teal-500/15 bg-teal-500/[0.03]',
-    violet: 'border-teal-500/15 bg-teal-500/[0.03]',
+    sky: 'border-orange-700/15 bg-orange-700/[0.03]',
+    violet: 'border-orange-700/15 bg-orange-700/[0.03]',
   };
   const textColor = {
     purple: 'text-[var(--accent-soft)]',
@@ -740,7 +740,7 @@ function WordDetailView({ detail }: { detail: any }) {
               <div key={i} className="flex items-center gap-2 text-[11px]">
                 <Badge variant="outline" className={cn(
                   'text-[8px] px-1 py-0',
-                  c.position === 'before' ? 'border-teal-500/30 text-[var(--accent-soft)] bg-teal-500/10'
+                  c.position === 'before' ? 'border-orange-700/30 text-[var(--accent-soft)] bg-orange-700/10'
                     : 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
                 )}>
                   {c.position} · d{c.distance}
@@ -974,7 +974,7 @@ function SchemaView({ info }: { info: any }) {
                 <Database className="h-3 w-3" />
                 {t.name}
                 {t.foreignKeys.length > 0 && (
-                  <Badge variant="outline" className="text-[8px] px-1 py-0 border-teal-500/30 text-[var(--accent-soft)] bg-teal-500/10 ml-1">
+                  <Badge variant="outline" className="text-[8px] px-1 py-0 border-orange-700/30 text-[var(--accent-soft)] bg-orange-700/10 ml-1">
                     {t.foreignKeys.length} FK
                   </Badge>
                 )}
@@ -1010,7 +1010,7 @@ function SchemaView({ info }: { info: any }) {
 
             {/* Foreign keys */}
             {t.foreignKeys.length > 0 && (
-              <div className="px-2 py-1.5 border-t border-white/[0.04] bg-teal-500/[0.02]">
+              <div className="px-2 py-1.5 border-t border-white/[0.04] bg-orange-700/[0.02]">
                 <p className="text-[11px] text-[var(--accent-soft)]/70 mb-1">Foreign Keys</p>
                 {t.foreignKeys.map((fk: any, fi: number) => (
                   <div key={fi} className="flex items-center gap-1.5 text-[10px] py-0.5">
@@ -1254,7 +1254,7 @@ function D1MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefresh, l
       )}
 
       {/* D1 architecture note */}
-      <div className="rounded-lg border border-teal-500/15 bg-teal-500/[0.03] p-3">
+      <div className="rounded-lg border border-orange-700/15 bg-orange-700/[0.03] p-3">
         <p className="text-[11px] text-[var(--accent-soft)] mb-1">D1 vs SQLite</p>
         <p className="text-[10px] text-stone-400 leading-relaxed">
           D1 (Cloudflare) menyimpan data user account: Users, Certificates, Subscriptions, DailyProgress,

@@ -21,9 +21,9 @@ interface PdfCopilotProps {
 
 const QUICK_ACTIONS = [
   { id: 'analogy', label: 'Jelaskan dengan analogi', icon: Lightbulb, prompt: 'Jelaskan teks yang saya highlight dengan analogi sederhana yang mudah dipahami. Gunakan contoh sehari-hari.', color: 'text-amber-400 bg-amber-400/10 border-amber-400/20 hover:bg-amber-400/20' },
-  { id: 'table', label: 'Ubah ke tabel perbandingan', icon: Table, prompt: 'Ubah teks yang saya highlight menjadi tabel perbandingan yang rapi. Gunakan format markdown table.', color: 'text-[var(--accent-soft)] bg-teal-400/10 border-teal-400/20 hover:bg-teal-400/20' },
+  { id: 'table', label: 'Ubah ke tabel perbandingan', icon: Table, prompt: 'Ubah teks yang saya highlight menjadi tabel perbandingan yang rapi. Gunakan format markdown table.', color: 'text-[var(--accent-soft)] bg-orange-400/10 border-orange-400/20 hover:bg-orange-400/20' },
   { id: 'simplify', label: 'Sederhanakan', icon: BookOpen, prompt: 'Sederhanakan teks yang saya highlight menjadi poin-poin yang mudah dipahami. Gunakan bahasa sehari-hari.', color: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20 hover:bg-emerald-400/20' },
-  { id: 'quiz', label: 'Buat kuis', icon: Sparkles, prompt: 'Buat 3 pertanyaan kuis dari teks yang saya highlight. Sertakan jawaban singkat di akhir.', color: 'text-[var(--accent-soft)] bg-teal-400/10 border-teal-400/20 hover:bg-teal-400/20' },
+  { id: 'quiz', label: 'Buat kuis', icon: Sparkles, prompt: 'Buat 3 pertanyaan kuis dari teks yang saya highlight. Sertakan jawaban singkat di akhir.', color: 'text-[var(--accent-soft)] bg-orange-400/10 border-orange-400/20 hover:bg-orange-400/20' },
 ];
 
 export function PdfCopilot({ pdfContent, pdfTitle, onClose }: PdfCopilotProps) {
@@ -117,7 +117,7 @@ export function PdfCopilot({ pdfContent, pdfTitle, onClose }: PdfCopilotProps) {
 
         {/* Selected text indicator */}
         {selectedText && (
-          <div className="px-5 py-2 bg-[#7FC4B8]/5 border-b border-[#7FC4B8]/10 flex items-center gap-2">
+          <div className="px-5 py-2 bg-[#D9A87E]/5 border-b border-[#D9A87E]/10 flex items-center gap-2">
             <span className="text-[10px] text-[var(--accent-soft)] font-medium">Highlighted:</span>
             <span className="text-[11px] text-stone-300 truncate flex-1">{selectedText.slice(0, 100)}{selectedText.length > 100 ? '...' : ''}</span>
             <button onClick={() => setSelectedText('')} className="text-[10px] text-stone-500 hover:text-stone-300">clear</button>
@@ -147,7 +147,7 @@ export function PdfCopilot({ pdfContent, pdfTitle, onClose }: PdfCopilotProps) {
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center">
-              <div className="rounded-full bg-[#7FC4B8]/10 p-4 mb-4">
+              <div className="rounded-full bg-[#D9A87E]/10 p-4 mb-4">
                 <Sparkles className="h-8 w-8 text-[var(--accent-soft)]" />
               </div>
               <h3 className="text-sm font-medium text-stone-300 mb-2">PDF AI Co-Pilot</h3>
@@ -171,12 +171,12 @@ export function PdfCopilot({ pdfContent, pdfTitle, onClose }: PdfCopilotProps) {
           {messages.map(msg => (
             <div key={msg.id} className={cn('flex gap-3', msg.role === 'user' ? 'justify-end' : '')}>
               {msg.role === 'assistant' && (
-                <div className="w-6 h-6 rounded-full bg-[#7FC4B8]/20 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="w-6 h-6 rounded-full bg-[#D9A87E]/20 flex items-center justify-center shrink-0 mt-0.5">
                   <Sparkles className="h-3 w-3 text-[var(--accent-soft)]" />
                 </div>
               )}
               <div className={cn('max-w-[80%] rounded-lg px-4 py-3 text-sm leading-relaxed',
-                msg.role === 'user' ? 'bg-[#7FC4B8]/15 text-stone-200 rounded-br-sm' : 'bg-white/[0.04] text-stone-300 rounded-bl-sm'
+                msg.role === 'user' ? 'bg-[#D9A87E]/15 text-stone-200 rounded-br-sm' : 'bg-white/[0.04] text-stone-300 rounded-bl-sm'
               )}>
                 <div className="whitespace-pre-wrap">{msg.content}</div>
               </div>
@@ -184,7 +184,7 @@ export function PdfCopilot({ pdfContent, pdfTitle, onClose }: PdfCopilotProps) {
           ))}
           {isLoading && (
             <div className="flex gap-3">
-              <div className="w-6 h-6 rounded-full bg-[#7FC4B8]/20 flex items-center justify-center shrink-0">
+              <div className="w-6 h-6 rounded-full bg-[#D9A87E]/20 flex items-center justify-center shrink-0">
                 <Sparkles className="h-3 w-3 text-[var(--accent-soft)]" />
               </div>
               <div className="bg-white/[0.04] rounded-lg rounded-bl-sm px-4 py-3">
@@ -208,11 +208,11 @@ export function PdfCopilot({ pdfContent, pdfTitle, onClose }: PdfCopilotProps) {
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                 placeholder={selectedText ? 'Tambah pertanyaan (opsional)...' : 'Tanya tentang materi PDF...'}
                 rows={1}
-                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-4 py-2.5 text-sm text-stone-200 placeholder:text-stone-600 resize-none focus:outline-none focus:border-[#7FC4B8]/40 focus:ring-1 focus:ring-[#7FC4B8]/20 transition-colors max-h-24"
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-4 py-2.5 text-sm text-stone-200 placeholder:text-stone-600 resize-none focus:outline-none focus:border-[#D9A87E]/40 focus:ring-1 focus:ring-[#D9A87E]/20 transition-colors max-h-24"
               />
             </div>
             <Button onClick={handleSend} disabled={isLoading || (!input.trim() && !selectedText)}
-              size="sm" className="h-10 w-10 p-0 rounded-lg bg-[#7FC4B8] hover:bg-[#7FC4B8]/80 text-white shrink-0">
+              size="sm" className="h-10 w-10 p-0 rounded-lg bg-[#D9A87E] hover:bg-[#D9A87E]/80 text-white shrink-0">
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </div>
