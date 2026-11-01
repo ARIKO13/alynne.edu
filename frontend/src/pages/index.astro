@@ -1,44 +1,193 @@
 ---
 import Layout from '@/layouts/Layout.astro';
 import '@/styles/global.css';
+
+/* Ronde 3 (DESIGN.md §6 & §3): homepage diisi komposisi nyata.
+   Semua warna via token; flat; tanpa gradien/emoji/statistik terukur palsu. */
+const fitur = [
+  {
+    title: 'Rangkuman otomatis',
+    body: 'Materi panjang dipilah per bab, diringkas padat dengan poin kunci dan istilah penting.',
+    icon: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8',
+  },
+  {
+    title: 'Kuis latihan',
+    body: 'Soal pilihan ganda dibuat dari materimu sendiri — lengkap dengan pembahasan tiap nomor.',
+    icon: 'M3 17l2 2 4-4 M3 7l2 2 4-4 M13 6h8 M13 12h8 M13 18h8',
+  },
+  {
+    title: 'Flashcard',
+    body: 'Istilah kunci jadi kartu bolak-balik. Ulangi selang-seling sebelum ujian.',
+    icon: 'M12 2 2 7l10 5 10-5-10-5z M2 17l10 5 10-5 M2 12l10 5 10-5',
+  },
+  {
+    title: 'Transkripsi audio',
+    body: 'Rekaman pelajaran atau video YouTube diubah jadi teks yang siap dibaca dan dirangkum.',
+    icon: 'M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v3',
+  },
+  {
+    title: 'Pemecah soal',
+    body: 'Foto soal yang sulit, dibahas langkah demi langkah sampai caranya paham.',
+    icon: 'M3 7V5a2 2 0 0 1 2-2h2 M17 3h2a2 2 0 0 1 2 2v2 M21 17v2a2 2 0 0 1-2 2h-2 M7 21H5a2 2 0 0 1-2-2v-2 M7 12h10',
+  },
+  {
+    title: 'Ekspor & bagikan',
+    body: 'Jadikan PDF modul, slide presentasi, atau mindmap — kirim ke teman sekali klik.',
+    icon: 'M18 5a3 3 0 1 1-2.58 1.51 M6 15a3 3 0 1 1 0-6 M18 19a3 3 0 1 1-2.58-4.49 M8.6 13.5l6.8 4 M15.4 6.5l-6.8 4',
+  },
+];
 ---
 
 <Layout title="ALYNNE AI">
-  <main class="flex min-h-[calc(100svh-9rem)] items-center bg-[var(--bg)] px-6 py-16">
-    <div class="max-w-6xl mx-auto w-full grid md:grid-cols-[7fr_5fr] gap-10 items-end">
+  <main class="px-6">
+    <!-- ============ HERO ============ -->
+    <section class="max-w-6xl mx-auto pt-28 pb-20 grid lg:grid-cols-[6fr_5fr] gap-14 items-center">
       <div>
-        <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-white mb-5 max-w-xl">
-          Semua kebutuhan belajar, satu tempat.
+        <p class="text-sm text-[var(--text-2)] mb-4">Untuk pelajar & mahasiswa Indonesia</p>
+
+        <h1 class="font-display text-5xl sm:text-6xl font-bold text-white leading-[1.05] mb-6">
+          Video dan materi,<br />jadi alat belajar.
         </h1>
 
-        <p class="text-base text-zinc-400 max-w-lg leading-relaxed mb-8">
-          Ubah materi jadi rangkuman, kuis, dan flashcard. Cukup unggah file
-          atau tempel tautan YouTube.
+        <p class="text-base text-[var(--text-2)] max-w-md leading-relaxed mb-8">
+          Unggah PDF, foto soal, atau tautan YouTube. ALYNNE mengolahnya jadi
+          rangkuman, kuis, flashcard, dan mindmap — semuanya dari satu bahan yang sama.
         </p>
 
-        <div class="flex flex-col sm:flex-row items-start gap-3">
+        <div class="flex flex-col sm:flex-row items-start gap-3 mb-10">
           <a
-            href="/about"
-            class="inline-flex items-center gap-2 rounded-md px-6 py-3 text-sm font-semibold text-white bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors focus-visible:outline-white"
+            href="/edu"
+            class="inline-flex items-center rounded-md px-6 py-3 text-sm font-semibold text-white bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors focus-visible:outline-white"
           >
             Mulai belajar
           </a>
           <a
             href="/billing"
-            class="inline-flex items-center gap-2 rounded-md px-6 py-3 text-sm font-semibold text-zinc-200 bg-[var(--surface)] hover:bg-[var(--surface-2)] border border-[var(--border)] transition-colors"
+            class="inline-flex items-center rounded-md px-6 py-3 text-sm font-semibold text-zinc-200 bg-[var(--surface)] hover:bg-[var(--surface-2)] border border-[var(--border)] transition-colors"
           >
             Lihat paket
           </a>
         </div>
+
+        <ul class="space-y-2.5 text-sm text-[var(--text-2)]">
+          <li class="flex items-center gap-2.5">
+            <svg viewBox="0 0 24 24" class="h-4 w-4 text-[var(--accent)] shrink-0" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6 9 17l-5-5" /></svg>
+            Rangkuman, kuis, dan flashcard dari satu unggahan
+          </li>
+          <li class="flex items-center gap-2.5">
+            <svg viewBox="0 0 24 24" class="h-4 w-4 text-[var(--accent)] shrink-0" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6 9 17l-5-5" /></svg>
+            Bahasa Indonesia, sesuai materi sekolahmu
+          </li>
+          <li class="flex items-center gap-2.5">
+            <svg viewBox="0 0 24 24" class="h-4 w-4 text-[var(--accent)] shrink-0" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6 9 17l-5-5" /></svg>
+            Ekspor PDF, slide, atau mindmap kapan pun
+          </li>
+        </ul>
       </div>
 
-      <div class="hidden md:block">
-        <p class="text-sm text-zinc-500 leading-relaxed max-w-xs">
-          Rangkuman otomatis, kuis, flashcard, transkripsi audio, dan pemecah
-          soal — dikerjakan agen yang sama, tanpa pindah aplikasi.
+      <!-- Komposisi produk: satu panel output belajar (bukan screenshot) -->
+      <div class="hidden lg:block" aria-hidden="true">
+        <div class="rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+          <div class="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border)]">
+            <div class="flex items-center gap-2.5">
+              <span class="h-2 w-2 rounded-full bg-[var(--ok)]"></span>
+              <span class="text-sm font-medium text-white">Fotosintesis</span>
+              <span class="text-xs text-[var(--text-3)]">Biologi · 4 bab</span>
+            </div>
+            <span class="text-xs text-[var(--text-3)]">Selesai diproses</span>
+          </div>
+
+          <div class="p-5 space-y-4">
+            <div>
+              <p class="text-xs text-[var(--text-3)] mb-2">Rangkuman</p>
+              <div class="space-y-2">
+                <div class="h-2 rounded bg-[var(--surface-2)] w-full"></div>
+                <div class="h-2 rounded bg-[var(--surface-2)] w-[85%]"></div>
+                <div class="h-2 rounded bg-[var(--surface-2)] w-[60%]"></div>
+              </div>
+            </div>
+
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--bg)] p-4">
+              <p class="text-xs text-[var(--text-3)] mb-2.5">Kuis · soal 2 dari 5</p>
+              <p class="text-sm text-zinc-200 mb-3">Bagian sel tumbuhan tempat fotosintesis berlangsung adalah&#8230;</p>
+              <div class="space-y-1.5 text-xs">
+                <p class="rounded border border-[var(--border)] px-3 py-2 text-[var(--text-2)]">A. Mitokondria</p>
+                <p class="rounded border border-[var(--ok)]/40 px-3 py-2 text-[var(--ok)]">B. Kloroplas</p>
+              </div>
+            </div>
+
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--bg)] p-4">
+              <p class="text-xs text-[var(--text-3)] mb-2.5">Flashcard</p>
+              <p class="text-sm text-white">Depan: <span class="text-zinc-200">Fotosintesis</span></p>
+              <p class="text-sm text-[var(--text-2)]">Belakang: proses tumbuhan membuat glukosa dari cahaya matahari, air, dan CO&#8322;.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CARA KERJA ============ -->
+    <section class="max-w-6xl mx-auto py-20 border-t border-[var(--border)]">
+      <h2 class="font-display text-3xl font-semibold text-white mb-12">Cara kerjanya</h2>
+      <div class="grid md:grid-cols-3 gap-10">
+        <div>
+          <p class="font-display text-4xl font-bold text-zinc-600 mb-4">1</p>
+          <h3 class="text-base font-semibold text-white mb-2">Unggah materimu</h3>
+          <p class="text-sm text-[var(--text-2)] leading-relaxed">
+            File PDF, foto soal, atau tautan video YouTube. Satu sumber untuk semua output.
+          </p>
+        </div>
+        <div>
+          <p class="font-display text-4xl font-bold text-zinc-600 mb-4">2</p>
+          <h3 class="text-base font-semibold text-white mb-2">Agen mengolah</h3>
+          <p class="text-sm text-[var(--text-2)] leading-relaxed">
+            Materi dipilah per bab, lalu disiapkan rangkuman, latihan soal, dan kartu hafalan.
+          </p>
+        </div>
+        <div>
+          <p class="font-display text-4xl font-bold text-zinc-600 mb-4">3</p>
+          <h3 class="text-base font-semibold text-white mb-2">Belajar &amp; ulang</h3>
+          <p class="text-sm text-[var(--text-2)] leading-relaxed">
+            Kuis sampai paham, flashcard untuk hafalan, ekspor mindmap atau PDF untuk belajar offline.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ FITUR ============ -->
+    <section class="max-w-6xl mx-auto py-20 border-t border-[var(--border)]">
+      <div class="flex items-end justify-between mb-12">
+        <h2 class="font-display text-3xl font-semibold text-white">Satu unggahan,<br />banyak alat belajar.</h2>
+        <p class="hidden md:block text-sm text-[var(--text-2)] max-w-xs leading-relaxed">
+          Semua fitur membaca bahan yang sama, jadi catatanmu konsisten dari rangkuman sampai kuis.
         </p>
       </div>
-    </div>
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-px bg-[var(--border)] rounded-xl overflow-hidden border border-[var(--border)]">
+        {fitur.map((f) => (
+          <div class="bg-[var(--surface)] p-6 min-h-[172px]">
+            <svg viewBox="0 0 24 24" class="h-5 w-5 text-[var(--text-2)] mb-4" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d={f.icon} /></svg>
+            <h3 class="text-base font-semibold text-white mb-2">{f.title}</h3>
+            <p class="text-sm text-[var(--text-2)] leading-relaxed">{f.body}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- ============ CTA ============ -->
+    <section class="max-w-6xl mx-auto py-20 border-t border-[var(--border)]">
+      <div class="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-8 py-12 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+        <div>
+          <h2 class="font-display text-2xl sm:text-3xl font-semibold text-white mb-2">Mulai dari satu unggahan.</h2>
+          <p class="text-sm text-[var(--text-2)]">Paket mulai Rp 50.000 / 30 hari — sesuai kebutuhanmu.</p>
+        </div>
+        <a
+          href="/edu"
+          class="inline-flex items-center justify-center rounded-md px-6 py-3 text-sm font-semibold text-white bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors shrink-0 focus-visible:outline-white"
+        >
+          Mulai belajar
+        </a>
+      </div>
+    </section>
   </main>
 
   <footer class="border-t border-[var(--border)] py-6 px-6">

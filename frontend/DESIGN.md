@@ -42,6 +42,20 @@
 > pulse pada status nyata (REC, matchmaking, recording), pill
 > "Available/Coming Soon", Inter (§6). Komponen mati terdeteksi:
 > `payment-wall.tsx` (tidak di-import) — kandidat dihapus.
+>
+> **Ronde 3 — 2026-11-01 (elevasi komposisi):** ronde 1–2 membersihkan slop
+> (menghapus), ronde 3 menambah kualitas positif (mengisi). (1) §6 ditutup:
+> body tetap Inter, headline publik pakai display face **Bricolage Grotesque**
+> (token `--font-display` + utilitas `.font-display`; Google Fonts, `display=swap`,
+> fallback Inter — aman offline). (2) Homepage ditulis ulang: hero rata kiri +
+> panel ilustrasi produk nyata (rangkuman/kuis/flashcard dengan konten sample
+> Biologi, flat, token-only), seksi "Cara kerja" 3 langkah bernomor, grid
+> 6 fitur aktual produk (hairline divider `gap-px`, bukan kartu melayang),
+> CTA band; semua copy faktual — harga diambil dari `billing-models.ts`
+> (Rp 50.000 / 30 hari; klaim "gratis" dilarang karena tidak ada tier gratis).
+> Ikon = inline SVG path Lucide (stroke 1.5), bukan emoji. Login screen TIDAK
+> diubah (ia referensi §1). Kepemilikan keputusan: ukuran font publik kini
+> display/h2/h3/body/micro = 5 skala (sesuai §7).
 
 ## 1. Arah (satu kalimat)
 

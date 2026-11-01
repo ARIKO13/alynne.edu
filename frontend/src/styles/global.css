@@ -8,6 +8,9 @@
    (utang desain yang dicatat, bukan default yang tidak dipikirkan). */
 
 :root {
+  /* §6 DITUTUP (ronde 3): body tetap Inter; headline publik pakai display
+     face bernama — Bricolage Grotesque (karakter EdTech, bukan default). */
+  --font-display: 'Bricolage Grotesque', 'Inter', -apple-system, system-ui, sans-serif;
   /* Ground & permukaan (opaque, tanpa alpha/blur) */
   --bg: #0A0A0B;
   --surface: #111113;
@@ -48,6 +51,12 @@ body {
 h1, h2, h3, h4 {
   font-weight: 600;
   letter-spacing: -0.03em;
+}
+
+/* Display face untuk headline publik (DESIGN.md §6 — keputusan ronde 3) */
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
 }
 
 /* Fokus terlihat, instan (DESIGN.md §4.7) */
