@@ -73,7 +73,7 @@ export function ReferralPanel({ open, onClose }: ReferralPanelProps) {
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
         <div className="flex items-center gap-2.5">
-          <Gift className="h-5 w-5 text-[#7C3AED]" />
+          <Gift className="h-5 w-5 text-[var(--accent-soft)]" />
           <div>
             <h2 className="text-base font-semibold text-zinc-100">Ajak Teman, Dapat Gratis!</h2>
             <p className="text-[11px] text-zinc-500">Setiap teman yang daftar pakai link kamu, kalian berdua dapat 1 bulan premium gratis.</p>
@@ -94,7 +94,7 @@ export function ReferralPanel({ open, onClose }: ReferralPanelProps) {
             <p className="text-[10px] text-zinc-500 uppercase">Teman</p>
           </div>
           <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-center">
-            <Gift className="h-4 w-4 mx-auto mb-1 text-[#7C3AED]" />
+            <Gift className="h-4 w-4 mx-auto mb-1 text-[var(--accent-soft)]" />
             <p className="text-lg font-semibold text-white">{memory.referralRewards}</p>
             <p className="text-[10px] text-zinc-500 uppercase">Bulan Gratis</p>
           </div>
@@ -115,7 +115,7 @@ export function ReferralPanel({ open, onClose }: ReferralPanelProps) {
               className="flex-1 px-3 py-2 rounded-md bg-white/[0.04] border border-white/[0.08] text-xs text-zinc-300 font-mono"
               onClick={(e) => (e.target as HTMLInputElement).select()}
             />
-            <Button onClick={handleCopy} size="sm" className="bg-[#7C3AED] hover:bg-[#7C3AED]">
+            <Button onClick={handleCopy} size="sm" className="bg-[var(--accent)] hover:bg-[var(--accent)]">
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
             </Button>
           </div>
@@ -147,19 +147,19 @@ export function ReferralPanel({ open, onClose }: ReferralPanelProps) {
           <p className="text-xs font-medium text-zinc-300">Cara Kerja:</p>
           <div className="space-y-1.5 text-[11px] text-zinc-500">
             <div className="flex gap-2">
-              <span className="text-[#7C3AED] font-bold">1.</span>
+              <span className="text-[var(--accent-soft)] font-bold">1.</span>
               <span>Bagikan link atau kode referral ke teman</span>
             </div>
             <div className="flex gap-2">
-              <span className="text-[#7C3AED] font-bold">2.</span>
+              <span className="text-[var(--accent-soft)] font-bold">2.</span>
               <span>Teman daftar pakai link kamu</span>
             </div>
             <div className="flex gap-2">
-              <span className="text-[#7C3AED] font-bold">3.</span>
+              <span className="text-[var(--accent-soft)] font-bold">3.</span>
               <span>Kalian berdua dapat 1 bulan premium gratis</span>
             </div>
             <div className="flex gap-2">
-              <span className="text-[#7C3AED] font-bold">4.</span>
+              <span className="text-[var(--accent-soft)] font-bold">4.</span>
               <span>Ajak lebih banyak teman, dapet lebih banyak bonus!</span>
             </div>
           </div>

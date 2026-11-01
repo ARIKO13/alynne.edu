@@ -180,7 +180,7 @@ Instruksi: Lanjutkan percakapan sebagai teman belajar. Singkat (2-3 kalimat).${m
           onClick={() => startMode('diskusi')}
           className={cn(
             'flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-colors',
-            mode === 'diskusi' ? 'bg-[#7C3AED] text-white' : 'text-zinc-500 hover:text-zinc-300'
+            mode === 'diskusi' ? 'bg-[var(--accent)] text-white' : 'text-zinc-500 hover:text-zinc-300'
           )}
         >
           <MessageCircle className="h-3 w-3" />
@@ -213,13 +213,13 @@ Instruksi: Lanjutkan percakapan sebagai teman belajar. Singkat (2-3 kalimat).${m
         {messages.map((msg, i) => (
           <div key={i} className={cn('flex gap-2', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
             {msg.role === 'assistant' && (
-              <div className="w-6 h-6 rounded-full bg-[#7C3AED]/10 flex items-center justify-center shrink-0">
-                <Bot className="h-3 w-3 text-[#7C3AED]" />
+              <div className="w-6 h-6 rounded-full bg-[var(--accent)]/10 flex items-center justify-center shrink-0">
+                <Bot className="h-3 w-3 text-[var(--accent-soft)]" />
               </div>
             )}
             <div className={cn(
               'rounded-lg px-3 py-2 max-w-[75%] text-sm',
-              msg.role === 'user' ? 'bg-[#7C3AED] text-white' : 'bg-white/[0.04] text-zinc-200'
+              msg.role === 'user' ? 'bg-[var(--accent)] text-white' : 'bg-white/[0.04] text-zinc-200'
             )}>
               <p className="whitespace-pre-wrap">{msg.content}</p>
             </div>
@@ -232,8 +232,8 @@ Instruksi: Lanjutkan percakapan sebagai teman belajar. Singkat (2-3 kalimat).${m
         ))}
         {loading && (
           <div className="flex gap-2">
-            <div className="w-6 h-6 rounded-full bg-[#7C3AED]/10 flex items-center justify-center shrink-0">
-              <Bot className="h-3 w-3 text-[#7C3AED]" />
+            <div className="w-6 h-6 rounded-full bg-[var(--accent)]/10 flex items-center justify-center shrink-0">
+              <Bot className="h-3 w-3 text-[var(--accent-soft)]" />
             </div>
             <div className="rounded-lg px-3 py-2 bg-white/[0.04] text-zinc-400 text-sm">
               <Loader2 className="h-3 w-3 animate-spin inline mr-1" />
@@ -262,7 +262,7 @@ Instruksi: Lanjutkan percakapan sebagai teman belajar. Singkat (2-3 kalimat).${m
           onClick={handleSend}
           disabled={loading || !input.trim()}
           size="sm"
-          className="bg-[#7C3AED] hover:bg-[#7C3AED]"
+          className="bg-[var(--accent)] hover:bg-[var(--accent)]"
         >
           <Send className="h-4 w-4" />
         </Button>

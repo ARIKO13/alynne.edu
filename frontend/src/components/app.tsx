@@ -162,7 +162,7 @@ export default function App({ onBackToLanding }: AppProps) {
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0A0A0B]">
-        <div className="animate-spin h-8 w-8 border-2 border-[#7C3AED] border-t-transparent rounded-full" />
+        <div className="animate-spin h-8 w-8 border-2 border-[var(--accent)] border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -235,7 +235,7 @@ export default function App({ onBackToLanding }: AppProps) {
                     : 'text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-300'
                 )}
               >
-                <Icon className={cn('h-4 w-4', isActive ? 'text-[#7C3AED]' : 'text-zinc-600')} />
+                <Icon className={cn('h-4 w-4', isActive ? 'text-[var(--accent-soft)]' : 'text-zinc-600')} />
                 {tab.label}
               </button>
             );
@@ -248,14 +248,14 @@ export default function App({ onBackToLanding }: AppProps) {
             className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-300 transition-colors"
           >
             <Settings className="h-4 w-4" />
-            Settings
+            Pengaturan
           </button>
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-zinc-500 hover:bg-red-500/10 hover:text-red-400 transition-colors"
           >
             <LogOut className="h-4 w-4" />
-            Logout
+            Keluar
           </button>
         </div>
       </aside>
@@ -274,7 +274,7 @@ export default function App({ onBackToLanding }: AppProps) {
               className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-[12px] font-medium text-zinc-400 hover:text-white hover:bg-white/[0.06] border border-white/[0.06] hover:border-white/[0.12] transition-colors"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
-              <span>Back</span>
+              <span>Kembali</span>
             </button>
             <h1 className="text-sm font-medium text-zinc-200">{TAB_TITLES[activeTab]}</h1>
             {sttStatus === 'recording' && (
@@ -313,7 +313,7 @@ export default function App({ onBackToLanding }: AppProps) {
             </button>
             <div className="flex items-center gap-2.5">
               <div className="relative h-7 w-7">
-                <div className="flex h-full w-full items-center justify-center rounded-full bg-[#7C3AED] text-white text-xs font-bold">
+                <div className="flex h-full w-full items-center justify-center rounded-full bg-[var(--accent)] text-white text-xs font-bold">
                   {String(user?.name || '?')[0]}
                 </div>
                 {user?.image && (
@@ -328,7 +328,7 @@ export default function App({ onBackToLanding }: AppProps) {
               <div className="flex items-center gap-2 hidden sm:flex">
                 <span className="text-sm text-zinc-300">{String(user?.name || 'Player')}</span>
                 {userIsAdmin && (
-                  <Badge className="bg-[#7C3AED]/20 text-[#7C3AED] border-[#7C3AED]/30 text-[9px] px-1.5 py-0">
+                  <Badge className="bg-[var(--accent)]/20 text-[var(--accent-soft)] border-[var(--accent)]/30 text-[9px] px-1.5 py-0">
                     Admin
                   </Badge>
                 )}

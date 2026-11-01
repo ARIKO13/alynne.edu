@@ -182,14 +182,14 @@ export function FlashcardPanel({ open, onClose, chapters = [] }: FlashcardPanelP
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
         <div className="flex items-center gap-2.5">
-          <Layers className="h-5 w-5 text-[#7C3AED]" />
+          <Layers className="h-5 w-5 text-[var(--accent-soft)]" />
           <div>
             <h2 className="text-base font-semibold text-zinc-100">Flashcard</h2>
-            <p className="text-[11px] text-zinc-500">Kartu hafalan otomatis dari materi STT. Algoritma SM-2 (sama kayak Anki).</p>
+            <p className="text-[11px] text-zinc-500">Kartu hafalan otomatis dari materi STT — diulang sesuai jadwal spaced repetition.</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-[10px] border-[#7C3AED]/30 text-[#7C3AED]">Spaced Repetition</Badge>
+          <Badge variant="outline" className="text-[10px] border-[var(--accent)]/30 text-[var(--accent-soft)]">Spaced Repetition</Badge>
           <Button onClick={onClose} variant="ghost" size="sm" className="text-zinc-400 hover:text-white hover:bg-white/[0.04]">
             <X className="h-4 w-4" />
             <span className="ml-1 hidden sm:inline">Tutup</span>
@@ -211,11 +211,11 @@ export function FlashcardPanel({ open, onClose, chapters = [] }: FlashcardPanelP
           </div>
           <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.05] p-2 text-center">
             <p className="text-base font-bold text-amber-400">{stats.dueCards}</p>
-            <p className="text-[9px] text-zinc-500 uppercase">Due</p>
+            <p className="text-[9px] text-zinc-500 uppercase">Jatuh tempo</p>
           </div>
           <div className="rounded-lg border border-green-500/20 bg-green-500/[0.05] p-2 text-center">
             <p className="text-base font-bold text-green-400">{stats.masteryRate}%</p>
-            <p className="text-[9px] text-zinc-500 uppercase">Master</p>
+            <p className="text-[9px] text-zinc-500 uppercase">Dikuasai</p>
           </div>
         </div>
 
@@ -226,7 +226,7 @@ export function FlashcardPanel({ open, onClose, chapters = [] }: FlashcardPanelP
             <Button
               onClick={handleCreateFromChapters}
               disabled={generating || chapters.length === 0}
-              className="w-full bg-[#7C3AED] hover:bg-[#7C3AED]"
+              className="w-full bg-[var(--accent)] hover:bg-[var(--accent)]"
             >
               {generating ? (
                 <>
@@ -243,7 +243,7 @@ export function FlashcardPanel({ open, onClose, chapters = [] }: FlashcardPanelP
 
             {chapters.length === 0 && (
               <p className="text-[11px] text-zinc-600 text-center">
-                Jalankan Mode Belajar dulu untuk generate flashcard dari transcript
+                Jalankan Mode Belajar dulu untuk membuat flashcard dari transkrip
               </p>
             )}
 
@@ -258,8 +258,8 @@ export function FlashcardPanel({ open, onClose, chapters = [] }: FlashcardPanelP
                     className="group rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 hover:bg-white/[0.04] transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-[#7C3AED]/10 flex items-center justify-center shrink-0">
-                        <Layers className="h-4 w-4 text-[#7C3AED]" />
+                      <div className="w-9 h-9 rounded-lg bg-[var(--accent)]/10 flex items-center justify-center shrink-0">
+                        <Layers className="h-4 w-4 text-[var(--accent-soft)]" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-zinc-200 truncate">{deck.name}</p>
@@ -276,7 +276,7 @@ export function FlashcardPanel({ open, onClose, chapters = [] }: FlashcardPanelP
                         <Button
                           onClick={() => handleStudy(deck)}
                           size="sm"
-                          className="bg-[#7C3AED] hover:bg-[#7C3AED] text-xs"
+                          className="bg-[var(--accent)] hover:bg-[var(--accent)] text-xs"
                           disabled={due.length === 0}
                         >
                           <Zap className="h-3 w-3 mr-1" />
@@ -333,7 +333,7 @@ export function FlashcardPanel({ open, onClose, chapters = [] }: FlashcardPanelP
             {/* Card */}
             <div
               onClick={() => setFlipped(!flipped)}
-              className="cursor-pointer rounded-lg border-2 border-[#7C3AED]/30 bg-[#7C3AED]/[0.05] p-8 min-h-[200px] flex items-center justify-center text-center transition-colors hover:border-[#7C3AED]/50"
+              className="cursor-pointer rounded-lg border-2 border-[var(--accent)]/30 bg-[var(--accent)]/[0.05] p-8 min-h-[200px] flex items-center justify-center text-center transition-colors hover:border-[var(--accent)]/50"
             >
               <div>
                 {!flipped ? (

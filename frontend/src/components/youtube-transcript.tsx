@@ -73,7 +73,7 @@ export function YouTubeTranscript({ onTranscript, disabled }: YouTubeTranscriptP
       <div className="flex items-center gap-2">
         <Youtube className="h-4 w-4 text-red-500" />
         <p className="text-sm font-medium text-zinc-200">YouTube Transkrip</p>
-        <span className="text-[10px] text-zinc-600 ml-auto">Instant • No processing</span>
+        <span className="text-[10px] text-zinc-600 ml-auto">Instan • tanpa pemrosesan</span>
       </div>
 
       <form onSubmit={handleSubmit} className="flex gap-2">
@@ -83,11 +83,11 @@ export function YouTubeTranscript({ onTranscript, disabled }: YouTubeTranscriptP
             type="text"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="Paste YouTube URL..."
+            placeholder="Tempel URL YouTube..."
             disabled={disabled || loading}
             className={cn(
               "w-full rounded-lg border border-white/[0.08] bg-white/[0.02] py-2 pl-9 pr-3 text-xs text-zinc-200 placeholder:text-zinc-600",
-              "focus:border-[#7C3AED]/40 focus:bg-white/[0.04] focus:outline-none",
+              "focus:border-[var(--accent)]/40 focus:bg-white/[0.04] focus:outline-none",
               disabled && "opacity-50 cursor-not-allowed"
             )}
           />
@@ -96,7 +96,7 @@ export function YouTubeTranscript({ onTranscript, disabled }: YouTubeTranscriptP
           type="submit"
           size="sm"
           disabled={!url.trim() || disabled || loading}
-          className="bg-red-500/20 text-red-400 hover:bg-red-500/30 border-red-500/20"
+          className="bg-[var(--surface-2)] text-zinc-200 hover:bg-white/[0.08] border-[var(--border)]"
         >
           {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Ambil"}
         </Button>

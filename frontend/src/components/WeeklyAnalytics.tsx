@@ -55,7 +55,7 @@ export function WeeklyAnalytics({ open, onClose }: WeeklyAnalyticsProps) {
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
         <div className="flex items-center gap-2.5">
-          <TrendingUp className="h-5 w-5 text-[#7C3AED]" />
+          <TrendingUp className="h-5 w-5 text-[var(--accent-soft)]" />
           <div>
             <h2 className="text-base font-semibold text-zinc-100">Analitik Belajar Minggu Ini</h2>
             <p className="text-[11px] text-zinc-500">Statistik fokus dan progress belajar 7 hari terakhir.</p>
@@ -94,7 +94,7 @@ export function WeeklyAnalytics({ open, onClose }: WeeklyAnalyticsProps) {
             label="Akurasi Kuis"
             value={`${quizAccuracy}%`}
             sub={`${memory.totalCorrectAnswers}/${memory.totalQuestionsAttempted}`}
-            color="text-[#7C3AED]"
+            color="text-[var(--accent-soft)]"
           />
         </div>
 
@@ -122,7 +122,7 @@ export function WeeklyAnalytics({ open, onClose }: WeeklyAnalyticsProps) {
                       isBest
                         ? 'bg-amber-500'
                         : isToday
-                        ? 'bg-[#7C3AED]'
+                        ? 'bg-[var(--accent)]'
                         : 'bg-zinc-700'
                     }`}
                     style={{ height: `${Math.max(heightPct, 2)}%` }}
@@ -130,7 +130,7 @@ export function WeeklyAnalytics({ open, onClose }: WeeklyAnalyticsProps) {
                   />
                   <span
                     className={`text-[10px] ${
-                      isToday ? 'text-[#7C3AED] font-bold' : 'text-zinc-500'
+                      isToday ? 'text-[var(--accent-soft)] font-bold' : 'text-zinc-500'
                     }`}
                   >
                     {dayName}
@@ -198,7 +198,7 @@ export function WeeklyAnalytics({ open, onClose }: WeeklyAnalyticsProps) {
               variant="outline"
               className={`text-[10px] ${
                 quizAccuracy >= 80 && memory.totalQuizzesTaken >= 5
-                  ? 'border-[#7C3AED]/30 text-[#7C3AED] bg-[#7C3AED]/10'
+                  ? 'border-[var(--accent)]/30 text-[var(--accent-soft)] bg-[var(--accent)]/10'
                   : 'border-zinc-700 text-zinc-600'
               }`}
             >

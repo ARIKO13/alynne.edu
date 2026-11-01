@@ -90,7 +90,7 @@ export function MindmapGraph({ chapters, activeChapterId, onSelectChapter }: Min
               y1={root.y}
               x2={node.x}
               y2={node.y}
-              stroke={isActive ? '#7C3AED' : '#3f3f46'}
+              stroke={isActive ? '#38BDF8' : '#3f3f46'}
               strokeWidth={isActive ? 2 : 1}
               strokeDasharray={isActive ? '0' : '4'}
             />
@@ -115,7 +115,7 @@ export function MindmapGraph({ chapters, activeChapterId, onSelectChapter }: Min
                   cx={node.x}
                   cy={node.y}
                   r={r + 6}
-                  fill="#7C3AED"
+                  fill="#38BDF8"
                   opacity={0.2}
                 />
               )}
@@ -123,8 +123,8 @@ export function MindmapGraph({ chapters, activeChapterId, onSelectChapter }: Min
                 cx={node.x}
                 cy={node.y}
                 r={r}
-                fill={isRoot ? '#7C3AED' : isActive ? '#7C3AED' : '#1f1f23'}
-                stroke={isRoot || isActive ? '#a78bfa' : '#3f3f46'}
+                fill={isRoot ? '#38BDF8' : isActive ? '#38BDF8' : '#1f1f23'}
+                stroke={isRoot || isActive ? '#38BDF8' : '#3f3f46'}
                 strokeWidth={2}
               />
               <text

@@ -62,7 +62,7 @@ export function SettingsDialog() {
         <div className="px-6 pt-6 pb-2">
           <DialogHeader>
             <div className="flex items-center gap-2">
-              <User className="h-5 w-5 text-[#7C3AED]" />
+              <User className="h-5 w-5 text-[var(--accent-soft)]" />
               <DialogTitle className="text-zinc-100">Profil</DialogTitle>
             </div>
             <DialogDescription className="text-zinc-500">
@@ -113,7 +113,7 @@ export function SettingsDialog() {
           <Button
             onClick={handleSave}
             disabled={isSaving || displayName.trim().length < 2}
-            className="bg-[#7C3AED] hover:bg-[#d14e1c] text-white rounded-lg gap-2 disabled:opacity-50"
+            className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white rounded-lg gap-2 disabled:opacity-50"
           >
             {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
             Simpan

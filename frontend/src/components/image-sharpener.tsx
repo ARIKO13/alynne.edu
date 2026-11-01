@@ -412,7 +412,7 @@ export function ImageSharpener() {
         <div
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
-          className="rounded-lg border-2 border-dashed border-white/[0.12] bg-white/[0.02] hover:border-[#7C3AED]/40 hover:bg-[#7C3AED]/[0.03] transition-colors p-10 text-center cursor-pointer"
+          className="rounded-lg border-2 border-dashed border-white/[0.12] bg-white/[0.02] hover:border-[var(--accent)]/40 hover:bg-[var(--accent)]/[0.03] transition-colors p-10 text-center cursor-pointer"
           onClick={() => fileInputRef.current?.click()}
         >
           <input
@@ -430,8 +430,8 @@ export function ImageSharpener() {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center gap-3"
           >
-            <div className="h-14 w-14 rounded-full bg-[#7C3AED]/15 flex items-center justify-center">
-              <Upload className="h-6 w-6 text-[#7C3AED]" />
+            <div className="h-14 w-14 rounded-full bg-[var(--accent)]/15 flex items-center justify-center">
+              <Upload className="h-6 w-6 text-[var(--accent-soft)]" />
             </div>
             <div>
               <p className="text-base font-medium text-white">Drop gambar di sini atau klik untuk upload</p>
@@ -441,7 +441,7 @@ export function ImageSharpener() {
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[#7C3AED] hover:bg-[#7c3aed] px-4 py-2 text-xs font-medium text-white transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-hover)] px-4 py-2 text-xs font-medium text-white transition-colors"
               >
                 <ImageIcon className="h-3.5 w-3.5" />
                 Pilih File
@@ -462,8 +462,8 @@ export function ImageSharpener() {
             className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4"
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#7C3AED]/15">
-                <Wand2 className="h-4 w-4 text-[#7C3AED]" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--accent)]/15">
+                <Wand2 className="h-4 w-4 text-[var(--accent-soft)]" />
               </div>
               <div className="flex-1">
                 <p className="text-xs font-medium text-zinc-300">Analisis CV (Laplacian Variance)</p>
@@ -491,7 +491,7 @@ export function ImageSharpener() {
             </div>
             {blurInterpretation.level !== 'sharp' && (
               <p className="mt-2 text-[10px] text-zinc-500">
-                Rekomendasi: intensity <span className="text-[#7C3AED] font-medium">{recommendedIntensity.toFixed(1)}</span> buat gambar ini
+                Rekomendasi: intensity <span className="text-[var(--accent-soft)] font-medium">{recommendedIntensity.toFixed(1)}</span> buat gambar ini
               </p>
             )}
           </motion.div>
@@ -513,9 +513,9 @@ export function ImageSharpener() {
           </div>
 
           {/* Sharpened */}
-          <div className="rounded-lg border border-[#7C3AED]/30 bg-[#111113] overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#7C3AED]/15 bg-[#7C3AED]/[0.04]">
-              <span className="text-xs font-medium text-[#7C3AED]">Hasil Penajaman</span>
+          <div className="rounded-lg border border-[var(--accent)]/30 bg-[#111113] overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--accent)]/15 bg-[var(--accent)]/[0.04]">
+              <span className="text-xs font-medium text-[var(--accent-soft)]">Hasil Penajaman</span>
               {processing && (
                 <span className="flex items-center gap-1 text-[10px] text-zinc-500">
                   <Loader2 className="h-3 w-3 animate-spin" /> Memproses...
@@ -546,11 +546,11 @@ export function ImageSharpener() {
                     onClick={() => setMethod(m.id)}
                     className={`rounded-lg border-2 p-2.5 text-left transition-colors ${
                       active
-                        ? 'border-[#7C3AED] bg-[#7C3AED]/[0.08]'
+                        ? 'border-[var(--accent)] bg-[var(--accent)]/[0.08]'
                         : 'border-white/[0.06] hover:border-white/[0.15] hover:bg-white/[0.04]'
                     }`}
                   >
-                    <Icon className={`h-4 w-4 mb-1.5 ${active ? 'text-[#7C3AED]' : 'text-zinc-400'}`} />
+                    <Icon className={`h-4 w-4 mb-1.5 ${active ? 'text-[var(--accent-soft)]' : 'text-zinc-400'}`} />
                     <p className={`text-[11px] font-medium ${active ? 'text-white' : 'text-zinc-300'}`}>{m.label}</p>
                     <p className="text-[9px] text-zinc-600 leading-tight mt-0.5">{m.description}</p>
                   </button>
@@ -564,7 +564,7 @@ export function ImageSharpener() {
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-medium text-zinc-300">Intensitas</p>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono text-[#7C3AED]">{intensity.toFixed(2)}</span>
+                <span className="text-xs font-mono text-[var(--accent-soft)]">{intensity.toFixed(2)}</span>
                 <button
                   type="button"
                   onClick={() => setIntensity(recommendedIntensity)}
@@ -581,7 +581,7 @@ export function ImageSharpener() {
               step={0.05}
               value={intensity}
               onChange={(e) => setIntensity(parseFloat(e.target.value))}
-              className="w-full accent-[#7C3AED]"
+              className="w-full accent-[var(--accent)]"
             />
             <div className="flex justify-between text-[9px] text-zinc-600 mt-1">
               <span>0 (off)</span>
@@ -596,7 +596,7 @@ export function ImageSharpener() {
               type="button"
               onClick={handleDownload}
               disabled={processing}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[#7C3AED] hover:bg-[#7c3aed] px-4 py-2 text-xs font-medium text-white transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-hover)] px-4 py-2 text-xs font-medium text-white transition-colors disabled:opacity-50"
             >
               <Download className="h-3.5 w-3.5" />
               Download PNG
@@ -638,9 +638,9 @@ export function ImageSharpener() {
       )}
 
       {/* Smart OCR + Math Solver */}
-      <div className="mt-6 rounded-lg border border-[#7C3AED]/20 bg-[#7C3AED]/[0.03] p-4 space-y-3">
+      <div className="mt-6 rounded-lg border border-[var(--accent)]/20 bg-[var(--accent)]/[0.03] p-4 space-y-3">
         <div className="flex items-center gap-2">
-          <ScanText className="h-4 w-4 text-[#7C3AED]" />
+          <ScanText className="h-4 w-4 text-[var(--accent-soft)]" />
           <h3 className="text-sm font-medium text-zinc-200">Smart OCR + Math Solver</h3>
         </div>
         <p className="text-[11px] text-zinc-500">Upload foto soal, AI baca teks + selesaikan matematika otomatis.</p>

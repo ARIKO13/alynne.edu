@@ -92,7 +92,7 @@ export function PersonalDictPanel({ open, onOpenChange }: PersonalDictPanelProps
         <div className="px-6 pt-6 pb-2">
           <DialogHeader>
             <div className="flex items-center gap-2">
-              <Brain className="h-5 w-5 text-[#7C3AED]" />
+              <Brain className="h-5 w-5 text-[var(--accent-soft)]" />
               <DialogTitle className="text-zinc-100">Learned Words (Global)</DialogTitle>
               <Globe className="h-3.5 w-3.5 text-emerald-400 ml-1" aria-label="Shared across all users" />
             </div>
@@ -173,7 +173,7 @@ export function PersonalDictPanel({ open, onOpenChange }: PersonalDictPanelProps
           {/* Loading state */}
           {loading && (
             <div className="text-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-[#7C3AED] mx-auto" />
+              <Loader2 className="h-6 w-6 animate-spin text-[var(--accent-soft)] mx-auto" />
               <p className="text-xs text-zinc-500 mt-2">Memuat learned words...</p>
             </div>
           )}

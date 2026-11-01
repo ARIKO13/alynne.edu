@@ -13,7 +13,7 @@ interface FeatureTutorialProps {
   accentColor?: string;
 }
 
-export function FeatureTutorial({ title, steps, storageKey, accentColor = '#B794F6' }: FeatureTutorialProps) {
+export function FeatureTutorial({ title, steps, storageKey, accentColor = '#38BDF8' }: FeatureTutorialProps) {
   const [dismissed, setDismissed] = useState(() => {
     if (typeof window === 'undefined') return true;
     return localStorage.getItem(`tutorial-dismissed-${storageKey}`) === 'true';

@@ -150,8 +150,8 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
               <p className="text-3xl font-bold text-green-400">{accuracy}%</p>
               <p className="text-[10px] text-zinc-500 uppercase">Akurasi</p>
             </div>
-            <div className="rounded-lg border border-[#7C3AED]/20 bg-[#7C3AED]/[0.05] p-4">
-              <p className="text-3xl font-bold text-[#7C3AED]">{correctCount}/{questions.length}</p>
+            <div className="rounded-lg border border-[var(--accent)]/20 bg-[var(--accent)]/[0.05] p-4">
+              <p className="text-3xl font-bold text-[var(--accent-soft)]">{correctCount}/{questions.length}</p>
               <p className="text-[10px] text-zinc-500 uppercase">Benar</p>
             </div>
             <div className="rounded-lg border border-orange-500/20 bg-orange-500/[0.05] p-4">
@@ -169,7 +169,7 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
           </div>
 
           <div className="flex gap-2">
-            <Button onClick={startBattle} className="flex-1 bg-[#7C3AED] hover:bg-[#7C3AED]">
+            <Button onClick={startBattle} className="flex-1 bg-[var(--accent)] hover:bg-[var(--accent)]">
               <RotateCcw className="h-4 w-4 mr-2" />
               Ulangi
             </Button>
@@ -242,7 +242,7 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
                       : showWrong
                       ? 'border-red-500/50 bg-red-500/10 text-red-400'
                       : isSelected
-                      ? 'border-[#7C3AED]/50 bg-[#7C3AED]/10 text-[#7C3AED]'
+                      ? 'border-[var(--accent)]/50 bg-[var(--accent)]/10 text-[var(--accent-soft)]'
                       : 'border-white/[0.06] text-zinc-300 hover:border-white/[0.15] hover:bg-white/[0.04]'
                   }`}
                 >
@@ -282,7 +282,7 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
                   </p>
                 )}
               </div>
-              <Button onClick={nextQuestion} className="w-full bg-[#7C3AED] hover:bg-[#7C3AED]">
+              <Button onClick={nextQuestion} className="w-full bg-[var(--accent)] hover:bg-[var(--accent)]">
                 {currentIdx + 1 >= questions.length ? 'Lihat Hasil' : 'Soal Berikutnya'}
               </Button>
             </div>
@@ -325,7 +325,7 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
           </ul>
         </div>
 
-        <Button onClick={startBattle} className="w-full bg-[#7C3AED] hover:bg-[#7C3AED]" size="lg">
+        <Button onClick={startBattle} className="w-full bg-[var(--accent)] hover:bg-[var(--accent)]" size="lg">
           <Zap className="h-5 w-5 mr-2" />
           Mulai Battle!
         </Button>
@@ -345,7 +345,7 @@ function getRank(score: number, accuracy: number): { title: string; message: str
     return { title: 'Expert', message: 'Kerja bagus, lanjutkan!', color: '#94A3B8' };
   }
   if (accuracy >= 40) {
-    return { title: 'Learner', message: 'Belajar lagi yuk!', color: '#A78BFA' };
+    return { title: 'Learner', message: 'Belajar lagi yuk!', color: '#38BDF8' };
   }
   return { title: 'Beginner', message: 'Jangan menyerah, coba lagi!', color: '#6B7280' };
 }

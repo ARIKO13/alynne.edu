@@ -33,7 +33,7 @@ export class AppErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div style={{ padding: 24, background: '#0a0a0a', color: '#e5e5e5', minHeight: '100vh', fontFamily: 'monospace', fontSize: 13 }}>
-          <h2 style={{ color: '#7C3AED', marginBottom: 8 }}>React Error Caught</h2>
+          <h2 style={{ color: 'var(--accent-soft)', marginBottom: 8 }}>React Error Caught</h2>
           <p style={{ color: '#ef4444', marginBottom: 16, wordBreak: 'break-all' }}>{this.state.error?.message}</p>
           {this.state.debugInfo && (
             <>
@@ -53,7 +53,7 @@ export class AppErrorBoundary extends Component<Props, State> {
           </pre>
           <button
             onClick={() => this.setState({ hasError: false, error: null, errorInfo: '', debugInfo: '' })}
-            style={{ marginTop: 16, padding: '8px 16px', background: '#7C3AED', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer' }}
+            style={{ marginTop: 16, padding: '8px 16px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer' }}
           >
             Try Again
           </button>

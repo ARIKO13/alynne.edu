@@ -127,7 +127,7 @@ export function AdminPanel() {
   if (loading && !stats) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-[#7C3AED]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[var(--accent-soft)]" />
       </div>
     );
   }
@@ -139,9 +139,9 @@ export function AdminPanel() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Shield className="h-5 w-5 text-[#7C3AED]" />
+          <Shield className="h-5 w-5 text-[var(--accent-soft)]" />
           <h2 className="text-lg font-semibold text-white">Admin Panel</h2>
-          <Badge className="bg-[#7C3AED]/20 text-[#7C3AED] border-[#7C3AED]/30 text-[10px]">
+          <Badge className="bg-[var(--accent)]/20 text-[var(--accent-soft)] border-[var(--accent)]/30 text-[10px]">
             Admin
           </Badge>
         </div>
@@ -163,7 +163,7 @@ export function AdminPanel() {
           className={cn(
             'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
             activeView === 'overview'
-              ? 'bg-[#7C3AED]/15 text-[#7C3AED]'
+              ? 'bg-[var(--accent)]/15 text-[var(--accent-soft)]'
               : 'text-zinc-500 hover:text-zinc-300'
           )}
         >
@@ -175,7 +175,7 @@ export function AdminPanel() {
           className={cn(
             'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
             activeView === 'users'
-              ? 'bg-[#7C3AED]/15 text-[#7C3AED]'
+              ? 'bg-[var(--accent)]/15 text-[var(--accent-soft)]'
               : 'text-zinc-500 hover:text-zinc-300'
           )}
         >
@@ -187,7 +187,7 @@ export function AdminPanel() {
           className={cn(
             'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
             activeView === 'dataset'
-              ? 'bg-[#7C3AED]/15 text-[#7C3AED]'
+              ? 'bg-[var(--accent)]/15 text-[var(--accent-soft)]'
               : 'text-zinc-500 hover:text-zinc-300'
           )}
         >
@@ -231,7 +231,7 @@ export function AdminPanel() {
               icon={Users}
               label="Total Users"
               value={stats.totalUsers}
-              color="bg-[#7C3AED]/10 text-[#7C3AED]"
+              color="bg-[var(--accent)]/10 text-[var(--accent-soft)]"
             />
             <StatCard
               icon={FileText}
@@ -287,14 +287,14 @@ export function AdminPanel() {
                     )}>
                       {idx + 1}
                     </span>
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#7C3AED]/10 text-xs font-bold text-[#7C3AED] shrink-0">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--accent)]/10 text-xs font-bold text-[var(--accent-soft)] shrink-0">
                       {u.name?.[0] || '?'}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm text-zinc-200 truncate">{u.name}</span>
                         {isAdmin(u.email) && (
-                          <Badge className="bg-[#7C3AED]/20 text-[#7C3AED] border-[#7C3AED]/30 text-[8px] px-1 py-0">Admin</Badge>
+                          <Badge className="bg-[var(--accent)]/20 text-[var(--accent-soft)] border-[var(--accent)]/30 text-[8px] px-1 py-0">Admin</Badge>
                         )}
                       </div>
                       <p className="text-[10px] text-zinc-600 truncate">{u.email}</p>
@@ -349,14 +349,14 @@ export function AdminPanel() {
                     {/* Desktop row */}
                     <div className="hidden md:grid grid-cols-12 gap-2 items-center">
                       <div className="col-span-4 flex items-center gap-2.5 min-w-0">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#7C3AED]/10 text-xs font-bold text-[#7C3AED] shrink-0">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--accent)]/10 text-xs font-bold text-[var(--accent-soft)] shrink-0">
                           {u.name?.[0] || '?'}
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
                             <span className="text-sm text-zinc-200 truncate">{u.name}</span>
                             {isAdmin(u.email) && (
-                              <Badge className="bg-[#7C3AED]/20 text-[#7C3AED] border-[#7C3AED]/30 text-[8px] px-1 py-0">Admin</Badge>
+                              <Badge className="bg-[var(--accent)]/20 text-[var(--accent-soft)] border-[var(--accent)]/30 text-[8px] px-1 py-0">Admin</Badge>
                             )}
                           </div>
                           <p className="text-[10px] text-zinc-600 truncate">{u.email}</p>
@@ -383,14 +383,14 @@ export function AdminPanel() {
 
                     {/* Mobile row */}
                     <div className="md:hidden flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#7C3AED]/10 text-sm font-bold text-[#7C3AED] shrink-0">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--accent)]/10 text-sm font-bold text-[var(--accent-soft)] shrink-0">
                         {u.name?.[0] || '?'}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
                           <span className="text-sm text-zinc-200 truncate">{u.name}</span>
                           {isAdmin(u.email) && (
-                            <Badge className="bg-[#7C3AED]/20 text-[#7C3AED] border-[#7C3AED]/30 text-[8px] px-1 py-0">Admin</Badge>
+                            <Badge className="bg-[var(--accent)]/20 text-[var(--accent-soft)] border-[var(--accent)]/30 text-[8px] px-1 py-0">Admin</Badge>
                           )}
                         </div>
                         <p className="text-[10px] text-zinc-600 truncate">{u.email}</p>

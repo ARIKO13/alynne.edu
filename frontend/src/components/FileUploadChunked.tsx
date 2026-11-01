@@ -214,7 +214,7 @@ export function FileUploadChunked({ onTranscript, onError }: FileUploadChunkedPr
           className={`
             border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
             ${dragOver
-              ? 'border-[#7C3AED] bg-[#7C3AED]/5'
+              ? 'border-[var(--accent)] bg-[var(--accent)]/5'
               : 'border-white/10 hover:border-white/20 hover:bg-white/[0.02]'}
           `}
         >
@@ -230,7 +230,7 @@ export function FileUploadChunked({ onTranscript, onError }: FileUploadChunkedPr
         <div className="space-y-3">
           {/* File info */}
           <div className="flex items-center gap-3 p-3 rounded-lg border border-white/10 bg-white/[0.02]">
-            <FileAudio className="h-8 w-8 text-[#7C3AED] shrink-0" />
+            <FileAudio className="h-8 w-8 text-[var(--accent-soft)] shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">{file.name}</p>
               <p className="text-xs text-zinc-500">
@@ -279,7 +279,7 @@ export function FileUploadChunked({ onTranscript, onError }: FileUploadChunkedPr
                     ${chunk.status === 'done'
                       ? 'bg-green-500'
                       : chunk.status === 'uploading'
-                      ? 'bg-[#7C3AED]'
+                      ? 'bg-[var(--accent)]'
                       : 'bg-white/10'}
                   `}
                   title={`Chunk ${chunk.index + 1}: ${chunk.status} ${chunk.progress.toFixed(0)}%`}
@@ -292,7 +292,7 @@ export function FileUploadChunked({ onTranscript, onError }: FileUploadChunkedPr
           {!uploading && !transcribing && overallProgress === 0 && (
             <Button
               onClick={handleUpload}
-              className="w-full bg-[#7C3AED] hover:bg-[#7C3AED]"
+              className="w-full bg-[var(--accent)] hover:bg-[var(--accent)]"
             >
               <Upload className="h-4 w-4 mr-2" />
               Upload & Transcribe

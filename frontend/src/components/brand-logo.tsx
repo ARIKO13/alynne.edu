@@ -17,11 +17,11 @@ interface BrandLogoProps {
   size?: number;
   /** Extra className for the outer container. */
   className?: string;
-  /** Override brand color (defaults to violet #7C3AED). */
+  /** Override brand color (defaults to violet #38BDF8). */
   color?: string;
 }
 
-export function BrandLogo({ size = 32, className = '', color = '#7C3AED' }: BrandLogoProps) {
+export function BrandLogo({ size = 32, className = '', color = '#38BDF8' }: BrandLogoProps) {
   return (
     <div
       className={`relative inline-flex items-center justify-center ${className}`}

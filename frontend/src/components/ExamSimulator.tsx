@@ -172,9 +172,9 @@ JSON array (tanpa markdown):
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
-            <GraduationCap className="h-5 w-5 text-[#7C3AED]" />
+            <GraduationCap className="h-5 w-5 text-[var(--accent-soft)]" />
             Exam Simulator
-            <Badge variant="outline" className="text-[10px] ml-auto border-[#7C3AED]/30 text-[#7C3AED]">
+            <Badge variant="outline" className="text-[10px] ml-auto border-[var(--accent)]/30 text-[var(--accent-soft)]">
               AI Generated
             </Badge>
           </DialogTitle>
@@ -183,14 +183,14 @@ JSON array (tanpa markdown):
         {/* IDLE STATE */}
         {state === 'idle' && (
           <div className="text-center py-8 space-y-4">
-            <GraduationCap className="h-16 w-16 mx-auto text-[#7C3AED]/50" />
+            <GraduationCap className="h-16 w-16 mx-auto text-[var(--accent-soft)]/50" />
             <div>
               <p className="text-sm text-zinc-300 mb-1">Ujian simulasi dari {chapters.length} bab</p>
               <p className="text-[11px] text-zinc-500">
                 AI buat 8 soal (pilihan ganda + benar/salah + isian) → timer → auto-grade → feedback
               </p>
             </div>
-            <Button onClick={generateExam} className="bg-[#7C3AED] hover:bg-[#7C3AED]" size="lg">
+            <Button onClick={generateExam} className="bg-[var(--accent)] hover:bg-[var(--accent)]" size="lg">
               <GraduationCap className="h-4 w-4 mr-2" />
               Mulai Ujian
             </Button>
@@ -200,7 +200,7 @@ JSON array (tanpa markdown):
         {/* GENERATING STATE */}
         {state === 'generating' && (
           <div className="text-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-[#7C3AED] mx-auto mb-4" />
+            <Loader2 className="h-8 w-8 animate-spin text-[var(--accent-soft)] mx-auto mb-4" />
             <p className="text-sm text-zinc-400">AI sedang membuat soal ujian...</p>
           </div>
         )}
@@ -242,7 +242,7 @@ JSON array (tanpa markdown):
                       className={cn(
                         'text-left px-3 py-2 rounded text-sm transition-colors border',
                         answers[current.id] === opt
-                          ? 'border-[#7C3AED]/50 bg-[#7C3AED]/10 text-[#7C3AED]'
+                          ? 'border-[var(--accent)]/50 bg-[var(--accent)]/10 text-[var(--accent-soft)]'
                           : 'border-white/[0.06] text-zinc-400 hover:border-white/[0.15]'
                       )}
                     >
@@ -255,7 +255,7 @@ JSON array (tanpa markdown):
                   value={answers[current.id] || ''}
                   onChange={e => handleAnswer(current.id, e.target.value)}
                   placeholder="Ketik jawaban..."
-                  className="w-full px-3 py-2 rounded bg-white/[0.04] border border-white/[0.08] text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-[#7C3AED]/50"
+                  className="w-full px-3 py-2 rounded bg-white/[0.04] border border-white/[0.08] text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-[var(--accent)]/50"
                 />
               )}
             </div>
@@ -275,7 +275,7 @@ JSON array (tanpa markdown):
                 <Button
                   onClick={() => setCurrentQ(i => i + 1)}
                   size="sm"
-                  className="bg-[#7C3AED] hover:bg-[#7C3AED]"
+                  className="bg-[var(--accent)] hover:bg-[var(--accent)]"
                 >
                   Lanjut
                 </Button>
@@ -298,7 +298,7 @@ JSON array (tanpa markdown):
           <div className="space-y-4">
             {grading ? (
               <div className="text-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-[#7C3AED] mx-auto mb-4" />
+                <Loader2 className="h-8 w-8 animate-spin text-[var(--accent-soft)] mx-auto mb-4" />
                 <p className="text-sm text-zinc-400">Menilai jawaban...</p>
               </div>
             ) : (
@@ -348,7 +348,7 @@ JSON array (tanpa markdown):
 
                 {/* Actions */}
                 <div className="flex gap-2">
-                  <Button onClick={generateExam} className="flex-1 bg-[#7C3AED] hover:bg-[#7C3AED]">
+                  <Button onClick={generateExam} className="flex-1 bg-[var(--accent)] hover:bg-[var(--accent)]">
                     <RotateCcw className="h-3 w-3 mr-1" />
                     Ulangi (Soal Baru)
                   </Button>

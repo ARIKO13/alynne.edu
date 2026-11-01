@@ -19,7 +19,7 @@ import { indexTranscript, getRAGContext } from '@/lib/rag';
 const PROVIDER_COLORS: Record<string, string> = {
   claude: 'border-zinc-500/30 text-zinc-400',
   gemini: 'border-sky-500/30 text-sky-400',
-  deepseek: 'border-[#7C3AED]/30 text-[#7C3AED]',
+  deepseek: 'border-[var(--accent)]/30 text-[var(--accent-soft)]',
   nvidia: 'border-emerald-500/30 text-emerald-400',
   minimax: 'border-pink-500/30 text-pink-400',
   openai: 'border-green-500/30 text-green-400',
@@ -275,7 +275,7 @@ export function AIAssistant() {
       <div className="px-5 py-3.5 border-b border-white/[0.06] space-y-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Bot className="h-4 w-4 text-[#7C3AED]" />
+            <Bot className="h-4 w-4 text-[var(--accent-soft)]" />
             <span className="text-sm font-medium text-zinc-200">AI Assistant</span>
             <span className="flex items-center gap-1 text-[10px] text-zinc-500 bg-white/[0.04] px-1.5 py-0.5 rounded">
               <Search className="h-2.5 w-2.5" /> Auto-Scrape
@@ -361,15 +361,15 @@ export function AIAssistant() {
             {aiMessages.map((msg) => (
               <div key={msg.id} className={cn('flex gap-2', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
                 {msg.role === 'assistant' && (
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#7C3AED]/10">
-                    <Bot className="h-3.5 w-3.5 text-[#7C3AED]" />
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent)]/10">
+                    <Bot className="h-3.5 w-3.5 text-[var(--accent-soft)]" />
                   </div>
                 )}
                 <div
                   className={cn(
                     'max-w-[80%] rounded-lg px-3.5 py-2.5 text-sm',
                     msg.role === 'user'
-                      ? 'bg-[#7C3AED] text-white'
+                      ? 'bg-[var(--accent)] text-white'
                       : 'bg-white/[0.06] text-zinc-200 border border-white/[0.06]'
                   )}
                 >
@@ -377,7 +377,7 @@ export function AIAssistant() {
                   {msg.model && (
                     <div className="mt-1.5 text-[10px] opacity-50">
                       {msg.model.includes('+ Web') ? (
-                        <span className="text-[#7C3AED]">{msg.model}</span>
+                        <span className="text-[var(--accent-soft)]">{msg.model}</span>
                       ) : (
                         MODEL_LIST.find((m) => m.id === msg.model)?.name || msg.model
                       )}
@@ -389,7 +389,7 @@ export function AIAssistant() {
                       <p className="text-[10px] font-medium text-zinc-500 mb-1">Sumber web:</p>
                       {messageSources[msg.id].map((s, i) => (
                         <a key={i} href={s.url} target="_blank" rel="noopener noreferrer"
-                          className="block text-[10px] text-[#7C3AED] hover:underline truncate"
+                          className="block text-[10px] text-[var(--accent-soft)] hover:underline truncate"
                         >
                           {s.title || s.url}
                         </a>
@@ -406,8 +406,8 @@ export function AIAssistant() {
             ))}
             {isAiLoading && (
               <div className="flex gap-2">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#7C3AED]/10">
-                  <Bot className="h-3.5 w-3.5 text-[#7C3AED]" />
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent)]/10">
+                  <Bot className="h-3.5 w-3.5 text-[var(--accent-soft)]" />
                 </div>
                 <div className="rounded-lg bg-white/[0.06] border border-white/[0.06] px-3.5 py-2.5">
                   <div className="flex items-center gap-2 text-xs text-zinc-500">
@@ -452,7 +452,7 @@ export function AIAssistant() {
             onClick={handleSend}
             disabled={!input.trim() || isAiLoading}
             size="icon"
-            className="h-[44px] w-[44px] shrink-0 rounded-lg bg-[#7C3AED] hover:bg-[#d14e1c] text-white"
+            className="h-[44px] w-[44px] shrink-0 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white"
           >
             {isAiLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />

@@ -56,8 +56,8 @@ function ModeSelector({ disabled }: { disabled: boolean }) {
     },
     ...(isScreenSupported ? [{
       id: 'screen' as const,
-      label: 'Entire Screen',
-      desc: 'Zoom + Mic (hybrid)',
+      label: 'Seluruh Layar',
+      desc: 'Zoom + Mic (gabungan)',
       icon: MonitorUp,
     }] : []),
   ];
@@ -91,30 +91,30 @@ function ModeSelector({ disabled }: { disabled: boolean }) {
               'flex-1 flex items-center gap-2.5 rounded-lg border p-3 text-left transition-colors duration-200',
               disabled && 'opacity-50 cursor-not-allowed',
               isActive
-                ? 'border-[#7C3AED]/40 bg-[#7C3AED]/10'
+                ? 'border-[var(--accent)]/40 bg-[var(--accent)]/10'
                 : 'border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12] hover:bg-white/[0.04]'
             )}
           >
             <div
               className={cn(
                 'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors',
-                isActive ? 'bg-[#7C3AED]/20' : 'bg-white/[0.05]'
+                isActive ? 'bg-[var(--accent)]/20' : 'bg-white/[0.05]'
               )}
             >
               <Icon
-                className={cn('h-4 w-4 transition-colors', isActive ? 'text-[#7C3AED]' : 'text-zinc-500')}
+                className={cn('h-4 w-4 transition-colors', isActive ? 'text-[var(--accent-soft)]' : 'text-zinc-500')}
               />
             </div>
             <div className="min-w-0">
               <p className={cn('text-xs font-medium transition-colors', isActive ? 'text-white' : 'text-zinc-400')}>
                 {mode.label}
               </p>
-              <p className={cn('text-[10px] transition-colors', isActive ? 'text-[#7C3AED]/70' : 'text-zinc-600')}>
+              <p className={cn('text-[10px] transition-colors', isActive ? 'text-[var(--accent-soft)]/70' : 'text-zinc-600')}>
                 {mode.desc}
               </p>
             </div>
             {isActive && (
-              <div className="ml-auto h-2 w-2 rounded-full bg-[#7C3AED] shrink-0" />
+              <div className="ml-auto h-2 w-2 rounded-full bg-[var(--accent)] shrink-0" />
             )}
           </button>
         );
@@ -304,8 +304,8 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
         <div className="flex items-center gap-2 text-[11px] text-emerald-400/80">
           <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
           <span>
-            <strong>STT siap pakai</strong> - server-side Whisper (akurat, no download).
-            Audio direkam di browser → diproses server Whisper (reliable, no crash).
+            <strong>STT siap pakai</strong> — audio direkam di browser, lalu
+            ditranskrip otomatis oleh Whisper di server.
           </span>
         </div>
       </div>
@@ -317,7 +317,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
           <Button
             onClick={() => setModelSelectorOpen(true)}
             size="sm"
-            className="h-7 gap-1.5 px-2.5 text-[11px] font-medium bg-[#7C3AED] hover:bg-[#7C3AED] text-white border-[#7C3AED]/30"
+            className="h-7 gap-1.5 px-2.5 text-[11px] font-medium bg-[var(--accent)] hover:bg-[var(--accent)] text-white border-[var(--accent)]/30"
             title="Pilih model Whisper untuk STT"
           >
             <Cpu className="h-3.5 w-3.5" />
@@ -383,8 +383,8 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
           <div className="flex items-start gap-2.5 rounded-lg border border-sky-500/15 bg-sky-500/[0.03] p-3">
             <MonitorUp className="h-4 w-4 text-sky-400 mt-0.5 shrink-0" />
             <div className="text-xs text-sky-300/80 leading-relaxed">
-              <p className="font-medium text-sky-300 mb-0.5">Mode Entire Screen</p>
-              <p>Pilih <strong>"Entire Screen"</strong> di browser picker, lalu <strong>centang "Share system audio"</strong>. Suara dari YouTube, Zoom, Meet, dsb akan ditranskrip otomatis.</p>
+              <p className="font-medium text-sky-300 mb-0.5">Mode Seluruh Layar</p>
+              <p>Pilih <strong>"Entire Screen"</strong> di pemilih layar browser, lalu <strong>centang "Share system audio"</strong>. Suara dari YouTube, Zoom, Meet, dsb akan ditranskrip otomatis.</p>
             </div>
           </div>
         )}
@@ -416,8 +416,8 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
           <div className="rounded-lg border border-sky-500/20 bg-sky-500/[0.04] p-3">
             <div className="flex items-center gap-2 mb-2">
               <MonitorUp className="h-3.5 w-3.5 text-sky-400" />
-              <p className="text-xs font-medium text-sky-300">Combined Methods aktif</p>
-              <span className="text-[10px] text-zinc-600 ml-auto">Entire Screen mode</span>
+              <p className="text-xs font-medium text-sky-300">Mode gabungan aktif</p>
+              <span className="text-[10px] text-zinc-600 ml-auto">mode seluruh layar</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
               <MethodBadge
@@ -486,7 +486,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
               )}
 
               {isEnhancing && (
-                <span className="flex items-center gap-1 text-[10px] text-[#7C3AED]">
+                <span className="flex items-center gap-1 text-[10px] text-[var(--accent-soft)]">
                   <Sparkles className="h-3 w-3" />
                   AI memperbaiki
                 </span>
@@ -509,7 +509,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
               transcriptEntries.map((entry, i) => (
                 <div key={i} className="flex items-start gap-3 group">
                   <span className="text-[11px] font-mono text-zinc-500 shrink-0 pt-0.5 select-none w-16 text-right">{entry.time}</span>
-                  <span className="text-[#7C3AED] shrink-0 pt-0.5 select-none">●</span>
+                  <span className="text-[var(--accent-soft)] shrink-0 pt-0.5 select-none">●</span>
                   <p className="text-sm leading-relaxed text-zinc-200">{entry.text}</p>
                 </div>
               ))
@@ -558,11 +558,11 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
                 ? 'bg-red-600 hover:bg-red-700 text-white'
                 : isScreenMode
                 ? 'bg-sky-600 hover:bg-sky-700 text-white'
-                : 'bg-[#7C3AED] hover:bg-[#d14e1c] text-white'
+                : 'bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white'
             )}
           >
             {whisperSTT.status === 'loading-model' ? <Loader2 className="h-5 w-5 animate-spin" /> : isProcessing ? <RefreshCw className="h-5 w-5 animate-spin" /> : isRecording ? <MicOff className="h-5 w-5 text-red-400" /> : <BrandLogo size={20} color="#ffffff" />}
-            {hybridProcessing ? 'Whisper memproses...' : whisperSTT.status === 'loading-model' ? 'Memuat Model...' : isProcessing ? 'Memproses...' : isRecording ? 'Stop Recording' : 'Start Recording'}
+            {hybridProcessing ? 'Whisper memproses...' : whisperSTT.status === 'loading-model' ? 'Memuat Model...' : isProcessing ? 'Memproses...' : isRecording ? 'Berhenti Merekam' : 'Mulai Merekam'}
           </Button>
           {transcript && (
                 <Button onClick={clearTranscript} disabled={isRecording || isProcessing} variant="outline" size="lg" className="gap-2 rounded-lg border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06]">
@@ -599,9 +599,9 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
               <button
                 onClick={generatePDFCombined}
                 disabled={pdfLoading}
-                className="flex items-center gap-3 rounded-md border border-[#7C3AED]/30 bg-[#7C3AED]/[0.08] p-3.5 text-left transition-colors hover:border-[#7C3AED]/60 hover:bg-[#7C3AED]/[0.14] disabled:opacity-50"
+                className="flex items-center gap-3 rounded-md border border-[var(--accent)]/30 bg-[var(--accent)]/[0.08] p-3.5 text-left transition-colors hover:border-[var(--accent)]/60 hover:bg-[var(--accent)]/[0.14] disabled:opacity-50"
               >
-                {pdfLoading ? <Loader2 className="h-4 w-4 shrink-0 text-[#7C3AED] animate-spin" /> : <FileText className="h-4 w-4 shrink-0 text-[#7C3AED]" />}
+                {pdfLoading ? <Loader2 className="h-4 w-4 shrink-0 text-[var(--accent-soft)] animate-spin" /> : <FileText className="h-4 w-4 shrink-0 text-[var(--accent-soft)]" />}
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-semibold text-zinc-100">Buat Modul PDF</p>
                   <p className="text-[10px] text-zinc-500">Generate modul belajar dari transkrip</p>
@@ -660,7 +660,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
           onClose={() => setModelSelectorOpen(false)}
           onModelReady={(modelId) => {
             setWhisperModelReady(true);
-            toast.success('Model siap! Klik Start Recording untuk mulai');
+            toast.success('Model siap! Klik Mulai Merekam untuk mulai');
           }}
         />
 
@@ -731,7 +731,7 @@ function MethodBadge({
       ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
       : 'border-white/[0.06] text-zinc-600 bg-white/[0.02]',
     violet: active
-      ? 'border-[#7C3AED]/30 text-[#7C3AED] bg-[#7C3AED]/10'
+      ? 'border-[var(--accent)]/30 text-[var(--accent-soft)] bg-[var(--accent)]/10'
       : loading
       ? 'border-amber-500/30 text-amber-400 bg-amber-500/10'
       : 'border-white/[0.06] text-zinc-600 bg-white/[0.02]',
@@ -747,7 +747,7 @@ function MethodBadge({
     )}>
       <span className={cn(
         'h-1.5 w-1.5 rounded-full',
-        active ? (color === 'green' ? 'bg-emerald-400' : color === 'violet' ? 'bg-[#7C3AED]' : 'bg-amber-400') : 'bg-zinc-700',
+        active ? (color === 'green' ? 'bg-emerald-400' : color === 'violet' ? 'bg-[var(--accent)]' : 'bg-amber-400') : 'bg-zinc-700',
         (active || loading) && 'animate-pulse'
       )} />
       <span>{label}</span>

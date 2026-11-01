@@ -44,11 +44,11 @@ function getIntensity(minutes: number): number {
 
 const INTENSITY_COLORS = [
   'bg-white/[0.03]',
-  'bg-[#7C3AED]/20',
-  'bg-[#7C3AED]/40',
-  'bg-[#7C3AED]/60',
-  'bg-[#7C3AED]/80',
-  'bg-[#7C3AED]',
+  'bg-[var(--accent)]/20',
+  'bg-[var(--accent)]/40',
+  'bg-[var(--accent)]/60',
+  'bg-[var(--accent)]/80',
+  'bg-[var(--accent)]',
 ];
 
 export function StreakCalendar({ className }: StreakCalendarProps) {

@@ -209,8 +209,8 @@ TRANSCRIPT: ${transcript.substring(0, 1000)}`;
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-[#7C3AED]/10 flex items-center justify-center">
-            <Bot className="h-4 w-4 text-[#7C3AED]" />
+          <div className="w-8 h-8 rounded-full bg-[var(--accent)]/10 flex items-center justify-center">
+            <Bot className="h-4 w-4 text-[var(--accent-soft)]" />
           </div>
           <div>
             <p className="text-sm font-medium text-white">Voice Tutor</p>
@@ -253,15 +253,15 @@ TRANSCRIPT: ${transcript.substring(0, 1000)}`;
             className={cn('flex gap-2', msg.role === 'user' ? 'justify-end' : 'justify-start')}
           >
             {msg.role === 'assistant' && (
-              <div className="w-6 h-6 rounded-full bg-[#7C3AED]/10 flex items-center justify-center shrink-0">
-                <Bot className="h-3 w-3 text-[#7C3AED]" />
+              <div className="w-6 h-6 rounded-full bg-[var(--accent)]/10 flex items-center justify-center shrink-0">
+                <Bot className="h-3 w-3 text-[var(--accent-soft)]" />
               </div>
             )}
             <div
               className={cn(
                 'rounded-lg px-3 py-2 max-w-[75%] text-sm',
                 msg.role === 'user'
-                  ? 'bg-[#7C3AED] text-white'
+                  ? 'bg-[var(--accent)] text-white'
                   : 'bg-white/[0.04] text-zinc-200'
               )}
             >
@@ -284,8 +284,8 @@ TRANSCRIPT: ${transcript.substring(0, 1000)}`;
         ))}
         {isThinking && (
           <div className="flex gap-2">
-            <div className="w-6 h-6 rounded-full bg-[#7C3AED]/10 flex items-center justify-center shrink-0">
-              <Bot className="h-3 w-3 text-[#7C3AED]" />
+            <div className="w-6 h-6 rounded-full bg-[var(--accent)]/10 flex items-center justify-center shrink-0">
+              <Bot className="h-3 w-3 text-[var(--accent-soft)]" />
             </div>
             <div className="rounded-lg px-3 py-2 bg-white/[0.04] text-zinc-400 text-sm">
               <Loader2 className="h-3 w-3 animate-spin inline mr-1" />
@@ -304,7 +304,7 @@ TRANSCRIPT: ${transcript.substring(0, 1000)}`;
             'w-14 h-14 rounded-full flex items-center justify-center transition-colors',
             isListening
               ? 'bg-red-500 animate-pulse'
-              : 'bg-[#7C3AED] hover:bg-[#7C3AED]',
+              : 'bg-[var(--accent)] hover:bg-[var(--accent)]',
             isThinking && 'opacity-50 cursor-not-allowed'
           )}
         >

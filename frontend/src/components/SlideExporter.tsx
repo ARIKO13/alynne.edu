@@ -75,7 +75,7 @@ export function SlideExporter({ open, onClose, chapters, quizzes = {} }: SlideEx
       <DialogContent className="max-w-md ">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
-            <Presentation className="h-5 w-5 text-[#7C3AED]" />
+            <Presentation className="h-5 w-5 text-[var(--accent-soft)]" />
             Export ke Slide Presentasi
           </DialogTitle>
           <DialogDescription className="text-zinc-400">
@@ -113,7 +113,7 @@ export function SlideExporter({ open, onClose, chapters, quizzes = {} }: SlideEx
           <Button
             onClick={generateSlides}
             disabled={generating}
-            className="w-full bg-[#7C3AED] hover:bg-[#7C3AED]"
+            className="w-full bg-[var(--accent)] hover:bg-[var(--accent)]"
           >
             {generating ? (
               <>
@@ -203,7 +203,7 @@ function generatePresentationHTML(slides: string[], chapters: Chapter[]): string
   }
   .slide-num { color: #71717a; font-size: 14px; }
   .slide-badge {
-    background: #7C3AED;
+    background: #38BDF8;
     color: white;
     padding: 4px 12px;
     border-radius: 12px;
@@ -212,7 +212,7 @@ function generatePresentationHTML(slides: string[], chapters: Chapter[]): string
   }
   .slide-title {
     font-size: 36px;
-    color: #7C3AED;
+    color: #38BDF8;
     margin-bottom: 24px;
     line-height: 1.3;
   }
@@ -231,7 +231,7 @@ function generatePresentationHTML(slides: string[], chapters: Chapter[]): string
     border-radius: 12px;
     border: 1px solid rgba(124, 58, 237, 0.3);
   }
-  .quiz h3 { color: #7C3AED; margin-bottom: 12px; }
+  .quiz h3 { color: #38BDF8; margin-bottom: 12px; }
   .quiz-item { margin-bottom: 16px; }
   .quiz-q { color: #fafafa; margin-bottom: 8px; font-size: 16px; }
   .quiz-options { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -282,7 +282,7 @@ function generatePresentationHTML(slides: string[], chapters: Chapter[]): string
     top: 0;
     left: 0;
     height: 3px;
-    background: #7C3AED;
+    background: #38BDF8;
     z-index: 100;
     transition: width 0.3s;
   }

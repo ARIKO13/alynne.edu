@@ -151,7 +151,7 @@ Contoh:
 - pertanyaan
 
 Lalu klik 'Organize dengan AI' untuk merapikan."
-          className="w-full h-64 p-4 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-zinc-200 placeholder:text-zinc-600 resize-none focus:outline-none focus:border-[#7C3AED]/50"
+          className="w-full h-64 p-4 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-zinc-200 placeholder:text-zinc-600 resize-none focus:outline-none focus:border-[var(--accent)]/50"
           autoFocus
         />
 
@@ -160,7 +160,7 @@ Lalu klik 'Organize dengan AI' untuk merapikan."
           <Button
             onClick={handleOrganize}
             disabled={organizing || content.length < 50}
-            className="bg-[#7C3AED] hover:bg-[#7C3AED]"
+            className="bg-[var(--accent)] hover:bg-[var(--accent)]"
           >
             <Wand2 className="h-4 w-4 mr-2" />
             {organizing ? 'Organizing...' : 'Organize dengan AI'}

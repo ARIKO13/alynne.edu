@@ -81,7 +81,7 @@ export default function SettingsPanel() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0A0A0B]">
-        <Loader2 className="h-8 w-8 animate-spin text-[#7C3AED]" />
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--accent-soft)]" />
       </div>
     );
   }
@@ -102,7 +102,7 @@ export default function SettingsPanel() {
 
         <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] p-5 mb-6">
           <div className="flex items-center gap-2 mb-4">
-            <HardDrive className="h-4 w-4 text-[#7C3AED]" />
+            <HardDrive className="h-4 w-4 text-[var(--accent-soft)]" />
             <h2 className="text-sm font-medium text-zinc-200">Penyimpanan Device</h2>
             <Button onClick={refresh} variant="ghost" size="sm" className="ml-auto text-zinc-400 hover:text-white">
               <RefreshCw className="h-3.5 w-3.5" />
@@ -152,7 +152,7 @@ export default function SettingsPanel() {
 
         <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] p-5 mb-6">
           <div className="flex items-center gap-2 mb-4">
-            <Cpu className="h-4 w-4 text-[#7C3AED]" />
+            <Cpu className="h-4 w-4 text-[var(--accent-soft)]" />
             <h2 className="text-sm font-medium text-zinc-200">Model AI yang Tersimpan</h2>
             <Badge variant="outline" className="ml-auto text-[10px] border-white/10 text-zinc-400">
               {storageInfo?.models?.length || 0} model
@@ -169,8 +169,8 @@ export default function SettingsPanel() {
             <div className="space-y-2">
               {storageInfo?.models?.map((model: any) => (
                 <div key={model.id} className="flex items-center gap-3 p-3 rounded-lg border border-white/[0.06] bg-white/[0.02]">
-                  <div className="h-9 w-9 rounded-lg bg-[#7C3AED]/10 flex items-center justify-center shrink-0">
-                    <Cpu className="h-4 w-4 text-[#7C3AED]" />
+                  <div className="h-9 w-9 rounded-lg bg-[var(--accent)]/10 flex items-center justify-center shrink-0">
+                    <Cpu className="h-4 w-4 text-[var(--accent-soft)]" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white truncate">{model.name}</p>
@@ -225,7 +225,7 @@ export default function SettingsPanel() {
 
         <div className="mt-6 rounded-lg border border-white/[0.04] bg-white/[0.02] p-4">
           <div className="flex items-start gap-2">
-            <Zap className="h-4 w-4 text-[#7C3AED] mt-0.5 shrink-0" />
+            <Zap className="h-4 w-4 text-[var(--accent-soft)] mt-0.5 shrink-0" />
             <div className="text-xs text-zinc-400 leading-relaxed">
               <p className="font-medium text-zinc-300 mb-1">Cara Kerja Penyimpanan</p>
               <p>Model AI disimpan di disk device (HP/SSD/Laptop) via OPFS - bukan RAM.</p>

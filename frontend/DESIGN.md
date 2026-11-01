@@ -56,11 +56,35 @@
 > Ikon = inline SVG path Lucide (stroke 1.5), bukan emoji. Login screen TIDAK
 > diubah (ia referensi §1). Kepemilikan keputusan: ukuran font publik kini
 > display/h2/h3/body/micro = 5 skala (sesuai §7).
+>
+> **Ronde 4 — 2026-11-01 (penggantian palet — keputusan owner):** owner menilai
+> palet ungu terlihat AI-slop dan minta aksen yang "mata adem" untuk belajar.
+> Aksen diganti biru laut tenang (sky): `--accent #7C3AED → #0369A1` (sky-700,
+> fill tombol), `--accent-hover #6D28D9 → #075985` (sky-800), token baru
+> `--accent-soft #38BDF8` (sky-400 — teks/ikon/garis aksen di atas bg gelap).
+> Kontras terverifikasi WCAG: putih di --accent 5.93:1 (lama 5.70), --accent-soft
+> di --bg 9.24:1 (lama 3.47), ring 3.34:1. Migrasi mekanis 57 file: hex
+> `#7C3AED/#B794F6/#A78BFA/#8B5CF6/#6D28D9` (semua case) → token/hex baru per
+> konteks (teks→accent-soft, fill→accent, SVG→#38BDF8); kelas violet-*/purple-*
+> → sky-*; hover oranye liar `#d14e1c` (4 file) → `--accent-hover`.
+> §1 diperbarui: "satu aksen violet" → "satu aksen biru laut". Audit interior
+> (login demo) menemukan slop copy yang ikut dibetulkan: bahasa campur EN/ID
+> (Back→Kembali, Settings→Pengaturan, Logout→Keluar, Entire Screen→Seluruh
+> Layar, Start/Stop Recording→Mulai/Berhenti Merekam, Paste YouTube URL→Tempel
+> URL YouTube, Instant•No processing→Instan•tanpa pemrosesan, Due→Jatuh tempo,
+> Master→Dikuasai, Combined Methods→Mode gabungan), dev-speak dihapus (banner
+> "reliable, no crash", "Algoritma SM-2 (sama kayak Anki)", "generate flashcard
+> dari transcript"), tombol "Ambil" merah (semantik destructive salah) → netral.
+> Sisa P2 (backlog): nama fitur EN melekat dipertahankan (Speech to Text,
+> Knowledge Hub, Scratchpad, Spaced repetition). **Bug produksi terpisah (bukan
+> desain): D1 API 401 Authentication error — `CF_API_TOKEN` di .env VPS invalid/
+> expired; semua fitur DB (demo-login, profil, langganan) 500. Perlu token
+> Cloudflare baru dari owner.**
 
 ## 1. Arah (satu kalimat)
 
 Aplikasi belajar gelap yang tenang dan padat-fungsi: satu permukaan flat,
-satu aksen violet, tipografi yang jelas, gerak yang beralasan — nol ornamen.
+satu aksen biru laut tenang, tipografi yang jelas, gerak yang beralasan — nol ornamen.
 
 ## 2. Token (wajib lewat token, dilarang nilai literal baru)
 
@@ -71,13 +95,13 @@ satu aksen violet, tipografi yang jelas, gerak yang beralasan — nol ornamen.
 | `--surface-2` | `#18181B` | Hover / nested sekali. |
 | `--border` | `#27272A` | Pembatas. 1px, boleh hilang kalau spacing sudah cukup. |
 | `--text` | `#FAFAFA` · `--text-2: #A1A1AA` · `--text-3: #71717A` | 3 tingkat, cukup. |
-| `--accent` | `#7C3AED` (hover `#6D28D9`) | SATU aksen. Flat. Bukan gradient. Hanya untuk aksi primer & fokus. |
+| `--accent` | `#0369A1` (hover `#075985`, teks/garis di bg gelap: `--accent-soft #38BDF8`) | SATU aksen biru laut (ronde 4). Flat. Bukan gradient. Hanya untuk aksi primer & fokus. |
 | `--ok / --warn / --err` | `#10B981` / `#F59E0B` / `#EF4444` | Hanya status BENERAN status. Warna membawa kata, bukan menggantikan kata. |
 
 - Radius: **skala 2 langkah** — `6px` (kontrol) dan `12px` (kontainer). Nested:
   inner = outer − padding. Dilarang campur `rounded-full` untuk kartu.
 - Shadow: pakai border saja untuk kedalaman. Kalau perlu shadow: blur kecil,
-  offset kecil, opacity rendah, **tanpa warna** (dilarang glow violet/pink).
+  offset kecil, opacity rendah, **tanpa warna** (dilarang glow violet/pink/biru).
 - Semua warna & font-family wajib dideklarasikan di blok token; tidak ada
   hex literal baru di komponen (violet lama `#8B5CF6/#B794F6/F687B3` di-migrate
   ke token di atas, jangan diperbanyak).

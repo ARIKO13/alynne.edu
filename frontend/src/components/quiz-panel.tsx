@@ -255,7 +255,7 @@ export function QuizPanel() {
             </div>
           </div>
           <div className="w-full h-2 rounded-full bg-white/[0.06] mt-4">
-            <div className="h-full rounded-full bg-gradient-to-r from-[#B794F6] to-[#F687B3] transition-colors" style={{ width: pct + '%' }} />
+            <div className="h-full rounded-full bg-gradient-to-r from-[#38BDF8] to-[#F687B3] transition-colors" style={{ width: pct + '%' }} />
           </div>
         </div>
         <div className="glass-card p-6 space-y-3 max-h-96 overflow-y-auto">
@@ -276,7 +276,7 @@ export function QuizPanel() {
           })}
         </div>
         <div className="flex gap-3">
-          <Button onClick={handleRetry} className="flex-1 h-10 rounded-lg bg-gradient-to-r from-[#B794F6] to-[#a57ce8] text-white font-medium gap-2 hover:shadow-[0_0_20px_rgba(183,148,246,0.3)]">
+          <Button onClick={handleRetry} className="flex-1 h-10 rounded-lg bg-gradient-to-r from-[#38BDF8] to-[#a57ce8] text-white font-medium gap-2 hover:shadow-[0_0_20px_rgba(183,148,246,0.3)]">
             <RotateCcw className="h-4 w-4" /> Coba Lagi (Quiz Baru)
           </Button>
           <Button onClick={handleBack} variant="outline" className="h-10 rounded-lg border-white/[0.08] text-zinc-400 hover:text-white hover:bg-white/[0.04]">
@@ -299,7 +299,7 @@ export function QuizPanel() {
           <span className="text-xs text-zinc-500">{quizState.currentIndex + 1} / {quizState.questions.length}</span>
         </div>
         <div className="w-full h-1.5 rounded-full bg-white/[0.06]">
-          <div className="h-full rounded-full bg-gradient-to-r from-[#B794F6] to-[#F687B3] transition-colors" style={{ width: ((quizState.currentIndex + 1) / quizState.questions.length) * 100 + '%' }} />
+          <div className="h-full rounded-full bg-gradient-to-r from-[#38BDF8] to-[#F687B3] transition-colors" style={{ width: ((quizState.currentIndex + 1) / quizState.questions.length) * 100 + '%' }} />
         </div>
         <div className="glass-card p-6 space-y-5">
           <div className="flex items-center gap-2">
@@ -317,7 +317,7 @@ export function QuizPanel() {
               value={selectedAnswer}
               onChange={e => handleFillBlank(e.target.value)}
               placeholder="Ketik jawaban..."
-              className="w-full h-10 rounded-lg bg-white/[0.04] border border-white/[0.08] px-4 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#B794F6]/50 transition-colors"
+              className="w-full h-10 rounded-lg bg-white/[0.04] border border-white/[0.08] px-4 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#38BDF8]/50 transition-colors"
             />
           )}
           {q.options && (
@@ -335,13 +335,13 @@ export function QuizPanel() {
                     borderColor = 'border-red-500/30'; bgColor = 'bg-red-500/10'; textColor = 'text-red-400';
                   }
                 } else if (isSelected) {
-                  borderColor = 'border-[#B794F6]/40'; bgColor = 'bg-[#B794F6]/10'; textColor = 'text-[#B794F6]';
+                  borderColor = 'border-[#38BDF8]/40'; bgColor = 'bg-[#38BDF8]/10'; textColor = 'text-[#38BDF8]';
                 }
                 return (
                   <button key={i} onClick={() => handleAnswer(opt)} disabled={showAnswer}
                     className={cn('w-full flex items-center gap-3 p-3 rounded-lg border text-left text-sm transition-colors', borderColor, textColor, bgColor)}>
                     <span className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-medium',
-                      isSelected ? 'bg-[#B794F6]/20 text-[#B794F6]' : 'bg-white/[0.04] text-zinc-500')}>{letter}</span>
+                      isSelected ? 'bg-[#38BDF8]/20 text-[#38BDF8]' : 'bg-white/[0.04] text-zinc-500')}>{letter}</span>
                     {opt}
                   </button>
                 );
@@ -365,12 +365,12 @@ export function QuizPanel() {
           </button>
           <div className="flex gap-2">
             {!showAnswer && selectedAnswer && (
-              <Button onClick={handleCheck} className="h-9 rounded-lg bg-gradient-to-r from-[#B794F6] to-[#a57ce8] text-white text-xs font-medium gap-1.5 hover:shadow-[0_0_20px_rgba(183,148,246,0.3)]">
+              <Button onClick={handleCheck} className="h-9 rounded-lg bg-gradient-to-r from-[#38BDF8] to-[#a57ce8] text-white text-xs font-medium gap-1.5 hover:shadow-[0_0_20px_rgba(183,148,246,0.3)]">
                 <CheckCircle className="h-3.5 w-3.5" /> Cek Jawaban
               </Button>
             )}
             {showAnswer && (
-              <Button onClick={handleNext} className="h-9 rounded-lg bg-gradient-to-r from-[#B794F6] to-[#a57ce8] text-white text-xs font-medium gap-1.5 hover:shadow-[0_0_20px_rgba(183,148,246,0.3)]">
+              <Button onClick={handleNext} className="h-9 rounded-lg bg-gradient-to-r from-[#38BDF8] to-[#a57ce8] text-white text-xs font-medium gap-1.5 hover:shadow-[0_0_20px_rgba(183,148,246,0.3)]">
                 {quizState.currentIndex >= quizState.questions.length - 1 ? 'Lihat Hasil' : 'Selanjutnya'}
                 <ChevronRight className="h-3.5 w-3.5" />
               </Button>
@@ -386,7 +386,7 @@ export function QuizPanel() {
     <div className="space-y-6">
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <Target className="h-5 w-5 text-[#B794F6]" />
+          <Target className="h-5 w-5 text-[#38BDF8]" />
           <h2 className="text-lg font-bold text-white">Quiz Generator</h2>
         </div>
         <p className="text-sm text-zinc-500">Upload materi teks, lalu generate quiz otomatis untuk menguji pemahamanmu.</p>
@@ -394,11 +394,11 @@ export function QuizPanel() {
 
       <div className="glass-card p-6 space-y-4">
         <div className="flex items-center gap-2 text-sm text-zinc-400">
-          <FileText className="h-4 w-4 text-[#B794F6]" />
+          <FileText className="h-4 w-4 text-[#38BDF8]" />
           <span>Upload file teks (.txt, .md, .csv)</span>
         </div>
         <input ref={fileRef} type="file" accept=".txt,.md,.csv" className="hidden" onChange={e => e.target.files?.[0] && extractTextFromFile(e.target.files[0])} />
-        <Button onClick={() => fileRef.current?.click()} variant="outline" className="w-full h-10 rounded-lg border-dashed border-white/[0.08] text-zinc-400 hover:text-white hover:border-[#B794F6]/30 hover:bg-[#B794F6]/5 gap-2">
+        <Button onClick={() => fileRef.current?.click()} variant="outline" className="w-full h-10 rounded-lg border-dashed border-white/[0.08] text-zinc-400 hover:text-white hover:border-[#38BDF8]/30 hover:bg-[#38BDF8]/5 gap-2">
           <Upload className="h-4 w-4" />
           {fileName || 'Pilih file...'}
         </Button>
@@ -414,10 +414,10 @@ export function QuizPanel() {
           onChange={e => setRawText(e.target.value)}
           placeholder="Paste materi belajar di sini... (minimal 50 kata)"
           rows={6}
-          className="w-full rounded-lg bg-white/[0.03] border border-white/[0.06] px-4 py-3 text-sm text-white placeholder:text-zinc-700 focus:outline-none focus:border-[#B794F6]/30 transition-colors resize-none"
+          className="w-full rounded-lg bg-white/[0.03] border border-white/[0.06] px-4 py-3 text-sm text-white placeholder:text-zinc-700 focus:outline-none focus:border-[#38BDF8]/30 transition-colors resize-none"
         />
 
-        <Button onClick={handleGenerate} disabled={generating} className="w-full h-10 rounded-lg bg-gradient-to-r from-[#B794F6] to-[#F687B3] text-white font-medium gap-2 hover:shadow-[0_0_20px_rgba(183,148,246,0.3)]">
+        <Button onClick={handleGenerate} disabled={generating} className="w-full h-10 rounded-lg bg-gradient-to-r from-[#38BDF8] to-[#F687B3] text-white font-medium gap-2 hover:shadow-[0_0_20px_rgba(183,148,246,0.3)]">
           {generating ? <><Loader2 className="h-4 w-4 animate-spin" /> Generating...</> : <><Sparkles className="h-4 w-4" /> Generate 10 Soal Quiz</>}
         </Button>
       </div>

@@ -41,11 +41,11 @@ const ACCENT: Record<
     check: 'text-emerald-400',
   },
   violet: {
-    ring: 'ring-[#7C3AED]',
-    bg: 'bg-[#7C3AED]/[0.08]',
-    text: 'text-[#7C3AED]',
-    badge: 'bg-[#7C3AED]',
-    check: 'text-[#7C3AED]',
+    ring: 'ring-[var(--accent)]',
+    bg: 'bg-[var(--accent)]/[0.08]',
+    text: 'text-[var(--accent-soft)]',
+    badge: 'bg-[var(--accent)]',
+    check: 'text-[var(--accent-soft)]',
   },
   amber: {
     ring: 'ring-amber-500',
@@ -364,7 +364,7 @@ export function BillingFlow() {
                     onClick={() => setPaymentMethod(p)}
                     className={`flex items-center gap-3 rounded-lg border-2 p-3 text-left transition-colors ${
                       isSelected
-                        ? 'border-[#7C3AED] bg-[#7C3AED]/[0.08]'
+                        ? 'border-[var(--accent)] bg-[var(--accent)]/[0.08]'
                         : 'border-white/[0.06] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.04]'
                     }`}
                   >
@@ -376,7 +376,7 @@ export function BillingFlow() {
                       <p className="truncate text-xs text-zinc-500">{p.description}</p>
                     </div>
                     {isSelected && (
-                      <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-[#7C3AED]" />
+                      <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-[var(--accent-soft)]" />
                     )}
                   </button>
                 );
@@ -441,7 +441,7 @@ export function BillingFlow() {
               type="button"
               onClick={handleCheckout}
               disabled={submitting}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#7C3AED] text-sm font-semibold text-white transition-colors hover:bg-[#6D28D9] disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[var(--accent)] text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-hover)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? (
                 <>
@@ -475,7 +475,7 @@ export function BillingFlow() {
             type="button"
             onClick={handleNext}
             disabled={!canAdvance(step)}
-            className="inline-flex items-center gap-1 rounded-lg bg-[#7C3AED] px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-[#6D28D9] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-lg bg-[var(--accent)] px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-[var(--accent-hover)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             Lanjut
           </button>
@@ -500,7 +500,7 @@ function StepperHeader({ currentStep }: { currentStep: Step }) {
             <div
               className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-xs font-semibold transition ${
                 currentStep === s.n
-                  ? 'bg-[#7C3AED] text-white'
+                  ? 'bg-[var(--accent)] text-white'
                   : currentStep > s.n
                   ? 'bg-emerald-500 text-white'
                   : 'bg-white/[0.06] text-zinc-500'

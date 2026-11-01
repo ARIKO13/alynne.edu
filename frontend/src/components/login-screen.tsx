@@ -48,7 +48,7 @@ export function LoginScreen() {
   if (status === 'loading') {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0A0A0B' }}>
-        <Loader2 className="h-5 w-5 animate-spin" style={{ color: '#7C3AED' }} />
+        <Loader2 className="h-5 w-5 animate-spin" style={{ color: 'var(--accent-soft)' }} />
       </div>
     );
   }
@@ -83,7 +83,7 @@ export function LoginScreen() {
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{
-            width: '28px', height: '28px', background: '#7C3AED', borderRadius: '6px',
+            width: '28px', height: '28px', background: 'var(--accent)', borderRadius: '6px',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <span style={{ color: '#FFF', fontWeight: 700, fontSize: '14px' }}>A</span>
@@ -102,7 +102,7 @@ export function LoginScreen() {
             Video jadi materi.<br />
             {/* avoid-ai-design-ignore: SD5 — satu aksen pada baris kedua adalah
                 signature login screen yang jadi referensi DESIGN.md §1. */}
-            <span style={{ color: '#7C3AED' }}>Satu klik.</span>
+            <span style={{ color: 'var(--accent-soft)' }}>Satu klik.</span>
           </h1>
         </div>
 
@@ -136,7 +136,7 @@ export function LoginScreen() {
           {/* Mobile logo */}
           <div className="lg:hidden" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '40px' }}>
             <div style={{
-              width: '28px', height: '28px', background: '#7C3AED', borderRadius: '6px',
+              width: '28px', height: '28px', background: 'var(--accent)', borderRadius: '6px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               <span style={{ color: '#FFF', fontWeight: 700, fontSize: '14px' }}>A</span>
@@ -161,7 +161,7 @@ export function LoginScreen() {
                 type="text" value={name} onChange={(e) => setName(e.target.value)}
                 placeholder="Nama" disabled={loading} autoComplete="name"
                 style={inputBase}
-                onFocus={(e) => e.currentTarget.style.borderBottomColor = '#7C3AED'}
+                onFocus={(e) => e.currentTarget.style.borderBottomColor = '#38BDF8'}
                 onBlur={(e) => e.currentTarget.style.borderBottomColor = '#27272A'}
               />
             </div>
@@ -173,7 +173,7 @@ export function LoginScreen() {
                 type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                 placeholder="email@kamu.com" disabled={loading} autoComplete="email"
                 style={inputBase}
-                onFocus={(e) => e.currentTarget.style.borderBottomColor = '#7C3AED'}
+                onFocus={(e) => e.currentTarget.style.borderBottomColor = '#38BDF8'}
                 onBlur={(e) => e.currentTarget.style.borderBottomColor = '#27272A'}
               />
             </div>
@@ -181,13 +181,13 @@ export function LoginScreen() {
               type="submit" disabled={loading || !name.trim() || !email.trim()}
               style={{
                 width: '100%', padding: '10px 0', fontSize: '13px', fontWeight: 500,
-                background: '#7C3AED', color: '#FFF', border: 'none', borderRadius: '6px',
+                background: 'var(--accent)', color: '#FFF', border: 'none', borderRadius: '6px',
                 cursor: 'pointer',
                 opacity: (loading || !name.trim() || !email.trim()) ? 0.4 : 1,
                 transition: 'background 0.15s ease, opacity 0.15s ease',
               }}
-              onMouseEnter={(e) => !loading && (e.currentTarget.style.background = '#6D28D9')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = '#7C3AED')}
+              onMouseEnter={(e) => !loading && (e.currentTarget.style.background = '#075985')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = '#38BDF8')}
             >
               {loading ? <Loader2 className="animate-spin" style={{ width: '16px', height: '16px', margin: '0 auto' }} /> : 'Masuk'}
             </button>

@@ -33,7 +33,7 @@ const AGENTS: Agent[] = [
     description:
       'Platform belajar AI-powered dengan Speech-to-Text, auto-generate modul PDF, dan tracking progress. Upload materi pendukung, rekam suara, dan biar AI yang menyusun modul belajarmu.',
     icon: GraduationCap,
-    color: '#7C3AED',
+    color: 'var(--accent-soft)',
     features: [
       { icon: Mic, label: 'Speech to Text' },
       { icon: MonitorUp, label: 'Screen Capture' },
@@ -49,7 +49,7 @@ const AGENTS: Agent[] = [
     description:
       'Assistant AI yang bisa membantu menjawab pertanyaan, menganalisis data, dan memberikan rekomendasi. Dilengkapi web scraping untuk informasi real-time.',
     icon: Bot,
-    color: '#7C3AED',
+    color: 'var(--accent-soft)',
     features: [
       { icon: Sparkles, label: 'Multi-Model LLM' },
       { icon: Zap, label: 'Real-time Web' },
@@ -84,7 +84,7 @@ export function AgentLanding({ onEnter }: { onEnter: (agentId: string) => void }
       <header className="fixed top-0 left-0 right-0 z-50 bg-[#0A0A0B]/80  border-b border-white/[0.06]">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#7C3AED]">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent)]">
               <Sparkles className="h-4 w-4 text-white" />
             </div>
             <span className="text-base font-semibold tracking-tight text-white">

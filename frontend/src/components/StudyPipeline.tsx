@@ -1020,7 +1020,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
         {/* Header */}
         <div className="p-4 border-b border-white/[0.06] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-[#7C3AED]" />
+            <Sparkles className="h-4 w-4 text-[var(--accent-soft)]" />
             <span className="text-sm font-semibold text-white">Mode Belajar</span>
           </div>
           <Button onClick={onClose} size="sm" variant="ghost" className="h-7 text-zinc-500">
@@ -1035,7 +1035,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
             <p className="text-sm text-zinc-300">{errorMessage}</p>
             <Button
               onClick={() => { setStage('idle'); setErrorMessage(''); }}
-              className="bg-[#7C3AED] hover:bg-[#7C3AED] text-white text-xs px-4 py-2 rounded"
+              className="bg-[var(--accent)] hover:bg-[var(--accent)] text-white text-xs px-4 py-2 rounded"
             >
               Coba lagi
             </Button>
@@ -1046,7 +1046,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
         {stage !== 'complete' && stage !== 'idle' && stage !== 'error' && (
           <div className="p-3 border-b border-white/[0.04]">
             <div className="flex items-center justify-between text-xs mb-1">
-              <span className="text-[#7C3AED] flex items-center gap-1">
+              <span className="text-[var(--accent-soft)] flex items-center gap-1">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 {stage === 'splitting' && 'Menyusun ringkasan...'}
                 {stage === 'mindmap' && 'Menyusun modul...'}
@@ -1071,7 +1071,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               <p className="text-[9px] text-zinc-600 uppercase">Bab</p>
             </div>
             <div>
-              <p className="text-base font-bold text-[#7C3AED]">{totalQuestions}</p>
+              <p className="text-base font-bold text-[var(--accent-soft)]">{totalQuestions}</p>
               <p className="text-[9px] text-zinc-600 uppercase">Kuis</p>
             </div>
             <div>
@@ -1106,7 +1106,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                 className={cn(
                   'w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs transition-colors text-left',
                   activeChapterId === ch.id
-                    ? 'bg-[#7C3AED]/10 text-[#7C3AED]'
+                    ? 'bg-[var(--accent)]/10 text-[var(--accent-soft)]'
                     : 'text-zinc-400 hover:bg-white/[0.04]'
                 )}
               >
@@ -1127,7 +1127,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           <div className="p-3 border-t border-white/[0.06] space-y-2">
             <Button
               onClick={handleStartSession}
-              className="w-full bg-[#7C3AED] hover:bg-[#7C3AED] text-xs"
+              className="w-full bg-[var(--accent)] hover:bg-[var(--accent)] text-xs"
               size="sm"
             >
               <Play className="h-3 w-3 mr-1" />
@@ -1211,7 +1211,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               onClick={() => setMainTab('materi')}
               className={cn(
                 'px-3 py-1 rounded text-xs font-medium transition-colors',
-                mainTab === 'materi' ? 'bg-[#7C3AED] text-white' : 'text-zinc-500 hover:text-zinc-300'
+                mainTab === 'materi' ? 'bg-[var(--accent)] text-white' : 'text-zinc-500 hover:text-zinc-300'
               )}
             >
               <BookOpen className="h-3 w-3 inline mr-1" />
@@ -1221,7 +1221,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               onClick={() => setMainTab('kuis')}
               className={cn(
                 'px-3 py-1 rounded text-xs font-medium transition-colors',
-                mainTab === 'kuis' ? 'bg-[#7C3AED] text-white' : 'text-zinc-500 hover:text-zinc-300'
+                mainTab === 'kuis' ? 'bg-[var(--accent)] text-white' : 'text-zinc-500 hover:text-zinc-300'
               )}
             >
               <Calculator className="h-3 w-3 inline mr-1" />
@@ -1231,7 +1231,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               onClick={() => setMainTab('mindmap')}
               className={cn(
                 'px-3 py-1 rounded text-xs font-medium transition-colors',
-                mainTab === 'mindmap' ? 'bg-[#7C3AED] text-white' : 'text-zinc-500 hover:text-zinc-300'
+                mainTab === 'mindmap' ? 'bg-[var(--accent)] text-white' : 'text-zinc-500 hover:text-zinc-300'
               )}
             >
               <Brain className="h-3 w-3 inline mr-1" />
@@ -1244,7 +1244,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               onClick={() => setMainTab('buddy')}
               className={cn(
                 'px-3 py-1 rounded text-xs font-medium transition-colors',
-                mainTab === 'buddy' ? 'bg-[#7C3AED] text-white' : 'text-zinc-500 hover:text-zinc-300'
+                mainTab === 'buddy' ? 'bg-[var(--accent)] text-white' : 'text-zinc-500 hover:text-zinc-300'
               )}
             >
               <MessageCircle className="h-3 w-3 inline mr-1" />
@@ -1267,7 +1267,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               onClick={() => setMainTab('session')}
               className={cn(
                 'px-3 py-1 rounded text-xs font-medium transition-colors',
-                mainTab === 'session' ? 'bg-[#7C3AED] text-white' : 'text-zinc-500 hover:text-zinc-300'
+                mainTab === 'session' ? 'bg-[var(--accent)] text-white' : 'text-zinc-500 hover:text-zinc-300'
               )}
             >
               <Clock className="h-3 w-3 inline mr-1" />
@@ -1280,7 +1280,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
         {stage !== 'complete' && stage !== 'idle' && (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <Loader2 className="h-8 w-8 animate-spin text-[#7C3AED] mx-auto mb-4" />
+              <Loader2 className="h-8 w-8 animate-spin text-[var(--accent-soft)] mx-auto mb-4" />
               <p className="text-sm text-zinc-400">
                 {stage === 'splitting' && 'Menyusun ringkasan...'}
                 {stage === 'mindmap' && 'Menyusun modul...'}
@@ -1295,7 +1295,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           <div className="p-6">
             <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-6">
               <h2 className="text-sm font-medium text-zinc-300 mb-4 flex items-center gap-2">
-                <Brain className="h-4 w-4 text-[#7C3AED]" />
+                <Brain className="h-4 w-4 text-[var(--accent-soft)]" />
                 Mindmap
               </h2>
               {llmMindmap ? (
@@ -1322,7 +1322,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           <div className="p-6 max-w-3xl mx-auto space-y-4">
             {/* Chapter title  -  v19: include emoji */}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#7C3AED]/10 flex items-center justify-center text-base font-bold text-[#7C3AED]">
+              <div className="w-10 h-10 rounded-full bg-[var(--accent)]/10 flex items-center justify-center text-base font-bold text-[var(--accent-soft)]">
                 {activeChapter.id}
               </div>
               <div className="flex-1">
@@ -1339,7 +1339,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
 
             {/* Tujuan */}
             {activeChapter.tujuan && (
-              <div className="rounded-lg border border-purple-500/10 bg-purple-500/[0.02] p-3">
+              <div className="rounded-lg border border-sky-500/10 bg-sky-500/[0.02] p-3">
                 <p className="text-[11px] text-zinc-500 mb-1">Tujuan</p>
                 <p className="text-xs text-zinc-400 leading-relaxed">{activeChapter.tujuan}</p>
               </div>
@@ -1436,7 +1436,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                 onClick={handleToggleTTS}
                 size="sm"
                 className={cn(
-                  ttsPlaying && !ttsPaused ? 'bg-green-600 hover:bg-green-700' : 'bg-[#7C3AED] hover:bg-[#7C3AED]'
+                  ttsPlaying && !ttsPaused ? 'bg-green-600 hover:bg-green-700' : 'bg-[var(--accent)] hover:bg-[var(--accent)]'
                 )}
               >
                 {ttsPlaying && !ttsPaused ? (
@@ -1554,7 +1554,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                                   : showWrong
                                   ? 'border-red-500/50 bg-red-500/10 text-red-400'
                                   : isSelected
-                                  ? 'border-[#7C3AED]/50 bg-[#7C3AED]/10 text-[#7C3AED]'
+                                  ? 'border-[var(--accent)]/50 bg-[var(--accent)]/10 text-[var(--accent-soft)]'
                                   : 'border-white/[0.06] text-zinc-400 hover:border-white/[0.15] hover:bg-white/[0.04]'
                               )}
                             >
@@ -1605,7 +1605,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               <div className={cn(
                 'inline-flex items-center justify-center w-48 h-48 rounded-full border-4 transition-colors',
                 isRunning
-                  ? 'border-[#7C3AED] bg-[#7C3AED]/[0.05]'
+                  ? 'border-[var(--accent)] bg-[var(--accent)]/[0.05]'
                   : 'border-white/[0.06] bg-white/[0.02]'
               )}>
                 <div>
@@ -1626,7 +1626,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                   }
                   setIsRunning(!isRunning);
                 }}
-                className="bg-[#7C3AED] hover:bg-[#7C3AED]"
+                className="bg-[var(--accent)] hover:bg-[var(--accent)]"
               >
                 {isRunning ? 'Pause' : 'Start'}
               </Button>
@@ -1737,7 +1737,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                         className={cn(
                           'rounded-md border px-1.5 py-1.5 text-center transition-colors',
                           studyFocusVisionMode === 'akurat'
-                            ? 'border-purple-400/60 bg-purple-500/10'
+                            ? 'border-sky-400/60 bg-sky-500/10'
                             : 'border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05]'
                         )}
                       >
@@ -1860,7 +1860,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                 </p>
                 <Button
                   onClick={handleDownloadMaster}
-                  className="mt-3 bg-[#7C3AED] hover:bg-[#7C3AED]"
+                  className="mt-3 bg-[var(--accent)] hover:bg-[var(--accent)]"
                   size="sm"
                 >
                   <Download className="h-3 w-3 mr-1" />
@@ -2016,7 +2016,7 @@ function MindmapTreeNode({
   const childPrefix = level === 0 ? '' : prefix + (isLast ? '   ' : '│  ');
 
   const colors = [
-    'text-[#7C3AED] font-bold text-base',
+    'text-[var(--accent-soft)] font-bold text-base',
     'text-blue-400 font-medium text-sm',
     'text-zinc-300 text-sm',
     'text-zinc-500 text-xs',
@@ -2033,7 +2033,7 @@ function MindmapTreeNode({
         )}
         <span className={colorClass}>{node.label}</span>
         {level === 0 && (
-          <Badge variant="outline" className="ml-2 text-[8px] border-[#7C3AED]/30 text-[#7C3AED]">
+          <Badge variant="outline" className="ml-2 text-[8px] border-[var(--accent)]/30 text-[var(--accent-soft)]">
             AI Generated
           </Badge>
         )}

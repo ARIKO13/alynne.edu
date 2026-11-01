@@ -207,7 +207,7 @@ export function DatasetLibraryPanel() {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h3 className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
-            <Database className="h-4 w-4 text-[#7C3AED]" />
+            <Database className="h-4 w-4 text-[var(--accent-soft)]" />
             Dataset Library (SQLite di SSD VPS)
           </h3>
           {dbFile && (
@@ -383,7 +383,7 @@ export function DatasetLibraryPanel() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleWordClick(w.word)}
-                      className="text-sm font-mono text-zinc-200 hover:text-[#7C3AED] transition-colors"
+                      className="text-sm font-mono text-zinc-200 hover:text-[var(--accent-soft)] transition-colors"
                     >
                       {w.word}
                     </button>
@@ -477,7 +477,7 @@ export function DatasetLibraryPanel() {
                 <div key={c.id} className="rounded-md border border-white/[0.06] bg-white/[0.02] p-2.5 group flex items-center gap-2">
                   <span className="text-sm font-mono text-zinc-200">{c.word}</span>
                   <ChevronRight className="h-3 w-3 text-zinc-600" />
-                  <span className="text-sm font-mono text-[#7C3AED]">{c.context_word}</span>
+                  <span className="text-sm font-mono text-[var(--accent-soft)]">{c.context_word}</span>
                   <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-sky-500/30 text-sky-400 bg-sky-500/10">
                     {c.position} · d{c.distance}
                   </Badge>
@@ -610,7 +610,7 @@ function TabButton({ active, onClick, children }: {
       className={cn(
         'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap',
         active
-          ? 'bg-[#7C3AED]/15 text-[#7C3AED]'
+          ? 'bg-[var(--accent)]/15 text-[var(--accent-soft)]'
           : 'text-zinc-500 hover:text-zinc-300'
       )}
     >
@@ -631,7 +631,7 @@ function SourcePill({ active, onClick, icon, label }: {
       className={cn(
         'flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] font-medium transition-colors',
         active
-          ? 'border-[#7C3AED]/40 bg-[#7C3AED]/15 text-[#7C3AED]'
+          ? 'border-[var(--accent)]/40 bg-[var(--accent)]/15 text-[var(--accent-soft)]'
           : 'border-white/[0.08] bg-white/[0.02] text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]'
       )}
     >
@@ -648,15 +648,15 @@ function StatCard({ label, value, icon, color }: {
   color: 'purple' | 'emerald' | 'amber' | 'red' | 'sky' | 'violet';
 }) {
   const colorClasses = {
-    purple: 'border-[#7C3AED]/15 bg-[#7C3AED]/[0.03]',
+    purple: 'border-[var(--accent)]/15 bg-[var(--accent)]/[0.03]',
     emerald: 'border-emerald-500/15 bg-emerald-500/[0.03]',
     amber: 'border-amber-500/15 bg-amber-500/[0.03]',
     red: 'border-red-500/15 bg-red-500/[0.03]',
     sky: 'border-sky-500/15 bg-sky-500/[0.03]',
-    violet: 'border-violet-500/15 bg-violet-500/[0.03]',
+    violet: 'border-sky-500/15 bg-sky-500/[0.03]',
   };
   const textColor = {
-    purple: 'text-[#7C3AED]',
+    purple: 'text-[var(--accent-soft)]',
     emerald: 'text-emerald-400',
     amber: 'text-amber-400',
     red: 'text-red-400',
@@ -679,9 +679,9 @@ function WordDetailView({ detail }: { detail: any }) {
   const w = detail.word;
   return (
     <div className="space-y-3">
-      <div className="rounded-lg border border-[#7C3AED]/15 bg-[#7C3AED]/[0.03] p-3">
+      <div className="rounded-lg border border-[var(--accent)]/15 bg-[var(--accent)]/[0.03] p-3">
         <div className="flex items-center gap-2 mb-2">
-          <h4 className="text-base font-mono text-[#7C3AED]">{w.word}</h4>
+          <h4 className="text-base font-mono text-[var(--accent-soft)]">{w.word}</h4>
           <Badge variant="outline" className={cn(
             'text-[9px] px-1.5 py-0',
             w.status === 'confirmed' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
@@ -901,14 +901,14 @@ function StorageView({ info }: { info: any }) {
             return (
               <div key={i} className="rounded-md border border-white/[0.04] bg-[#161618] p-2">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-mono text-[#7C3AED]">{t.name}</span>
+                  <span className="text-xs font-mono text-[var(--accent-soft)]">{t.name}</span>
                   <span className="text-[10px] text-zinc-500">{t.columns} cols</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] text-zinc-400 w-20">{t.rows.toLocaleString()} rows</span>
                   <div className="flex-1 h-1.5 bg-[#111113] rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-[#7C3AED]/60 rounded-full"
+                      className="h-full bg-[var(--accent)]/60 rounded-full"
                       style={{ width: `${rowPct}%` }}
                     />
                   </div>
@@ -953,12 +953,12 @@ function SchemaView({ info }: { info: any }) {
   return (
     <div className="space-y-3">
       {/* Header */}
-      <div className="rounded-lg border border-[#7C3AED]/15 bg-[#7C3AED]/[0.03] p-3">
+      <div className="rounded-lg border border-[var(--accent)]/15 bg-[var(--accent)]/[0.03] p-3">
         <p className="text-[11px] text-zinc-400 mb-1 flex items-center gap-1.5">
           <GitBranch className="h-3 w-3" /> Database Schema (ERD)
         </p>
         <p className="text-[10px] text-zinc-500">
-          Schema version: <strong className="text-[#7C3AED] font-mono">{schemaVersion}</strong>
+          Schema version: <strong className="text-[var(--accent-soft)] font-mono">{schemaVersion}</strong>
           {' · '}
           {tables.length} tables · {indexes.length} indexes
         </p>
@@ -969,8 +969,8 @@ function SchemaView({ info }: { info: any }) {
         {tables.map((t: any, i: number) => (
           <div key={i} className="rounded-lg border border-white/[0.06] bg-[#111113] overflow-hidden">
             {/* Table header */}
-            <div className="px-3 py-2 bg-[#7C3AED]/10 border-b border-[#7C3AED]/20">
-              <p className="text-xs font-mono font-semibold text-[#7C3AED] flex items-center gap-1.5">
+            <div className="px-3 py-2 bg-[var(--accent)]/10 border-b border-[var(--accent)]/20">
+              <p className="text-xs font-mono font-semibold text-[var(--accent-soft)] flex items-center gap-1.5">
                 <Database className="h-3 w-3" />
                 {t.name}
                 {t.foreignKeys.length > 0 && (
@@ -1092,7 +1092,7 @@ function SchemaView({ info }: { info: any }) {
         <div className="space-y-1 max-h-[200px] overflow-y-auto">
           {indexes.map((idx: any, i: number) => (
             <div key={i} className="flex items-center gap-2 text-[10px] py-0.5">
-              <span className="font-mono text-[#7C3AED]">{idx.tbl_name}</span>
+              <span className="font-mono text-[var(--accent-soft)]">{idx.tbl_name}</span>
               <span className="text-zinc-600">·</span>
               <span className="font-mono text-zinc-400">{idx.name}</span>
             </div>
@@ -1197,7 +1197,7 @@ function D1MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefresh, l
             return (
               <div key={i} className="rounded-md border border-white/[0.04] bg-[#161618] p-2">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-mono text-[#7C3AED]">{t.name}</span>
+                  <span className="text-xs font-mono text-[var(--accent-soft)]">{t.name}</span>
                   <span className="text-[10px] text-zinc-400 font-mono">{t.count.toLocaleString()}</span>
                 </div>
                 {t.error && (
@@ -1205,7 +1205,7 @@ function D1MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefresh, l
                 )}
                 <div className="h-1.5 bg-[#111113] rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[#7C3AED]/60 rounded-full"
+                    className="h-full bg-[var(--accent)]/60 rounded-full"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
