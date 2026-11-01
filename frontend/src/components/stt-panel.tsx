@@ -202,8 +202,11 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
               // Load model if needed + transcribe
               const { loadModel: fgLoadModel, transcribe: fgTranscribe } = await import('@/lib/whisper-fugood');
               if (!fgIsModelLoadedCheck()) {
-                console.log('[Hybrid] Loading Whisper model...');
-                await fgLoadModel('tiny');
+                // Pakai model pilihan user; fallback Tiny kalau belum pernah
+                // milih di ModelSelector (biar background load tetap ringan)
+                const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('whisper-fugood-model') : null;
+                console.log('[Hybrid] Loading Whisper model:', saved || 'tiny');
+                await fgLoadModel(saved || 'tiny');
               }
               const result = await fgTranscribe(audioData, 'id');
               console.log('[Hybrid] Whisper result:', result.text);

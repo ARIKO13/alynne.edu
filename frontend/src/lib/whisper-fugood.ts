@@ -1,10 +1,14 @@
 /**
- * whisper-fugood.ts - Hybrid Whisper dispatcher
+ * whisper-fugood.ts - Offline Whisper dispatcher (100% client-side)
  *
- * - Tiny & Small: client-side via Web Worker (transformers.js ONNX q8)
- * - Large Turbo & Large v3: server-side proxy (faster-whisper backend)
+ * SEMUA model (Tiny s/d Large v3) jalan di browser via Web Worker
+ * (transformers.js ONNX q8). File model di-download LANGSUNG dari
+ * Hugging Face CDN ke Cache Storage browser user — VPS tidak ikut
+ * menyentuh trafik model sama sekali (tanpa proxy).
  *
- * API compatible across both modes.
+ * Ukuran file (sizeMB) = total file ONNX q8 yang benar-benar di-download,
+ * diverifikasi dari Hugging Face (encoder + decoder_model_merged):
+ *   tiny 41 · base 77 · small 250 · medium 775 · turbo 1085 · large-v3 1560
  */
 
 // ===== MODEL DEFINITIONS =====
@@ -20,72 +24,122 @@ export interface FugoodModel {
   speedX: string;
   accuracyRange: string;
   recommendedFor: string;
-  /** 'client' = runs in browser Web Worker, 'server' = sent to backend */
-  runtime: 'client' | 'server';
+  /** Keterangan spek device minimal untuk model ini */
+  deviceSupport: string;
+  /** Peringatan khusus (mis. model besar yang ga cocok untuk HP) */
+  warning?: string;
 }
 
 export const FUGOOD_MODELS: FugoodModel[] = [
   {
     id: 'tiny',
-    name: 'Tiny (Client Q8)',
+    name: 'Tiny',
     category: 'quantized',
     type: 'q8',
     description:
-      'Model paling ringan, jalan di browser (Mode Offline). Cepat, akurasi dasar untuk Bahasa Indonesia.',
-    ramMB: 200,
-    speedX: '5-10x realtime',
+      'Paling ringan & cepat. Akurasi dasar — cukup untuk catatan pendek.',
+    ramMB: 400,
+    speedX: '±5-10x realtime',
     accuracyRange: '65-75%',
-    recommendedFor: 'HP jadul, RAM 1GB+ (Mode Offline)',
+    recommendedFor: 'HP lama / entry-level',
+    deviceSupport: 'Semua HP & laptop · RAM device ≥ 1 GB',
     url: '',
-    sizeMB: 40,
-    runtime: 'client',
+    sizeMB: 41,
+  },
+  {
+    id: 'base',
+    name: 'Base',
+    category: 'quantized',
+    type: 'q8',
+    description:
+      'Sedikit lebih akurat dari Tiny, masih enteng di-download & dipakai.',
+    ramMB: 700,
+    speedX: '±3-5x realtime',
+    accuracyRange: '72-80%',
+    recommendedFor: 'HP budget',
+    deviceSupport: 'HP & laptop · RAM device ≥ 2 GB',
+    url: '',
+    sizeMB: 77,
   },
   {
     id: 'small',
-    name: 'Small (Client Q8) RECOMMENDED',
+    name: 'Small',
     category: 'quantized',
     type: 'q8',
     description:
-      'Model Small jalan di browser (Mode Offline). Balance akurasi & ukuran. Cocok untuk Bahasa Indonesia.',
-    ramMB: 500,
-    speedX: '1.5-2x realtime',
+      'Balance terbaik antara akurasi & ukuran untuk Bahasa Indonesia.',
+    ramMB: 1300,
+    speedX: '±1-2x realtime',
     accuracyRange: '82-88%',
-    recommendedFor: 'HP modern, RAM 2GB+ (Mode Offline, Recommended)',
+    recommendedFor: 'Pemakaian sehari-hari',
+    deviceSupport: 'HP modern & laptop · RAM device ≥ 3 GB',
     url: '',
-    sizeMB: 150,
-    runtime: 'client',
+    sizeMB: 250,
+  },
+  {
+    id: 'medium',
+    name: 'Medium',
+    category: 'quantized',
+    type: 'q8',
+    description:
+      'Akurasi tinggi untuk transkrip panjang. File ±775 MB.',
+    ramMB: 3000,
+    speedX: '±0.3-0.7x realtime',
+    accuracyRange: '85-92%',
+    recommendedFor: 'Laptop / PC',
+    deviceSupport: 'Laptop/PC · RAM ≥ 6 GB · HP flagship saja',
+    warning:
+      'Sangat lambat di HP dan bisa crash kalau RAM kurang. Untuk harian, Small/Turbo lebih praktis.',
+    url: '',
+    sizeMB: 775,
   },
   {
     id: 'large-v3-turbo',
-    name: 'Large v3 Turbo (Server)',
+    name: 'Large v3 Turbo',
     category: 'quantized',
-    type: 'q5_0',
+    type: 'q8',
     description:
-      'Model turbo terbaik, dijalankan di server (Mode Online). Cepat & akurat untuk Bahasa Indonesia.',
-    ramMB: 0,
-    speedX: '1-2x realtime',
+      'Akurasi mendekati Large tapi decoder-nya jauh lebih kecil. File ±1 GB.',
+    ramMB: 4000,
+    speedX: '±0.2-0.4x realtime',
     accuracyRange: '88-96%',
-    recommendedFor: 'Butuh akurasi tinggi (Mode Online)',
-    url: '/models/ggml-large-v3-turbo-q5_0.bin',
-    sizeMB: 548,
-    runtime: 'server',
+    recommendedFor: 'Laptop / PC RAM 8GB+',
+    deviceSupport: 'Laptop/PC · RAM ≥ 8 GB',
+    warning:
+      'File besar & berat — di HP umumnya gagal muat (memori browser habis).',
+    url: '',
+    sizeMB: 1085,
   },
   {
     id: 'large-v3',
-    name: 'Large v3 (Server)',
+    name: 'Large v3',
     category: 'quantized',
-    type: 'q5_0',
+    type: 'q8',
     description:
-      'Model terbesar dan paling akurat. Untuk akurasi maksimal. Diproses di server (Mode Online).',
-    ramMB: 0,
-    speedX: '0.3-0.5x realtime',
+      'Paling akurat, paling berat. Hanya masuk akal di laptop/PC RAM besar.',
+    ramMB: 6000,
+    speedX: '±0.1-0.3x realtime',
     accuracyRange: '90-97%',
-    recommendedFor: 'Akurasi maksimal (Mode Online, lambat)',
-    url: '/models/ggml-large-v3-q5_0.bin',
-    sizeMB: 1100,
-    runtime: 'server',
+    recommendedFor: 'Laptop / PC RAM 16GB+',
+    deviceSupport: 'Laptop/PC · RAM ≥ 16 GB · Tidak untuk HP',
+    warning:
+      'Model 1.5 GB — di HP hampir pasti gagal muat, di laptop WASM butuh kesabaran.',
+    url: '',
+    sizeMB: 1560,
   },
 ];
+
+// Repo Hugging Face untuk tiap model — dipakai worker untuk download &
+// untuk cek cache. SEMUA di-download browser langsung dari HF CDN
+// (tanpa proxy, tanpa lewat VPS).
+export const HF_MODELS: Record<string, string> = {
+  tiny: 'Xenova/whisper-tiny',
+  base: 'Xenova/whisper-base',
+  small: 'Xenova/whisper-small',
+  medium: 'Xenova/whisper-medium',
+  'large-v3-turbo': 'onnx-community/whisper-large-v3-turbo',
+  'large-v3': 'Xenova/whisper-large-v3',
+};
 
 // ===== STATE =====
 const STORAGE_KEY = 'whisper-fugood-model';
@@ -102,11 +156,7 @@ export function getModel(id: string): FugoodModel | undefined {
 }
 
 export function isModelLoaded(): boolean {
-  if (currentModelId === null) return false;
-  const model = getModel(currentModelId);
-  if (!model) return false;
-  if (model.runtime === 'client') return workerReady;
-  return true; // server always ready
+  return currentModelId !== null && workerReady;
 }
 
 export function getCurrentModel(): string | null {
@@ -123,32 +173,66 @@ export function saveModelId(id: string): void {
   localStorage.setItem(STORAGE_KEY, id);
 }
 
-export async function isModelCached(_modelId: string): Promise<boolean> {
-  // Both modes: assume cached after first use
-  return true;
+export async function isModelCached(modelId: string): Promise<boolean> {
+  // Cek BENERAN di Cache Storage browser. transformers.js menyimpan file
+  // model di cache yang namanya mengandung "transformers", key = URL HF
+  // (mis. https://huggingface.co/Xenova/whisper-tiny/resolve/main/...).
+  if (typeof caches === 'undefined') return false;
+  try {
+    const repo = HF_MODELS[modelId];
+    if (!repo) return false;
+    const names = await caches.keys();
+    const cacheName = names.find((n) => n.toLowerCase().includes('transformers'));
+    if (!cacheName) return false;
+    const cache = await caches.open(cacheName);
+    const keys = await cache.keys();
+    return keys.some((req) => req.url.includes(repo));
+  } catch {
+    return false;
+  }
 }
 
-export async function deleteModel(_modelId: string): Promise<boolean> {
-  // Client: clear transformers.js cache
-  if (typeof caches !== 'undefined') {
+export async function deleteModel(modelId: string): Promise<boolean> {
+  // Hapus HANYA file model ini dari cache — uninstall Large ga boleh
+  // ikut menghapus Tiny/Small yang user simpan juga.
+  const repo = HF_MODELS[modelId];
+  if (repo && typeof caches !== 'undefined') {
     try {
       const names = await caches.keys();
-      for (const n of names) {
-        if (n.includes('transformers')) await caches.delete(n);
+      const cacheName = names.find((n) => n.toLowerCase().includes('transformers'));
+      if (cacheName) {
+        const cache = await caches.open(cacheName);
+        const keys = await cache.keys();
+        for (const req of keys) {
+          if (req.url.includes(repo)) await cache.delete(req);
+        }
       }
     } catch {}
   }
-  // Free worker
-  if (worker) {
+  // Kalau yang dihapus = model yang lagi di memory, bebaskan worker
+  if (worker && currentModelId === modelId) {
     try { worker.postMessage({ type: 'free' }); } catch {}
+    workerReady = false;
+    currentModelId = null;
   }
-  workerReady = false;
-  currentModelId = null;
   return true;
 }
 
+// Rejector untuk proses load yang lagi jalan — dipakai cancelLoad() biar
+// tombol Cancel beneran menghentikan download (worker di-terminate),
+// bukan cuma mengabaikan UI-nya.
+let activeLoadReject: ((err: Error) => void) | null = null;
+
 export function cancelLoad(): void {
   isLoading = false;
+  const reject = activeLoadReject;
+  activeLoadReject = null;
+  if (reject) reject(new Error('Download dibatalkan'));
+  if (worker) {
+    try { worker.terminate(); } catch {}
+    worker = null;
+  }
+  workerReady = false;
 }
 
 export function forceResetLoading(): void {
@@ -189,9 +273,23 @@ async function loadClientModel(
   const w = ensureWorker();
 
   return new Promise((resolve, reject) => {
+    const model = getModel(modelId);
+    // Timeout proporsional ukuran model: minimal 5 menit, model besar
+    // dihitung dengan asumsi koneksi ±1 MB/s.
+    const minutes = Math.max(5, Math.ceil((model?.sizeMB ?? 150) / 60));
     const timeout = setTimeout(() => {
-      reject(new Error('Client model load timeout (5 min)'));
-    }, 5 * 60 * 1000);
+      activeLoadReject = null;
+      reject(
+        new Error(
+          `Timeout memuat model (${minutes} menit). Koneksi mungkin terlalu lambat untuk download ±${model?.sizeMB ?? '?'} MB.`
+        )
+      );
+    }, minutes * 60 * 1000);
+
+    activeLoadReject = (err) => {
+      clearTimeout(timeout);
+      reject(err);
+    };
 
     const handler = (e: MessageEvent) => {
       const msg = e.data;
@@ -199,11 +297,13 @@ async function loadClientModel(
         onProgress(msg.progress);
       } else if (msg.type === 'loaded') {
         w.removeEventListener('message', handler);
+        activeLoadReject = null;
         clearTimeout(timeout);
         workerReady = true;
         resolve();
       } else if (msg.type === 'error') {
         w.removeEventListener('message', handler);
+        activeLoadReject = null;
         clearTimeout(timeout);
         workerReady = false;
         reject(new Error(msg.error));
@@ -224,9 +324,13 @@ async function transcribeClient(
   }
 
   return new Promise((resolve, reject) => {
+    // Model berat (medium/large) di WASM butuh waktu jauh lebih lama
+    // untuk audio panjang — kasih timeout lebih longgar.
+    const sizeMB = (currentModelId ? getModel(currentModelId)?.sizeMB : undefined) ?? 0;
+    const timeoutMs = (sizeMB >= 700 ? 20 : 5) * 60 * 1000;
     const timeout = setTimeout(() => {
-      reject(new Error('Transcribe timeout (5 min)'));
-    }, 5 * 60 * 1000);
+      reject(new Error('Transcribe timeout — audio terlalu panjang untuk model ini'));
+    }, timeoutMs);
 
     const handler = (e: MessageEvent) => {
       const msg = e.data;
@@ -250,50 +354,6 @@ async function transcribeClient(
   });
 }
 
-// ===== SERVER-SIDE PROXY =====
-
-async function loadServerModel(
-  _modelId: string,
-  onProgress?: (p: number) => void
-): Promise<void> {
-  // Server models are always ready - just record selection
-  onProgress?.(50);
-  await new Promise((r) => setTimeout(r, 200));
-  onProgress?.(100);
-}
-
-async function transcribeServer(
-  audio: Float32Array,
-  language: string
-): Promise<{ text: string }> {
-  const wavBlob = float32ToWavBlob(audio);
-  const formData = new FormData();
-  formData.append('file', wavBlob, 'recording.wav');
-  formData.append('language', language);
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5 * 60 * 1000);
-
-  try {
-    const response = await fetch('/api/whisper/transcribe/sync', {
-      method: 'POST',
-      body: formData,
-      signal: controller.signal,
-    });
-
-    if (!response.ok) {
-      const errText = await response.text().catch(() => '');
-      throw new Error(`Server error ${response.status}: ${errText.substring(0, 200)}`);
-    }
-
-    const result = await response.json();
-    const text = result?.result?.text?.trim() || result?.text?.trim() || '';
-    return { text };
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
 // ===== UNIFIED API =====
 
 export async function loadModel(
@@ -304,12 +364,8 @@ export async function loadModel(
   if (!model) throw new Error('Unknown model: ' + modelId);
 
   if (currentModelId === modelId) {
-    // Already loaded (client: worker ready, server: always ready)
-    if (model.runtime === 'client' && !workerReady) {
-      // Fall through to load
-    } else {
-      return;
-    }
+    // Model ini sudah di-load di worker — ga perlu load ulang
+    if (workerReady) return;
   }
 
   if (isLoading) {
@@ -319,13 +375,8 @@ export async function loadModel(
   isLoading = true;
 
   try {
-    console.log('[Whisper] Loading model:', model.name, '(' + model.runtime + ')');
-
-    if (model.runtime === 'client') {
-      await loadClientModel(modelId, onProgress);
-    } else {
-      await loadServerModel(modelId, onProgress);
-    }
+    console.log('[Whisper] Loading model (client):', model.name);
+    await loadClientModel(modelId, onProgress);
 
     currentModelId = modelId;
     saveModelId(modelId);
@@ -346,16 +397,12 @@ export async function transcribe(
   const model = getModel(modelId);
   if (!model) throw new Error('No model selected');
 
-  console.log('[Whisper] Transcribing via', model.runtime, ':', audio.length, 'samples');
+  console.log('[Whisper] Transcribing (client):', audio.length, 'samples');
 
   try {
-    if (model.runtime === 'client') {
-      // Copy audio because worker transfer will detach the original
-      const audioCopy = new Float32Array(audio);
-      return await transcribeClient(audioCopy, language);
-    } else {
-      return await transcribeServer(audio, language);
-    }
+    // Copy audio because worker transfer will detach the original
+    const audioCopy = new Float32Array(audio);
+    return await transcribeClient(audioCopy, language);
   } catch (err) {
     console.error('[Whisper] Transcribe error:', err);
     throw err;
@@ -371,49 +418,4 @@ export async function freeModel(): Promise<void> {
   }
   currentModelId = null;
   console.log('[Whisper] Model freed');
-}
-
-// ===== WAV CONVERSION (16kHz mono 16-bit) =====
-
-const SAMPLE_RATE = 16000;
-
-function float32ToWavBlob(samples: Float32Array): Blob {
-  const numChannels = 1;
-  const bitsPerSample = 16;
-  const bytesPerSample = bitsPerSample / 8;
-  const blockAlign = numChannels * bytesPerSample;
-  const dataSize = samples.length * bytesPerSample;
-  const bufferSize = 44 + dataSize;
-
-  const buffer = new ArrayBuffer(bufferSize);
-  const view = new DataView(buffer);
-
-  const writeString = (offset: number, str: string) => {
-    for (let i = 0; i < str.length; i++) {
-      view.setUint8(offset + i, str.charCodeAt(i));
-    }
-  };
-
-  writeString(0, 'RIFF');
-  view.setUint32(4, 36 + dataSize, true);
-  writeString(8, 'WAVE');
-  writeString(12, 'fmt ');
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);
-  view.setUint16(22, numChannels, true);
-  view.setUint32(24, SAMPLE_RATE, true);
-  view.setUint32(28, SAMPLE_RATE * blockAlign, true);
-  view.setUint16(32, blockAlign, true);
-  view.setUint16(34, bitsPerSample, true);
-  writeString(36, 'data');
-  view.setUint32(40, dataSize, true);
-
-  let offset = 44;
-  for (let i = 0; i < samples.length; i++) {
-    const s = Math.max(-1, Math.min(1, samples[i]));
-    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
-    offset += 2;
-  }
-
-  return new Blob([buffer], { type: 'audio/wav' });
 }

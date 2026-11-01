@@ -5,7 +5,8 @@
  * Main thread never crashes — only this worker can crash.
  *
  * Messages from main thread:
- *   { type: 'load', modelId: 'tiny' | 'small' }
+ *   { type: 'load', modelId: 'tiny' | 'base' | 'small' | 'medium'
+ *                        | 'large-v3-turbo' | 'large-v3' }
  *   { type: 'transcribe', audio: Float32Array, language: 'id' }
  *   { type: 'free' }
  *
@@ -18,7 +19,7 @@
 
 /// <reference lib="webworker" />
 
-export {}; // make this a module so its top-level functions don't pollute global scope
+import { HF_MODELS } from './whisper-fugood';
 
 interface LoadMessage {
   type: 'load';
@@ -37,18 +38,13 @@ interface FreeMessage {
 
 type Message = LoadMessage | TranscribeMessage | FreeMessage;
 
-const MODELS: Record<string, string> = {
-  tiny: 'Xenova/whisper-tiny',
-  small: 'Xenova/whisper-small',
-};
-
 let transcriber: any = null;
 let currentModelId: string | null = null;
 
 async function loadModel(modelId: string): Promise<void> {
   if (currentModelId === modelId && transcriber) return;
 
-  const hfId = MODELS[modelId];
+  const hfId = HF_MODELS[modelId];
   if (!hfId) throw new Error('Unknown client model: ' + modelId);
 
   // Release previous

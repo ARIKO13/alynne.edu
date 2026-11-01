@@ -2,11 +2,12 @@
  * ModelSelector.tsx - Popup pilih model Whisper untuk STT
  *
  * Fitur:
- *   - List 5 model (2 unquantized + 3 quantized)
- *   - Download dengan REAL progress bar (pre-fetch ke Cache Storage)
- *   - CANCEL download (langsung stop via AbortController)
- *   - UNINSTALL model (hapus dari Cache Storage untuk hemat storage)
- *   - Status indicator: cached / loaded / downloading
+ *   - 6 model offline (Tiny s/d Large v3) — semua jalan di browser
+ *   - Download dengan REAL progress bar (langsung dari Hugging Face CDN)
+ *   - CANCEL download yang beneran menghentikan (worker di-terminate)
+ *   - UNINSTALL per-model (hapus dari Cache Storage untuk hemat storage)
+ *   - Keterangan spek device minimal per model + warning untuk model berat
+ *   - Status indicator: cached (real cache check) / loaded / downloading
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -30,6 +31,7 @@ import {
   Gauge,
   AlertTriangle,
   X,
+  Smartphone,
   Trash2,
   Zap,
 } from 'lucide-react';
@@ -124,18 +126,18 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
       setCachedModels((prev) => new Set(prev).add(selectedId));
       setLoading(false);
 
-      // Client: longer delay to show 100%; Server: short
-      const delay = model.runtime === 'client' ? 800 : 400;
+      // Beri delay singkat biar progress 100% terlihat sebelum popup tutup
       setTimeout(() => {
         onModelReady(selectedId);
         onClose();
-      }, delay);
+      }, 800);
     } catch (err) {
       setLoading(false);
       const msg = err instanceof Error ? err.message : String(err);
       if (
         msg.toLowerCase().includes('abort') ||
         msg.toLowerCase().includes('cancel') ||
+        msg.toLowerCase().includes('batal') ||
         msg.toLowerCase().includes('signal')
       ) {
         // User cancel - ga usah tampilin error
@@ -199,13 +201,14 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
             Pilih Model Speech-to-Text
           </DialogTitle>
           <DialogDescription className="text-stone-400">
-            Model dijalankan langsung di browser Anda. Download sekali, tersimpan
-            di cache browser untuk penggunaan berikutnya.
+            Semua model jalan langsung di browser Anda (offline). Download
+            sekali dari Hugging Face, tersimpan di cache browser — pilih
+            sesuai spek device Anda.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 max-h-[450px] overflow-y-auto pr-2">
-          {/* Group: Mode Offline */}
+          {/* Group: Mode Offline — semua model */}
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Zap className="h-4 w-4 text-green-400" />
@@ -214,54 +217,22 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
             <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-stone-500 mb-2 pl-6">
               <span>Respon Cepat</span>
               <span>Tanpa Internet</span>
-              <span>Hemat Server</span>
+              <span>Download langsung dari Hugging Face</span>
             </div>
             <div className="space-y-2">
-              {FUGOOD_MODELS.filter((m) => m.runtime === 'client').map(
-                (model) => (
-                  <ModelOption
-                    key={model.id}
-                    model={model}
-                    selected={selectedId === model.id}
-                    loaded={loadedModelId === model.id}
-                    cached={cachedModels.has(model.id)}
-                    uninstalling={uninstalling === model.id}
-                    disabled={loading}
-                    onSelect={() => handleSelect(model.id)}
-                    onUninstall={() => handleUninstall(model.id)}
-                  />
-                )
-              )}
-            </div>
-          </div>
-
-          {/* Group: Mode Online */}
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Cpu className="h-4 w-4 text-blue-400" />
-              <h3 className="text-sm font-medium text-blue-400">Mode Online</h3>
-            </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-stone-500 mb-2 pl-6">
-              <span>Akurasi Tinggi</span>
-              <span>Model Besar</span>
-              <span>Butuh Internet</span>
-            </div>
-            <div className="space-y-2">
-              {FUGOOD_MODELS.filter((m) => m.runtime === 'server').map(
-                (model) => (
-                  <ModelOption
-                    key={model.id}
-                    model={model}
-                    selected={selectedId === model.id}
-                    loaded={loadedModelId === model.id}
-                    cached={cachedModels.has(model.id)}
-                    uninstalling={uninstalling === model.id}
-                    disabled={loading}
-                    onSelect={() => handleSelect(model.id)}
-                    onUninstall={() => handleUninstall(model.id)}
-                  />
-                )
-              )}
+              {FUGOOD_MODELS.map((model) => (
+                <ModelOption
+                  key={model.id}
+                  model={model}
+                  selected={selectedId === model.id}
+                  loaded={loadedModelId === model.id}
+                  cached={cachedModels.has(model.id)}
+                  uninstalling={uninstalling === model.id}
+                  disabled={loading}
+                  onSelect={() => handleSelect(model.id)}
+                  onUninstall={() => handleUninstall(model.id)}
+                />
+              ))}
             </div>
           </div>
         </div>
@@ -329,15 +300,10 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
                 <CheckCircle2 className="h-4 w-4 mr-2" />
                 Gunakan Model Ini
               </>
-            ) : selectedModel?.runtime === 'client' ? (
+            ) : (
               <>
                 <Download className="h-4 w-4 mr-2" />
                 {isCached ? 'Muat dari Cache (Offline)' : 'Download & Gunakan (Offline)'}
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                Gunakan Model (Online)
               </>
             )}
           </Button>
@@ -419,31 +385,6 @@ function ModelOption({
                 RECOMMENDED
               </Badge>
             )}
-            {model.runtime === 'client' ? (
-              <Badge
-                variant="outline"
-                className="bg-green-500/10 text-green-400 border-green-500/30 text-[10px]"
-              >
-                <Zap className="h-3 w-3 mr-1" />
-                OFFLINE
-              </Badge>
-            ) : (
-              <Badge
-                variant="outline"
-                className="bg-blue-500/10 text-blue-400 border-blue-500/30 text-[10px]"
-              >
-                <Cpu className="h-3 w-3 mr-1" />
-                ONLINE
-              </Badge>
-            )}
-            {model.category === 'unquantized' && (
-              <Badge
-                variant="outline"
-                className="bg-amber-500/10 text-amber-400 border-amber-500/30 text-[10px]"
-              >
-                FP16
-              </Badge>
-            )}
           </div>
           <p className="text-[11px] text-stone-400 mb-1.5 leading-relaxed">
             {model.description}
@@ -455,7 +396,7 @@ function ModelOption({
             </div>
             <div className="flex items-center gap-1">
               <Cpu className="h-3 w-3" />
-              <span>RAM: {model.ramMB} MB</span>
+              <span>RAM browser: ±{model.ramMB} MB</span>
             </div>
             <div className="flex items-center gap-1">
               <Gauge className="h-3 w-3" />
@@ -465,6 +406,16 @@ function ModelOption({
               <span>Akurasi: {model.accuracyRange}</span>
             </div>
           </div>
+          <div className="flex items-start gap-1 mt-1.5 text-[10px] text-stone-500">
+            <Smartphone className="h-3 w-3 mt-[1px] shrink-0" />
+            <span>{model.deviceSupport}</span>
+          </div>
+          {model.warning && (
+            <div className="flex items-start gap-1 mt-1 text-[10px] text-amber-400/90">
+              <AlertTriangle className="h-3 w-3 mt-[1px] shrink-0" />
+              <span>{model.warning}</span>
+            </div>
+          )}
         </div>
         {/* Uninstall button - only show if cached or loaded */}
         {(cached || loaded) && !uninstalling && !disabled && (
