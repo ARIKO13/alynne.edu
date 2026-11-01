@@ -212,7 +212,7 @@ export function FileUploadChunked({ onTranscript, onError }: FileUploadChunkedPr
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           className={`
-            border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all
+            border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
             ${dragOver
               ? 'border-[#7C3AED] bg-[#7C3AED]/5'
               : 'border-white/10 hover:border-white/20 hover:bg-white/[0.02]'}

@@ -277,25 +277,25 @@ export function DatasetLibraryPanel() {
             <SourcePill
               active={sourceFilter === ''}
               onClick={() => handleSourceFilterChange('')}
-              icon="📚"
+              icon=""
               label="All"
             />
             <SourcePill
               active={sourceFilter === 'kbbi'}
               onClick={() => handleSourceFilterChange('kbbi')}
-              icon="📖"
+              icon=""
               label="KBBI"
             />
             <SourcePill
               active={sourceFilter === 'slang'}
               onClick={() => handleSourceFilterChange('slang')}
-              icon="💬"
+              icon=""
               label="Slang"
             />
             <SourcePill
               active={sourceFilter === 'webspeech'}
               onClick={() => handleSourceFilterChange('webspeech')}
-              icon="🎙️"
+              icon=""
               label="Auto-learned"
             />
           </div>
@@ -319,28 +319,28 @@ export function DatasetLibraryPanel() {
       {section === 'stats' && stats && (
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
-            <StatCard label="Learned Words (Total)" value={stats.learnedWords.total} icon="📚" color="purple" />
+            <StatCard label="Learned Words (Total)" value={stats.learnedWords.total} icon="" color="purple" />
             <StatCard label="Confirmed" value={stats.learnedWords.confirmed} icon="✓" color="emerald" />
-            <StatCard label="Candidates" value={stats.learnedWords.candidates} icon="⏳" color="amber" />
+            <StatCard label="Candidates" value={stats.learnedWords.candidates} icon="" color="amber" />
             <StatCard label="Rejected" value={stats.learnedWords.rejected} icon="✗" color="red" />
-            <StatCard label="Co-occurrences (Total)" value={stats.cooccurrence.total} icon="🔗" color="sky" />
-            <StatCard label="Unique Words Tracked" value={stats.cooccurrence.uniqueWords} icon="🔤" color="sky" />
-            <StatCard label="User Votes" value={stats.userCorrections.total} icon="🗳️" color="violet" />
-            <StatCard label="Pending Review" value={stats.userCorrections.pending} icon="⏸️" color="amber" />
+            <StatCard label="Co-occurrences (Total)" value={stats.cooccurrence.total} icon="" color="sky" />
+            <StatCard label="Unique Words Tracked" value={stats.cooccurrence.uniqueWords} icon="" color="sky" />
+            <StatCard label="User Votes" value={stats.userCorrections.total} icon="" color="violet" />
+            <StatCard label="Pending Review" value={stats.userCorrections.pending} icon="" color="amber" />
           </div>
 
           {/* Source breakdown - tampilin distribusi KBBI/slang/auto-learned */}
           {sourceBreakdown.length > 0 && (
             <div className="rounded-lg border border-white/[0.06] bg-[#111113] p-3">
-              <p className="text-[11px] text-zinc-400 mb-2">📊 Breakdown by Source</p>
+              <p className="text-[11px] text-zinc-400 mb-2">Breakdown by Source</p>
               <div className="space-y-1.5">
                 {sourceBreakdown.map((row, i) => {
                   const sourceLabels: Record<string, { label: string; icon: string; color: string }> = {
-                    kbbi: { label: 'KBBI', icon: '📖', color: 'text-purple-400' },
-                    slang: { label: 'Slang', icon: '💬', color: 'text-sky-400' },
-                    webspeech: { label: 'Auto-learned', icon: '🎙️', color: 'text-emerald-400' },
+                    kbbi: { label: 'KBBI', color: 'text-zinc-400' },
+                    slang: { label: 'Slang', color: 'text-zinc-400' },
+                    webspeech: { label: 'Auto-learned', color: 'text-zinc-400' },
                   };
-                  const meta = sourceLabels[row.source] || { label: row.source, icon: '❓', color: 'text-zinc-400' };
+                  const meta = sourceLabels[row.source] || { label: row.source, color: 'text-zinc-400' };
                   return (
                     <div key={i} className="flex items-center gap-2 text-[11px]">
                       <span>{meta.icon}</span>
@@ -403,13 +403,13 @@ export function DatasetLibraryPanel() {
                       variant="outline"
                       className={cn(
                         'text-[9px] px-1.5 py-0',
-                        w.source === 'kbbi' ? 'border-purple-500/30 text-purple-400 bg-purple-500/10'
+                        w.source === 'kbbi' ? 'border-zinc-500/30 text-zinc-400 bg-zinc-500/10'
                           : w.source === 'slang' ? 'border-sky-500/30 text-sky-400 bg-sky-500/10'
                           : 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
                       )}
                       title={`Source: ${w.source}`}
                     >
-                      {w.source === 'kbbi' ? '📖 KBBI' : w.source === 'slang' ? '💬 Slang' : w.source === 'webspeech' ? '🎙️ Auto' : w.source}
+                      {w.source === 'kbbi' ? 'KBBI' : w.source === 'slang' ? 'Slang' : w.source === 'webspeech' ? 'Auto' : w.source}
                     </Badge>
                     {/* Dataset origin badge - Seeded (lama) vs User-learned (baru dari STT) */}
                     {w.dataset_origin && (
@@ -423,13 +423,13 @@ export function DatasetLibraryPanel() {
                         )}
                         title={`Origin: ${w.dataset_origin === 'seeded' ? 'Pre-existing dictionary (lama)' : 'Dipalajari dari STT user (baru)'}`}
                       >
-                        {w.dataset_origin === 'seeded' ? '📦 Seeded' : '✨ Learned'}
+                        {w.dataset_origin === 'seeded' ? 'Seeded' : 'Learned'}
                       </Badge>
                     )}
                     <div className="flex items-center gap-2 ml-auto">
                       <span className="text-[10px] text-zinc-600" title="Occurrences">×{w.count}</span>
                       {w.vote_count > 0 && (
-                        <span className="text-[10px] text-sky-500" title="Unique user votes">👥{w.vote_count}</span>
+                        <span className="text-[10px] text-sky-500" title="Unique user votes">{w.vote_count} vote</span>
                       )}
                       <span className="text-[10px] text-zinc-600" title="Confidence">
                         {(w.confidence * 100).toFixed(0)}%
@@ -511,7 +511,7 @@ export function DatasetLibraryPanel() {
                     <ChevronRight className="h-3 w-3 text-zinc-600" />
                     <span className="text-sm font-mono text-emerald-300">{c.corrected_word}</span>
                     <span className="text-[10px] text-zinc-600 ml-auto">
-                      weight: {c.user_weight.toFixed(1)} · {c.accepted ? '✓ accepted' : '⏳ pending'}
+                      weight: {c.user_weight.toFixed(1)} · {c.accepted ? '✓ accepted' : 'pending'}
                     </span>
                     <button
                       onClick={() => handleDeleteCorrection(c.id)}
@@ -608,7 +608,7 @@ function TabButton({ active, onClick, children }: {
     <button
       onClick={onClick}
       className={cn(
-        'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap',
+        'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap',
         active
           ? 'bg-[#7C3AED]/15 text-[#7C3AED]'
           : 'text-zinc-500 hover:text-zinc-300'
@@ -629,7 +629,7 @@ function SourcePill({ active, onClick, icon, label }: {
     <button
       onClick={onClick}
       className={cn(
-        'flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] font-medium transition-all',
+        'flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] font-medium transition-colors',
         active
           ? 'border-[#7C3AED]/40 bg-[#7C3AED]/15 text-[#7C3AED]'
           : 'border-white/[0.08] bg-white/[0.02] text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]'
@@ -661,7 +661,7 @@ function StatCard({ label, value, icon, color }: {
     amber: 'text-amber-400',
     red: 'text-red-400',
     sky: 'text-sky-400',
-    violet: 'text-violet-400',
+    violet: 'text-zinc-400',
   };
   return (
     <div className={cn('rounded-lg border p-3', colorClasses[color])}>
@@ -813,7 +813,7 @@ function StorageView({ info }: { info: any }) {
           <div className="h-3 bg-[#161618] rounded-full overflow-hidden border border-white/[0.04]">
             <div
               className={cn(
-                'h-full rounded-full transition-all',
+                'h-full rounded-full transition-colors',
                 diskUsedPct > 90 ? 'bg-red-500'
                   : diskUsedPct > 75 ? 'bg-amber-500'
                   : 'bg-emerald-500'
@@ -823,7 +823,7 @@ function StorageView({ info }: { info: any }) {
           </div>
           {diskUsedPct > 75 && (
             <p className="text-[10px] text-amber-400 mt-1">
-              ⚠️ Disk hampir penuh ({diskUsedPct}%). Backup file akan jadi besar kalau dataset tumbuh.
+              Disk hampir penuh ({diskUsedPct}%). Backup file akan jadi besar kalau dataset tumbuh.
             </p>
           )}
         </div>
@@ -884,7 +884,7 @@ function StorageView({ info }: { info: any }) {
         </div>
         {parseFloat(sqlite.fragmentationPct) > 20 && (
           <p className="text-[10px] text-amber-400 mt-2">
-            💡 Fragmentation {sqlite.fragmentationPct}% - recommend: VACUUM untuk reclaim space
+            Fragmentation {sqlite.fragmentationPct}% — jalankan VACUUM untuk reclaim space
           </p>
         )}
       </div>
@@ -986,7 +986,7 @@ function SchemaView({ info }: { info: any }) {
               {t.columns.map((col: any, ci: number) => (
                 <div key={ci} className="flex items-center gap-2 text-[11px] py-0.5">
                   {col.pk ? (
-                    <span className="text-amber-400 shrink-0" title="Primary Key">🔑</span>
+                    <span className="text-amber-400 shrink-0 text-[10px]" title="Primary Key">PK</span>
                   ) : (
                     <span className="w-3 shrink-0" />
                   )}
@@ -1038,7 +1038,7 @@ function SchemaView({ info }: { info: any }) {
                       )}
                       title={`Columns: ${idx.columns.join(', ')}${idx.unique ? ' (UNIQUE)' : ''}`}
                     >
-                      {idx.unique && '🔒 '}{idx.name}
+                      {idx.unique && 'unique '}{idx.name}
                     </span>
                   ))}
                 </div>
@@ -1143,13 +1143,13 @@ function D1MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefresh, l
         <div className="flex items-center gap-1">
           <button
             onClick={onToggleAutoRefresh}
-            className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] border transition-all ${
+            className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] border transition-colors ${
               autoRefresh
                 ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
                 : 'border-white/[0.08] text-zinc-400 hover:bg-white/[0.06]'
             }`}
           >
-            {autoRefresh ? '⏸ Auto 10s' : '▶ Paused'}
+            {autoRefresh ? 'Auto 10s' : 'Jeda'}
           </button>
           <button
             onClick={onRefresh}
@@ -1255,7 +1255,7 @@ function D1MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefresh, l
 
       {/* D1 architecture note */}
       <div className="rounded-lg border border-sky-500/15 bg-sky-500/[0.03] p-3">
-        <p className="text-[11px] text-sky-300 mb-1">ℹ️ D1 vs SQLite</p>
+        <p className="text-[11px] text-sky-300 mb-1">D1 vs SQLite</p>
         <p className="text-[10px] text-zinc-400 leading-relaxed">
           D1 (Cloudflare) menyimpan data user account: Users, Certificates, Subscriptions, DailyProgress,
           MindMaps, Bookmarks, STTFailure. Diakses via HTTP API (50-200ms per query).

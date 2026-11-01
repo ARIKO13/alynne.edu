@@ -110,7 +110,7 @@ export function MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefre
             <div className="h-2 bg-[#161618] rounded-full overflow-hidden">
               <div
                 className={cn(
-                  'h-full rounded-full transition-all duration-500',
+                  'h-full rounded-full transition-colors duration-500',
                   cpuPct > 80 ? 'bg-red-500' : cpuPct > 60 ? 'bg-amber-500' : 'bg-emerald-500'
                 )}
                 style={{ width: `${Math.min(cpuPct, 100)}%` }}
@@ -134,7 +134,7 @@ export function MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefre
             <div className="h-2 bg-[#161618] rounded-full overflow-hidden">
               <div
                 className={cn(
-                  'h-full rounded-full transition-all duration-500',
+                  'h-full rounded-full transition-colors duration-500',
                   memPct > 80 ? 'bg-red-500' : memPct > 60 ? 'bg-amber-500' : 'bg-emerald-500'
                 )}
                 style={{ width: `${Math.min(memPct, 100)}%` }}
@@ -205,7 +205,7 @@ export function MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefre
           </div>
           {pm2.unstableRestarts > 0 && (
             <p className="text-[10px] text-amber-400 mt-2">
-              ⚠️ {pm2.unstableRestarts} unstable restarts detected
+              {pm2.unstableRestarts} unstable restarts terdeteksi
             </p>
           )}
         </div>

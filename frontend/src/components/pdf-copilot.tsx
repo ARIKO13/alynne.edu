@@ -106,7 +106,7 @@ export function PdfCopilot({ pdfContent, pdfTitle, onClose }: PdfCopilotProps) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.06] bg-[#161616]">
           <div className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4 text-[#B794F6]" />
+            <MessageSquare className="h-4 w-4 text-[#7C3AED]" />
             <span className="text-sm font-medium text-white">PDF AI Co-Pilot</span>
             <span className="text-[10px] text-zinc-600 ml-1">{pdfTitle || 'Modul'}</span>
           </div>
@@ -118,7 +118,7 @@ export function PdfCopilot({ pdfContent, pdfTitle, onClose }: PdfCopilotProps) {
         {/* Selected text indicator */}
         {selectedText && (
           <div className="px-5 py-2 bg-[#B794F6]/5 border-b border-[#B794F6]/10 flex items-center gap-2">
-            <span className="text-[10px] text-[#B794F6] font-medium">Highlighted:</span>
+            <span className="text-[10px] text-[#7C3AED] font-medium">Highlighted:</span>
             <span className="text-[11px] text-zinc-300 truncate flex-1">{selectedText.slice(0, 100)}{selectedText.length > 100 ? '...' : ''}</span>
             <button onClick={() => setSelectedText('')} className="text-[10px] text-zinc-500 hover:text-zinc-300">clear</button>
           </div>
@@ -131,7 +131,7 @@ export function PdfCopilot({ pdfContent, pdfTitle, onClose }: PdfCopilotProps) {
               const Icon = action.icon;
               return (
                 <button key={action.id} onClick={() => handleQuickAction(action.prompt)}
-                  className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[11px] font-medium transition-all', action.color)}>
+                  className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[11px] font-medium transition-colors', action.color)}>
                   <Icon className="h-3 w-3" />
                   {action.label}
                 </button>
@@ -148,7 +148,7 @@ export function PdfCopilot({ pdfContent, pdfTitle, onClose }: PdfCopilotProps) {
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="rounded-full bg-[#B794F6]/10 p-4 mb-4">
-                <Sparkles className="h-8 w-8 text-[#B794F6]" />
+                <Sparkles className="h-8 w-8 text-[#7C3AED]" />
               </div>
               <h3 className="text-sm font-medium text-zinc-300 mb-2">PDF AI Co-Pilot</h3>
               <p className="text-xs text-zinc-600 max-w-sm mb-4 leading-relaxed">
@@ -172,7 +172,7 @@ export function PdfCopilot({ pdfContent, pdfTitle, onClose }: PdfCopilotProps) {
             <div key={msg.id} className={cn('flex gap-3', msg.role === 'user' ? 'justify-end' : '')}>
               {msg.role === 'assistant' && (
                 <div className="w-6 h-6 rounded-full bg-[#B794F6]/20 flex items-center justify-center shrink-0 mt-0.5">
-                  <Sparkles className="h-3 w-3 text-[#B794F6]" />
+                  <Sparkles className="h-3 w-3 text-[#7C3AED]" />
                 </div>
               )}
               <div className={cn('max-w-[80%] rounded-lg px-4 py-3 text-sm leading-relaxed',
@@ -185,7 +185,7 @@ export function PdfCopilot({ pdfContent, pdfTitle, onClose }: PdfCopilotProps) {
           {isLoading && (
             <div className="flex gap-3">
               <div className="w-6 h-6 rounded-full bg-[#B794F6]/20 flex items-center justify-center shrink-0">
-                <Sparkles className="h-3 w-3 text-[#B794F6] animate-pulse" />
+                <Sparkles className="h-3 w-3 text-[#7C3AED]" />
               </div>
               <div className="bg-white/[0.04] rounded-lg rounded-bl-sm px-4 py-3">
                 <div className="flex items-center gap-2 text-xs text-zinc-500">
@@ -208,7 +208,7 @@ export function PdfCopilot({ pdfContent, pdfTitle, onClose }: PdfCopilotProps) {
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                 placeholder={selectedText ? 'Tambah pertanyaan (opsional)...' : 'Tanya tentang materi PDF...'}
                 rows={1}
-                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-4 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 resize-none focus:outline-none focus:border-[#B794F6]/40 focus:ring-1 focus:ring-[#B794F6]/20 transition-all max-h-24"
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-4 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 resize-none focus:outline-none focus:border-[#B794F6]/40 focus:ring-1 focus:ring-[#B794F6]/20 transition-colors max-h-24"
               />
             </div>
             <Button onClick={handleSend} disabled={isLoading || (!input.trim() && !selectedText)}
@@ -217,7 +217,7 @@ export function PdfCopilot({ pdfContent, pdfTitle, onClose }: PdfCopilotProps) {
             </Button>
           </div>
           {selectedText && (
-            <p className="text-[10px] text-[#B794F6]/60 mt-1.5">Tekan Enter untuk tanya tentang highlighted text</p>
+            <p className="text-[10px] text-[#7C3AED]/60 mt-1.5">Tekan Enter untuk tanya tentang highlighted text</p>
           )}
         </div>
       </div>

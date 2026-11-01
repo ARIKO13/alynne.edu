@@ -130,7 +130,7 @@ export function ModulPanel() {
           </div>
           <div className="flex items-center gap-2">
             {structuring && (
-              <Badge variant="outline" className="text-[10px] border-violet-500/20 text-violet-400 bg-violet-500/10">
+              <Badge variant="outline" className="text-[10px] border-zinc-500/20 text-zinc-400 bg-zinc-500/10">
                 <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                 AI Structuring
               </Badge>
@@ -150,7 +150,7 @@ export function ModulPanel() {
             <InfoCard icon={Mic} label="Transkrip" value={`${transcript.length} kar`} color="text-[#7C3AED]" />
             <InfoCard icon={File} label="Materi" value={`${materialTexts.length} file`} color="text-sky-400" />
             {moduleData && (
-              <InfoCard icon={Layers} label="Kegiatan" value={`${moduleData.kegiatanPembelajaran.length}`} color="text-violet-400" />
+              <InfoCard icon={Layers} label="Kegiatan" value={`${moduleData.kegiatanPembelajaran.length}`} color="text-zinc-400" />
             )}
           </div>
 
@@ -194,7 +194,7 @@ export function ModulPanel() {
             <div className="p-5 space-y-4">
               {/* Title Preview */}
               <div className="rounded-lg bg-[#111113] border border-white/[0.06] p-4">
-                <p className="text-[10px] text-zinc-600 uppercase tracking-wider mb-1">Judul Modul</p>
+                <p className="text-[11px] text-zinc-600 mb-1">Judul Modul</p>
                 <p className="text-sm font-semibold text-zinc-200">{moduleData.title}</p>
                 <p className="text-xs text-zinc-500 mt-1">
                   {moduleData.identitas.mataPelajaran} {moduleData.identitas.kelas !== '-' ? `- ${moduleData.identitas.kelas}` : ''} - {moduleData.date}

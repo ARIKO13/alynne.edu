@@ -398,7 +398,7 @@ export function StudyMode() {
               </span>
               <div className="flex-1 h-1 bg-white/[0.04] rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-[#34D399] rounded-full transition-all duration-1000"
+                  className="h-full bg-[#34D399] rounded-full transition-colors duration-1000"
                   style={{ width: `${progress * 100}%` }}
                 />
               </div>

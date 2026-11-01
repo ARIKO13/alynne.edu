@@ -255,7 +255,7 @@ export function QuizPanel() {
             </div>
           </div>
           <div className="w-full h-2 rounded-full bg-white/[0.06] mt-4">
-            <div className="h-full rounded-full bg-gradient-to-r from-[#B794F6] to-[#F687B3] transition-all" style={{ width: pct + '%' }} />
+            <div className="h-full rounded-full bg-gradient-to-r from-[#B794F6] to-[#F687B3] transition-colors" style={{ width: pct + '%' }} />
           </div>
         </div>
         <div className="glass-card p-6 space-y-3 max-h-96 overflow-y-auto">
@@ -295,16 +295,16 @@ export function QuizPanel() {
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <button onClick={handleBack} className="text-xs text-zinc-500 hover:text-white transition-colors">← Kembali</button>
+          <button onClick={handleBack} className="text-xs text-zinc-500 hover:text-white transition-colors">Kembali</button>
           <span className="text-xs text-zinc-500">{quizState.currentIndex + 1} / {quizState.questions.length}</span>
         </div>
         <div className="w-full h-1.5 rounded-full bg-white/[0.06]">
-          <div className="h-full rounded-full bg-gradient-to-r from-[#B794F6] to-[#F687B3] transition-all" style={{ width: ((quizState.currentIndex + 1) / quizState.questions.length) * 100 + '%' }} />
+          <div className="h-full rounded-full bg-gradient-to-r from-[#B794F6] to-[#F687B3] transition-colors" style={{ width: ((quizState.currentIndex + 1) / quizState.questions.length) * 100 + '%' }} />
         </div>
         <div className="glass-card p-6 space-y-5">
           <div className="flex items-center gap-2">
             <span className={cn('text-[10px] font-medium px-2 py-0.5 rounded-full',
-              q.type === 'multiple-choice' ? 'bg-violet-400/10 text-violet-300 border border-violet-400/20' :
+              q.type === 'multiple-choice' ? 'bg-zinc-400/10 text-zinc-300 border border-zinc-400/20' :
               q.type === 'true-false' ? 'bg-sky-400/10 text-sky-300 border border-sky-400/20' :
               'bg-[#F687B3]/10 text-[#F687B3] border border-[#F687B3]/20')}>
               {q.type === 'multiple-choice' ? 'Pilihan Ganda' : q.type === 'true-false' ? 'Benar/Salah' : 'Isi Titik-titik'}
@@ -339,7 +339,7 @@ export function QuizPanel() {
                 }
                 return (
                   <button key={i} onClick={() => handleAnswer(opt)} disabled={showAnswer}
-                    className={cn('w-full flex items-center gap-3 p-3 rounded-lg border text-left text-sm transition-all', borderColor, textColor, bgColor)}>
+                    className={cn('w-full flex items-center gap-3 p-3 rounded-lg border text-left text-sm transition-colors', borderColor, textColor, bgColor)}>
                     <span className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-medium',
                       isSelected ? 'bg-[#B794F6]/20 text-[#B794F6]' : 'bg-white/[0.04] text-zinc-500')}>{letter}</span>
                     {opt}

@@ -58,7 +58,7 @@ export function FeatureTutorial({ title, steps, storageKey, accentColor = '#B794
     return (
       <button
         onClick={handleReset}
-        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-medium shadow-2xl shadow-black/40 -xl border transition-all hover:scale-105 active:scale-95"
+        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-medium shadow-lg shadow-black/40 -xl border transition-colors"
         style={{
           backgroundColor: `${accentColor}18`,
           borderColor: `${accentColor}30`,
@@ -82,7 +82,7 @@ export function FeatureTutorial({ title, steps, storageKey, accentColor = '#B794
       />
 
       <div
-        className="relative w-full max-w-sm rounded-lg border shadow-2xl shadow-black/50 overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+        className="relative w-full max-w-sm rounded-lg border shadow-lg shadow-black/40 overflow-hidden animate-in fade-in zoom-in-95 duration-200"
         style={{
           backgroundColor: '#161616',
           borderColor: `${accentColor}25`,
@@ -119,7 +119,7 @@ export function FeatureTutorial({ title, steps, storageKey, accentColor = '#B794
         <div className="px-5">
           <div className="h-1 rounded-full bg-white/[0.06] overflow-hidden">
             <div
-              className="h-full rounded-full transition-all duration-300"
+              className="h-full rounded-full transition-colors duration-300"
               style={{ width: `${progress}%`, backgroundColor: accentColor }}
             />
           </div>
@@ -147,7 +147,7 @@ export function FeatureTutorial({ title, steps, storageKey, accentColor = '#B794
           <button
             onClick={handlePrev}
             disabled={currentStep === 0}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
             Sebelumnya
@@ -157,7 +157,7 @@ export function FeatureTutorial({ title, steps, storageKey, accentColor = '#B794
             {steps.map((_, i) => (
               <div
                 key={i}
-                className="h-1.5 rounded-full transition-all duration-300"
+                className="h-1.5 rounded-full transition-colors duration-300"
                 style={{
                   width: i === currentStep ? 16 : 6,
                   backgroundColor: i === currentStep ? accentColor : `${accentColor}30`,
@@ -168,7 +168,7 @@ export function FeatureTutorial({ title, steps, storageKey, accentColor = '#B794
 
           <button
             onClick={handleNext}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white transition-all hover:opacity-90 active:scale-95"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white transition-colors hover:opacity-90 active:scale-95"
             style={{ backgroundColor: accentColor }}
           >
             {currentStep === steps.length - 1 ? (

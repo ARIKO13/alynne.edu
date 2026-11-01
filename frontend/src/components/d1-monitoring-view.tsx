@@ -164,7 +164,7 @@ export function D1MonitoringView() {
             <div className="h-3 bg-[#161618] rounded-full overflow-hidden border border-white/[0.04]">
               <div
                 className={cn(
-                  'h-full rounded-full transition-all',
+                  'h-full rounded-full transition-colors',
                   parseFloat(d1.storage.usedPct) > 80 ? 'bg-red-500'
                     : parseFloat(d1.storage.usedPct) > 50 ? 'bg-amber-500'
                     : 'bg-sky-500'

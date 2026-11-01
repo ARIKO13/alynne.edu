@@ -373,7 +373,7 @@ function ModelOption({
     <div
       onClick={disabled ? undefined : onSelect}
       className={`
-        relative rounded-lg border p-3 transition-all
+        relative rounded-lg border p-3 transition-colors
         ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}
         ${
           selected

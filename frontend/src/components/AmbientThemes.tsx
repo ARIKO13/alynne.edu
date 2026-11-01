@@ -217,7 +217,7 @@ export function AmbientThemes() {
               key={opt.type}
               onClick={() => handleSelect(opt.type)}
               className={cn(
-                'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all border',
+                'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-colors border',
                 isActive
                   ? 'border-white/20 bg-white/[0.08] text-white'
                   : 'border-white/[0.06] text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-300'

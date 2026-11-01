@@ -195,7 +195,7 @@ export function BillingFlow() {
                     type="button"
                     onClick={() => !disabled && handleModelSelect(m)}
                     disabled={disabled}
-                    className={`relative text-left rounded-lg border-2 p-5 transition-all ${
+                    className={`relative text-left rounded-lg border-2 p-5 transition-colors ${
                       disabled
                         ? 'border-white/[0.04] bg-white/[0.01] opacity-50 cursor-not-allowed'
                         : isSelected
@@ -237,7 +237,7 @@ export function BillingFlow() {
               {/* Placeholder slot for future models */}
               <div className="rounded-lg border-2 border-dashed border-white/[0.04] bg-white/[0.01] p-5 flex flex-col items-center justify-center text-center gap-2">
                 <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/[0.02] text-2xl opacity-30">
-                  ✨
+                  +
                 </div>
                 <p className="text-xs font-medium text-zinc-600">Model lain menyusul</p>
                 <p className="text-[10px] text-zinc-700">ALYNNE.PRO · ALYNNE.VOICE · ALYNNE.LAB</p>
@@ -283,7 +283,7 @@ export function BillingFlow() {
                     key={t.id}
                     type="button"
                     onClick={() => handleTierSelect(t)}
-                    className={`relative text-left rounded-lg border-2 p-4 transition-all ${
+                    className={`relative text-left rounded-lg border-2 p-4 transition-colors ${
                       isSelected
                         ? `${accent.bg} ${accent.ring} ring-2 border-transparent`
                         : 'border-white/[0.06] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.05]'
@@ -362,7 +362,7 @@ export function BillingFlow() {
                     key={p.id}
                     type="button"
                     onClick={() => setPaymentMethod(p)}
-                    className={`flex items-center gap-3 rounded-lg border-2 p-3 text-left transition-all ${
+                    className={`flex items-center gap-3 rounded-lg border-2 p-3 text-left transition-colors ${
                       isSelected
                         ? 'border-[#7C3AED] bg-[#7C3AED]/[0.08]'
                         : 'border-white/[0.06] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.04]'
@@ -441,7 +441,7 @@ export function BillingFlow() {
               type="button"
               onClick={handleCheckout}
               disabled={submitting}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#7C3AED] to-[#7c3aed] text-sm font-semibold text-white shadow-lg transition-all hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#7C3AED] text-sm font-semibold text-white transition-colors hover:bg-[#6D28D9] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? (
                 <>

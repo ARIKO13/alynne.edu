@@ -161,7 +161,7 @@ export function AdminPanel() {
         <button
           onClick={() => setActiveView('overview')}
           className={cn(
-            'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all',
+            'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
             activeView === 'overview'
               ? 'bg-[#7C3AED]/15 text-[#7C3AED]'
               : 'text-zinc-500 hover:text-zinc-300'
@@ -173,7 +173,7 @@ export function AdminPanel() {
         <button
           onClick={() => setActiveView('users')}
           className={cn(
-            'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all',
+            'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
             activeView === 'users'
               ? 'bg-[#7C3AED]/15 text-[#7C3AED]'
               : 'text-zinc-500 hover:text-zinc-300'
@@ -185,7 +185,7 @@ export function AdminPanel() {
         <button
           onClick={() => setActiveView('dataset')}
           className={cn(
-            'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all',
+            'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
             activeView === 'dataset'
               ? 'bg-[#7C3AED]/15 text-[#7C3AED]'
               : 'text-zinc-500 hover:text-zinc-300'
@@ -197,7 +197,7 @@ export function AdminPanel() {
         <button
           onClick={() => setActiveView('d1')}
           className={cn(
-            'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all',
+            'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
             activeView === 'd1'
               ? 'bg-sky-500/15 text-sky-400'
               : 'text-zinc-500 hover:text-zinc-300'
@@ -209,7 +209,7 @@ export function AdminPanel() {
         <button
           onClick={() => setActiveView('llm')}
           className={cn(
-            'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all',
+            'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
             activeView === 'llm'
               ? 'bg-emerald-500/15 text-emerald-400'
               : 'text-zinc-500 hover:text-zinc-300'
@@ -237,7 +237,7 @@ export function AdminPanel() {
               icon={FileText}
               label="Total Modul"
               value={stats.totalModules || 0}
-              color="bg-violet-500/10 text-violet-400"
+              color="bg-zinc-500/10 text-zinc-400"
             />
             <StatCard
               icon={Trophy}
@@ -335,7 +335,7 @@ export function AdminPanel() {
           {/* Users table */}
           <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] overflow-hidden">
             {/* Desktop header */}
-            <div className="hidden md:grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-white/[0.06] text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
+            <div className="hidden md:grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-white/[0.06] text-[12px] font-medium text-zinc-500">
               <div className="col-span-4">User</div>
               <div className="col-span-3 text-center">Status</div>
               <div className="col-span-3 text-center">Modul</div>
@@ -619,7 +619,7 @@ function LlmHealthView() {
             <div className="flex-1 h-2 rounded-full bg-white/[0.04] overflow-hidden">
               <div
                 className={cn(
-                  'h-full transition-all',
+                  'h-full transition-colors',
                   usageInfo.remaining > 50
                     ? 'bg-emerald-500'
                     : usageInfo.remaining > 10

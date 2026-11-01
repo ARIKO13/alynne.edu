@@ -137,7 +137,7 @@ function generateSlideHTML(chapter: Chapter, slideNum: number, total: number, qu
   const quizHTML = quiz.length > 0
     ? `
     <div class="quiz">
-      <h3>📝 Kuis</h3>
+      <h3>Kuis</h3>
       ${quiz.map((q, i) => `
         <div class="quiz-item">
           <p class="quiz-q">${i + 1}. ${q.question}</p>
@@ -297,7 +297,7 @@ function generatePresentationHTML(slides: string[], chapters: Chapter[]): string
   <button onclick="prevSlide()">Sebelumnya</button>
   <span id="counter" style="color: #71717a; padding: 10px 20px;">1 / ${slides.length}</span>
   <button onclick="nextSlide()">Berikutnya</button>
-  <button onclick="toggleFullscreen()">⛶ Fullscreen</button>
+  <button onclick="toggleFullscreen()">Fullscreen</button>
 </div>
 <script>
   let current = 0;

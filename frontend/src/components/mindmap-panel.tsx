@@ -303,7 +303,7 @@ function MindMapCanvas({ layout, onNodeSelect, selectedNode }: {
         className="w-full overflow-hidden select-none"
         style={{
           height: 560,
-          background: 'radial-gradient(ellipse at 50% 45%, #14101f 0%, #0a0a0a 65%)',
+          background: '#0a0a0a',
           cursor: isPanning.current ? 'grabbing' : 'grab',
         }}
         onWheel={onWheel}
@@ -438,12 +438,12 @@ export function MindMapPanel() {
           </p>
           <div className="flex items-center justify-center gap-2 mb-5">
             <button onClick={() => setInputMode('auto')}
-              className={cn('px-4 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-2',
+              className={cn('px-4 py-2 rounded-lg text-xs font-medium transition-colors flex items-center gap-2',
                 inputMode === 'auto' ? 'bg-[#B794F6]/15 text-[#B794F6] border border-[#B794F6]/30' : 'bg-white/[0.03] text-zinc-500 border border-white/[0.06] hover:bg-white/[0.05]')}>
               <Mic className="h-3.5 w-3.5" /> Auto (STT / Upload)
             </button>
             <button onClick={() => setInputMode('manual')}
-              className={cn('px-4 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-2',
+              className={cn('px-4 py-2 rounded-lg text-xs font-medium transition-colors flex items-center gap-2',
                 inputMode === 'manual' ? 'bg-[#F687B3]/15 text-[#F687B3] border border-[#F687B3]/30' : 'bg-white/[0.03] text-zinc-500 border border-white/[0.06] hover:bg-white/[0.05]')}>
               <Edit3 className="h-3.5 w-3.5" /> Materi Pendukung
             </button>
@@ -463,7 +463,7 @@ export function MindMapPanel() {
             <div className="mb-6 max-w-lg mx-auto">
               <textarea value={manualText} onChange={e => setManualText(e.target.value)}
                 placeholder={"Paste materi pendukung di sini...\n\nContoh:\n- Catatan kuliah\n- Ringkasan bab dari textbook\n- Point-point slide perkuliahan"}
-                className="w-full h-40 bg-white/[0.03] border border-white/[0.08] rounded-lg p-4 text-sm text-zinc-300 placeholder:text-zinc-600 resize-none focus:outline-none focus:border-[#B794F6]/40 focus:ring-1 focus:ring-[#B794F6]/20 transition-all" />
+                className="w-full h-40 bg-white/[0.03] border border-white/[0.08] rounded-lg p-4 text-sm text-zinc-300 placeholder:text-zinc-600 resize-none focus:outline-none focus:border-[#B794F6]/40 focus:ring-1 focus:ring-[#B794F6]/20 transition-colors" />
               <div className="flex items-center justify-between mt-1.5">
                 <span className="text-[10px] text-zinc-600">{manualText.trim().length < 30 ? 'Minimal 30 karakter' : `${manualText.length} chars - siap`}</span>
                 {manualText && <button onClick={() => setManualText('')} className="text-[10px] text-zinc-600 hover:text-red-400">Hapus</button>}

@@ -122,7 +122,7 @@ export function StreakCalendar({ className }: StreakCalendarProps) {
                   <div
                     key={di}
                     className={cn(
-                      'w-3 h-3 rounded-sm transition-all hover:ring-1 hover:ring-white/20',
+                      'w-3 h-3 rounded-sm transition-shadow hover:ring-1 hover:ring-white/20',
                       INTENSITY_COLORS[intensity]
                     )}
                     title={`${day.date}: ${day.minutes} menit, ${day.sessions} sesi`}

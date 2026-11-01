@@ -83,7 +83,7 @@ export function Scratchpad({ open, onClose, initialContent }: ScratchpadProps) {
       });
 
       // Format organized content
-      let organized = '📋 Catatan Terorganisir\n\n';
+      let organized = 'Catatan Terorganisir\n\n';
       Object.entries(groups).forEach(([key, sents], i) => {
         organized += `${i + 1}. ${key.toUpperCase()}\n`;
         sents.forEach((s) => {
@@ -151,7 +151,7 @@ Contoh:
 - pertanyaan
 
 Lalu klik 'Organize dengan AI' untuk merapikan."
-          className="w-full h-64 p-4 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-zinc-200 placeholder:text-zinc-600 resize-none focus:outline-none focus:border-[#7C3AED]/50 font-mono"
+          className="w-full h-64 p-4 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-zinc-200 placeholder:text-zinc-600 resize-none focus:outline-none focus:border-[#7C3AED]/50"
           autoFocus
         />
 

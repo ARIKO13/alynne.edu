@@ -147,7 +147,7 @@ export function MaterialUpload({ compact = false }: { compact?: boolean }) {
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           className={cn(
-            'relative rounded-lg border-2 border-dashed cursor-pointer transition-all duration-200 overflow-hidden',
+            'relative rounded-lg border-2 border-dashed cursor-pointer transition-colors duration-200 overflow-hidden',
             isDragOver
               ? 'border-[#7C3AED] bg-[#7C3AED]/[0.06] scale-[1.01]'
               : 'border-white/[0.08] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.04]'
@@ -292,7 +292,7 @@ export function MaterialUpload({ compact = false }: { compact?: boolean }) {
                   </Badge>
                   <button
                     onClick={() => removeMaterial(m.id)}
-                    className="opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-red-400 transition-all shrink-0"
+                    className="opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-red-400 transition-colors shrink-0"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>

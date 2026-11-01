@@ -333,18 +333,18 @@ export function FlashcardPanel({ open, onClose, chapters = [] }: FlashcardPanelP
             {/* Card */}
             <div
               onClick={() => setFlipped(!flipped)}
-              className="cursor-pointer rounded-lg border-2 border-[#7C3AED]/30 bg-gradient-to-br from-[#7C3AED]/[0.05] to-zinc-900 p-8 min-h-[200px] flex items-center justify-center text-center transition-all hover:border-[#7C3AED]/50"
+              className="cursor-pointer rounded-lg border-2 border-[#7C3AED]/30 bg-[#7C3AED]/[0.05] p-8 min-h-[200px] flex items-center justify-center text-center transition-colors hover:border-[#7C3AED]/50"
             >
               <div>
                 {!flipped ? (
                   <>
-                    <p className="text-[10px] text-zinc-500 uppercase mb-3">Pertanyaan</p>
+                    <p className="text-[11px] text-zinc-500 mb-3">Pertanyaan</p>
                     <p className="text-base text-zinc-200 leading-relaxed">{currentCard.front}</p>
                     <p className="text-[10px] text-zinc-600 mt-4">Klik untuk balik kartu</p>
                   </>
                 ) : (
                   <>
-                    <p className="text-[10px] text-green-400 uppercase mb-3">Jawaban</p>
+                    <p className="text-[11px] text-green-400 mb-3">Jawaban</p>
                     <p className="text-2xl font-bold text-green-400">{currentCard.back}</p>
                     <p className="text-[10px] text-zinc-600 mt-4">Pilih tingkat kesulitan di bawah</p>
                   </>

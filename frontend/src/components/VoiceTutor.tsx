@@ -301,7 +301,7 @@ TRANSCRIPT: ${transcript.substring(0, 1000)}`;
           onClick={isListening ? stopListening : startListening}
           disabled={isThinking}
           className={cn(
-            'w-14 h-14 rounded-full flex items-center justify-center transition-all',
+            'w-14 h-14 rounded-full flex items-center justify-center transition-colors',
             isListening
               ? 'bg-red-500 animate-pulse'
               : 'bg-[#7C3AED] hover:bg-[#7C3AED]',

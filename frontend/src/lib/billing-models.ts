@@ -149,7 +149,7 @@ export const BILLING_TIERS: BillingTier[] = [
       'Multi-pengguna (hingga 25 akun)',
       'Kustomisasi kepribadian AI',
       'Integrasi LMS (Google Classroom)',
-      'Prioritas dukungan 24/7',
+      'Prioritas antrean dukungan',
       'Onboarding & training tim',
     ],
   },

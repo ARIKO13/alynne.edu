@@ -64,7 +64,7 @@ function VisualisasiCard({ item }: { item: VisualisasiItem }) {
       )}
       <VisualisasiRenderer item={item} />
       {item.subjek && (
-        <p className="text-[10px] text-zinc-500 mt-2 uppercase tracking-wide">{item.subjek} · {item.tipe}</p>
+        <p className="text-[11px] text-zinc-500 mt-2">{item.subjek} · {item.tipe}</p>
       )}
     </div>
   );

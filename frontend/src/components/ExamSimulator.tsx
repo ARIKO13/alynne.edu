@@ -269,7 +269,7 @@ JSON array (tanpa markdown):
                 size="sm"
                 className="border-white/[0.08]"
               >
-                ← Prev
+                Sebelumnya
               </Button>
               {currentQ < questions.length - 1 ? (
                 <Button

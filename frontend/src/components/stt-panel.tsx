@@ -88,7 +88,7 @@ function ModeSelector({ disabled }: { disabled: boolean }) {
             onClick={() => !disabled && setSttAudioMode(mode.id)}
             disabled={disabled}
             className={cn(
-              'flex-1 flex items-center gap-2.5 rounded-lg border p-3 text-left transition-all duration-200',
+              'flex-1 flex items-center gap-2.5 rounded-lg border p-3 text-left transition-colors duration-200',
               disabled && 'opacity-50 cursor-not-allowed',
               isActive
                 ? 'border-[#7C3AED]/40 bg-[#7C3AED]/10'
@@ -456,7 +456,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
               />
             </div>
             {screenCv.error && (
-              <p className="mt-2 text-[10px] text-rose-400">⚠ {screenCv.error}</p>
+              <p className="mt-2 text-[10px] text-rose-400">{screenCv.error}</p>
             )}
           </div>
         )}
@@ -486,8 +486,8 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
               )}
 
               {isEnhancing && (
-                <span className="flex items-center gap-1 text-[10px] text-violet-400">
-                  <Sparkles className="h-3 w-3 animate-pulse" />
+                <span className="flex items-center gap-1 text-[10px] text-[#7C3AED]">
+                  <Sparkles className="h-3 w-3" />
                   AI memperbaiki
                 </span>
               )}
@@ -553,7 +553,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
             disabled={isProcessing}
             size="lg"
             className={cn(
-              'flex-1 gap-2 transition-all rounded-lg font-medium',
+              'flex-1 gap-2 transition-colors rounded-lg font-medium',
               isRecording
                 ? 'bg-red-600 hover:bg-red-700 text-white'
                 : isScreenMode

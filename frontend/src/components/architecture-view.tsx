@@ -139,7 +139,7 @@ function DiagramPill({ active, onClick, label }: { active: boolean; onClick: () 
     <button
       onClick={onClick}
       className={cn(
-        'px-2.5 py-0.5 rounded-full border text-[11px] font-medium transition-all',
+        'px-2.5 py-0.5 rounded-full border text-[11px] font-medium transition-colors',
         active
           ? 'border-[#7C3AED]/40 bg-[#7C3AED]/15 text-[#7C3AED]'
           : 'border-white/[0.08] bg-white/[0.02] text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]'
@@ -153,7 +153,7 @@ function DiagramPill({ active, onClick, label }: { active: boolean; onClick: () 
 function getDiagram(type: string, schemaInfo: any): string {
   if (type === 'dataflow') {
     return `flowchart TD
-    User["👤 User Speaks"]
+    User["User Speaks"]
     WebSpeech["Web Speech API<br/>(Chrome browser)"]
     Whisper["Whisper Backend<br/>(faster-whisper Python)"]
 
@@ -170,8 +170,8 @@ function getDiagram(type: string, schemaInfo: any): string {
     PhoneticMap["phonetic-map.json<br/>(auto-merged)"]
     D1[("D1 (Cloudflare)<br/>User accounts<br/>STTFailure")]
 
-    BackupCron["⏰ Cron 30min<br/>backup-sqlite-to-github.sh"]
-    PruneCron["⏰ Cron daily 4am<br/>prune-dataset.py"]
+    BackupCron["Cron 30min<br/>backup-sqlite-to-github.sh"]
+    PruneCron["Cron daily 4am<br/>prune-dataset.py"]
     GitHub["GitHub<br/>dataset-backup branch"]
 
     User --> WebSpeech
@@ -279,7 +279,7 @@ function getDiagram(type: string, schemaInfo: any): string {
 
   // components diagram
   return `flowchart TB
-    subgraph Client["🌐 Browser (Client-side)"]
+    subgraph Client["Browser (Client-side)"]
       React["React App<br/>Astro + zustand"]
       WebSpeech["Web Speech API<br/>(Chrome native)"]
       LS[("localStorage<br/>candidates tracking")]
@@ -287,7 +287,7 @@ function getDiagram(type: string, schemaInfo: any): string {
       React --> LS
     end
 
-    subgraph Server["🖥️ Astro Node Server (PM2)"]
+    subgraph Server["Astro Node Server (PM2)"]
       API["API Routes<br/>/api/stt/*"]
       SttDict["stt-dictionary.ts<br/>loadDict() → RAM cache"]
       Corrector["stt-context-corrector.ts<br/>4-factor scoring"]
@@ -301,7 +301,7 @@ function getDiagram(type: string, schemaInfo: any): string {
       SttDict -.->|"load from"| SttDb
     end
 
-    subgraph Storage["💾 SSD VPS"]
+    subgraph Storage["SSD VPS"]
       SQLite[("SQLite<br/>stt.db (50MB)<br/>WAL mode")]
       JsonFile["stt-dictionary.json<br/>(4.66MB fallback)"]
       PhMap["phonetic-map.json<br/>(auto-merged)"]
@@ -310,12 +310,12 @@ function getDiagram(type: string, schemaInfo: any): string {
       LearnedWord -->|"merge confirmed"| PhMap
     end
 
-    subgraph Cloud["☁️ Cloud Services"]
+    subgraph Cloud["Cloud Services"]
       D1[("D1 Cloudflare<br/>User accounts")]
       Backup[("GitHub<br/>dataset-backup branch")]
     end
 
-    subgraph Cron["⏰ Cron Jobs"]
+    subgraph Cron["Cron Jobs"]
       Checkpoint["WAL checkpoint<br/>every 10min"]
       BackupCron["GitHub backup<br/>every 30min"]
       PruneCron["Prune dataset<br/>daily 4am"]

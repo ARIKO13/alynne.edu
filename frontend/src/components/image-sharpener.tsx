@@ -412,7 +412,7 @@ export function ImageSharpener() {
         <div
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
-          className="rounded-lg border-2 border-dashed border-white/[0.12] bg-white/[0.02] hover:border-[#7C3AED]/40 hover:bg-[#7C3AED]/[0.03] transition-all p-10 text-center cursor-pointer"
+          className="rounded-lg border-2 border-dashed border-white/[0.12] bg-white/[0.02] hover:border-[#7C3AED]/40 hover:bg-[#7C3AED]/[0.03] transition-colors p-10 text-center cursor-pointer"
           onClick={() => fileInputRef.current?.click()}
         >
           <input
@@ -491,7 +491,7 @@ export function ImageSharpener() {
             </div>
             {blurInterpretation.level !== 'sharp' && (
               <p className="mt-2 text-[10px] text-zinc-500">
-                💡 Rekomendasi: intensity <span className="text-[#7C3AED] font-medium">{recommendedIntensity.toFixed(1)}</span> buat gambar ini
+                Rekomendasi: intensity <span className="text-[#7C3AED] font-medium">{recommendedIntensity.toFixed(1)}</span> buat gambar ini
               </p>
             )}
           </motion.div>
@@ -544,7 +544,7 @@ export function ImageSharpener() {
                     key={m.id}
                     type="button"
                     onClick={() => setMethod(m.id)}
-                    className={`rounded-lg border-2 p-2.5 text-left transition-all ${
+                    className={`rounded-lg border-2 p-2.5 text-left transition-colors ${
                       active
                         ? 'border-[#7C3AED] bg-[#7C3AED]/[0.08]'
                         : 'border-white/[0.06] hover:border-white/[0.15] hover:bg-white/[0.04]'
@@ -642,7 +642,6 @@ export function ImageSharpener() {
         <div className="flex items-center gap-2">
           <ScanText className="h-4 w-4 text-[#7C3AED]" />
           <h3 className="text-sm font-medium text-zinc-200">Smart OCR + Math Solver</h3>
-          <Badge variant="outline" className="text-[10px] ml-auto border-[#7C3AED]/30 text-[#7C3AED]">NEW</Badge>
         </div>
         <p className="text-[11px] text-zinc-500">Upload foto soal, AI baca teks + selesaikan matematika otomatis.</p>
         <SmartOcrSolver />

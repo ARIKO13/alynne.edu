@@ -230,7 +230,7 @@ export function generateGreeting(): string {
 
   // Add streak message
   if (memory.currentStreak > 1) {
-    greeting += ` 🔥 Streak ${memory.currentStreak} hari!`;
+    greeting += ` Streak ${memory.currentStreak} hari!`;
   }
 
   // Add pending task suggestion

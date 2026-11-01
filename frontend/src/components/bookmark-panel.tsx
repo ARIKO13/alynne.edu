@@ -205,7 +205,7 @@ export function BookmarkPanel() {
           placeholder="Cari bookmark atau catatan..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-[#B794F6]/30 focus:ring-1 focus:ring-[#B794F6]/20 transition-all"
+          className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-[#B794F6]/30 focus:ring-1 focus:ring-[#B794F6]/20 transition-colors"
         />
       </div>
 
@@ -229,7 +229,7 @@ export function BookmarkPanel() {
                 placeholder="cth: Biologi Bab 3"
                 value={formMaterial}
                 onChange={(e) => setFormMaterial(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-[#B794F6]/30 transition-all"
+                className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-[#B794F6]/30 transition-colors"
               />
             </div>
 
@@ -248,7 +248,7 @@ export function BookmarkPanel() {
                 value={formText}
                 onChange={(e) => setFormText(e.target.value)}
                 rows={3}
-                className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-[#B794F6]/30 transition-all resize-none"
+                className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-[#B794F6]/30 transition-colors resize-none"
               />
             </div>
 
@@ -259,7 +259,7 @@ export function BookmarkPanel() {
                 value={formNote}
                 onChange={(e) => setFormNote(e.target.value)}
                 rows={2}
-                className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-[#B794F6]/30 transition-all resize-none"
+                className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-[#B794F6]/30 transition-colors resize-none"
               />
             </div>
 
@@ -273,10 +273,10 @@ export function BookmarkPanel() {
                     key={c.value}
                     onClick={() => setFormColor(c.value)}
                     className={cn(
-                      'h-7 w-7 rounded-full border-2 transition-all',
+                      'h-7 w-7 rounded-full border-2 transition-colors',
                       formColor === c.value
-                        ? 'border-white scale-110'
-                        : 'border-transparent hover:scale-105'
+                        ? 'border-white'
+                        : 'border-transparent hover:border-white/40'
                     )}
                     style={{ backgroundColor: c.value }}
                     title={c.name}
@@ -319,7 +319,7 @@ export function BookmarkPanel() {
           {filteredBookmarks.map((b) => (
             <div
               key={b.id}
-              className="glass-card-sm p-4 group hover:border-white/[0.1] transition-all"
+              className="glass-card-sm p-4 group hover:border-white/[0.1] transition-colors"
             >
               <div className="flex items-start gap-3">
                 <div
@@ -357,13 +357,13 @@ export function BookmarkPanel() {
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                   <button
                     onClick={() => handleEdit(b)}
-                    className="p-1.5 rounded-lg hover:bg-white/[0.06] text-zinc-500 hover:text-white transition-all"
+                    className="p-1.5 rounded-lg hover:bg-white/[0.06] text-zinc-500 hover:text-white transition-colors"
                   >
                     <Edit3 className="h-3.5 w-3.5" />
                   </button>
                   <button
                     onClick={() => handleDelete(b.id)}
-                    className="p-1.5 rounded-lg hover:bg-red-500/10 text-zinc-500 hover:text-red-400 transition-all"
+                    className="p-1.5 rounded-lg hover:bg-red-500/10 text-zinc-500 hover:text-red-400 transition-colors"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>

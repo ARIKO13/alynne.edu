@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 import { indexTranscript, getRAGContext } from '@/lib/rag';
 
 const PROVIDER_COLORS: Record<string, string> = {
-  claude: 'border-violet-500/30 text-violet-400',
+  claude: 'border-zinc-500/30 text-zinc-400',
   gemini: 'border-sky-500/30 text-sky-400',
   deepseek: 'border-[#7C3AED]/30 text-[#7C3AED]',
   nvidia: 'border-emerald-500/30 text-emerald-400',
@@ -304,7 +304,7 @@ export function AIAssistant() {
                 const groupModels = MODEL_LIST.filter((m) => m.group === group);
                 return (
                   <SelectGroup key={group}>
-                    <SelectLabel className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">{group}</SelectLabel>
+                    <SelectLabel className="text-[11px] font-medium text-zinc-500">{group}</SelectLabel>
                     {groupModels.map((model) => (
                       <SelectItem key={model.id} value={model.id} className="text-xs text-zinc-300 focus:bg-white/[0.06] focus:text-white py-1.5">
                         <div className="flex items-center gap-1.5">
@@ -413,7 +413,7 @@ export function AIAssistant() {
                   <div className="flex items-center gap-2 text-xs text-zinc-500">
                     {loadingPhase === 'scraping' ? (
                       <>
-                        <Globe className="h-3.5 w-3.5 animate-pulse" />
+                        <Globe className="h-3.5 w-3.5" />
                         <span>Mencari referensi web...</span>
                       </>
                     ) : (

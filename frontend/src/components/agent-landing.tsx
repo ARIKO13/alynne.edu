@@ -60,7 +60,7 @@ const AGENTS: Agent[] = [
 ];
 
 function getCardClass(agent: Agent, isHovered: boolean): string {
-  const base = 'relative rounded-lg border transition-all duration-300 overflow-hidden';
+  const base = 'relative rounded-lg border transition-colors duration-300 overflow-hidden';
   if (agent.status === 'coming-soon') return `${base} border-white/[0.04] bg-white/[0.01] opacity-70`;
   if (isHovered) return `${base} border-white/[0.15] bg-white/[0.05] shadow-lg shadow-black/20`;
   return `${base} border-white/[0.08] bg-white/[0.03]`;

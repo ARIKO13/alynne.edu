@@ -236,7 +236,7 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
                   key={opt}
                   disabled={showResult}
                   onClick={() => handleAnswer(opt)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-all border ${
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-colors border ${
                     showCorrect
                       ? 'border-green-500/50 bg-green-500/10 text-green-400'
                       : showWrong

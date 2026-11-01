@@ -165,7 +165,7 @@ export function VoiceCommandPanel() {
             <button
               onClick={() => setVoiceCmdActive(!voiceCmdActive)}
               className={cn(
-                'relative mx-auto w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300',
+                'relative mx-auto w-24 h-24 rounded-full flex items-center justify-center transition-colors duration-300',
                 voiceCmdActive
                   ? 'bg-red-500/20 border-2 border-red-500/40 animate-pulse'
                   : 'bg-[#B794F6]/10 border-2 border-[#B794F6]/30 hover:bg-[#B794F6]/20 hover:border-[#B794F6]/50'

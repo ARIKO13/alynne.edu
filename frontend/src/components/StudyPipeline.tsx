@@ -1031,7 +1031,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
         {/* Error state  -  v9-fast: friendly error, NO stack trace */}
         {stage === 'error' && (
           <div className="p-6 text-center space-y-3">
-            <div className="text-4xl">⚠️</div>
+            <div className="text-3xl font-bold text-amber-400">!</div>
             <p className="text-sm text-zinc-300">{errorMessage}</p>
             <Button
               onClick={() => { setStage('idle'); setErrorMessage(''); }}
@@ -1094,7 +1094,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               </div>
               <div className="h-1 rounded-full bg-white/[0.04] overflow-hidden">
                 <div
-                  className="h-full bg-green-500 transition-all"
+                  className="h-full bg-green-500 transition-[width] duration-300"
                   style={{ width: `${chapters.length > 0 ? (readChapters.size / chapters.length) * 100 : 0}%` }}
                 />
               </div>
@@ -1603,7 +1603,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
             {/* Timer */}
             <div className="text-center">
               <div className={cn(
-                'inline-flex items-center justify-center w-48 h-48 rounded-full border-4 transition-all',
+                'inline-flex items-center justify-center w-48 h-48 rounded-full border-4 transition-colors',
                 isRunning
                   ? 'border-[#7C3AED] bg-[#7C3AED]/[0.05]'
                   : 'border-white/[0.06] bg-white/[0.02]'
@@ -1743,7 +1743,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                       >
                         <div className={cn(
                           'text-[10px] font-semibold',
-                          studyFocusVisionMode === 'akurat' ? 'text-purple-300' : 'text-zinc-300'
+                          studyFocusVisionMode === 'akurat' ? 'text-white' : 'text-zinc-300'
                         )}>
                           Akurat
                         </div>
@@ -1782,7 +1782,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                     <div className="h-2 rounded-full bg-white/[0.04] overflow-hidden">
                       <div
                         className={cn(
-                          'h-full transition-all',
+                          'h-full transition-[width] duration-300',
                           focusScore >= 70 ? 'bg-green-500' : focusScore >= 40 ? 'bg-amber-500' : focusScore >= 15 ? 'bg-orange-500' : 'bg-red-500'
                         )}
                         style={{ width: `${focusScore}%` }}
@@ -1832,8 +1832,8 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
 
                   {/* Warning popup */}
                   {showWarning && (
-                    <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-3 text-center animate-pulse">
-                      <p className="text-sm text-amber-400">⚠️ Yuk fokus lagi!</p>
+                    <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-3 text-center">
+                      <p className="text-sm text-amber-400">Yuk fokus lagi!</p>
                       <p className="text-[10px] text-amber-400/60 mt-1">
                         Kamu keliatan ga fokus. Tarik napas, lanjut belajar!
                       </p>
