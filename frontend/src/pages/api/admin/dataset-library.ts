@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth';
 import { isAdmin } from '@/lib/admin';
 import { getDbStats, getLearnedWords, deleteLearnedWord } from '@/lib/learned-word';
 import { sttDb } from '@/lib/stt-db';
+import { d1 } from '@/lib/d1-client';
 
 /**
  * GET /api/admin/dataset-library?section=words|cooccurrence|corrections|stats&limit=100&offset=0&search=...
@@ -417,87 +418,61 @@ export const GET: APIRoute = async ({ request, url }) => {
       });
     }
 
-    // ── Section: d1-monitoring - Cloudflare D1 (user account DB) monitoring ──
+    // ── Section: d1-monitoring — monitoring DB utama (kini Turso/libSQL; sebelumnya Cloudflare D1) ──
     if (section === 'd1-monitoring') {
-      const D1_API_URL = `https://api.cloudflare.com/client/v4/accounts/949a2a6e1039019782c46a8c7ddb19fe/d1/database/2e9133ea-dad7-4227-ac92-03c0fbe48c45/query`;
-      const CF_API_TOKEN = process.env.CF_API_TOKEN || 'cfut_bLNtQhqVmPfkc8jLKydN2QCm52Vw4MmA9cdefw3M5cceff97';
-
       const queries = [
-        { name: 'User', sql: "SELECT COUNT(*) as c FROM User" },
+        { name: 'User', sql: 'SELECT COUNT(*) as c FROM User' },
         { name: 'User (active subscription)', sql: "SELECT COUNT(*) as c FROM User WHERE activeSubscription = 'active'" },
         { name: 'User (trial)', sql: "SELECT COUNT(*) as c FROM User WHERE activeSubscription = 'trial'" },
       ];
 
-      const d1Stats: Array<{ name: string; count: number; error?: string }> = [];
-      let d1DbSize = 0; // bytes - captured from D1 meta.size_after
+      const dbStats: Array<{ name: string; count: number; error?: string }> = [];
       for (const q of queries) {
         try {
-          const payload = JSON.stringify({ sql: q.sql });
-          const res = await fetch(D1_API_URL, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${CF_API_TOKEN}`,
-              'Content-Type': 'application/json',
-            },
-            body: payload,
-          });
-          if (res.ok) {
-            const data = await res.json();
-            const count = data?.result?.[0]?.results?.[0]?.c ?? 0;
-            d1Stats.push({ name: q.name, count });
-            // Capture DB size from D1 meta (last query response)
-            const sizeAfter = data?.result?.[0]?.meta?.size_after;
-            if (sizeAfter) d1DbSize = sizeAfter;
-          } else {
-            d1Stats.push({ name: q.name, count: 0, error: `HTTP ${res.status}` });
-          }
+          const rows = await d1.query<{ c: number }>(q.sql);
+          dbStats.push({ name: q.name, count: rows[0]?.c ?? 0 });
         } catch (e) {
-          d1Stats.push({ name: q.name, count: 0, error: e instanceof Error ? e.message : 'unknown' });
+          dbStats.push({ name: q.name, count: 0, error: e instanceof Error ? e.message : 'unknown' });
         }
+      }
+
+      // Ukuran DB nyata dari pragma (page_count * page_size)
+      let dbSize = 0; // bytes
+      try {
+        const sizeRows = await d1.query<{ page_count: number; page_size: number }>(
+          'SELECT (SELECT page_count FROM pragma_page_count) as page_count, (SELECT page_size FROM pragma_page_size) as page_size'
+        );
+        dbSize = (sizeRows[0]?.page_count ?? 0) * (sizeRows[0]?.page_size ?? 0);
+      } catch {
+        // pragma tidak tersedia — biarkan 0
       }
 
       // Get recent users (last 5)
       let recentUsers: Array<{ id: string; name: string; email: string; createdAt: string }> = [];
       try {
-        const payload = JSON.stringify({
-          sql: "SELECT uid as id, username as name, gmail as email, createdAt FROM User ORDER BY createdAt DESC LIMIT 5"
-        });
-        const res = await fetch(D1_API_URL, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${CF_API_TOKEN}`,
-            'Content-Type': 'application/json',
-          },
-          body: payload,
-        });
-        if (res.ok) {
-          const data = await res.json();
-          recentUsers = data?.result?.[0]?.results || [];
-        }
-      } catch (e) {
+        recentUsers = await d1.query<{ id: string; name: string; email: string; createdAt: string }>(
+          'SELECT uid as id, username as name, gmail as email, createdAt FROM User ORDER BY createdAt DESC LIMIT 5'
+        );
+      } catch {
         // ignore
       }
 
-
       return Response.json({
         d1: {
-          tables: d1Stats,
+          tables: dbStats,
           recentUsers,
-
-          accountId: '949a2a6e1039019782c46a8c7ddb19fe',
-          databaseId: '2e9133ea-dad7-4227-ac92-03c0fbe48c45',
-          region: 'APAC (HKG)',
+          accountId: 'Turso (libSQL)',
+          databaseId: 'alynne-edu',
+          region: 'AWS ap-southeast-1',
           storage: {
-            usedBytes: d1DbSize,
-            usedKB: Math.round(d1DbSize / 1024),
-            usedMB: (d1DbSize / 1024 / 1024).toFixed(2),
-            // D1 Free plan: 5GB storage limit
-            // D1 Paid plan: 10GB storage limit
-            limitBytes: 5 * 1024 * 1024 * 1024, // 5GB free plan
-            limitGB: '5 GB (free plan)',
-            availableBytes: (5 * 1024 * 1024 * 1024) - d1DbSize,
-            availableMB: ((5 * 1024 * 1024 * 1024 - d1DbSize) / 1024 / 1024).toFixed(2),
-            usedPct: d1DbSize > 0 ? ((d1DbSize / (5 * 1024 * 1024 * 1024)) * 100).toFixed(4) : '0',
+            usedBytes: dbSize,
+            usedKB: Math.round(dbSize / 1024),
+            usedMB: (dbSize / 1024 / 1024).toFixed(2),
+            limitBytes: 0,
+            limitGB: 'Free plan Turso',
+            availableBytes: 0,
+            availableMB: '0.00',
+            usedPct: '0',
           },
         },
         timestamp: new Date().toISOString(),

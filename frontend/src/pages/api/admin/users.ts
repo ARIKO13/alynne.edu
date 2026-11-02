@@ -15,16 +15,37 @@ export const GET: APIRoute = async ({ url, request }) => {
     const search = url.searchParams.get('search') || '';
     const offset = (page - 1) * limit;
 
+    // Skema User asli: uid/username/gmail — alias ke id/name/email supaya
+    // bentuk respons JSON untuk panel admin tidak berubah.
+    // Guard: tabel DailyProgress / Certificate mungkin belum ada — cek
+    // sqlite_master dulu supaya endpoint tidak 500 kalau tabelnya belum dibuat.
+    let tableSet = new Set<string>();
+    try {
+      const tables = await d1.query<{ name: string }>(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('DailyProgress','Certificate')"
+      );
+      tableSet = new Set(tables.map(t => t.name));
+    } catch {
+      // kalau cek tabel gagal, fallback aman: counter ditampilkan sebagai 0
+    }
+
+    const dpSelect = tableSet.has('DailyProgress')
+      ? '(SELECT COUNT(*) FROM DailyProgress dp WHERE dp.userId = u.uid) as dailyProgress'
+      : '0 as dailyProgress';
+    const certSelect = tableSet.has('Certificate')
+      ? '(SELECT COUNT(*) FROM Certificate c WHERE c.userId = u.uid) as certificates'
+      : '0 as certificates';
+
     let countSQL = 'SELECT COUNT(*) as c FROM User';
-    let dataSQL = `SELECT u.id, u.name, u.email, u.xp, u.level, u.streak, u.image, u.currentSeason, u.lastActiveAt, u.createdAt,
-      (SELECT COUNT(*) FROM DailyProgress dp WHERE dp.userId = u.id) as dailyProgress,
-      (SELECT COUNT(*) FROM Certificate c WHERE c.userId = u.id) as certificates
+    let dataSQL = `SELECT u.uid as id, u.username as name, u.gmail as email, u.xp, u.level, u.streak, u.image, u.currentSeason, u.lastActiveAt, u.createdAt,
+      ${dpSelect},
+      ${certSelect}
       FROM User u`;
     const params: string[] = [];
 
     if (search) {
-      countSQL += ' WHERE name LIKE ? OR email LIKE ?';
-      dataSQL += ' WHERE name LIKE ? OR email LIKE ?';
+      countSQL += ' WHERE username LIKE ? OR gmail LIKE ?';
+      dataSQL += ' WHERE username LIKE ? OR gmail LIKE ?';
       const pattern = `%${search}%`;
       params.push(pattern, pattern);
     }
