@@ -1,10 +1,11 @@
 import type { APIRoute } from 'astro';
 import { d1 } from '@/lib/d1-client';
+import { getSession } from '@/lib/auth';
 
-export const POST: APIRoute = async ({ request, cookies }) => {
+export const POST: APIRoute = async ({ request }) => {
   try {
-    const session = JSON.parse(cookies.get('auth-session')?.value || '{}');
-    const userId = session?.user?.id || session?.userId;
+    const session = await getSession(request);
+    const userId = session?.user.id;
     if (!userId) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
 
     const body = await request.json();
@@ -24,10 +25,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 };
 
-export const GET: APIRoute = async ({ cookies }) => {
+export const GET: APIRoute = async ({ request }) => {
   try {
-    const session = JSON.parse(cookies.get('auth-session')?.value || '{}');
-    const userId = session?.user?.id || session?.userId;
+    const session = await getSession(request);
+    const userId = session?.user.id;
     if (!userId) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
 
     const rows = await d1.query(

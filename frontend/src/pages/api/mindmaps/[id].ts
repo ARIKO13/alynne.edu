@@ -1,10 +1,11 @@
 import type { APIRoute } from 'astro';
 import { d1 } from '@/lib/d1-client';
+import { getSession } from '@/lib/auth';
 
-export const GET: APIRoute = async ({ params, cookies }) => {
+export const GET: APIRoute = async ({ params, request }) => {
   try {
-    const session = JSON.parse(cookies.get('auth-session')?.value || '{}');
-    const userId = session?.user?.id || session?.userId;
+    const session = await getSession(request);
+    const userId = session?.user.id;
     if (!userId) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
 
     const rows = await d1.query(
@@ -20,10 +21,10 @@ export const GET: APIRoute = async ({ params, cookies }) => {
   }
 };
 
-export const DELETE: APIRoute = async ({ params, cookies }) => {
+export const DELETE: APIRoute = async ({ params, request }) => {
   try {
-    const session = JSON.parse(cookies.get('auth-session')?.value || '{}');
-    const userId = session?.user?.id || session?.userId;
+    const session = await getSession(request);
+    const userId = session?.user.id;
     if (!userId) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
 
     await d1.execute('DELETE FROM MindMap WHERE id = ? AND userId = ?', [params.id, userId]);
