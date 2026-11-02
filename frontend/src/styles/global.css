@@ -1,13 +1,19 @@
 @import "tailwindcss";
 
-/* Alynne — Tenang, membumi, satu aksen oranye hangat.
+/* Alynne — Tenang, membumi, satu aksen oranye kecil.
    Kontrak desain: DESIGN.md (root frontend). Semua warna & font
    wajib lewat token di bawah; dilarang hex literal baru di komponen.
    Ronde 4: ungu #7C3AED dipensiunkan atas keputusan owner.
    Ronde 5: netral zinc dingin -> stone hangat; sky neon -> teal muted.
    Ronde 6 (arah owner: 'lampu belajar malam' — hitam + oranye + putih
    netral, mata adem): aksen teal -> oranye terbakar muted; dasar hitam
-   hangat & putih netral dipertahankan; merah tetap khusus status. */
+   hangat & putih netral dipertahankan; merah tetap khusus status.
+   Ronde 7 (arah owner: hitam & abu monokrom dominan, oranye/merah
+   BUKAN dominan): --accent-soft peach -> abu stone #A8A29E; semua
+   tint/border oranye -> stone netral; heatmap streak, bubble chat
+   user, tab aktif, meter D1, badge billing -> monokrom. Oranye tersisa
+   HANYA di fill aksi primer (bg-[var(--accent)] solid), ring fokus,
+   radio checked & ikon cek kecil; merah tetap status. */
 
 /* avoid-ai-design-ignore-file: T1 — Inter dipertahankan sesuai DESIGN.md §6
    (utang desain yang dicatat, bukan default yang tidak dipikirkan). */
@@ -29,13 +35,15 @@
   --text-3: #8E8880;
   --text-muted: #8E8880;   /* kompatibilitas komponen lama */
 
-  /* SATU aksen oranye hangat muted. Flat. Hanya aksi primer & fokus.
+  /* SATU aksen oranye hangat muted — sekarang benar-benar langka (ronde 7):
+     cuma fill aksi primer & fokus; sisanya monokrom stone.
      Rona 'lampu malam' (hue 15–28°) — hangat, tak menyilaukan.
-     Kontras terverifikasi: putih di --accent 5.18:1, --accent-soft di
-     --bg 9.17:1, ring 3.78:1 (semua lolos WCAG). */
+     Kontras terverifikasi (ronde 7): putih di --accent 4.64:1,
+     --accent-soft #A8A29E di --bg 7.75:1, border state solid stone-400
+     7.75:1, teks stone-100 di stone-700 9.42:1 (semua lolos WCAG). */
   --accent: #C2410C;        /* oranye terbakar — fill tombol/tanda aksi */
   --accent-hover: #9A3412;  /* oranye lebih gelap */
-  --accent-soft: #D9A87E;   /* peach muted — teks/ikon/garis di bg gelap */
+  --accent-soft: #A8A29E;   /* ronde 7: abu stone monokrom — teks/ikon/garis sekunder di bg gelap */
 
   /* Pembatas & status */
   --border: #2B2723;
@@ -77,7 +85,7 @@ h1, h2, h3, h4 {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #2E2A26; border-radius: 3px; }
 
-::selection { background: rgba(194,65,12,0.35); }
+::selection { background: rgba(168,162,158,0.28); }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }

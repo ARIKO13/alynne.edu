@@ -404,7 +404,7 @@ export function DatasetLibraryPanel() {
                       className={cn(
                         'text-[9px] px-1.5 py-0',
                         w.source === 'kbbi' ? 'border-stone-500/30 text-stone-400 bg-stone-500/10'
-                          : w.source === 'slang' ? 'border-orange-700/30 text-[var(--accent-soft)] bg-orange-700/10'
+                          : w.source === 'slang' ? 'border-stone-500/30 text-[var(--accent-soft)] bg-stone-500/10'
                           : 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
                       )}
                       title={`Source: ${w.source}`}
@@ -478,7 +478,7 @@ export function DatasetLibraryPanel() {
                   <span className="text-sm font-mono text-stone-200">{c.word}</span>
                   <ChevronRight className="h-3 w-3 text-stone-600" />
                   <span className="text-sm font-mono text-[var(--accent-soft)]">{c.context_word}</span>
-                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-orange-700/30 text-[var(--accent-soft)] bg-orange-700/10">
+                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-stone-500/30 text-[var(--accent-soft)] bg-stone-500/10">
                     {c.position} · d{c.distance}
                   </Badge>
                   <span className="text-[10px] text-stone-600 ml-auto">×{c.count}</span>
@@ -556,7 +556,7 @@ export function DatasetLibraryPanel() {
                     <ChevronRight className="h-3 w-3 text-stone-600" />
                     <span className="text-sm font-mono text-emerald-300">{s.corrected_word}</span>
                     <div className="ml-auto flex items-center gap-2">
-                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-orange-700/30 text-[var(--accent-soft)] bg-orange-700/10">
+                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-stone-500/30 text-[var(--accent-soft)] bg-stone-500/10">
                         {s.total_votes} votes
                       </Badge>
                       <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-emerald-500/30 text-emerald-400 bg-emerald-500/10">
@@ -610,7 +610,7 @@ function TabButton({ active, onClick, children }: {
       className={cn(
         'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap',
         active
-          ? 'bg-[var(--accent)]/15 text-[var(--accent-soft)]'
+          ? 'bg-stone-400/15 text-[var(--accent-soft)]'
           : 'text-stone-500 hover:text-stone-300'
       )}
     >
@@ -631,7 +631,7 @@ function SourcePill({ active, onClick, icon, label }: {
       className={cn(
         'flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] font-medium transition-colors',
         active
-          ? 'border-[var(--accent)]/40 bg-[var(--accent)]/15 text-[var(--accent-soft)]'
+          ? 'border-stone-400 bg-stone-400/15 text-[var(--accent-soft)]'
           : 'border-white/[0.08] bg-white/[0.02] text-stone-500 hover:text-stone-300 hover:bg-white/[0.04]'
       )}
     >
@@ -648,12 +648,12 @@ function StatCard({ label, value, icon, color }: {
   color: 'purple' | 'emerald' | 'amber' | 'red' | 'sky' | 'violet';
 }) {
   const colorClasses = {
-    purple: 'border-[var(--accent)]/15 bg-[var(--accent)]/[0.03]',
+    purple: 'border-stone-400/15 bg-stone-400/[0.03]',
     emerald: 'border-emerald-500/15 bg-emerald-500/[0.03]',
     amber: 'border-amber-500/15 bg-amber-500/[0.03]',
     red: 'border-red-500/15 bg-red-500/[0.03]',
-    sky: 'border-orange-700/15 bg-orange-700/[0.03]',
-    violet: 'border-orange-700/15 bg-orange-700/[0.03]',
+    sky: 'border-stone-500/15 bg-stone-500/[0.03]',
+    violet: 'border-stone-500/15 bg-stone-500/[0.03]',
   };
   const textColor = {
     purple: 'text-[var(--accent-soft)]',
@@ -679,7 +679,7 @@ function WordDetailView({ detail }: { detail: any }) {
   const w = detail.word;
   return (
     <div className="space-y-3">
-      <div className="rounded-lg border border-[var(--accent)]/15 bg-[var(--accent)]/[0.03] p-3">
+      <div className="rounded-lg border border-stone-400/15 bg-stone-400/[0.03] p-3">
         <div className="flex items-center gap-2 mb-2">
           <h4 className="text-base font-mono text-[var(--accent-soft)]">{w.word}</h4>
           <Badge variant="outline" className={cn(
@@ -740,7 +740,7 @@ function WordDetailView({ detail }: { detail: any }) {
               <div key={i} className="flex items-center gap-2 text-[11px]">
                 <Badge variant="outline" className={cn(
                   'text-[8px] px-1 py-0',
-                  c.position === 'before' ? 'border-orange-700/30 text-[var(--accent-soft)] bg-orange-700/10'
+                  c.position === 'before' ? 'border-stone-500/30 text-[var(--accent-soft)] bg-stone-500/10'
                     : 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
                 )}>
                   {c.position} · d{c.distance}
@@ -908,7 +908,7 @@ function StorageView({ info }: { info: any }) {
                   <span className="text-[10px] text-stone-400 w-20">{t.rows.toLocaleString()} rows</span>
                   <div className="flex-1 h-1.5 bg-[#161412] rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-[var(--accent)]/60 rounded-full"
+                      className="h-full bg-stone-400/60 rounded-full"
                       style={{ width: `${rowPct}%` }}
                     />
                   </div>
@@ -953,7 +953,7 @@ function SchemaView({ info }: { info: any }) {
   return (
     <div className="space-y-3">
       {/* Header */}
-      <div className="rounded-lg border border-[var(--accent)]/15 bg-[var(--accent)]/[0.03] p-3">
+      <div className="rounded-lg border border-stone-400/15 bg-stone-400/[0.03] p-3">
         <p className="text-[11px] text-stone-400 mb-1 flex items-center gap-1.5">
           <GitBranch className="h-3 w-3" /> Database Schema (ERD)
         </p>
@@ -969,12 +969,12 @@ function SchemaView({ info }: { info: any }) {
         {tables.map((t: any, i: number) => (
           <div key={i} className="rounded-lg border border-white/[0.06] bg-[#161412] overflow-hidden">
             {/* Table header */}
-            <div className="px-3 py-2 bg-[var(--accent)]/10 border-b border-[var(--accent)]/20">
+            <div className="px-3 py-2 bg-stone-400/10 border-b border-stone-400/20">
               <p className="text-xs font-mono font-semibold text-[var(--accent-soft)] flex items-center gap-1.5">
                 <Database className="h-3 w-3" />
                 {t.name}
                 {t.foreignKeys.length > 0 && (
-                  <Badge variant="outline" className="text-[8px] px-1 py-0 border-orange-700/30 text-[var(--accent-soft)] bg-orange-700/10 ml-1">
+                  <Badge variant="outline" className="text-[8px] px-1 py-0 border-stone-500/30 text-[var(--accent-soft)] bg-stone-500/10 ml-1">
                     {t.foreignKeys.length} FK
                   </Badge>
                 )}
@@ -1010,7 +1010,7 @@ function SchemaView({ info }: { info: any }) {
 
             {/* Foreign keys */}
             {t.foreignKeys.length > 0 && (
-              <div className="px-2 py-1.5 border-t border-white/[0.04] bg-orange-700/[0.02]">
+              <div className="px-2 py-1.5 border-t border-white/[0.04] bg-stone-500/[0.02]">
                 <p className="text-[11px] text-[var(--accent-soft)]/70 mb-1">Foreign Keys</p>
                 {t.foreignKeys.map((fk: any, fi: number) => (
                   <div key={fi} className="flex items-center gap-1.5 text-[10px] py-0.5">
@@ -1205,7 +1205,7 @@ function D1MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefresh, l
                 )}
                 <div className="h-1.5 bg-[#161412] rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[var(--accent)]/60 rounded-full"
+                    className="h-full bg-stone-400/60 rounded-full"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -1254,7 +1254,7 @@ function D1MonitoringView({ info, autoRefresh, onToggleAutoRefresh, onRefresh, l
       )}
 
       {/* D1 architecture note */}
-      <div className="rounded-lg border border-orange-700/15 bg-orange-700/[0.03] p-3">
+      <div className="rounded-lg border border-stone-500/15 bg-stone-500/[0.03] p-3">
         <p className="text-[11px] text-[var(--accent-soft)] mb-1">D1 vs SQLite</p>
         <p className="text-[10px] text-stone-400 leading-relaxed">
           D1 (Cloudflare) menyimpan data user account: Users, Certificates, Subscriptions, DailyProgress,

@@ -150,12 +150,12 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
               <p className="text-3xl font-bold text-green-400">{accuracy}%</p>
               <p className="text-[10px] text-stone-500 uppercase">Akurasi</p>
             </div>
-            <div className="rounded-lg border border-[var(--accent)]/20 bg-[var(--accent)]/[0.05] p-4">
+            <div className="rounded-lg border border-stone-400/20 bg-stone-400/[0.05] p-4">
               <p className="text-3xl font-bold text-[var(--accent-soft)]">{correctCount}/{questions.length}</p>
               <p className="text-[10px] text-stone-500 uppercase">Benar</p>
             </div>
-            <div className="rounded-lg border border-orange-500/20 bg-orange-500/[0.05] p-4">
-              <p className="text-3xl font-bold text-orange-400">x{maxCombo}</p>
+            <div className="rounded-lg border border-stone-400/20 bg-stone-400/[0.05] p-4">
+              <p className="text-3xl font-bold text-stone-400">x{maxCombo}</p>
               <p className="text-[10px] text-stone-500 uppercase">Max Combo</p>
             </div>
           </div>
@@ -194,7 +194,7 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
               {score}
             </Badge>
             {combo > 1 && (
-              <Badge variant="outline" className="border-orange-500/30 text-orange-400 animate-pulse">
+              <Badge variant="outline" className="border-stone-400/30 text-stone-400 animate-pulse">
                 <Flame className="h-3 w-3 mr-1" />
                 Combo x{combo}
               </Badge>
@@ -242,7 +242,7 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
                       : showWrong
                       ? 'border-red-500/50 bg-red-500/10 text-red-400'
                       : isSelected
-                      ? 'border-[var(--accent)]/50 bg-[var(--accent)]/10 text-[var(--accent-soft)]'
+                      ? 'border-stone-400 bg-stone-400/10 text-[var(--accent-soft)]'
                       : 'border-white/[0.06] text-stone-300 hover:border-white/[0.15] hover:bg-white/[0.04]'
                   }`}
                 >
@@ -296,7 +296,7 @@ export function QuizBattle({ open, onClose, questions, title }: QuizBattleProps)
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md  text-center">
-        <Flame className="h-16 w-16 mx-auto mb-4 text-orange-400" />
+        <Flame className="h-16 w-16 mx-auto mb-4 text-stone-400" />
         <DialogTitle className="text-2xl mb-2">Quiz Battle</DialogTitle>
         <p className="text-sm text-stone-400 mb-6">{title || 'Test your knowledge'}</p>
 
@@ -345,7 +345,7 @@ function getRank(score: number, accuracy: number): { title: string; message: str
     return { title: 'Expert', message: 'Kerja bagus, lanjutkan!', color: '#94A3B8' };
   }
   if (accuracy >= 40) {
-    return { title: 'Learner', message: 'Belajar lagi yuk!', color: '#D9A87E' };
+    return { title: 'Learner', message: 'Belajar lagi yuk!', color: '#A8A29E' };
   }
   return { title: 'Beginner', message: 'Jangan menyerah, coba lagi!', color: '#6B7280' };
 }

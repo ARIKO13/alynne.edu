@@ -149,7 +149,7 @@ export function SmartContinuity({ open, onClose, transcript }: SmartContinuityPr
         {step === 'idle' ? (
           /* Start screen */
           <div className="space-y-4">
-            <div className="rounded-lg border border-[var(--accent)]/20 bg-[var(--accent)]/[0.05] p-4">
+            <div className="rounded-lg border border-stone-400/20 bg-stone-400/[0.05] p-4">
               <p className="text-sm text-stone-300 mb-2">Transcript siap di-process:</p>
               <Badge variant="outline" className="text-[10px]">
                 {transcript.length} karakter

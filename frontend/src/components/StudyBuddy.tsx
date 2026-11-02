@@ -190,7 +190,7 @@ Instruksi: Lanjutkan percakapan sebagai teman belajar. Singkat (2-3 kalimat).${m
           onClick={() => startMode('challenge')}
           className={cn(
             'flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-colors',
-            mode === 'challenge' ? 'bg-orange-600 text-white' : 'text-stone-500 hover:text-stone-300'
+            mode === 'challenge' ? 'bg-stone-700 text-stone-100' : 'text-stone-500 hover:text-stone-300'
           )}
         >
           <Swords className="h-3 w-3" />
@@ -213,13 +213,13 @@ Instruksi: Lanjutkan percakapan sebagai teman belajar. Singkat (2-3 kalimat).${m
         {messages.map((msg, i) => (
           <div key={i} className={cn('flex gap-2', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
             {msg.role === 'assistant' && (
-              <div className="w-6 h-6 rounded-full bg-[var(--accent)]/10 flex items-center justify-center shrink-0">
+              <div className="w-6 h-6 rounded-full bg-stone-400/10 flex items-center justify-center shrink-0">
                 <Bot className="h-3 w-3 text-[var(--accent-soft)]" />
               </div>
             )}
             <div className={cn(
               'rounded-lg px-3 py-2 max-w-[75%] text-sm',
-              msg.role === 'user' ? 'bg-[var(--accent)] text-white' : 'bg-white/[0.04] text-stone-200'
+              msg.role === 'user' ? 'bg-stone-700 text-stone-100' : 'bg-white/[0.04] text-stone-200'
             )}>
               <p className="whitespace-pre-wrap">{msg.content}</p>
             </div>
@@ -232,7 +232,7 @@ Instruksi: Lanjutkan percakapan sebagai teman belajar. Singkat (2-3 kalimat).${m
         ))}
         {loading && (
           <div className="flex gap-2">
-            <div className="w-6 h-6 rounded-full bg-[var(--accent)]/10 flex items-center justify-center shrink-0">
+            <div className="w-6 h-6 rounded-full bg-stone-400/10 flex items-center justify-center shrink-0">
               <Bot className="h-3 w-3 text-[var(--accent-soft)]" />
             </div>
             <div className="rounded-lg px-3 py-2 bg-white/[0.04] text-stone-400 text-sm">

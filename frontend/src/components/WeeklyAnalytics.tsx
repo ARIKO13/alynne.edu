@@ -198,7 +198,7 @@ export function WeeklyAnalytics({ open, onClose }: WeeklyAnalyticsProps) {
               variant="outline"
               className={`text-[10px] ${
                 quizAccuracy >= 80 && memory.totalQuizzesTaken >= 5
-                  ? 'border-[var(--accent)]/30 text-[var(--accent-soft)] bg-[var(--accent)]/10'
+                  ? 'border-stone-400/30 text-[var(--accent-soft)] bg-stone-400/10'
                   : 'border-stone-700 text-stone-600'
               }`}
             >

@@ -189,7 +189,7 @@ export function FlashcardPanel({ open, onClose, chapters = [] }: FlashcardPanelP
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-[10px] border-[var(--accent)]/30 text-[var(--accent-soft)]">Spaced Repetition</Badge>
+          <Badge variant="outline" className="text-[10px] border-stone-400/30 text-[var(--accent-soft)]">Spaced Repetition</Badge>
           <Button onClick={onClose} variant="ghost" size="sm" className="text-stone-400 hover:text-white hover:bg-white/[0.04]">
             <X className="h-4 w-4" />
             <span className="ml-1 hidden sm:inline">Tutup</span>
@@ -258,7 +258,7 @@ export function FlashcardPanel({ open, onClose, chapters = [] }: FlashcardPanelP
                     className="group rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 hover:bg-white/[0.04] transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-[var(--accent)]/10 flex items-center justify-center shrink-0">
+                      <div className="w-9 h-9 rounded-lg bg-stone-400/10 flex items-center justify-center shrink-0">
                         <Layers className="h-4 w-4 text-[var(--accent-soft)]" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -333,7 +333,7 @@ export function FlashcardPanel({ open, onClose, chapters = [] }: FlashcardPanelP
             {/* Card */}
             <div
               onClick={() => setFlipped(!flipped)}
-              className="cursor-pointer rounded-lg border-2 border-[var(--accent)]/30 bg-[var(--accent)]/[0.05] p-8 min-h-[200px] flex items-center justify-center text-center transition-colors hover:border-[var(--accent)]/50"
+              className="cursor-pointer rounded-lg border-2 border-stone-400/30 bg-stone-400/[0.05] p-8 min-h-[200px] flex items-center justify-center text-center transition-colors hover:border-stone-400"
             >
               <div>
                 {!flipped ? (

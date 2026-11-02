@@ -91,14 +91,14 @@ function ModeSelector({ disabled }: { disabled: boolean }) {
               'flex-1 flex items-center gap-2.5 rounded-lg border p-3 text-left transition-colors duration-200',
               disabled && 'opacity-50 cursor-not-allowed',
               isActive
-                ? 'border-[var(--accent)]/40 bg-[var(--accent)]/10'
+                ? 'border-stone-400 bg-stone-400/10'
                 : 'border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12] hover:bg-white/[0.04]'
             )}
           >
             <div
               className={cn(
                 'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors',
-                isActive ? 'bg-[var(--accent)]/20' : 'bg-white/[0.05]'
+                isActive ? 'bg-stone-400/20' : 'bg-white/[0.05]'
               )}
             >
               <Icon
@@ -320,7 +320,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
           <Button
             onClick={() => setModelSelectorOpen(true)}
             size="sm"
-            className="h-7 gap-1.5 px-2.5 text-[11px] font-medium bg-[var(--accent)] hover:bg-[var(--accent)] text-white border-[var(--accent)]/30"
+            className="h-7 gap-1.5 px-2.5 text-[11px] font-medium bg-[var(--accent)] hover:bg-[var(--accent)] text-white border-stone-400/30"
             title="Pilih model Whisper untuk STT"
           >
             <Cpu className="h-3.5 w-3.5" />
@@ -342,7 +342,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
               sttSource === 'webspeech'
                 ? 'text-green-400 bg-green-500/10 border-green-500/20'
                 : sttSource === 'screen-capture'
-                ? 'text-[var(--accent-soft)] bg-orange-700/10 border-orange-700/20'
+                ? 'text-[var(--accent-soft)] bg-stone-500/10 border-stone-500/20'
                 : 'text-amber-400 bg-amber-500/10 border-amber-500/20'
             )}
           >
@@ -383,7 +383,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
 
         {/* Screen mode hint */}
         {isScreenMode && !isRecording && (
-          <div className="flex items-start gap-2.5 rounded-lg border border-orange-700/15 bg-orange-700/[0.03] p-3">
+          <div className="flex items-start gap-2.5 rounded-lg border border-stone-500/15 bg-stone-500/[0.03] p-3">
             <MonitorUp className="h-4 w-4 text-[var(--accent-soft)] mt-0.5 shrink-0" />
             <div className="text-xs text-[var(--accent-soft)]/80 leading-relaxed">
               <p className="font-medium text-[var(--accent-soft)] mb-0.5">Mode Seluruh Layar</p>
@@ -416,7 +416,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
 
         {/* Combined Methods Indicator - shown when Entire Screen capture is active */}
         {isCombinedActive && (
-          <div className="rounded-lg border border-orange-700/20 bg-orange-700/[0.04] p-3">
+          <div className="rounded-lg border border-stone-500/20 bg-stone-500/[0.04] p-3">
             <div className="flex items-center gap-2 mb-2">
               <MonitorUp className="h-3.5 w-3.5 text-[var(--accent-soft)]" />
               <p className="text-xs font-medium text-[var(--accent-soft)]">Mode gabungan aktif</p>
@@ -576,7 +576,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
         </div>
 
         {/* Material Upload - always visible */}
-        <div className="rounded-lg border border-orange-700/10 bg-orange-700/[0.02] overflow-hidden">
+        <div className="rounded-lg border border-stone-500/10 bg-stone-500/[0.02] overflow-hidden">
           <div className="flex items-center gap-2 px-5 py-3 border-b border-white/[0.04]">
             <Upload className="h-4 w-4 text-[var(--accent-soft)]" />
             <h3 className="text-sm font-medium text-stone-200">Materi Pendukung</h3>
@@ -602,7 +602,7 @@ const { transcriptEntries, sttAudioMode, setInterimTranscript } = useAppStore();
               <button
                 onClick={generatePDFCombined}
                 disabled={pdfLoading}
-                className="flex items-center gap-3 rounded-md border border-[var(--accent)]/30 bg-[var(--accent)]/[0.08] p-3.5 text-left transition-colors hover:border-[var(--accent)]/60 hover:bg-[var(--accent)]/[0.14] disabled:opacity-50"
+                className="flex items-center gap-3 rounded-md border border-stone-400/30 bg-stone-400/[0.08] p-3.5 text-left transition-colors hover:border-stone-400 hover:bg-stone-400/[0.14] disabled:opacity-50"
               >
                 {pdfLoading ? <Loader2 className="h-4 w-4 shrink-0 text-[var(--accent-soft)] animate-spin" /> : <FileText className="h-4 w-4 shrink-0 text-[var(--accent-soft)]" />}
                 <div className="min-w-0 flex-1">
@@ -734,7 +734,7 @@ function MethodBadge({
       ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
       : 'border-white/[0.06] text-stone-600 bg-white/[0.02]',
     violet: active
-      ? 'border-[var(--accent)]/30 text-[var(--accent-soft)] bg-[var(--accent)]/10'
+      ? 'border-stone-400/30 text-[var(--accent-soft)] bg-stone-400/10'
       : loading
       ? 'border-amber-500/30 text-amber-400 bg-amber-500/10'
       : 'border-white/[0.06] text-stone-600 bg-white/[0.02]',

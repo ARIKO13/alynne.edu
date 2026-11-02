@@ -22,9 +22,9 @@ export function ArchitectureView({ schemaInfo }: ArchitectureViewProps) {
         startOnLoad: false,
         theme: 'dark',
         themeVariables: {
-          primaryColor: '#D9A87E',
+          primaryColor: '#A8A29E',
           primaryTextColor: '#F5F2ED',
-          primaryBorderColor: '#D9A87E',
+          primaryBorderColor: '#A8A29E',
           lineColor: '#57534E',
           secondaryColor: '#25221E',
           tertiaryColor: '#171513',
@@ -141,7 +141,7 @@ function DiagramPill({ active, onClick, label }: { active: boolean; onClick: () 
       className={cn(
         'px-2.5 py-0.5 rounded-full border text-[11px] font-medium transition-colors',
         active
-          ? 'border-[var(--accent)]/40 bg-[var(--accent)]/15 text-[var(--accent-soft)]'
+          ? 'border-stone-400 bg-stone-400/15 text-[var(--accent-soft)]'
           : 'border-white/[0.08] bg-white/[0.02] text-stone-500 hover:text-stone-300 hover:bg-white/[0.04]'
       )}
     >
@@ -196,7 +196,7 @@ function getDiagram(type: string, schemaInfo: any): string {
     BackupCron --> GitHub
     SQLite --> PruneCron
 
-    style SQLite fill:#D9A87E,stroke:#D9A87E,color:#fff
+    style SQLite fill:#44403C,stroke:#A8A29E,color:#F5F2ED
     style GitHub fill:#25221E,stroke:#57534E,color:#F5F2ED
     style User fill:#059669,stroke:#047857,color:#fff
     style FuzzyAPI fill:#0891b2,stroke:#0e7490,color:#fff
@@ -330,7 +330,7 @@ function getDiagram(type: string, schemaInfo: any): string {
     SQLite --> LocalBackup
     API -->|"user data"| D1
 
-    style SQLite fill:#D9A87E,stroke:#D9A87E,color:#fff
+    style SQLite fill:#44403C,stroke:#A8A29E,color:#F5F2ED
     style Server fill:#0891b2,stroke:#0e7490,color:#fff
     style Client fill:#059669,stroke:#047857,color:#fff
     style Cloud fill:#6366f1,stroke:#4f46e5,color:#fff

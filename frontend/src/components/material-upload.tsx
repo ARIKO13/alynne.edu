@@ -23,7 +23,7 @@ import { toast } from 'sonner';
 const FILE_TYPE_CONFIG: Record<ExtractableType, { icon: typeof File; label: string; color: string; accept: string }> = {
   pdf:  { icon: FileText, label: 'PDF', color: 'text-red-400 bg-red-500/10 border-red-500/20', accept: '.pdf' },
   docx: { icon: FileType, label: 'DOCX', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20', accept: '.docx' },
-  pptx: { icon: Presentation, label: 'PPTX', color: 'text-orange-400 bg-orange-500/10 border-orange-500/20', accept: '.pptx' },
+  pptx: { icon: Presentation, label: 'PPTX', color: 'text-stone-400 bg-stone-400/10 border-stone-400/20', accept: '.pptx' },
   txt:  { icon: File, label: 'TXT', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', accept: '.txt,.md,.csv,.json,.html,.htm' },
   other: { icon: File, label: 'File', color: 'text-stone-400 bg-stone-500/10 border-stone-500/20', accept: '' },
 };
@@ -149,14 +149,14 @@ export function MaterialUpload({ compact = false }: { compact?: boolean }) {
           className={cn(
             'relative rounded-lg border-2 border-dashed cursor-pointer transition-colors duration-200 overflow-hidden',
             isDragOver
-              ? 'border-[var(--accent)] bg-[var(--accent)]/[0.06] scale-[1.01]'
+              ? 'border-stone-400 bg-stone-400/[0.06] scale-[1.01]'
               : 'border-white/[0.08] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.04]'
           )}
         >
           <div className="flex flex-col items-center justify-center py-8 px-6 text-center">
             <div className={cn(
               'rounded-full p-3 mb-3 transition-colors',
-              isDragOver ? 'bg-[var(--accent)]/15' : 'bg-white/[0.04]'
+              isDragOver ? 'bg-stone-400/15' : 'bg-white/[0.04]'
             )}>
               <CloudUpload className={cn('h-7 w-7 transition-colors', isDragOver ? 'text-[var(--accent-soft)]' : 'text-stone-500')} />
             </div>

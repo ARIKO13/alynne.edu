@@ -412,7 +412,7 @@ export function ImageSharpener() {
         <div
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
-          className="rounded-lg border-2 border-dashed border-white/[0.12] bg-white/[0.02] hover:border-[var(--accent)]/40 hover:bg-[var(--accent)]/[0.03] transition-colors p-10 text-center cursor-pointer"
+          className="rounded-lg border-2 border-dashed border-white/[0.12] bg-white/[0.02] hover:border-stone-400 hover:bg-stone-400/[0.03] transition-colors p-10 text-center cursor-pointer"
           onClick={() => fileInputRef.current?.click()}
         >
           <input
@@ -430,7 +430,7 @@ export function ImageSharpener() {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center gap-3"
           >
-            <div className="h-14 w-14 rounded-full bg-[var(--accent)]/15 flex items-center justify-center">
+            <div className="h-14 w-14 rounded-full bg-stone-400/15 flex items-center justify-center">
               <Upload className="h-6 w-6 text-[var(--accent-soft)]" />
             </div>
             <div>
@@ -462,7 +462,7 @@ export function ImageSharpener() {
             className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4"
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--accent)]/15">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-stone-400/15">
                 <Wand2 className="h-4 w-4 text-[var(--accent-soft)]" />
               </div>
               <div className="flex-1">
@@ -513,8 +513,8 @@ export function ImageSharpener() {
           </div>
 
           {/* Sharpened */}
-          <div className="rounded-lg border border-[var(--accent)]/30 bg-[#161412] overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--accent)]/15 bg-[var(--accent)]/[0.04]">
+          <div className="rounded-lg border border-stone-400/30 bg-[#161412] overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-stone-400/15 bg-stone-400/[0.04]">
               <span className="text-xs font-medium text-[var(--accent-soft)]">Hasil Penajaman</span>
               {processing && (
                 <span className="flex items-center gap-1 text-[10px] text-stone-500">
@@ -546,7 +546,7 @@ export function ImageSharpener() {
                     onClick={() => setMethod(m.id)}
                     className={`rounded-lg border-2 p-2.5 text-left transition-colors ${
                       active
-                        ? 'border-[var(--accent)] bg-[var(--accent)]/[0.08]'
+                        ? 'border-stone-400 bg-stone-400/[0.08]'
                         : 'border-white/[0.06] hover:border-white/[0.15] hover:bg-white/[0.04]'
                     }`}
                   >
@@ -620,7 +620,7 @@ export function ImageSharpener() {
 
       {/* Info card */}
       {!imageSrc && (
-        <div className="rounded-lg border border-orange-700/15 bg-orange-700/[0.03] p-4">
+        <div className="rounded-lg border border-stone-500/15 bg-stone-500/[0.03] p-4">
           <div className="flex items-start gap-2.5">
             <AlertCircle className="h-4 w-4 text-[var(--accent-soft)] mt-0.5 flex-shrink-0" />
             <div className="text-xs text-stone-400 leading-relaxed">
@@ -638,7 +638,7 @@ export function ImageSharpener() {
       )}
 
       {/* Smart OCR + Math Solver */}
-      <div className="mt-6 rounded-lg border border-[var(--accent)]/20 bg-[var(--accent)]/[0.03] p-4 space-y-3">
+      <div className="mt-6 rounded-lg border border-stone-400/20 bg-stone-400/[0.03] p-4 space-y-3">
         <div className="flex items-center gap-2">
           <ScanText className="h-4 w-4 text-[var(--accent-soft)]" />
           <h3 className="text-sm font-medium text-stone-200">Smart OCR + Math Solver</h3>

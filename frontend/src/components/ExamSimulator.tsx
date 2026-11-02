@@ -174,7 +174,7 @@ JSON array (tanpa markdown):
           <DialogTitle className="flex items-center gap-2 text-xl">
             <GraduationCap className="h-5 w-5 text-[var(--accent-soft)]" />
             Exam Simulator
-            <Badge variant="outline" className="text-[10px] ml-auto border-[var(--accent)]/30 text-[var(--accent-soft)]">
+            <Badge variant="outline" className="text-[10px] ml-auto border-stone-400/30 text-[var(--accent-soft)]">
               AI Generated
             </Badge>
           </DialogTitle>
@@ -242,7 +242,7 @@ JSON array (tanpa markdown):
                       className={cn(
                         'text-left px-3 py-2 rounded text-sm transition-colors border',
                         answers[current.id] === opt
-                          ? 'border-[var(--accent)]/50 bg-[var(--accent)]/10 text-[var(--accent-soft)]'
+                          ? 'border-stone-400 bg-stone-400/10 text-[var(--accent-soft)]'
                           : 'border-white/[0.06] text-stone-400 hover:border-white/[0.15]'
                       )}
                     >
@@ -255,7 +255,7 @@ JSON array (tanpa markdown):
                   value={answers[current.id] || ''}
                   onChange={e => handleAnswer(current.id, e.target.value)}
                   placeholder="Ketik jawaban..."
-                  className="w-full px-3 py-2 rounded bg-white/[0.04] border border-white/[0.08] text-sm text-stone-200 placeholder:text-stone-600 focus:outline-none focus:border-[var(--accent)]/50"
+                  className="w-full px-3 py-2 rounded bg-white/[0.04] border border-white/[0.08] text-sm text-stone-200 placeholder:text-stone-600 focus:outline-none focus:border-stone-400"
                 />
               )}
             </div>

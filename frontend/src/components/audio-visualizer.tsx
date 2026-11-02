@@ -21,7 +21,7 @@ export function AudioVisualizer({ audioLevels, isListening = false }: AudioVisua
                 className="w-full rounded-sm"
                 style={{
                   height: '3px',
-                  backgroundColor: '#D9A87E33',
+                  backgroundColor: '#A8A29E33',
                   animation: `pulse-bar 1.2s ease-in-out ${delay}ms infinite alternate`,
                 }}
               />
@@ -44,7 +44,7 @@ export function AudioVisualizer({ audioLevels, isListening = false }: AudioVisua
     <div className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-[#161412] px-4 py-3">
       <div className="flex items-end gap-[2px] h-8 flex-1">
         {audioLevels.map((level, i) => {
-          const color = level > 40 ? '#D9A87E' : level > 15 ? '#D9A87E66' : '#D9A87E33';
+          const color = level > 40 ? '#A8A29E' : level > 15 ? '#A8A29E66' : '#A8A29E33';
           return (
             <div
               key={i}

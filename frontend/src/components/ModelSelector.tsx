@@ -238,7 +238,7 @@ export function ModelSelector({ open, onClose, onModelReady, forceShow }: ModelS
         </div>
 
         {loading && (
-          <div className="rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/[0.05] p-4 space-y-3">
+          <div className="rounded-lg border border-stone-400/30 bg-stone-400/[0.05] p-4 space-y-3">
             <div className="flex items-center justify-between text-sm">
               <span className="flex items-center gap-2 text-[var(--accent-soft)]">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -343,7 +343,7 @@ function ModelOption({
         ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}
         ${
           selected
-            ? 'border-[var(--accent)]/50 bg-[var(--accent)]/[0.08]'
+            ? 'border-stone-400 bg-stone-400/[0.08]'
             : 'border-white/[0.06] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.04]'
         }
       `}
@@ -380,7 +380,7 @@ function ModelOption({
             {isRecommended && (
               <Badge
                 variant="outline"
-                className="bg-[var(--accent)]/10 text-[var(--accent-soft)] border-[var(--accent)]/30 text-[10px]"
+                className="bg-stone-400/10 text-[var(--accent-soft)] border-stone-400/30 text-[10px]"
               >
                 RECOMMENDED
               </Badge>

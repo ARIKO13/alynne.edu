@@ -214,7 +214,7 @@ export function FileUploadChunked({ onTranscript, onError }: FileUploadChunkedPr
           className={`
             border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
             ${dragOver
-              ? 'border-[var(--accent)] bg-[var(--accent)]/5'
+              ? 'border-stone-400 bg-stone-400/5'
               : 'border-white/10 hover:border-white/20 hover:bg-white/[0.02]'}
           `}
         >

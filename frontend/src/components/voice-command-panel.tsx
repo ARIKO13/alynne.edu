@@ -168,11 +168,11 @@ export function VoiceCommandPanel() {
                 'relative mx-auto w-24 h-24 rounded-full flex items-center justify-center transition-colors duration-300',
                 voiceCmdActive
                   ? 'bg-red-500/20 border-2 border-red-500/40 animate-pulse'
-                  : 'bg-[#D9A87E]/10 border-2 border-[#D9A87E]/30 hover:bg-[#D9A87E]/20 hover:border-[#D9A87E]/50'
+                  : 'bg-[#A8A29E]/10 border-2 border-[#A8A29E]/30 hover:bg-[#A8A29E]/20 hover:border-[#A8A29E]/50'
               )}
             >
               {voiceCmdActive && <span className="absolute inset-0 rounded-full animate-ping bg-red-500/10" />}
-              {voiceCmdActive ? <MicOff className="h-8 w-8 text-red-400" /> : <Mic className="h-8 w-8 text-[#D9A87E]" />}
+              {voiceCmdActive ? <MicOff className="h-8 w-8 text-red-400" /> : <Mic className="h-8 w-8 text-[#A8A29E]" />}
             </button>
             <p className="text-sm text-stone-400 mt-4">{voiceCmdActive ? 'Mendengarkan perintah...' : 'Tekan untuk mulai'}</p>
             {interimText && (
@@ -197,7 +197,7 @@ export function VoiceCommandPanel() {
         <div className="space-y-1.5">
           {commands.map((cmd) => (
             <div key={cmd.label} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/[0.02] transition-colors">
-              <Compass className="h-3.5 w-3.5 text-[#D9A87E] shrink-0" />
+              <Compass className="h-3.5 w-3.5 text-[#A8A29E] shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-stone-300">{cmd.label}</p>
                 <p className="text-[10px] text-stone-600">{cmd.description}</p>

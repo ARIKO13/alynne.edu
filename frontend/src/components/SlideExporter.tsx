@@ -203,7 +203,7 @@ function generatePresentationHTML(slides: string[], chapters: Chapter[]): string
   }
   .slide-num { color: #78716C; font-size: 14px; }
   .slide-badge {
-    background: #D9A87E;
+    background: #A8A29E;
     color: white;
     padding: 4px 12px;
     border-radius: 12px;
@@ -212,7 +212,7 @@ function generatePresentationHTML(slides: string[], chapters: Chapter[]): string
   }
   .slide-title {
     font-size: 36px;
-    color: #D9A87E;
+    color: #A8A29E;
     margin-bottom: 24px;
     line-height: 1.3;
   }
@@ -231,7 +231,7 @@ function generatePresentationHTML(slides: string[], chapters: Chapter[]): string
     border-radius: 12px;
     border: 1px solid rgba(124, 58, 237, 0.3);
   }
-  .quiz h3 { color: #D9A87E; margin-bottom: 12px; }
+  .quiz h3 { color: #A8A29E; margin-bottom: 12px; }
   .quiz-item { margin-bottom: 16px; }
   .quiz-q { color: #F5F2ED; margin-bottom: 8px; font-size: 16px; }
   .quiz-options { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -282,7 +282,7 @@ function generatePresentationHTML(slides: string[], chapters: Chapter[]): string
     top: 0;
     left: 0;
     height: 3px;
-    background: #D9A87E;
+    background: #A8A29E;
     z-index: 100;
     transition: width 0.3s;
   }

@@ -533,7 +533,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
               onClick={() => setActiveProject(null)}
               className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
                 !activeProject
-                  ? 'bg-[var(--accent)]/10 text-[var(--accent-soft)]'
+                  ? 'bg-stone-400/10 text-[var(--accent-soft)]'
                   : 'text-stone-400 hover:bg-white/[0.04]'
               }`}
             >
@@ -557,9 +557,9 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
                   onDrop={(e) => handleDropProject(e, p.id)}
                   className={`group flex items-center gap-1.5 px-2 py-2 rounded-md text-sm transition-colors cursor-pointer ${
                     activeProject?.id === p.id
-                      ? 'bg-[var(--accent)]/10 text-[var(--accent-soft)]'
+                      ? 'bg-stone-400/10 text-[var(--accent-soft)]'
                       : isDragOver
-                      ? 'bg-[var(--accent)]/20 ring-1 ring-[var(--accent)]/40'
+                      ? 'bg-stone-400/20 ring-1 ring-[var(--accent)]/40'
                       : 'text-stone-400 hover:bg-white/[0.04]'
                   } ${isDragging ? 'opacity-50' : ''}`}
                   onClick={() => !isRenaming && setActiveProject(p)}
@@ -582,7 +582,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
                         if (e.key === 'Escape') setRenamingProjectId(null);
                       }}
                       onClick={(e) => e.stopPropagation()}
-                      className="flex-1 min-w-0 bg-white/[0.06] border border-[var(--accent)]/40 rounded px-1.5 py-0.5 text-xs text-white outline-none"
+                      className="flex-1 min-w-0 bg-white/[0.06] border border-stone-400 rounded px-1.5 py-0.5 text-xs text-white outline-none"
                     />
                   ) : (
                     <span className="truncate flex-1">{p.name}</span>
@@ -718,7 +718,7 @@ export function KnowledgeHub({ open, onClose }: KnowledgeHubProps) {
                     key={item.id}
                     className={`group flex items-start gap-2 p-2.5 rounded-md border transition-colors cursor-pointer ${
                       isSelected
-                        ? 'border-[var(--accent)]/40 bg-[var(--accent)]/5'
+                        ? 'border-stone-400 bg-stone-400/5'
                         : 'border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.04]'
                     }`}
                     onClick={() => openItemViewer(item)}

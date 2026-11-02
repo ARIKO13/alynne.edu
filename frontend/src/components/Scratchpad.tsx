@@ -151,7 +151,7 @@ Contoh:
 - pertanyaan
 
 Lalu klik 'Organize dengan AI' untuk merapikan."
-          className="w-full h-64 p-4 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-stone-200 placeholder:text-stone-600 resize-none focus:outline-none focus:border-[var(--accent)]/50"
+          className="w-full h-64 p-4 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-stone-200 placeholder:text-stone-600 resize-none focus:outline-none focus:border-stone-400"
           autoFocus
         />
 

@@ -118,6 +118,26 @@
 > ≥ 4.5:1). Sisa teal aktif: 0. Waiver tetap: gradien logo Instagram,
 > LofiBackground, warna kategori data-viz. Tabel §2 disinkronkan dengan
 > nilai stone ronde 5 yang tertinggal.
+>
+> **Ronde 7 — 2026-11-01 (monokrom dominan — keputusan owner):** owner:
+> "warna merah dan oranye jangan dominan? yang dominan hitam, dan abu
+> monokrom". Arah: hitam + abu stone jadi panggung; oranye turun jadi
+> titik cahaya yang LANGKA. Dieksekusi: (1) `--accent-soft` peach #D9A87E
+> → **abu stone #A8A29E** — 183 pemakaian teks/ikon/garis ikut jadi
+> monokrom; kontras 7.75:1 di --bg. (2) Semua tint & border oranye
+> (var accent + kelas tailwind, ±110 pemakaian) → stone netral; border
+> indikator state → solid stone-400 (7.75:1, memenuhi WCAG 1.4.11).
+> (3) Blok oranye besar dimonokromkan: heatmap StreakCalendar (skala
+> stone-400 20→100%), bubble chat user & tab aktif StudyBuddy (stone-700
+> + teks stone-100, 9.42:1), meter D1 (stone-500/60), badge tema billing
+> (stone-700). (4) Migrasi 31 file; sisa `orange` di src hanya 3 yang
+> disengaja: gradien logo Instagram di contact.astro (waiver), skala
+> severitas focus meter StudyPipeline `bg-orange-500` (status), ring
+> selected billing (indikator terpilih). (5) Oranye #C2410C tersisa HANYA
+> di fill aksi primer solid, hover fill, ring fokus, radio checked,
+> ikon cek kecil — di layar mana pun yang terlihat cuma 1–3 titik.
+> (6) ::selection oranye 0.35 → abu netral 0.28. Merah tetap status.
+> Kontras semua kombinasi baru diverifikasi via skrip: SEMUA PASS.
 
 ## 1. Arah (satu kalimat)
 

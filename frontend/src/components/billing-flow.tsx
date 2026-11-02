@@ -42,7 +42,7 @@ const ACCENT: Record<
   },
   violet: {
     ring: 'ring-[var(--accent)]',
-    bg: 'bg-[var(--accent)]/[0.08]',
+    bg: 'bg-stone-400/[0.08]',
     text: 'text-[var(--accent-soft)]',
     badge: 'bg-[var(--accent)]',
     check: 'text-[var(--accent-soft)]',
@@ -63,9 +63,9 @@ const ACCENT: Record<
   },
   sky: {
     ring: 'ring-orange-700',
-    bg: 'bg-orange-700/[0.06]',
+    bg: 'bg-stone-500/[0.06]',
     text: 'text-[var(--accent-soft)]',
-    badge: 'bg-orange-700',
+    badge: 'bg-stone-700',
     check: 'text-[var(--accent-soft)]',
   },
 };
@@ -364,7 +364,7 @@ export function BillingFlow() {
                     onClick={() => setPaymentMethod(p)}
                     className={`flex items-center gap-3 rounded-lg border-2 p-3 text-left transition-colors ${
                       isSelected
-                        ? 'border-[var(--accent)] bg-[var(--accent)]/[0.08]'
+                        ? 'border-stone-400 bg-stone-400/[0.08]'
                         : 'border-white/[0.06] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.04]'
                     }`}
                   >

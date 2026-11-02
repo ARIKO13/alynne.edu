@@ -236,7 +236,7 @@ export function ModulPanel() {
               {moduleData.kegiatanPembelajaran.map((kg, i) => (
                 <div key={i} className="rounded-lg bg-[#161412] border border-white/[0.06] p-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="flex items-center justify-center h-5 w-5 rounded bg-[var(--accent)]/10 text-[var(--accent-soft)] text-[10px] font-bold">{i + 1}</span>
+                    <span className="flex items-center justify-center h-5 w-5 rounded bg-stone-400/10 text-[var(--accent-soft)] text-[10px] font-bold">{i + 1}</span>
                     <h3 className="text-xs font-semibold text-stone-200">Kegiatan {i + 1}: {kg.title}</h3>
                   </div>
                   <div className="space-y-1 ml-7">

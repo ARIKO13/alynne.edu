@@ -1106,7 +1106,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                 className={cn(
                   'w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs transition-colors text-left',
                   activeChapterId === ch.id
-                    ? 'bg-[var(--accent)]/10 text-[var(--accent-soft)]'
+                    ? 'bg-stone-400/10 text-[var(--accent-soft)]'
                     : 'text-stone-400 hover:bg-white/[0.04]'
                 )}
               >
@@ -1160,7 +1160,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               }}
               variant="outline"
               size="sm"
-              className="w-full text-[10px] border-orange-500/20 text-orange-400 hover:bg-orange-500/10"
+              className="w-full text-[10px] border-stone-400/20 text-stone-400 hover:bg-stone-400/10"
               disabled={Object.values(quizzes).flat().length === 0}
             >
               <Swords className="h-3 w-3 mr-1" />
@@ -1322,7 +1322,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           <div className="p-6 max-w-3xl mx-auto space-y-4">
             {/* Chapter title  -  v19: include emoji */}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[var(--accent)]/10 flex items-center justify-center text-base font-bold text-[var(--accent-soft)]">
+              <div className="w-10 h-10 rounded-full bg-stone-400/10 flex items-center justify-center text-base font-bold text-[var(--accent-soft)]">
                 {activeChapter.id}
               </div>
               <div className="flex-1">
@@ -1339,7 +1339,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
 
             {/* Tujuan */}
             {activeChapter.tujuan && (
-              <div className="rounded-lg border border-orange-700/10 bg-orange-700/[0.02] p-3">
+              <div className="rounded-lg border border-stone-500/10 bg-stone-500/[0.02] p-3">
                 <p className="text-[11px] text-stone-500 mb-1">Tujuan</p>
                 <p className="text-xs text-stone-400 leading-relaxed">{activeChapter.tujuan}</p>
               </div>
@@ -1554,7 +1554,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                                   : showWrong
                                   ? 'border-red-500/50 bg-red-500/10 text-red-400'
                                   : isSelected
-                                  ? 'border-[var(--accent)]/50 bg-[var(--accent)]/10 text-[var(--accent-soft)]'
+                                  ? 'border-stone-400 bg-stone-400/10 text-[var(--accent-soft)]'
                                   : 'border-white/[0.06] text-stone-400 hover:border-white/[0.15] hover:bg-white/[0.04]'
                               )}
                             >
@@ -1605,7 +1605,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
               <div className={cn(
                 'inline-flex items-center justify-center w-48 h-48 rounded-full border-4 transition-colors',
                 isRunning
-                  ? 'border-[var(--accent)] bg-[var(--accent)]/[0.05]'
+                  ? 'border-stone-400 bg-stone-400/[0.05]'
                   : 'border-white/[0.06] bg-white/[0.02]'
               )}>
                 <div>
@@ -1737,7 +1737,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                         className={cn(
                           'rounded-md border px-1.5 py-1.5 text-center transition-colors',
                           studyFocusVisionMode === 'akurat'
-                            ? 'border-orange-400/60 bg-orange-700/10'
+                            ? 'border-stone-400 bg-stone-500/10'
                             : 'border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05]'
                         )}
                       >
@@ -1774,7 +1774,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                       <span className="text-stone-500">Focus Score</span>
                       <span className={cn(
                         'font-bold',
-                        focusScore >= 70 ? 'text-green-400' : focusScore >= 40 ? 'text-amber-400' : focusScore >= 15 ? 'text-orange-400' : 'text-red-400'
+                        focusScore >= 70 ? 'text-green-400' : focusScore >= 40 ? 'text-amber-400' : focusScore >= 15 ? 'text-stone-400' : 'text-red-400'
                       )}>
                         {focusScore}%
                       </span>
@@ -1797,7 +1797,7 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
                         'font-medium',
                         focusScore >= 70 ? 'text-green-400'
                           : focusScore >= 40 ? 'text-amber-400'
-                          : focusScore >= 15 ? 'text-orange-400'
+                          : focusScore >= 15 ? 'text-stone-400'
                           : 'text-stone-500'
                       )}>
                         {focusScore >= 70 ? 'Fokus ✓'
@@ -2033,7 +2033,7 @@ function MindmapTreeNode({
         )}
         <span className={colorClass}>{node.label}</span>
         {level === 0 && (
-          <Badge variant="outline" className="ml-2 text-[8px] border-[var(--accent)]/30 text-[var(--accent-soft)]">
+          <Badge variant="outline" className="ml-2 text-[8px] border-stone-400/30 text-[var(--accent-soft)]">
             AI Generated
           </Badge>
         )}

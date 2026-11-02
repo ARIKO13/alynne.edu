@@ -262,7 +262,7 @@ export function SmartOcrSolver({ initialImage }: SmartOcrSolverProps) {
             <span className="text-sm font-medium text-stone-300">
               Solusi Matematika ({solutions.length})
             </span>
-            <Badge variant="outline" className="text-[10px] border-[var(--accent)]/30 text-[var(--accent-soft)] ml-auto">
+            <Badge variant="outline" className="text-[10px] border-stone-400/30 text-[var(--accent-soft)] ml-auto">
               <Sparkles className="h-3 w-3 mr-1" />
               AI Solved
             </Badge>
@@ -270,7 +270,7 @@ export function SmartOcrSolver({ initialImage }: SmartOcrSolverProps) {
           {solutions.map((sol, i) => (
             <div
               key={i}
-              className="rounded-lg border border-[var(--accent)]/20 bg-[var(--accent)]/[0.05] p-4 space-y-2"
+              className="rounded-lg border border-stone-400/20 bg-stone-400/[0.05] p-4 space-y-2"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">

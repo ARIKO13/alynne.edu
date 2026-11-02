@@ -162,7 +162,7 @@ export default function App({ onBackToLanding }: AppProps) {
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0D0C0A]">
-        <div className="animate-spin h-8 w-8 border-2 border-[var(--accent)] border-t-transparent rounded-full" />
+        <div className="animate-spin h-8 w-8 border-2 border-stone-400 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -282,7 +282,7 @@ export default function App({ onBackToLanding }: AppProps) {
                 variant="outline"
                 className={cn('gap-1.5 text-[11px] animate-pulse hidden sm:flex cursor-pointer',
                   sttSource === 'webspeech' ? 'border-red-500/30 text-red-400 bg-red-500/10'
-                    : sttSource === 'screen-capture' ? 'border-orange-700/30 text-[var(--accent-soft)] bg-orange-700/10'
+                    : sttSource === 'screen-capture' ? 'border-stone-500/30 text-[var(--accent-soft)] bg-stone-500/10'
                     : 'border-amber-500/30 text-amber-400 bg-amber-500/10'
                 )}
                 onClick={() => { setActiveTab('stt'); setSidebarOpen(false); }}
@@ -328,7 +328,7 @@ export default function App({ onBackToLanding }: AppProps) {
               <div className="flex items-center gap-2 hidden sm:flex">
                 <span className="text-sm text-stone-300">{String(user?.name || 'Player')}</span>
                 {userIsAdmin && (
-                  <Badge className="bg-[var(--accent)]/20 text-[var(--accent-soft)] border-[var(--accent)]/30 text-[9px] px-1.5 py-0">
+                  <Badge className="bg-stone-400/20 text-[var(--accent-soft)] border-stone-400/30 text-[9px] px-1.5 py-0">
                     Admin
                   </Badge>
                 )}

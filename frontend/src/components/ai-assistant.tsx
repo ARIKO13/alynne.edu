@@ -18,12 +18,12 @@ import { indexTranscript, getRAGContext } from '@/lib/rag';
 
 const PROVIDER_COLORS: Record<string, string> = {
   claude: 'border-stone-500/30 text-stone-400',
-  gemini: 'border-orange-700/30 text-[var(--accent-soft)]',
-  deepseek: 'border-[var(--accent)]/30 text-[var(--accent-soft)]',
+  gemini: 'border-stone-500/30 text-[var(--accent-soft)]',
+  deepseek: 'border-stone-400/30 text-[var(--accent-soft)]',
   nvidia: 'border-emerald-500/30 text-emerald-400',
   minimax: 'border-pink-500/30 text-pink-400',
   openai: 'border-green-500/30 text-green-400',
-  xai: 'border-orange-500/30 text-orange-300',
+  xai: 'border-stone-400/30 text-stone-300',
   zhipu: 'border-cyan-500/30 text-cyan-400',
   other: 'border-stone-500/30 text-stone-400',
 };
@@ -361,7 +361,7 @@ export function AIAssistant() {
             {aiMessages.map((msg) => (
               <div key={msg.id} className={cn('flex gap-2', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
                 {msg.role === 'assistant' && (
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent)]/10">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-stone-400/10">
                     <Bot className="h-3.5 w-3.5 text-[var(--accent-soft)]" />
                   </div>
                 )}
@@ -406,7 +406,7 @@ export function AIAssistant() {
             ))}
             {isAiLoading && (
               <div className="flex gap-2">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent)]/10">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-stone-400/10">
                   <Bot className="h-3.5 w-3.5 text-[var(--accent-soft)]" />
                 </div>
                 <div className="rounded-lg bg-white/[0.06] border border-white/[0.06] px-3.5 py-2.5">

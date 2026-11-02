@@ -175,8 +175,8 @@ export function DocumentUpload({ onText, disabled }: DocumentUploadProps) {
         className={cn(
           "rounded-lg border border-dashed p-4 cursor-pointer transition-colors",
           dragOver
-            ? "border-orange-400/50 bg-orange-700/[0.06]"
-            : "border-white/[0.08] bg-white/[0.02] hover:border-orange-400/30 hover:bg-orange-700/[0.03]",
+            ? "border-stone-400 bg-stone-500/[0.06]"
+            : "border-white/[0.08] bg-white/[0.02] hover:border-stone-400/30 hover:bg-stone-500/[0.03]",
           (disabled || loading) && "opacity-50 cursor-not-allowed"
         )}
       >
@@ -222,7 +222,7 @@ export function DocumentUpload({ onText, disabled }: DocumentUploadProps) {
           onClick={convert}
           size="sm"
           disabled={disabled || loading || !!error}
-          className="w-full bg-orange-700/15 text-[var(--accent-soft)] hover:bg-orange-700/25 border-orange-700/20"
+          className="w-full bg-stone-500/15 text-[var(--accent-soft)] hover:bg-stone-500/25 border-stone-500/20"
         >
           {loading ? (
             <>

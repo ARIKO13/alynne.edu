@@ -40,7 +40,7 @@ export default function Root() {
   if (!mounted) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0D0C0A]">
-        <div className="animate-spin h-8 w-8 border-2 border-[var(--accent)] border-t-transparent rounded-full" />
+        <div className="animate-spin h-8 w-8 border-2 border-stone-400 border-t-transparent rounded-full" />
       </div>
     );
   }

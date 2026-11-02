@@ -209,7 +209,7 @@ TRANSCRIPT: ${transcript.substring(0, 1000)}`;
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-[var(--accent)]/10 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full bg-stone-400/10 flex items-center justify-center">
             <Bot className="h-4 w-4 text-[var(--accent-soft)]" />
           </div>
           <div>
@@ -253,7 +253,7 @@ TRANSCRIPT: ${transcript.substring(0, 1000)}`;
             className={cn('flex gap-2', msg.role === 'user' ? 'justify-end' : 'justify-start')}
           >
             {msg.role === 'assistant' && (
-              <div className="w-6 h-6 rounded-full bg-[var(--accent)]/10 flex items-center justify-center shrink-0">
+              <div className="w-6 h-6 rounded-full bg-stone-400/10 flex items-center justify-center shrink-0">
                 <Bot className="h-3 w-3 text-[var(--accent-soft)]" />
               </div>
             )}
@@ -284,7 +284,7 @@ TRANSCRIPT: ${transcript.substring(0, 1000)}`;
         ))}
         {isThinking && (
           <div className="flex gap-2">
-            <div className="w-6 h-6 rounded-full bg-[var(--accent)]/10 flex items-center justify-center shrink-0">
+            <div className="w-6 h-6 rounded-full bg-stone-400/10 flex items-center justify-center shrink-0">
               <Bot className="h-3 w-3 text-[var(--accent-soft)]" />
             </div>
             <div className="rounded-lg px-3 py-2 bg-white/[0.04] text-stone-400 text-sm">

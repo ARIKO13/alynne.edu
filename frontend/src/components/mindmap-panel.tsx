@@ -26,7 +26,7 @@ interface MindMapResult {
 // --- Color Palette (Neural Drift) ---
 
 const COLORS = [
-  { fill: '#D9A87E', bg: 'rgba(183,148,246,0.18)', border: '#D9A87E', text: '#fff' },
+  { fill: '#A8A29E', bg: 'rgba(183,148,246,0.18)', border: '#A8A29E', text: '#fff' },
   { fill: '#F687B3', bg: 'rgba(246,135,179,0.18)', border: '#F687B3', text: '#fff' },
   { fill: '#60A5FA', bg: 'rgba(96,165,250,0.18)', border: '#60A5FA', text: '#fff' },
   { fill: '#34D399', bg: 'rgba(52,211,153,0.18)', border: '#34D399', text: '#fff' },
@@ -439,7 +439,7 @@ export function MindMapPanel() {
           <div className="flex items-center justify-center gap-2 mb-5">
             <button onClick={() => setInputMode('auto')}
               className={cn('px-4 py-2 rounded-lg text-xs font-medium transition-colors flex items-center gap-2',
-                inputMode === 'auto' ? 'bg-[#D9A87E]/15 text-[#D9A87E] border border-[#D9A87E]/30' : 'bg-white/[0.03] text-stone-500 border border-white/[0.06] hover:bg-white/[0.05]')}>
+                inputMode === 'auto' ? 'bg-[#A8A29E]/15 text-[#A8A29E] border border-[#A8A29E]/30' : 'bg-white/[0.03] text-stone-500 border border-white/[0.06] hover:bg-white/[0.05]')}>
               <Mic className="h-3.5 w-3.5" /> Auto (STT / Upload)
             </button>
             <button onClick={() => setInputMode('manual')}
@@ -451,7 +451,7 @@ export function MindMapPanel() {
           {inputMode === 'auto' ? (
             <div className="flex items-center justify-center gap-5 mb-6">
               <div className="flex items-center gap-2 text-[11px] text-stone-500">
-                <Mic className="h-3.5 w-3.5 text-[#D9A87E]" />
+                <Mic className="h-3.5 w-3.5 text-[#A8A29E]" />
                 <span>STT: {hasTranscript ? `${transcript.length} chars` : 'kosong'}</span>
               </div>
               <div className="flex items-center gap-2 text-[11px] text-stone-500">
@@ -463,7 +463,7 @@ export function MindMapPanel() {
             <div className="mb-6 max-w-lg mx-auto">
               <textarea value={manualText} onChange={e => setManualText(e.target.value)}
                 placeholder={"Paste materi pendukung di sini...\n\nContoh:\n- Catatan kuliah\n- Ringkasan bab dari textbook\n- Point-point slide perkuliahan"}
-                className="w-full h-40 bg-white/[0.03] border border-white/[0.08] rounded-lg p-4 text-sm text-stone-300 placeholder:text-stone-600 resize-none focus:outline-none focus:border-[#D9A87E]/40 focus:ring-1 focus:ring-[#D9A87E]/20 transition-colors" />
+                className="w-full h-40 bg-white/[0.03] border border-white/[0.08] rounded-lg p-4 text-sm text-stone-300 placeholder:text-stone-600 resize-none focus:outline-none focus:border-[#A8A29E]/40 focus:ring-1 focus:ring-[#A8A29E]/20 transition-colors" />
               <div className="flex items-center justify-between mt-1.5">
                 <span className="text-[10px] text-stone-600">{manualText.trim().length < 30 ? 'Minimal 30 karakter' : `${manualText.length} chars - siap`}</span>
                 {manualText && <button onClick={() => setManualText('')} className="text-[10px] text-stone-600 hover:text-red-400">Hapus</button>}
@@ -471,7 +471,7 @@ export function MindMapPanel() {
             </div>
           )}
           <Button onClick={() => generateMap()} disabled={inputMode === 'auto' ? (!hasTranscript && !hasMaterials) : !hasManual} size="lg"
-            className="bg-gradient-to-r from-[#D9A87E] to-[#F687B3] text-white hover:opacity-90 gap-2 disabled:opacity-40">
+            className="bg-[#C2410C] hover:bg-[#9A3412] text-white gap-2 disabled:opacity-40">
             <Sparkles className="h-4 w-4" /> Generate Mind Map (AI)
           </Button>
         </div>
@@ -480,7 +480,7 @@ export function MindMapPanel() {
       {/* Generating */}
       {generating && (
         <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] p-12 text-center">
-          <Loader2 className="h-10 w-10 text-[#D9A87E] animate-spin mx-auto mb-4" />
+          <Loader2 className="h-10 w-10 text-[#A8A29E] animate-spin mx-auto mb-4" />
           <p className="text-sm text-stone-400">AI sedang menganalisa dan membangun mind map...</p>
           <p className="text-[10px] text-stone-600 mt-2">Sumber: {sourceLabel}</p>
         </div>
@@ -499,7 +499,7 @@ export function MindMapPanel() {
           </div>
           <div className="flex items-center gap-2">
             <input value={mapTitle} onChange={e => setMapTitle(e.target.value)}
-              className="bg-transparent text-xs text-stone-400 border-b border-transparent hover:border-white/[0.1] focus:border-[#D9A87E]/40 focus:outline-none px-1 py-0.5 w-40" />
+              className="bg-transparent text-xs text-stone-400 border-b border-transparent hover:border-white/[0.1] focus:border-[#A8A29E]/40 focus:outline-none px-1 py-0.5 w-40" />
             <Button onClick={() => generateMap(sourceText)} variant="ghost" size="sm" className="text-stone-400 hover:text-white h-8 w-8 p-0" title="Regenerate">
               <RotateCcw className="h-4 w-4" />
             </Button>

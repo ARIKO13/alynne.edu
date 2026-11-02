@@ -169,7 +169,7 @@ export default function SettingsPanel() {
             <div className="space-y-2">
               {storageInfo?.models?.map((model: any) => (
                 <div key={model.id} className="flex items-center gap-3 p-3 rounded-lg border border-white/[0.06] bg-white/[0.02]">
-                  <div className="h-9 w-9 rounded-lg bg-[var(--accent)]/10 flex items-center justify-center shrink-0">
+                  <div className="h-9 w-9 rounded-lg bg-stone-400/10 flex items-center justify-center shrink-0">
                     <Cpu className="h-4 w-4 text-[var(--accent-soft)]" />
                   </div>
                   <div className="flex-1 min-w-0">
