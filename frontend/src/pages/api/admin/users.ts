@@ -54,7 +54,8 @@ export const GET: APIRoute = async ({ url, request }) => {
 
     const [countResult, dataResult] = await Promise.all([
       d1.query<{ c: number }>(countSQL, params),
-      d1.query<Record<string, unknown>>(dataSQL, [...params, String(limit), String(offset)]),
+      // LIMIT/OFFSET dikirim sebagai angka (integer), bukan string
+      d1.query<Record<string, unknown>>(dataSQL, [...params, limit, offset]),
     ]);
 
     const users = dataResult.map(u => ({

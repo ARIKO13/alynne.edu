@@ -29,20 +29,29 @@ if (!TURSO_URL) {
   console.warn('[db] TURSO_DATABASE_URL tidak diset — semua query DB akan gagal');
 }
 
-// Argumen dikirim dalam format typed Hrana (Turso v2).
+// Argumen dikirim dalam format typed Hrana (Turso v2):
+// tipe: null | integer | float | text | blob
+// Catatan protokol Hrana: nilai integer DI-ENCODE SEBAGAI STRING desimal
+// (menghindari precision loss di JS) — makanya String(v).
 function toHranaArg(v: unknown): Record<string, unknown> {
   if (v === null || v === undefined) return { type: 'null', value: null };
   if (typeof v === 'number') {
-    return Number.isInteger(v) ? { type: 'int', value: v } : { type: 'float', value: v };
+    return Number.isInteger(v) ? { type: 'integer', value: String(v) } : { type: 'float', value: v };
   }
-  if (typeof v === 'boolean') return { type: 'int', value: v ? 1 : 0 };
-  return { type: 'str', value: String(v) };
+  if (typeof v === 'boolean') return { type: 'integer', value: v ? '1' : '0' };
+  return { type: 'text', value: String(v) };
 }
 
-// Nilai balikan bisa berupa typed object {type,value} (server lama/baru) atau JSON biasa.
+// Nilai balikan bisa berupa typed object {type,value} atau JSON biasa.
+// integer kembali sebagai string desimal → dinormalkan ke Number supaya
+// konsumen route (counts, dsb.) dapat angka, bukan string.
 function unwrapVal(v: unknown): unknown {
   if (v && typeof v === 'object' && 'value' in (v as any) && 'type' in (v as any)) {
-    return (v as any).value;
+    const t = (v as any).type;
+    const val = (v as any).value;
+    if (t === 'integer') return Number(val);
+    if (t === 'float') return Number(val);
+    return val;
   }
   return v;
 }
