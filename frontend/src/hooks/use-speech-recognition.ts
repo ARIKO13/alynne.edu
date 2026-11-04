@@ -17,6 +17,76 @@ const LIVE_ENHANCE_INTERVAL = 30000;
 const WHISPER_BACKEND = '/api/whisper/transcribe';
 // Screen capture: audio-only transcription via Groq Whisper
 
+// ── Device-first helpers: transkripsi di perangkat user, server cuma fallback ──
+// Decode blob audio (webm/mp4) → Float32 mono 16kHz, siap untuk whisper client.
+async function blobToFloat32Mono(blob: Blob): Promise<Float32Array> {
+  const arrayBuffer = await blob.arrayBuffer();
+  const ctx = new AudioContext({ sampleRate: 16000 });
+  try {
+    const decoded = await ctx.decodeAudioData(arrayBuffer);
+    let mono: Float32Array;
+    if (decoded.numberOfChannels > 1) {
+      mono = new Float32Array(decoded.length);
+      for (let ch = 0; ch < decoded.numberOfChannels; ch++) {
+        const data = decoded.getChannelData(ch);
+        for (let i = 0; i < data.length; i++) mono[i] += data[i] / decoded.numberOfChannels;
+      }
+    } else {
+      mono = new Float32Array(decoded.getChannelData(0));
+    }
+    if (decoded.sampleRate === 16000) return mono;
+    const ratio = decoded.sampleRate / 16000;
+    const out = new Float32Array(Math.floor(mono.length / ratio));
+    for (let i = 0; i < out.length; i++) {
+      const si = i * ratio, f = Math.floor(si), fr = si - f;
+      const a = mono[f], b = mono[Math.min(f + 1, mono.length - 1)];
+      out[i] = a + (b - a) * fr;
+    }
+    return out;
+  } finally {
+    ctx.close();
+  }
+}
+
+/**
+ * Transkripsi di perangkat user (browser, via whisper-fugood worker).
+ * - autoLoad=false: hanya pakai model yang SUDAH ada di perangkat
+ *   (loaded di RAM atau tersimpan di cache) — tanpa download kejutan.
+ * - autoLoad=true: boleh auto-download model tersimpan, atau tiny (±41MB)
+ *   sekali saja kalau user belum pernah pilih model.
+ * Return null kalau perangkat tidak bisa → caller fallback ke server.
+ */
+async function transcribeOnDevice(
+  blob: Blob,
+  opts?: { autoLoad?: boolean; log?: (t: 'info' | 'success' | 'error', m: string) => void }
+): Promise<string | null> {
+  try {
+    if (typeof Worker === 'undefined' || typeof AudioContext === 'undefined') return null;
+    const fg = await import('@/lib/whisper-fugood');
+    if (!fg.isModelLoaded()) {
+      // Baca localStorage langsung (bukan getSavedModelId yang default 'small'
+      // — kita tak mau otomatis mengunduh 250MB tanpa user pilih).
+      const saved = typeof localStorage !== 'undefined'
+        ? localStorage.getItem('whisper-fugood-model')
+        : null;
+      const want = saved || (opts?.autoLoad ? 'tiny' : null);
+      if (!want) return null;
+      const cached = await fg.isModelCached(want);
+      if (!cached && !opts?.autoLoad) return null;
+      if (!cached && opts?.autoLoad) {
+        opts.log?.('info', 'Mengunduh model STT kecil (~41MB) sekali saja ke perangkatmu — setelah ini transkripsi gratis jalan di HP/laptopmu sendiri tanpa server.');
+      }
+      await fg.loadModel(want);
+    }
+    const audio = await blobToFloat32Mono(blob);
+    const { text } = await fg.transcribe(audio, 'id');
+    return text?.trim() || null;
+  } catch (e) {
+    console.warn('[STT] Transkripsi perangkat gagal, pakai fallback:', e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
 interface SpeechRecognitionEvent {
   resultIndex: number;
   results: SpeechRecognitionResultList;
@@ -522,37 +592,48 @@ export function useSpeechRecognition() {
     if (whisperChunksRef.current.length === 0) return false;
     isWhisperProcessingRef.current = true;
     setIsWhisperProcessing(true);
-    addLog('info', 'Mengirim audio ke faster-whisper untuk presisi...');
+    addLog('info', 'Tingkatkan presisi transkrip — proses di perangkatmu dulu, server hanya cadangan...');
 
     try {
       const blob = new Blob(whisperChunksRef.current, { type: 'audio/webm' });
-      const formData = new FormData();
-      formData.append('file', blob, 'recording.webm');
-      formData.append('language', 'id');
 
-      console.log('[STT-Whisper] Sending to backend. Chunks:', whisperChunksRef.current.length, 'Blob size:', blob.size);
-      addLog('info', `Mengirim ${blob.size > 0 ? Math.round(blob.size/1024) + 'KB' : 'empty'} audio ke whisper...`);
+      console.log('[STT-Whisper] Chunks:', whisperChunksRef.current.length, 'Blob size:', blob.size);
 
-      const res = await fetch(WHISPER_BACKEND, {
-        method: 'POST',
-        body: formData,
-      });
-      console.log('[STT-Whisper] Response status:', res.status);
-      if (!res.ok) {
-        const errText = await res.text().catch(() => '');
-        console.error('[STT-Whisper] Error response:', errText);
-        throw new Error(`${res.status}: ${errText.slice(0, 100)}`);
+      // ── Tier 1: proses di perangkat user (whisper offline di browser) ──
+      // Gratis, pakai IP/koneksi user sendiri, server tidak disentuh sama sekali.
+      const devText = await transcribeOnDevice(blob, { autoLoad: true, log: addLog });
+      let text = '';
+      if (devText) {
+        text = devText;
+        addLog('success', `Whisper perangkatmu (offline): ${text.length} karakter — server tidak dipakai.`);
+      } else {
+        // ── Tier 2 (fallback): server faster-whisper ──
+        addLog('info', `Perangkat belum siap — kirim ${blob.size > 0 ? Math.round(blob.size/1024) + 'KB' : 'empty'} audio ke server...`);
+        const formData = new FormData();
+        formData.append('file', blob, 'recording.webm');
+        formData.append('language', 'id');
+
+        const res = await fetch(WHISPER_BACKEND, {
+          method: 'POST',
+          body: formData,
+        });
+        console.log('[STT-Whisper] Response status:', res.status);
+        if (!res.ok) {
+          const errText = await res.text().catch(() => '');
+          console.error('[STT-Whisper] Error response:', errText);
+          throw new Error(`${res.status}: ${errText.slice(0, 100)}`);
+        }
+        const data = await res.json();
+        console.log('[STT-Whisper] Response data:', { text_len: data.text?.length, processing_time: data.processing_time, chunks: data.chunk_count });
+        text = (data.text || '').trim();
+
+        if (!text) {
+          addLog('info', `faster-whisper: tidak ada teks terdeteksi (duration: ${data.duration}s, processing: ${data.processing_time}s)`);
+          return false;
+        }
+
+        addLog('success', `faster-whisper: ${text.length} chars in ${data.processing_time}s${data.chunked ? ` (${data.chunk_count} chunks)` : ''}`);
       }
-      const data = await res.json();
-      console.log('[STT-Whisper] Response data:', { text_len: data.text?.length, processing_time: data.processing_time, chunks: data.chunk_count });
-      const text = (data.text || '').trim();
-
-      if (!text) {
-        addLog('info', `faster-whisper: tidak ada teks terdeteksi (duration: ${data.duration}s, processing: ${data.processing_time}s)`);
-        return false;
-      }
-
-      addLog('success', `faster-whisper: ${text.length} chars in ${data.processing_time}s${data.chunked ? ` (${data.chunk_count} chunks)` : ''}`);
 
       // Replace all transcript entries with whisper result
       const sentences = splitIntoSentences(text);
@@ -821,7 +902,7 @@ export function useSpeechRecognition() {
     mediaRecorder.start(GROQ_CHUNK_INTERVAL);
     setSttSource(source);
     startVisualizer(stream);
-    addLog('info', source === 'screen-capture' ? 'Merekam system audio (screen)...' : 'Merekam via mikrofon (Groq Whisper)...');
+    addLog('info', source === 'screen-capture' ? 'Merekam system audio (screen)...' : 'Merekam via mikrofon (offline-first)...');
     addLog('info', `MediaRecorder mimeType: ${mimeType}, timeslice: ${GROQ_CHUNK_INTERVAL}ms`);
     addLog('info', 'VAD aktif: hanya mengirim audio saat ada suara (hemat quota).');
     addLog('success', 'Audio aktif! Teks akan muncul otomatis saat ada suara terdeteksi.');
@@ -838,7 +919,12 @@ export function useSpeechRecognition() {
 
       let text: string | null = null;
 
-      if (source === 'screen-capture' || groqRateLimited) {
+      // ── Tier 0: proses di perangkat user kalau model sudah tersimpan di browser ──
+      // Tanpa download otomatis di mode live — biar tidak menghabiskan kuota mendadak.
+      text = await transcribeOnDevice(blob);
+      if (text) {
+        addLog('success', `Chunk #${chunkCountRef.current} diproses di perangkatmu (offline, tanpa server).`);
+      } else if (source === 'screen-capture' || groqRateLimited) {
         // Screen mode OR Groq was rate-limited → use whisper-local directly
         text = await sendAudioToWhisperLocal(blob, chunkCountRef.current);
       } else {
@@ -1589,7 +1675,10 @@ export function useSpeechRecognition() {
       setSttStatus('processing');
       const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
       audioChunksRef.current = [];
-      const text = await sendAudioToGroq(blob, chunkCountRef.current++);
+      const leftNum = chunkCountRef.current++;
+      // Perangkat dulu, server hanya fallback
+      const devText = await transcribeOnDevice(blob);
+      const text = devText ?? await sendAudioToGroq(blob, leftNum);
       if (text?.trim()) appendTranscript(text.trim());
       setSttStatus('idle');
     }
