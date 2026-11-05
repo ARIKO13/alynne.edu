@@ -632,8 +632,9 @@ export function useSpeechRecognition() {
         if (userKeyText) {
           text = userKeyText;
         } else {
-          // ── Tier 3 (fallback terakhir): server faster-whisper ──
-          addLog('info', `Perangkat belum siap — kirim ${blob.size > 0 ? Math.round(blob.size/1024) + 'KB' : 'empty'} audio ke server...`);
+          // ── Tier 3 (fallback terakhir): server FreeAudioToText (ada antrean, IP server yang dinilai) ──
+          addLog('info', `Perangkat belum siap — kirim ${blob.size > 0 ? Math.round(blob.size/1024) + 'KB' : 'empty'} audio ke server (jalur gratis, ada antrean).`);
+          addLog('info', 'Tips: tanpa antre pakai model offline (ModelSelector) atau key Deepgram sendiri di Pengaturan — dua-duanya jalan di IP-mu.');
         const formData = new FormData();
         formData.append('file', blob, 'recording.webm');
         formData.append('language', 'id');
