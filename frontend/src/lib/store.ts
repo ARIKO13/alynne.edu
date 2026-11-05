@@ -32,6 +32,7 @@ export interface UploadedMaterial {
 
 export interface ApiKeys {
   groq: string;
+  deepgram: string;
   gemini: string;
   cloudflare: string;
   cloudflareAccountId: string;
@@ -161,7 +162,7 @@ export const useAppStore = create<AppState>()(
       setUser: (user) => set({ user }),
 
       // API Keys
-      apiKeys: { groq: '', gemini: '', cloudflare: '', cloudflareAccountId: '' },
+      apiKeys: { groq: '', deepgram: '', gemini: '', cloudflare: '', cloudflareAccountId: '' },
       setApiKeys: (keys) => set((s) => ({ apiKeys: { ...s.apiKeys, ...keys } })),
 
       // STT

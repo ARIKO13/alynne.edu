@@ -87,6 +87,26 @@ async function transcribeOnDevice(
   }
 }
 
+/**
+ * Tier kunci pribadi user: STT online LANGSUNG dari browser user ke Deepgram.
+ * IP yang terlihat = IP user, kuota = akun gratis user sendiri — server Alynne
+ * hanya menerima transkrip teks (kecil), bukan audio. Return null kalau user
+ * tidak punya key / gagal → caller lanjut ke fallback server.
+ */
+async function transcribeWithUserKey(
+  blob: Blob,
+  log: (t: 'info' | 'success' | 'error', m: string) => void
+): Promise<string | null> {
+  const key = useAppStore.getState().apiKeys?.deepgram?.trim();
+  if (!key) return null;
+  const { transcribeDeepgramDirect } = await import('@/lib/deepgram-direct');
+  const text = await transcribeDeepgramDirect(blob, key, log);
+  if (text) {
+    log('success', `Deepgram langsung dari browsermu (IP & kuota milikmu): ${text.length} karakter — server Alynne tidak menerima audio.`);
+  }
+  return text;
+}
+
 interface SpeechRecognitionEvent {
   resultIndex: number;
   results: SpeechRecognitionResultList;
@@ -607,8 +627,13 @@ export function useSpeechRecognition() {
         text = devText;
         addLog('success', `Whisper perangkatmu (offline): ${text.length} karakter — server tidak dipakai.`);
       } else {
-        // ── Tier 2 (fallback): server faster-whisper ──
-        addLog('info', `Perangkat belum siap — kirim ${blob.size > 0 ? Math.round(blob.size/1024) + 'KB' : 'empty'} audio ke server...`);
+        // ── Tier 2: kunci pribadi user — Deepgram langsung dari browser ──
+        const userKeyText = await transcribeWithUserKey(blob, addLog);
+        if (userKeyText) {
+          text = userKeyText;
+        } else {
+          // ── Tier 3 (fallback terakhir): server faster-whisper ──
+          addLog('info', `Perangkat belum siap — kirim ${blob.size > 0 ? Math.round(blob.size/1024) + 'KB' : 'empty'} audio ke server...`);
         const formData = new FormData();
         formData.append('file', blob, 'recording.webm');
         formData.append('language', 'id');
@@ -633,6 +658,7 @@ export function useSpeechRecognition() {
         }
 
         addLog('success', `faster-whisper: ${text.length} chars in ${data.processing_time}s${data.chunked ? ` (${data.chunk_count} chunks)` : ''}`);
+        }
       }
 
       // Replace all transcript entries with whisper result
@@ -924,17 +950,23 @@ export function useSpeechRecognition() {
       text = await transcribeOnDevice(blob);
       if (text) {
         addLog('success', `Chunk #${chunkCountRef.current} diproses di perangkatmu (offline, tanpa server).`);
-      } else if (source === 'screen-capture' || groqRateLimited) {
-        // Screen mode OR Groq was rate-limited → use whisper-local directly
-        text = await sendAudioToWhisperLocal(blob, chunkCountRef.current);
       } else {
-        // Try Groq first
-        text = await sendAudioToGroq(blob, chunkCountRef.current);
-        // If Groq returned null (error/rate-limit), fallback to whisper-local
-        if (text === null) {
-          addLog('info', 'Groq rate-limited/error, beralih ke Whisper lokal...');
-          groqRateLimited = true; // switch permanently to avoid repeated failures
+        // ── Tier 1: kunci pribadi user — Deepgram langsung dari browser ──
+        text = await transcribeWithUserKey(blob, addLog);
+      }
+      if (!text) {
+        if (source === 'screen-capture' || groqRateLimited) {
+          // Screen mode OR Groq was rate-limited → use whisper-local directly
           text = await sendAudioToWhisperLocal(blob, chunkCountRef.current);
+        } else {
+          // Try Groq first
+          text = await sendAudioToGroq(blob, chunkCountRef.current);
+          // If Groq returned null (error/rate-limit), fallback to whisper-local
+          if (text === null) {
+            addLog('info', 'Groq rate-limited/error, beralih ke Whisper lokal...');
+            groqRateLimited = true; // switch permanently to avoid repeated failures
+            text = await sendAudioToWhisperLocal(blob, chunkCountRef.current);
+          }
         }
       }
 
@@ -1676,9 +1708,10 @@ export function useSpeechRecognition() {
       const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
       audioChunksRef.current = [];
       const leftNum = chunkCountRef.current++;
-      // Perangkat dulu, server hanya fallback
+      // Perangkat dulu → kunci pribadi user (Deepgram direct) → server
       const devText = await transcribeOnDevice(blob);
-      const text = devText ?? await sendAudioToGroq(blob, leftNum);
+      const userKeyText = devText ?? await transcribeWithUserKey(blob, addLog);
+      const text = userKeyText ?? await sendAudioToGroq(blob, leftNum);
       if (text?.trim()) appendTranscript(text.trim());
       setSttStatus('idle');
     }

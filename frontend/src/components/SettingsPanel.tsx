@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   HardDrive, Cpu, Trash2, AlertTriangle, CheckCircle2, RefreshCw,
-  Database, FolderOpen, Zap, X, Loader2,
+  Database, FolderOpen, Zap, X, Loader2, KeyRound, ExternalLink,
 } from 'lucide-react';
 import {
   getFullStorageInfo,
@@ -12,6 +12,7 @@ import {
   requestPersistentStorage,
   formatBytes,
 } from '@/lib/storage-manager';
+import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
 
 export default function SettingsPanel() {
@@ -20,6 +21,17 @@ export default function SettingsPanel() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [clearingAll, setClearingAll] = useState(false);
   const [showConfirmClear, setShowConfirmClear] = useState(false);
+
+  // API key pribadi user (STT online langsung dari browser — IP user, bukan IP server)
+  const storedApiKeys = useAppStore((s) => s.apiKeys);
+  const setApiKeys = useAppStore((s) => s.setApiKeys);
+  const [deepgramKey, setDeepgramKey] = useState(storedApiKeys.deepgram || '');
+  const [groqKey, setGroqKey] = useState(storedApiKeys.groq || '');
+  const [showSecrets, setShowSecrets] = useState(false);
+  const handleSaveKeys = () => {
+    setApiKeys({ deepgram: deepgramKey.trim(), groq: groqKey.trim() });
+    toast.success('API key tersimpan di device kamu (localStorage) — tidak dikirim ke server Alynne');
+  };
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -192,6 +204,74 @@ export default function SettingsPanel() {
               ))}
             </div>
           )}
+        </div>
+
+        <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] p-5 mb-6">
+          <div className="flex items-center gap-2 mb-2">
+            <KeyRound className="h-4 w-4 text-[var(--accent-soft)]" />
+            <h2 className="text-sm font-medium text-stone-200">STT Online — API Key Pribadi (opsional)</h2>
+          </div>
+          <p className="text-xs text-stone-400 mb-4 leading-relaxed">
+            Isi key di bawah supaya transkripsi online <span className="text-stone-200">jalan langsung dari browser kamu</span>:
+            audio dikirim ke layanan STT pakai <span className="text-stone-200">IP &amp; kuota kamu sendiri</span> — server Alynne
+            tidak menerima audio sama sekali, cuma menerima teks hasilnya untuk disimpan.
+          </p>
+
+          <div className="space-y-3">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-medium text-stone-300">Deepgram API Key <span className="text-stone-500">(direkomendasikan)</span></label>
+                <a
+                  href="https://console.deepgram.com/signup"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-[var(--accent-soft)] hover:underline inline-flex items-center gap-0.5"
+                >
+                  Daftar gratis $200 kredit <ExternalLink className="h-2.5 w-2.5" />
+                </a>
+              </div>
+              <input
+                type={showSecrets ? 'text' : 'password'}
+                value={deepgramKey}
+                onChange={(e) => setDeepgramKey(e.target.value)}
+                placeholder="Tempel key Deepgram di sini"
+                autoComplete="off"
+                className="w-full rounded-lg border border-white/[0.08] bg-white/[0.02] px-3 py-2 text-sm text-stone-200 placeholder:text-stone-600 focus:outline-none focus:border-white/20"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-medium text-stone-300">Groq API Key <span className="text-stone-500">(opsional)</span></label>
+                <a
+                  href="https://console.groq.com/keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-[var(--accent-soft)] hover:underline inline-flex items-center gap-0.5"
+                >
+                  Ambil key gratis <ExternalLink className="h-2.5 w-2.5" />
+                </a>
+              </div>
+              <input
+                type={showSecrets ? 'text' : 'password'}
+                value={groqKey}
+                onChange={(e) => setGroqKey(e.target.value)}
+                placeholder="Tempel key Groq di sini"
+                autoComplete="off"
+                className="w-full rounded-lg border border-white/[0.08] bg-white/[0.02] px-3 py-2 text-sm text-stone-200 placeholder:text-stone-600 focus:outline-none focus:border-white/20"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 pt-1">
+              <Button onClick={handleSaveKeys} size="sm" className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white">
+                Simpan Key
+              </Button>
+              <Button onClick={() => setShowSecrets(!showSecrets)} size="sm" variant="ghost" className="text-stone-400 hover:text-white">
+                {showSecrets ? 'Sembunyikan' : 'Tampilkan'}
+              </Button>
+              <span className="text-[10px] text-stone-500 ml-1">Key disimpan di localStorage device kamu, tidak pernah ke server.</span>
+            </div>
+          </div>
         </div>
 
         <div className="rounded-lg border border-red-500/20 bg-red-500/[0.02] p-5">
