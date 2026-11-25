@@ -7,6 +7,10 @@ import { Scratchpad } from '@/components/Scratchpad';
 import { WeeklyAnalytics } from '@/components/WeeklyAnalytics';
 import { ReferralPanel } from '@/components/ReferralPanel';
 import { FlashcardPanel } from '@/components/FlashcardPanel';
+import { ThreeDExplainer } from '@/components/ThreeDExplainer';
+import { SidangSimulator } from '@/components/SidangSimulator';
+import { CramMode } from '@/components/CramMode';
+import { LabTeks } from '@/components/LabTeks';
 import { SettingsDialog } from '@/components/settings-dialog';
 import { LoginScreen } from '@/components/login-screen';
 import { AdminPanel } from '@/components/admin-panel';
@@ -15,7 +19,7 @@ import { stopSttRecording } from '@/lib/stt-controller';
 import {
   Mic, Bot, Settings, Wifi, Radio, LogOut, MicOff,
   Menu, X, Shield, Sparkles, FolderOpen, StickyNote, TrendingUp, Gift, FileText, Monitor, ArrowLeft, Network, Wand2, Layers,
-  Sun, Moon,
+  Sun, Moon, Box, GraduationCap, Clock, Languages,
 } from 'lucide-react';
 import { isAdmin } from '@/lib/admin';
 import { cn } from '@/lib/utils';
@@ -37,6 +41,10 @@ const TABS: { id: TabId; label: string; icon: typeof Mic; adminOnly?: boolean }[
   { id: 'stats', label: 'Analitik', icon: TrendingUp },
   { id: 'refer', label: 'Referral', icon: Gift },
   { id: 'flash', label: 'Flashcard', icon: Layers },
+  { id: 'lab3d', label: 'Lab 3D', icon: Box },
+  { id: 'sidang', label: 'Simulasi Sidang', icon: GraduationCap },
+  { id: 'sks', label: 'Mode SKS', icon: Clock },
+  { id: 'teks', label: 'Lab Teks', icon: Languages },
   { id: 'admin', label: 'Admin Panel', icon: Shield, adminOnly: true },
 ];
 
@@ -52,6 +60,10 @@ const TAB_TITLES: Record<TabId, string> = {
   stats: 'Analitik Belajar',
   refer: 'Referral',
   flash: 'Flashcard',
+  lab3d: 'Lab 3D: Alat Peraga Interaktif',
+  sidang: 'Simulasi Sidang Skripsi & Ujian Lisan',
+  sks: 'Mode SKS: Sistem Kebut Semalam',
+  teks: 'Lab Teks',
   admin: 'Admin Panel',
 };
 
@@ -116,7 +128,7 @@ export default function App({ onBackToLanding }: AppProps) {
   // 1. On mount: read hash → set activeTab
   // 2. On activeTab change: update hash
   // 3. On hashchange event: update activeTab (untuk back/forward browser nav)
-  const VALID_TAB_IDS = ['stt', 'modul', 'mindmap', 'sharpen', 'admin', 'voice-cmd', 'belajar', 'hub', 'notes', 'stats', 'refer', 'flash'];
+  const VALID_TAB_IDS = ['stt', 'modul', 'mindmap', 'sharpen', 'admin', 'voice-cmd', 'belajar', 'hub', 'notes', 'stats', 'refer', 'flash', 'lab3d', 'sidang', 'sks', 'teks'];
 
   // Initial sync on mount  -  baca hash, set activeTab kalau valid
   useEffect(() => {
@@ -367,6 +379,10 @@ export default function App({ onBackToLanding }: AppProps) {
             {activeTab === 'stats' && <WeeklyAnalytics open={true} onClose={() => setActiveTab('stt')} />}
             {activeTab === 'refer' && <ReferralPanel open={true} onClose={() => setActiveTab('stt')} />}
             {activeTab === 'flash' && <FlashcardPanel open={true} onClose={() => setActiveTab('stt')} chapters={[]} />}
+            {activeTab === 'lab3d' && <ThreeDExplainer open={true} onClose={() => setActiveTab('stt')} />}
+            {activeTab === 'sidang' && <SidangSimulator open={true} onClose={() => setActiveTab('stt')} />}
+            {activeTab === 'sks' && <CramMode open={true} onClose={() => setActiveTab('stt')} />}
+            {activeTab === 'teks' && <LabTeks open={true} onClose={() => setActiveTab('stt')} />}
             {activeTab === 'admin' && userIsAdmin && <AdminPanel />}
           </div>
         </main>

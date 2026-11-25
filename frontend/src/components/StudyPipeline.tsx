@@ -71,6 +71,7 @@ import { VisualisasiPanel } from '@/components/VisualisasiPanel';
 import { preSummarize } from '@/lib/pre-summarize';
 import { runJSPipeline } from '@/lib/js-pipeline';
 import { ExamSimulator } from '@/components/ExamSimulator';
+import { QuickQuizBreak } from '@/components/QuickQuizBreak';
 import {
   detectFace,
   isFaceMeshAvailable,
@@ -139,6 +140,13 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
   const [readChapters, setReadChapters] = useState<Set<number>>(new Set());
   const [quickNote, setQuickNote] = useState('');
   const [examOpen, setExamOpen] = useState(false);
+  // Pomodoro Pintar: dialog 3 soal kilat yang muncul saat timer sesi habis
+  const [quickQuizOpen, setQuickQuizOpen] = useState(false);
+  // snapshot soal MC terbaru utk diakses dari interval timer (hindari stale closure)
+  const mcQuizRef = useRef<QuizQuestion[]>([]);
+  mcQuizRef.current = Object.values(quizzes).flat().filter(
+    (q) => q.type === 'multiple-choice' && Array.isArray(q.options) && q.options.length >= 2
+  );
 
   // v25: Vision mode picker (3 presets). User picks BEFORE session starts.
   //   'ringan' = pixel path only, no ML (default, safe for low-end devices)
@@ -911,6 +919,8 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
         if (prev <= 1) {
           setIsRunning(false);
           updateStreak();
+          // Pomodoro Pintar: 3 soal kilat sebelum istirahat (kalau ada soal MC)
+          if (mcQuizRef.current.length > 0) setQuickQuizOpen(true);
           return 0;
         }
         return prev - 1;
@@ -1199,6 +1209,13 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           open={examOpen}
           onClose={() => setExamOpen(false)}
           chapters={chapters}
+        />
+
+        {/* Pomodoro Pintar: 3 soal kilat sebelum istirahat */}
+        <QuickQuizBreak
+          open={quickQuizOpen}
+          onClose={() => setQuickQuizOpen(false)}
+          questions={Object.values(quizzes).flat()}
         />
       </div>
 

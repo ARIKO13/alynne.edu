@@ -3,7 +3,8 @@ import { persist } from 'zustand/middleware';
 
 export type TabId =
   | 'stt' | 'modul' | 'mindmap' | 'sharpen' | 'admin'
-  | 'voice-cmd' | 'belajar' | 'hub' | 'notes' | 'stats' | 'refer' | 'flash';
+  | 'voice-cmd' | 'belajar' | 'hub' | 'notes' | 'stats' | 'refer' | 'flash'
+  | 'lab3d' | 'sidang' | 'sks' | 'teks';
 
 export interface ChatMessage {
   id: string;

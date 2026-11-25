@@ -2,6 +2,8 @@
 
 Platform AI edukasi all-in-one untuk pelajar, mahasiswa, guru, dan institusi. Speech-to-Text, Modul PDF, Mind Map, AI Assistant, Mode Belajar dengan focus detector, ambient sounds, analytics, dan referral system, semua dalam satu alur kerja terintegrasi.
 
+Rilis ini menambah pilar fitur baru: **Lab 3D** (alat peraga Three.js yang bisa diputar 360° dan dibedah per bagian), **Simulasi Sidang** (dosen penguji AI berbasis suara), **Mode SKS** (saring 30% inti materi + detektor soal pengecoh saat waktu belajar mepet), **Lab Teks** (penerjemah bahasa akademis ke bahasa tongkrongan + korektor esai + audit catatan), dan **Pomodoro Pintar** (3 soal kilat sebelum istirahat).
+
 ## Fitur Utama
 
 ### 1. Speech-to-Text (STT) Hybrid
@@ -29,7 +31,7 @@ STT Result
   -> Mindmap visual (SVG radial graph, bukan text tree)
   -> Kuis interaktif per bab (multiple choice, fill-in-blank)
   -> Mulai Sesi Belajar:
-     - Pomodoro timer (25/5)
+     - Pomodoro timer (25/5) + Pomodoro Pintar: 3 soal kilat sebelum istirahat (QuickQuizBreak)
      - Webcam focus detector (face + gaze tracking)
      - Smart warnings (Level 1: lembut, Level 2: istirahat)
      - Focus score + analytics
@@ -113,6 +115,59 @@ Ajak teman, dapat bonus:
 - Upscale gambar low-res
 - AI enhancement
 
+### 11. Lab 3D: Alat Peraga Interaktif (Three.js)
+
+Mengubah konsep materi menjadi alat peraga 3D ringan yang bisa diputar 360 derajat, di-zoom, dan dibedah bagian-bagiannya (explode view dengan label anotasi). Tab `Lab 3D` (`ThreeDExplainer.tsx`), 3 model parametrik tanpa file aset:
+
+- **Kubus (s = 2)**: 6 sisi terpisah saat dibedah (mirip jaring-jaring), diagonal ruang `d = s√3`, rumus V = s³ dan L = 6s²
+- **Struktur sel hewan**: membran, inti sel, mitokondria, retikulum endoplasma, badan Golgi, ribosom (semua berlabel fungsi)
+- **Molekul**: H2O (bengkok 104,5°, polar), CO2 (linear 180°, rangkap dua, nonpolar), CH4 (tetrahedral 109,5°) — ball-and-stick dengan ikatan yang ikut memanjang saat dibedah
+
+Interaksi: OrbitControls (drag 360°, scroll zoom), auto-rotate opsional, toggle label, reset tampilan. `prefers-reduced-motion` dihormati (explode instan, auto-rotate mati). Label dirender sebagai overlay HTML yang diproyeksikan dari koordinat 3D tiap frame.
+
+### 12. Simulasi Sidang Skripsi & Ujian Lisan
+
+AI berperan sebagai "dosen penguji" untuk menguji argumen dan kesiapan mental sebelum sidang (tab `Simulasi Sidang`, `SidangSimulator.tsx`):
+
+- Setup: judul/topik, bidang, jumlah pertanyaan (5/7/10), gaya penguji (skeptis / netral / membantu)
+- Suara: TTS membacakan pertanyaan (`text-to-speech.ts`), jawaban lewat mikrofon (Web Speech API, id-ID) atau teks
+- Pertanyaan berjenjang: urgensi → teori → metodologi → analisis → pertahanan; penguji meminta klarifikasi spesifik kalau jawaban kabur
+- Evaluasi akhir: skor rubrik 4 aspek (penguasaan materi, ketajaman argumen, kejelasan penyampaian, ketahanan menghadapi tekanan), catatan per pertanyaan, kekuatan, yang harus diperbaiki
+- Anti-halusinasi: penilaian dikunci hanya pada judul/topik dan jawaban yang diberikan
+
+### 13. Mode SKS (Sistem Kebut Semalam) + Detektor Jebakan Soal
+
+Saat waktu belajar mepet (H-1 jam ujian), saring 30% inti materi paling krusial dan prediksi soal pengecoh (tab `Mode SKS`, `CramMode.tsx` + API `api/ai/cram.ts`):
+
+- Sumber: tempel manual, transkrip terakhir, atau materi unggahan (dari store)
+- Output: inti 30% berprioritas (wajib/penting + alasan), 4-6 prediksi soal pengecoh interaktif (jawaban pengecoh + kenapa menggoda + penjelasan), fakta kilat untuk hafalan, checklist belajar H-1
+- Tipe ujian: UTBK/SNBT, UAS kampus, kuis kilat, ujian lisan
+- Fallback offline: kalau server AI mati, heuristic lokal tetap menyaring ±30% paragraf terpenting (definisi/angka/heading); deteksi jebakan tetap butuh server
+- Strict grounding: jawaban terkunci hanya pada materi yang dimasukkan user
+
+### 14. Lab Teks: Penerjemah Tongkrongan, Korektor Esai, Audit Catatan
+
+Tiga alat teks dalam satu tab (`Lab Teks`, `LabTeks.tsx`, semua lewat `/api/ai/chat`):
+
+- **Penerjemah tongkrongan**: jurnal/slide dosen yang kaku → penjelasan santai (3 tingkat: santai banget, seimbang, untuk presentasi) — istilah teknis dipertahankan + dijelaskan, fakta tidak diubah
+- **Korektor esai**: draf dinilai sesuai rubrik (esai umum / proposal PKM / bab skripsi / esai beasiswa) — nilai total, skor per komponen, kekuatan, revisi urut prioritas dengan kutipan kalimat asli
+- **Audit catatan**: catatan kamu vs materi/slide dosen → salah konsep (kutipan asli + fakta benar), bagian terlewat, bagian yang sudah tertangkap
+
+### 15. Konteks Hiper-Lokal Indonesia + Anti-Halusinasi
+
+- Semua prompt fitur baru ditulis untuk konteks kampus/kurikulum Indonesia: gaya dosen penguji sidang, soal ala UTBK/SNBT dan UAS kampus, rubrik PKM, bahasa Indonesia formal ↔ santai
+- Strict grounding di seluruh fitur AI baru: Mode SKS hanya menjawab dari materi user, korektor esai kutip teks asli, audit catatan hanya membandingkan dua teks yang diberikan, dosen penguji dilarang mengarang data/kutipan
+
+## Roadmap (planned)
+
+Urutan berikutnya sesuai rencana produk:
+
+1. **Chrome Extension "ALYNNE Companion"**: mode ketiduran/bengong (rangkum 10 menit terakhir Google Meet/Zoom), radar absen & generator pertanyaan keaktifan, one-click clipper + integrator Google Classroom/Moodle
+2. **Bot WhatsApp / Telegram**: foto papan tulis atau forward PDF dari grup kelas → otomatis jadi modul belajar di akun web
+3. **Mabar Kuis & shareable deck**: multiplayer quiz battle + tautan berbagi satu klik ke grup kelas (leaderboard tanpa upload ulang materi); saat ini `QuizBattle` masih single-player
+4. **AI Study Buddy proaktif (maskot)**: karakter di pojok layar yang menyapa dan menawarkan bantuan 3D/analogi saat user terlihat stuck; saat ini `StudyBuddy` baru mode diskusi on-demand
+5. **Strict grounding dengan rujukan halaman**: kuis/rangkuman terkunci pada PDF user lengkap dengan sitasi halaman
+
 ## Tech Stack
 
 **Frontend:**
@@ -123,6 +178,7 @@ Ajak teman, dapat bonus:
 - Zustand (state management, persisted to localStorage)
 - transformers.js v4 (ONNX Runtime Web untuk client-side Whisper)
 - jsPDF (proper PDF generation)
+- three.js (Lab 3D: alat peraga WebGL interaktif)
 - Web Audio API (ambient sounds synthesis)
 
 **Backend:**
