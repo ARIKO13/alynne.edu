@@ -63,6 +63,7 @@ import { generateMicroPDF, generateMasterPDF } from '@/lib/pdf-export';
 import { recordQuizResult, updateStreak } from '@/lib/ai-memory';
 import { AmbientThemes } from '@/components/AmbientThemes';
 import { LofiBackground } from '@/components/LofiBackground';
+import { StudyMusicPlayer } from '@/components/StudyMusicPlayer';
 import { cn } from '@/lib/utils';
 import { speak, stop as ttsStop, isSpeaking, pause as ttsPause, resume as ttsResume } from '@/lib/text-to-speech';
 import { VoiceTutor } from '@/components/VoiceTutor';
@@ -1024,6 +1025,9 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
           <LofiBackground theme="sunset" intensity={0.3} />
         </div>
       )}
+
+      {/* Musik Belajar — floating player, tetap hidup saat pindah tab */}
+      <StudyMusicPlayer />
 
       {/* ── LEFT SIDEBAR ── */}
       <div className="w-80 h-full border-r border-white/[0.06] bg-stone-950/95 flex flex-col z-10 min-h-0">
