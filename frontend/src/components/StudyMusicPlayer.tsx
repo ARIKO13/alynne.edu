@@ -82,7 +82,7 @@ const STATION_KEY = 'alynne-music-station';
 type Status = 'idle' | 'connecting' | 'playing' | 'error';
 type Mode = 'radio' | 'audius' | 'playlist';
 type AudiusTrack = { id: string; title: string; artist: string; duration: number; artwork: string };
-type Embed = { kind: 'youtube' | 'spotify'; src: string; title: string; height: number };
+type Embed = { kind: 'youtube' | 'spotify'; src: string; title: string; height: number; raw: string };
 
 /** Ambil 11-char video ID dari berbagai format URL YouTube */
 function extractVideoId(input: string): string | null {
@@ -126,6 +126,8 @@ export function StudyMusicPlayer() {
   const [plInput, setPlInput] = useState('');
   const [plErr, setPlErr] = useState('');
   const [plEmbed, setPlEmbed] = useState<Embed | null>(null);
+  const [plChecking, setPlChecking] = useState(false);
+  const [plLink, setPlLink] = useState('');
 
   // volume -> element + persist
   useEffect(() => {
@@ -259,52 +261,86 @@ export function StudyMusicPlayer() {
   };
 
   // ── Playlist: deteksi link YT/Spotify → embed resmi ──
+  // Pre-check oEmbed via /api/music/ytcheck supaya konten yang YouTube tolak
+  // (privat/dihapus/embed dilarang) tidak macet di iframe, tapi tampil
+  // pesan jelas + tombol "Buka di YouTube". Mix (RD…) tidak bisa diprediksi
+  // oEmbed → langsung dicoba; kalau embed-nya menolak, pakai tombol Buka.
+  const ytCheck = async (qs: string): Promise<boolean> => {
+    try {
+      const r = await fetch(`/api/music/ytcheck?${qs}`);
+      const d = await r.json();
+      return !!d.ok;
+    } catch {
+      return true; // gagal cek → fail-open, coba embed saja
+    }
+  };
+
   const openPlaylist = () => {
     const s = plInput.trim();
-    if (!s) return;
+    if (!s || plChecking) return;
 
     const isYt = s.includes('youtube.com') || s.includes('music.youtube.com') || s.includes('youtu.be');
     const list = s.match(/[?&]list=([a-zA-Z0-9_-]+)/);
     if (isYt && list) {
       const listId = list[1];
-      // Mix/radio YouTube (RD…) DIBLOKIR YouTube untuk di-embed langsung —
-      // `videoseries?list=RD…` selalu "Video unavailable". Workaround legal:
-      // putar video sumber mix-nya saja (embed video biasa selalu jalan).
       const isMix = /^RD/.test(listId);
-      const base = listId.replace(/^RD(?:AMVM|MM)?/, '');
-      const srcVid = extractVideoId(s) || (base.length >= 11 ? base.slice(0, 11) : '');
-      if (isMix && !srcVid) {
-        setPlErr('Mix YouTube (RD…) tidak bisa di-embed tanpa video sumbernya — pakai link video biasa atau playlist (PL…).');
+      const openListEmbed = () => {
+        if (plEmbed) setPlEmbed(null);
+        pauseAudio();
+        setAuTrack(null);
+        setPlEmbed({
+          kind: 'youtube',
+          src: `https://www.youtube.com/embed/videoseries?list=${listId}&autoplay=1&rel=0`,
+          title: isMix ? 'Mix YouTube' : 'Playlist YouTube',
+          height: 0,
+          raw: `https://www.youtube.com/playlist?list=${listId}`,
+        });
+        setPlErr('');
+        setPlLink('');
+        setPlInput('');
+      };
+      if (isMix) {
+        openListEmbed();
         return;
       }
-      if (plEmbed) setPlEmbed(null);
-      pauseAudio();
-      setAuTrack(null);
-      setPlEmbed({
-        kind: 'youtube',
-        src: isMix
-          ? `https://www.youtube.com/embed/${srcVid}?autoplay=1&rel=1&playsinline=1`
-          : `https://www.youtube.com/embed/videoseries?list=${listId}&autoplay=1&rel=0`,
-        title: isMix ? 'Mix YouTube (via video sumber)' : 'Playlist YouTube',
-        height: 0,
+      setPlChecking(true);
+      setPlLink('');
+      void ytCheck(`list=${encodeURIComponent(listId)}`).then((ok) => {
+        setPlChecking(false);
+        if (!ok) {
+          setPlLink(`https://www.youtube.com/playlist?list=${listId}`);
+          setPlErr('Playlist ini tidak bisa di-embed — privat/dihapus/dilarang pemiliknya.');
+          return;
+        }
+        openListEmbed();
       });
-      setPlErr('');
-      setPlInput('');
       return;
     }
     const vid = extractVideoId(s);
     if (isYt && vid) {
-      if (plEmbed) setPlEmbed(null);
-      pauseAudio();
-      setAuTrack(null);
-      setPlEmbed({
-        kind: 'youtube',
-        src: `https://www.youtube.com/embed/${vid}?autoplay=1&rel=0&playsinline=1`,
-        title: 'Video YouTube',
-        height: 0,
+      setPlChecking(true);
+      setPlLink('');
+      void ytCheck(`v=${encodeURIComponent(vid)}`).then((ok) => {
+        setPlChecking(false);
+        if (!ok) {
+          setPlLink(`https://www.youtube.com/watch?v=${vid}`);
+          setPlErr('Video ini tidak bisa di-embed — pemilik menonaktifkan embed, atau video privat/dihapus.');
+          return;
+        }
+        if (plEmbed) setPlEmbed(null);
+        pauseAudio();
+        setAuTrack(null);
+        setPlEmbed({
+          kind: 'youtube',
+          src: `https://www.youtube.com/embed/${vid}?autoplay=1&rel=0&playsinline=1`,
+          title: 'Video YouTube',
+          height: 0,
+          raw: `https://www.youtube.com/watch?v=${vid}`,
+        });
+        setPlErr('');
+        setPlLink('');
+        setPlInput('');
       });
-      setPlErr('');
-      setPlInput('');
       return;
     }
     const sp = s.match(/open\.spotify\.com\/(?:intl-[a-z]{2}\/)?(playlist|album|track|episode|show)\/([A-Za-z0-9]+)/);
@@ -318,8 +354,10 @@ export function StudyMusicPlayer() {
         src: `https://open.spotify.com/embed/${sp[1]}/${sp[2]}`,
         title: `Spotify ${sp[1]}`,
         height: tall ? 352 : 152,
+        raw: '',
       });
       setPlErr('');
+      setPlLink('');
       setPlInput('');
       return;
     }
@@ -599,7 +637,7 @@ export function StudyMusicPlayer() {
                   />
                   <button
                     onClick={openPlaylist}
-                    disabled={!plInput.trim()}
+                    disabled={!plInput.trim() || plChecking}
                     className="h-7 px-2.5 rounded-lg bg-[var(--accent)] text-white text-[11px] font-semibold disabled:opacity-50"
                   >
                     Buka
@@ -635,21 +673,47 @@ export function StudyMusicPlayer() {
                         />
                       )}
                     </div>
-                    <div className="flex items-center justify-between mt-1.5 px-0.5">
+                    <div className="flex items-center justify-between mt-1.5 px-0.5 gap-2">
                       <span className="text-[10px] text-stone-500 truncate">{plEmbed.title}</span>
-                      <button
-                        onClick={() => setPlEmbed(null)}
-                        className="shrink-0 text-[10px] text-stone-400 hover:text-stone-200 underline underline-offset-2"
-                      >
-                        stop
-                      </button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {plEmbed.kind === 'youtube' && plEmbed.raw && (
+                          <a
+                            href={plEmbed.raw}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] text-stone-400 hover:text-stone-200 underline underline-offset-2"
+                          >
+                            Buka ↗
+                          </a>
+                        )}
+                        <button
+                          onClick={() => setPlEmbed(null)}
+                          className="text-[10px] text-stone-400 hover:text-stone-200 underline underline-offset-2"
+                        >
+                          stop
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
 
+                {plChecking && <p className="text-[11px] text-stone-500">Memeriksa playlist/video…</p>}
                 {plErr && (
-                  <p className="text-[11px] text-amber-400 flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3 shrink-0" /> {plErr}
+                  <p className="text-[11px] text-amber-400 flex items-start gap-1">
+                    <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" />
+                    <span>
+                      {plErr}{' '}
+                      {plLink && (
+                        <a
+                          href={plLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline underline-offset-2 text-[var(--accent)] font-semibold"
+                        >
+                          Buka di YouTube ↗
+                        </a>
+                      )}
+                    </span>
                   </p>
                 )}
 
@@ -661,7 +725,7 @@ export function StudyMusicPlayer() {
               </div>
 
               <div className="px-4 py-2 bg-white/[0.02] text-[10px] text-stone-600 leading-relaxed">
-                Diputar via player resmi YouTube / Spotify — patuh ToS. Playlist YouTube (PL…) jalan utuh; Mix (RD…) diputar via video sumbernya karena YouTube memblokir mix untuk embed. Spotify: preview 30 dtk; login di dalam player untuk lagu penuh (Premium).
+                Diputar via player resmi YouTube / Spotify — patuh ToS. Kalau embed tampil abu-abu atau "refused to connect", pemilik konten menonaktifkan embed — pakai tombol Buka ↗. Spotify: preview 30 dtk; login di dalam player untuk lagu penuh (Premium).
               </div>
             </>
           )}
