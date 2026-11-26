@@ -49,6 +49,7 @@ import {
   CheckCircle2 as CheckIcon,
   GraduationCap,
   Mic,
+  Gamepad2,
 } from 'lucide-react';
 import {
   splitTranscriptIntoChapters,
@@ -63,7 +64,6 @@ import { generateMicroPDF, generateMasterPDF } from '@/lib/pdf-export';
 import { recordQuizResult, updateStreak } from '@/lib/ai-memory';
 import { AmbientThemes } from '@/components/AmbientThemes';
 import { LofiBackground } from '@/components/LofiBackground';
-import { StudyMusicPlayer } from '@/components/StudyMusicPlayer';
 import { cn } from '@/lib/utils';
 import { speak, stop as ttsStop, isSpeaking, pause as ttsPause, resume as ttsResume } from '@/lib/text-to-speech';
 import { VoiceTutor } from '@/components/VoiceTutor';
@@ -1026,8 +1026,16 @@ export function StudyPipeline({ open, onClose, transcript }: StudyPipelineProps)
         </div>
       )}
 
-      {/* Musik Belajar — floating player, tetap hidup saat pindah tab */}
-      <StudyMusicPlayer />
+      {/* Game Kuis Multiplayer — FAB, buka /game di tab baru (join pakai link invite) */}
+      <a
+        href="/game"
+        target="_blank"
+        rel="noreferrer"
+        aria-label="Game kuis multiplayer"
+        className="fixed bottom-4 right-4 z-40 h-12 w-12 rounded-full border border-white/10 bg-stone-900/90 backdrop-blur flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95 text-[var(--accent)]"
+      >
+        <Gamepad2 className="h-5 w-5" />
+      </a>
 
       {/* ── LEFT SIDEBAR ── */}
       <div className="w-80 h-full border-r border-white/[0.06] bg-stone-950/95 flex flex-col z-10 min-h-0">
