@@ -11,8 +11,6 @@ module.exports = {
       NEXTAUTH_SECRET: 'REDACTED-ROTASI-DI-VPS',
       GOOGLE_CLIENT_ID: '863033812676-i4me8prfg5qr3ncpa832an8h3bk08pgk.apps.googleusercontent.com',
       GOOGLE_CLIENT_SECRET: 'GOCSPX-REDACTED-ISI-DI-VPS',
-      // YouTube Data API v3 (fallback pencarian tanpa OAuth saat verifikasi Google belum selesai)
-      YOUTUBE_API_KEY: '',
       POLYVOR_URL: 'https://gateway.polyvorlabs.com/v1',
       POLYVOR_API_KEY: 'gw_sk_REDACTED-ISI-DI-VPS',
       POLYVOR_MODEL: 'phala/z-ai/glm-5.3-flash',
