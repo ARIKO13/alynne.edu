@@ -263,16 +263,29 @@ export function StudyMusicPlayer() {
     const s = plInput.trim();
     if (!s) return;
 
-    const isYt = s.includes('youtube.com') || s.includes('youtu.be');
+    const isYt = s.includes('youtube.com') || s.includes('music.youtube.com') || s.includes('youtu.be');
     const list = s.match(/[?&]list=([a-zA-Z0-9_-]+)/);
     if (isYt && list) {
+      const listId = list[1];
+      // Mix/radio YouTube (RD…) DIBLOKIR YouTube untuk di-embed langsung —
+      // `videoseries?list=RD…` selalu "Video unavailable". Workaround legal:
+      // putar video sumber mix-nya saja (embed video biasa selalu jalan).
+      const isMix = /^RD/.test(listId);
+      const base = listId.replace(/^RD(?:AMVM|MM)?/, '');
+      const srcVid = extractVideoId(s) || (base.length >= 11 ? base.slice(0, 11) : '');
+      if (isMix && !srcVid) {
+        setPlErr('Mix YouTube (RD…) tidak bisa di-embed tanpa video sumbernya — pakai link video biasa atau playlist (PL…).');
+        return;
+      }
       if (plEmbed) setPlEmbed(null);
       pauseAudio();
       setAuTrack(null);
       setPlEmbed({
         kind: 'youtube',
-        src: `https://www.youtube.com/embed/videoseries?list=${list[1]}&autoplay=1&rel=0`,
-        title: 'Playlist YouTube',
+        src: isMix
+          ? `https://www.youtube.com/embed/${srcVid}?autoplay=1&rel=1&playsinline=1`
+          : `https://www.youtube.com/embed/videoseries?list=${listId}&autoplay=1&rel=0`,
+        title: isMix ? 'Mix YouTube (via video sumber)' : 'Playlist YouTube',
         height: 0,
       });
       setPlErr('');
@@ -648,7 +661,7 @@ export function StudyMusicPlayer() {
               </div>
 
               <div className="px-4 py-2 bg-white/[0.02] text-[10px] text-stone-600 leading-relaxed">
-                Diputar via player resmi YouTube / Spotify — patuh ToS. Spotify: preview 30 dtk; login di dalam player untuk lagu penuh (Premium).
+                Diputar via player resmi YouTube / Spotify — patuh ToS. Playlist YouTube (PL…) jalan utuh; Mix (RD…) diputar via video sumbernya karena YouTube memblokir mix untuk embed. Spotify: preview 30 dtk; login di dalam player untuk lagu penuh (Premium).
               </div>
             </>
           )}
