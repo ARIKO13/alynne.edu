@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
-import { exchangeGoogleCode, createToken, COOKIE_NAME, APP_URL } from '@/lib/auth';
+import { exchangeGoogleCode, createToken, COOKIE_NAME, APP_URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } from '@/lib/auth';
+import { storeRefreshToken } from '@/lib/youtube-auth';
 import { db } from '@/lib/db';
 import { subscriptionDb } from '@/lib/subscription-db';
 
@@ -22,6 +23,51 @@ export const GET: APIRoute = async ({ url, request }) => {
   if (!code) {
     console.log('[callback] no code, redirecting');
     return Response.redirect(`${baseUrl}/?auth=no_code`);
+  }
+
+  // ── state=youtube-connect: hubungkan akun YouTube user (bukan login app) ──
+  // Menukar code → refresh_token (offline), menyimpan per-user di D1, balik ke /edu.
+  const state = url.searchParams.get('state');
+  if (state === 'youtube-connect') {
+    try {
+      const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code,
+          client_id: GOOGLE_CLIENT_ID,
+          client_secret: GOOGLE_CLIENT_SECRET,
+          redirect_uri: callbackUri,
+          grant_type: 'authorization_code',
+        }),
+      });
+      if (!tokenRes.ok) {
+        console.error('[callback][youtube] token exchange failed:', await tokenRes.text());
+        return Response.redirect(`${baseUrl}/edu?yt=error`);
+      }
+      const tok = await tokenRes.json();
+      const refreshToken = tok.refresh_token as string | undefined;
+      const ytAccess = tok.access_token as string;
+
+      if (!refreshToken) {
+        // Tanpa refresh_token kuota per-user tidak bisa diperpanjang
+        return Response.redirect(`${baseUrl}/edu?yt=no_refresh`);
+      }
+
+      const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: { Authorization: `Bearer ${ytAccess}` },
+      });
+      if (!userRes.ok) {
+        return Response.redirect(`${baseUrl}/edu?yt=error`);
+      }
+      const gUser = await userRes.json();
+      await storeRefreshToken(gUser.id, refreshToken);
+      console.log('[callback][youtube] connected uid=' + gUser.id);
+      return Response.redirect(`${baseUrl}/edu?yt=1`);
+    } catch (err) {
+      console.error('[callback][youtube] error:', err);
+      return Response.redirect(`${baseUrl}/edu?yt=error`);
+    }
   }
 
   const user = await exchangeGoogleCode(code, callbackUri);
