@@ -109,6 +109,7 @@ export function StudyMusicPlayer() {
   // ── YouTube ──
   const [ytChecking, setYtChecking] = useState(false);
   const [ytConnected, setYtConnected] = useState(false);
+  const [ytSearchOpen, setYtSearchOpen] = useState(false);
   const [ytAuthUrl, setYtAuthUrl] = useState('');
   const [ytQuery, setYtQuery] = useState('');
   const [ytItems, setYtItems] = useState<YtItem[] | null>(null);
@@ -206,6 +207,7 @@ export function StudyMusicPlayer() {
       const res = await fetch('/api/youtube/status');
       const data = await res.json();
       setYtConnected(!!data.connected);
+      setYtSearchOpen(!!data.searchOpen);
       setYtAuthUrl(data.authUrl || '');
     } catch {
       if (!quiet) setYtErr('Gagal cek status koneksi');
@@ -469,8 +471,8 @@ export function StudyMusicPlayer() {
               )}
 
               <div className="px-3 py-3 space-y-2">
-                {/* pencarian (butuh akun terhubung) */}
-                {ytConnected && (
+                {/* pencarian (akun terhubung, atau kuota server via API key) */}
+                {(ytConnected || ytSearchOpen) && (
                   <div className="flex items-center gap-1.5">
                     <input
                       value={ytQuery}
@@ -489,8 +491,21 @@ export function StudyMusicPlayer() {
                   </div>
                 )}
 
-                {/* belum terhubung: ajakan hubungkan + tempel URL */}
-                {!ytConnected && (
+                {/* belum terhubung: ajakan hubungkan + tempel URL.
+                    Bila search sudah terbuka via API key, cukup tombol ringkas */}
+                {!ytConnected && ytSearchOpen && (
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] text-stone-600">Pencarian via kuota server</span>
+                    <button
+                      onClick={connectYt}
+                      disabled={ytChecking || !ytAuthUrl}
+                      className="shrink-0 text-[10px] font-semibold text-[var(--accent)] underline underline-offset-2 disabled:opacity-50"
+                    >
+                      Hubungkan akun (kuota pribadi)
+                    </button>
+                  </div>
+                )}
+                {!ytConnected && !ytSearchOpen && (
                   <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 space-y-2">
                     <div className="flex items-center gap-2">
                       <Youtube className="h-4 w-4 text-[var(--accent)] shrink-0" />
@@ -507,28 +522,30 @@ export function StudyMusicPlayer() {
                       Hubungkan YouTube
                     </button>
                     <p className="text-[10px] text-stone-600">Popup Google terbuka — izinkan, lalu panel ini otomatis terhubung.</p>
-                    <div className="flex items-center gap-1.5 pt-1">
-                      <Link2 className="h-3 w-3 text-stone-600 shrink-0" />
-                      <input
-                        value={pasteUrl}
-                        onChange={(e) => setPasteUrl(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') playPasted(); }}
-                        placeholder="atau tempel URL YouTube…"
-                        className="flex-1 min-w-0 bg-white/[0.05] border border-white/10 rounded-lg px-2 py-1 text-[11px] text-stone-300 placeholder:text-stone-600 focus:outline-none focus:ring-1 focus:ring-[var(--accent)]/60"
-                      />
-                      <button
-                        onClick={playPasted}
-                        disabled={!pasteUrl.trim()}
-                        className="h-6 px-2 rounded-md bg-white/10 text-stone-200 text-[10px] font-semibold disabled:opacity-40"
-                      >
-                        Putar
-                      </button>
-                    </div>
+                  </div>
+                )}
+                {!ytConnected && (
+                  <div className="flex items-center gap-1.5">
+                    <Link2 className="h-3 w-3 text-stone-600 shrink-0" />
+                    <input
+                      value={pasteUrl}
+                      onChange={(e) => setPasteUrl(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') playPasted(); }}
+                      placeholder="atau tempel URL YouTube…"
+                      className="flex-1 min-w-0 bg-white/[0.05] border border-white/10 rounded-lg px-2 py-1 text-[11px] text-stone-300 placeholder:text-stone-600 focus:outline-none focus:ring-1 focus:ring-[var(--accent)]/60"
+                    />
+                    <button
+                      onClick={playPasted}
+                      disabled={!pasteUrl.trim()}
+                      className="h-6 px-2 rounded-md bg-white/10 text-stone-200 text-[10px] font-semibold disabled:opacity-40"
+                    >
+                      Putar
+                    </button>
                   </div>
                 )}
 
                 {/* hasil pencarian */}
-                {ytConnected && ytItems && ytItems.length > 0 && (
+                {(ytConnected || ytSearchOpen) && ytItems && ytItems.length > 0 && (
                   <div className="max-h-44 overflow-y-auto space-y-1">
                     {ytItems.map((v) => (
                       <button
@@ -550,7 +567,7 @@ export function StudyMusicPlayer() {
                     ))}
                   </div>
                 )}
-                {ytConnected && ytItems && ytItems.length === 0 && !ytBusy && (
+                {(ytConnected || ytSearchOpen) && ytItems && ytItems.length === 0 && !ytBusy && (
                   <p className="text-[11px] text-stone-500 text-center py-1">Tidak ada hasil. Coba kata kunci lain.</p>
                 )}
 
@@ -564,7 +581,7 @@ export function StudyMusicPlayer() {
                 {/* status koneksi */}
                 <div className="flex items-center justify-between pt-1">
                   <span className="text-[10px] text-stone-600">
-                    {ytConnected ? '● Akun YouTube terhubung' : '○ Akun belum terhubung'}
+                    {ytConnected ? '● Akun YouTube terhubung' : ytSearchOpen ? '○ Kuota server aktif' : '○ Akun belum terhubung'}
                   </span>
                   <div className="flex items-center gap-2">
                     {ytConnected && (

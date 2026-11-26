@@ -109,6 +109,14 @@ export function YouTubeTranscript({ onTranscript, disabled }: YouTubeTranscriptP
             <p className="text-[10px] text-emerald-300/80">
               {result.chars} karakter • {result.duration_min} menit • {result.segments} segmen
             </p>
+            <a
+              href={`https://www.youtube.com/watch?v=${result.videoId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[10px] text-stone-400 hover:text-stone-200 underline underline-offset-2"
+            >
+              Sumber: tonton video asli di YouTube ↗
+            </a>
           </div>
           <button onClick={clear} className="text-stone-600 hover:text-red-400">
             <Trash2 className="h-3 w-3" />
@@ -118,6 +126,7 @@ export function YouTubeTranscript({ onTranscript, disabled }: YouTubeTranscriptP
 
       <p className="text-[9px] text-stone-600 leading-relaxed">
         Hanya untuk video yang memiliki subtitle/caption. Untuk video lebih dari 30 menit, gunakan ini sebagai pengganti upload file.
+        Transkrip hanya tampil di sesi belajarmu (bukan halaman publik) — hormati hak cipta kreator, jangan disebarkan ulang.
       </p>
     </div>
   );

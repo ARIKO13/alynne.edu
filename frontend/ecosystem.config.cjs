@@ -11,6 +11,8 @@ module.exports = {
       NEXTAUTH_SECRET: '0pGDBWqT4l_Q41ueiLPKIr48mMRMjADpjF7L7J2Y0QM',
       GOOGLE_CLIENT_ID: '863033812676-i4me8prfg5qr3ncpa832an8h3bk08pgk.apps.googleusercontent.com',
       GOOGLE_CLIENT_SECRET: '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',
+      // YouTube Data API v3 (fallback pencarian tanpa OAuth saat verifikasi Google belum selesai)
+      YOUTUBE_API_KEY: '',
       POLYVOR_URL: 'https://gateway.polyvorlabs.com/v1',
       POLYVOR_API_KEY: 'gw_sk_67871988607bcd26786db5f01eb3c476db4f5d3df9bb12748b769c7aefb8663d',
       POLYVOR_MODEL: 'phala/z-ai/glm-5.3-flash',

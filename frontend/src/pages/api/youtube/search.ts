@@ -1,8 +1,11 @@
 /**
  * GET /api/youtube/search?q=...
  * Pencarian video musik via YouTube Data API v3 (search.list).
- * Dipanggil server-side dengan access token milik USER yang terhubung —
- * kuota API dibayar dari kuota harian user (bukan kuota developer server).
+ * Urutan sumber kuota:
+ *   1. Access token milik USER yang terhubung (OAuth youtube.readonly) —
+ *      kuota harian user sendiri (10.000 unit/user).
+ *   2. Fallback: YOUTUBE_API_KEY server (tanpa OAuth) — kuota developer
+ *      (10.000 unit/hari total), dipakai saat verifikasi Google belum selesai.
  * Playback dilakukan klien via official IFrame embed (patuh ToS).
  */
 import type { APIRoute } from 'astro';
@@ -20,7 +23,8 @@ export const GET: APIRoute = async ({ request, url }) => {
   }
 
   const accessToken = await getAccessToken(uid);
-  if (!accessToken) {
+  const apiKey = (process.env.YOUTUBE_API_KEY || '').trim();
+  if (!accessToken && !apiKey) {
     return Response.json({ error: 'YouTube belum terhubung' }, { status: 403 });
   }
 
@@ -32,10 +36,18 @@ export const GET: APIRoute = async ({ request, url }) => {
     q,
   });
 
+  // OAuth token bila ada; kalau tidak, pakai API key server (via query param)
+  const headers: Record<string, string> = {};
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  } else {
+    params.set('key', apiKey);
+  }
+
   try {
     const res = await fetch(
       `https://www.googleapis.com/youtube/v3/search?${params}`,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
+      { headers }
     );
 
     if (res.status === 401 || res.status === 403) {

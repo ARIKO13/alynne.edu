@@ -32,5 +32,8 @@ export const GET: APIRoute = async ({ request }) => {
     }
   } catch {}
 
-  return Response.json({ connected, authUrl });
+  // search tetap bisa jalan tanpa OAuth bila server punya API key
+  const searchOpen = connected || !!(process.env.YOUTUBE_API_KEY || '').trim();
+
+  return Response.json({ connected, searchOpen, authUrl });
 };
