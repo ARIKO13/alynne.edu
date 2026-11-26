@@ -24,7 +24,7 @@ DB_PATH = '/root/lina-learning/data/stt.db'
 # Cloudflare D1 config (dari /root/lina-learning/ecosystem.config.cjs env)
 CF_ACCOUNT_ID = '949a2a6e1039019782c46a8c7ddb19fe'
 CF_DATABASE_ID = '2e9133ea-dad7-4227-ac92-03c0fbe48c45'
-CF_API_TOKEN = 'cfut_bLNtQhqVmPfkc8jLKydN2QCm52Vw4MmA9cdefw3M5cceff97'
+CF_API_TOKEN = 'cfut_REDACTED-ISI-DI-VPS'
 
 D1_API_URL = f'https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/d1/database/{CF_DATABASE_ID}/query'
 

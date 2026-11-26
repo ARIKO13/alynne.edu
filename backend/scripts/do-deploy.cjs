@@ -2,7 +2,7 @@ const {Client} = require('ssh2');
 const fs = require('fs');
 const path = require('path');
 
-const VPS = { host: '202.10.40.64', port: 22, username: 'root', password: '131006_Ar' };
+const VPS = { host: '202.10.40.64', port: 22, username: 'root', password: 'REDACTED-DI-VPS' };
 
 const ECOSYSTEM = `module.exports = {
   apps: [{
@@ -14,12 +14,12 @@ const ECOSYSTEM = `module.exports = {
       HOST: '0.0.0.0',
       PORT: '3000',
       NEXTAUTH_URL: 'https://linalearning.my.id',
-      NEXTAUTH_SECRET: '0pGDBWqT4l_Q41ueiLPKIr48mMRMjADpjF7L7J2Y0QM',
+      NEXTAUTH_SECRET: 'REDACTED-ROTASI-DI-VPS',
       GOOGLE_CLIENT_ID: '724864090566-14mvreiitnh74ehas7n0rh1uu39vl31b.apps.googleusercontent.com',
-      GOOGLE_CLIENT_SECRET: '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',
-      GATEWAY_API_KEY: 'gw_sk_5ea3ff72fb1b85af39aaaab8b5172fafe5dd574f519ac6f3f4b661d72ebd1d27',
-      GROQ_API_KEY: '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',
-      CF_API_TOKEN: 'cfut_bLNtQhqVmPfkc8jLKydN2QCm52Vw4MmA9cdefw3M5cceff97',
+      GOOGLE_CLIENT_SECRET: 'GOCSPX-REDACTED-ISI-DI-VPS',
+      GATEWAY_API_KEY: 'gw_sk_REDACTED-ISI-DI-VPS',
+      GROQ_API_KEY: 'gsk_REDACTED-ISI-DI-VPS',
+      CF_API_TOKEN: 'cfut_REDACTED-ISI-DI-VPS',
       CF_ACCOUNT_ID: '949a2a6e1039019782c46a8c7ddb19fe',
       CF_DATABASE_ID: '2e9133ea-dad7-4227-ac92-03c0fbe48c45',
     }

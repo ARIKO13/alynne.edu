@@ -4,9 +4,16 @@
  */
 import { SignJWT, jwtVerify } from 'jose';
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.NEXTAUTH_SECRET || '0pGDBWqT4l_Q41ueiLPKIr48mMRMjADpjF7L7J2Y0QM'
-);
+// Secret sesi WAJIB dari env (min 32 karakter acak). Tidak ada fallback
+// hardcoded — kalau kosong, server gagal cepat dan terlihat, bukan diam-diam
+// memakai secret yang bocor. Rotasi secret = semua sesi lama otomatis invalid.
+const JWT_SECRET = (() => {
+  const s = process.env.NEXTAUTH_SECRET;
+  if (!s || s.length < 32) {
+    throw new Error('NEXTAUTH_SECRET belum diset atau terlalu pendek (min 32 karakter acak)');
+  }
+  return new TextEncoder().encode(s);
+})();
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
